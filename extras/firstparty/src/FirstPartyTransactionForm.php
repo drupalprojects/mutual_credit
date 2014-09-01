@@ -70,15 +70,11 @@ class FirstPartyTransactionForm extends TransactionForm {
     $form['payer']['#access'] = FALSE;
     $form['payee']['#access'] = FALSE;
     $account = User::load(\Drupal::currentuser()->id());
-    //use this method because i still don't know how to iterate
-    //through the $account->exchanges entity_reference field.
-    foreach (mcapi_get_wallet_ids($account) as $wid) {
-      $my_wallets[$wid] = entity_load('mcapi_wallet', $wid)->label();
-    }
+
     $form['mywallet'] = array(
       '#title' => t('My wallet')
     );
-
+    $my_wallets = mcapi_entity_label_list('user', mcapi_get_wallet_ids($account));
     //if I only have one wallet, we'll put a bogus disabled chooser
     //however disabled widgets don't return a value, so we'll store the value we need in a helper element
     if (\Drupal::config('mcapi.wallets')->get('entity_types.user:user') > 1) {//show a widget

@@ -26,14 +26,13 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
   /**
    * because the transaction entity is keyed by serial number not xid,
    * and because it contains child entities,
-   * and because we have an erase mode which does not delete the transaction,
    * We need to overwrite the whole save function
    * Also in this method we write the index table
    *
    * @see EntityStorageBase::save().
    */
   public function save(EntityInterface $entity) {
-    $entity->preSave($this);
+
     $this->invokeHook('presave', $entity);
     //this $entity is coming from above where it may have $children
     //and in fact be several records
@@ -42,12 +41,24 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
     $serial = $is_new ? $this->nextSerial() : $entity->serial->value;
     $parent = 0;
     //note that this clones the parent tranaction
-    foreach (mcapi_transaction_flatten($entity) as $transaction) {
+    foreach ($entity->flatten() as $transaction) {
       $record = $this->mapToStorageRecord($transaction);
       if (!$is_new) {
-        $return = drupal_write_record('mcapi_transaction', $record, 'xid');
+        //TODO drupal_get_complete_schema doesn't return entity tables in alpha14
+        //$return = drupal_write_record('mcapi_transaction', $record, 'xid');
+        $return = SAVED_UPDATED;
+        //debug(array_keys((array)$record));
+        $this->database
+          ->update('mcapi_transaction')
+          ->fields((array) $record)
+          ->condition('xid', $record->xid)
+          ->execute();
+
         $cache_ids = array($transaction->id());
+        $this->resetCache($cache_ids);
         $this->indexDrop($serial);
+        $this->invokeFieldMethod('update', $transaction);
+        $this->invokeHook('update', $entity);
       }
       else {
         $return = SAVED_NEW;
@@ -68,26 +79,28 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
           $parent = $entity->xid->value = $insert_id;
           $entity->serial->value = $serial;
         }
+
+        $this->invokeFieldMethod('insert', $transaction);
+        // The entity is no longer new.
+        $entity->enforceIsNew(FALSE);
+        $transaction->setOriginalId($entity->id());
+        $this->invokeHook('insert', $entity);
         // Reset general caches, but keep caches specific to certain entities.
         $cache_ids = array();
       }
-      if (!$transaction->id()) mtrace();
-      $this->invokeFieldMethod($is_new ? 'insert' : 'update', $transaction);
       $this->saveFieldItems($transaction, !$is_new);
-      $this->resetCache($cache_ids);
 
-      db_delete('mcapi_transactions_index')
-        ->condition('xid', $insert_id)
-        ->execute();
+      if (isset($insert_id)) {
+        db_delete('mcapi_transactions_index')->condition('xid', $insert_id)->execute();
+      }
       // we only index transactions in states which are 'counted'
-      if (array_key_exists($record->state, mcapi_states_counted(TRUE))) {
-
+      if (in_array($record->state, mcapi_states_counted(TRUE))) {
         $query = db_insert('mcapi_transactions_index')
           ->fields(array('xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'));
 
         foreach ($transaction->worth->getValue() as $worth) {
           $query->values(array(
-            'xid' => $insert_id,
+            'xid' => $transaction->xid->value,
             'serial' => $record->serial,
             'wallet_id' => $record->payer,
             'partner_id' => $record->payee,
@@ -103,7 +116,7 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
             'child' => intval((bool)$record->parent)
           ));
           $query->values(array(
-            'xid' => $insert_id,
+            'xid' => $transaction->xid->value,
             'serial' => $record->serial,
             'wallet_id' => $record->payee,
             'partner_id' => $record->payer,
@@ -119,20 +132,9 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
           ));
         }
         $query->execute();
-
       }
-      // The entity is no longer new.
-      $entity->enforceIsNew(FALSE);
-
       // Allow code to run after saving.
       $entity->postSave($this, !$is_new);
-      $this->invokeHook($is_new ? 'insert' : 'update', $entity);
-
-      // After saving, this is now the "original entity", and subsequent saves
-      // will be updates instead of inserts, and updates must always be able to
-      // correctly identify the original entity.
-      $entity->setOriginalId($entity->id());
-
       unset($entity->original);
     }
     return $return;
@@ -140,42 +142,33 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
 
 
   /**
-   * This storage controller deletes transactions according to settings.
-   * Either by changing their state, thus retaining a record, or removing
-   * the data completely
+   * {@ineritdoc}
    */
   protected function doDelete($entities) {
     //first of all we need to get a flat array of all the entities.
-    $indelible = \Drupal::config('mcapi.misc')->get('indelible');
     foreach ($entities as $entity) {
-      foreach(mcapi_transaction_flatten($entity) as $transaction) {
+      $serials[] = $entity->serial->value;
+      foreach($entity->flatten() as $transaction) {
         $transactions[$transaction->id()] = $transaction;
       }
     }
-    //now
-    foreach ($transactions as $xid => $transaction) {
-      if ($indelible) {
-        $transaction->set('state', TRANSACTION_STATE_UNDONE);
-        $transaction->save($transaction);
-        //leave the fieldAPI data as is
-      }
-      else {
-        $deletable_entities[$xid] = $entity;
-      }
-      $serials[] = $entity->serial->value;
-    }
-    //unusually we're not going to call on the parent::doDelete()
-    //we collected up all the ids so we can delete in one query
-    if (!$indelible && $deletable_entities) {
-      parent::doDelete($deletable_entities);
-      //this does resetCache()
-    }
-    else {
-      $this->resetCache(array_keys($transactions));
-    }
+    parent::doDelete($transactions);
+    $this->resetCache(array_keys($transactions));
+
     //maybe this should be in postDelete
     $this->indexDrop($serials);
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function doErase(array $transactions) {
+    foreach ($transactions as $transaction) {
+      $transaction->set('state', TRANSACTION_STATE_ERASED);
+      $transaction->save($transaction);
+    }
+  }
+
 
   /**
    * for development use only! This is not (yet in the interface)
@@ -266,7 +259,9 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::indexDrop()
    */
   public function indexDrop($serials) {
-    db_delete('mcapi_transactions_index')->condition('serial', (array)$serials)->execute();
+    db_delete('mcapi_transactions_index')
+      ->condition('serial', (array)$serials)
+      ->execute();
   }
 
   /**

@@ -45,12 +45,14 @@ class WalletSettings extends ConfigFormBase {
       '#tree' => TRUE
     );
     module_load_include('inc', 'mcapi');
+    $entityManager = \Drupal::entityManager();
     foreach (bundles_in_exchanges() as $entity_type_id => $bundles) {
-      if ($entity_type_id == 'user' || \Drupal::entityManager()->getDefinition($entity_type_id, FALSE)->getClass() instanceOf Drupal\user\EntityOwnerInterface) {
-        $entity_label = (count($bundles) > 1)
-          ? \Drupal::entityManager()->getDefinition($entity_type_id, TRUE)->getLabel() .': '
-          : '';
-        foreach ($bundles as $bundle_name => $bundle_info) {
+      $entity_type = $entityManager->getDefinition($entity_type_id, TRUE);
+      $entity_label = (count($bundles) > 1)
+        ? $entity_type->getLabel() .': '
+        : '';
+      foreach ($bundles as $bundle_name => $bundle_info) {
+        if (mcapi_wallet_owning_entity($entity_type, $bundle_name)) {
           $form['creation']['entity_types']["$entity_type_id:$bundle_name"] = array(
           	'#title' => $entity_label.$bundle_info['label'],
             '#description' => t('The maximum number of wallets for a @type.', array('@type' => $bundle_info['label'])),

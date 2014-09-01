@@ -12,6 +12,7 @@ use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\mcapi\Entity\Exchange;
 
 /**
  * This is an unfieldable content entity. But if we extend the EntityDatabaseStorage
@@ -55,13 +56,16 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
    * @see \Drupal\mcapi\Storage\WalletStorageInterface::getOwnedWalletIds()
    * @todo probably useful to have a flag for excluding _intertrading wallets
    */
-  static function getOwnedWalletIds(ContentEntityInterface $entity) {
-    return db_select('mcapi_wallet', 'w')
+  static function getOwnedWalletIds(ContentEntityInterface $entity, $intertrading = FALSE) {
+    $q = db_select('mcapi_wallet', 'w')
       ->fields('w', array('wid'))
       ->condition('entity_type', $entity->getEntityTypeId())
       ->condition('pid', $entity->id())
-      ->condition('orphaned', 0)
-      ->execute()->fetchCol();
+      ->condition('orphaned', 0);
+    if (!$intertrading) {
+      $q->condition('w.name', '_intertrading', '<>');
+    }
+    return $q->execute()->fetchCol();
     /*N.B. the above is functionality equivalent to, but faster than
     return entity_load_multiple_by_properties('mcapi_wallet',
       array(
@@ -136,7 +140,7 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
         }
       }
       //we need to identify the base table and 'name' field for each entity type we are searching against
-      $field_names = get_exchange_entity_fieldnames();
+      $field_names = Exchange::getEntityFieldnames();
       foreach ($conditions['entity_types'] as $entity_type_id) {
         $field_name = $field_names[$entity_type_id];
         //might be better practice to get the EntityType object from the entity than the Definition from the entityManager

@@ -69,8 +69,8 @@ class DashboardController extends ControllerBase {
         'wallets' => array()
       );
       $currnames = array();
-      foreach ($exchange->currencies->getValue(TRUE) as $item) {
-        $currnames[] = l($item['entity']->label(), 'admin/accounting/currencies/'.$item['entity']->id);
+      foreach ($exchange->currencies->referencedEntities() as $entity) {
+        $currnames[] = l($entity->label(), 'admin/accounting/currencies/'.$entity->id());
       }
       $page[$id]['currencies']['#markup'] = 'Currencies: '.implode(', ', $currnames);
       $wids = mcapi_wallets_in_exchanges(array($id));

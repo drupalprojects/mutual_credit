@@ -52,7 +52,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    */
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
     $values += array(
-      //'name' => t("!name's exchange", array('!name' => $account->getlabel())),
+      //'name' => t("!name's exchange", array('!name' => $account->label())),
       'uid' => \Drupal::currentUser()->id() ? : 1,//drush is user 0
       'status' => TRUE,
       'open' => TRUE,
@@ -134,10 +134,15 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       ->setSettings(array('default_value' => TRUE));
 
     $fields['visibility'] = FieldDefinition::create('integer')
-    ->setLabel(t('Visibility'))
-    ->setDescription(t('Visibility of impersonal data in the exchange'))
-    ->setRequired(TRUE)
-    ->setSetting('default_value', EXCHANGE_VISIBILITY_RESTRICTED);
+      ->setLabel(t('Visibility'))
+      ->setDescription(t('Visibility of impersonal data in the exchange'))
+      ->setRequired(TRUE)
+      ->setSetting('default_value', EXCHANGE_VISIBILITY_RESTRICTED);
+
+    $fields['mail'] = FieldDefinition::create('email')
+      ->setLabel(t('Email'))
+      ->setDescription(t('The official contact address'))
+      ->setRequired(TRUE);
 
     return $fields;
   }
@@ -150,12 +155,12 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       $entity = $entity->getOwner();
     }
     $id = $entity->id();
-    $fieldnames = get_exchange_entity_fieldnames();
-    $members = $this->{$fieldnames[$entity->getEntityTypeId()]}->getValue(FALSE);
+    $fieldnames = $this->getEntityFieldnames();
+    $fieldname = $fieldnames[$entity->getEntityTypeId()];
+    $members = $this->{$fieldname}->referencedEntities();
 
-    //echo 'Exchange::is_member'; print_r($members);die();
-    foreach ($members as $item) {
-      if ($item['target_id'] == $id) return TRUE;
+    foreach ($members as $account) {
+      if ($account->id() == $id) return TRUE;
     }
     return FALSE;
   }
@@ -279,7 +284,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   /**
    * {@inheritdoc}
    */
-  static function referenced_exchanges(ContentEntityInterface $entity = NULL, $enabled = FALSE, $open = FALSE) {
+  static function referenced_exchanges(ContentEntityInterface $entity = NULL, $enabled = TRUE, $open = FALSE) {
     $exchanges = array();
     if (is_null($entity)) {
       $entity = User::load(\Drupal::currentUser()->id());
@@ -290,21 +295,39 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       $exchanges[$entity->id()] = $entity;
     }
     else{
-      $fieldnames = get_exchange_entity_fieldnames();
+      $fieldnames = Exchange::getEntityFieldnames();
       if ($fieldname = @$fieldnames[$entity_type]) {
-        //TODO I wouldn't be surprised if there was a better way to iterate through these
-        foreach($entity->get($fieldname)->getValue(TRUE) as $item) {
-          if ($item['entity']) {//an empty $item means the exchangeItemList is empty
-            if (($enabled && !$item['entity']->status->value) ||
-            ($open && !$item['entity']->open->value)) {
-              continue;
-            }
-            $exchanges[$item['target_id']] = $item['entity'];
+        foreach($entity->{$fieldname}->referencedEntities() as $entity) {
+          //exclude disabled exchanges
+          if (($enabled && !$entity->status->value) || ($open && !$entity->open->value)) {
+            continue;
           }
+          $exchanges[$entity->id()] = $entity;
+
         }
       }
     }
     return $exchanges;
+  }
+
+
+  /**
+   * {@inheritdoc}
+   * @todo is it worth caching this? cache would be cleared whenever fieldInfo changes
+   */
+  static function getEntityFieldnames() {
+    static $types = array();
+    if (empty($types)) {
+      //get all the instances of these fields
+      $field_defs = entity_load_multiple_by_properties('field_storage_config', array('type' => 'entity_reference'));
+      unset($field_defs['mcapi_transaction.exchange']);
+      foreach ($field_defs as $field) {
+        if ($field->settings['target_type'] == 'mcapi_exchange') {
+          $types[$field->entity_type] = $field->name;
+        }
+      }
+    }
+    return $types;
   }
 
 }

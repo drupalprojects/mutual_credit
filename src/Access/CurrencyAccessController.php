@@ -38,7 +38,6 @@ class CurrencyAccessController extends EntityAccessController {
   }
 
   function deletable($mcapi_currency) {
-    if (\Drupal::config('mcapi.misc')->get('indelible'))return FALSE;
     $all_transactions = $mcapi_currency->transactions(array('state' => 0));
     $deleted_transactions = $mcapi_currency->transactions(array('state' => 0));
     return $all_transactions == $deleted_transactions;

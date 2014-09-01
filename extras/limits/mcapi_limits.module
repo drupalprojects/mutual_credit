@@ -15,17 +15,18 @@ use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
  * NB. the accounting_validate hook is only run when a transaction is inserted:
  * It only checks against transactions in a POSITIVE state i.e. counted transactions.
  *
- * @param TransactionInterface[] $cluster
+ * @param array $cluster
+ *   a flattened transaction presented as an array of McapiTransactionInterface objects
  *
  * @return ViolationInterface[]
  */
-function mcapi_limits_mcapi_transaction_validate(array $cluster) {
+function mcapi_limits_mcapi_transaction_validate(array $clusters) {
   //only validate if there are no fatal errors yet
   //i.e. no exceptions on the first transaction in the cluster
   //print_R(reset($cluster)->mcapiExceptions);die('mcapi_limits_mcapi_transaction_validate should show violations');
-  if (reset($cluster)->mcapiExceptions) return;
+  if (reset($clusters)->mcapiExceptions) return;
   module_load_include('inc', 'mcapi_limits');
-  return _mcapi_limits_mcapi_transaction_validate($cluster);
+  return _mcapi_limits_mcapi_transaction_validate($clusters);
 }
 
 /**

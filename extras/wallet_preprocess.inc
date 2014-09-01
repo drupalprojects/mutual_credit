@@ -120,7 +120,7 @@ function template_preprocess_wallet_summary(&$vars) {
 }
 
 function template_preprocess_wallet_summary_currency(&$vars) {
-  $vars['url'] = url('wallet/'.$vars['wallet']->id().'/'.$vars['currency']->id());
+  $vars['url'] = url('wallet/'.$vars['wallet']->id().'/inex/'.$vars['currency']->id());
   $vars += $vars['wallet']->getStats($vars['currency']->id());
   $vars['balance'] = $vars['currency']->format($vars['balance'], TRUE);
 }

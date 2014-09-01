@@ -1,7 +1,7 @@
-id: undo
-title: Undo
-tooltip: The administrator will still be able to access the transaction
-page_title: 'Really undo this transaction?'
+id: delete
+title: Delete
+tooltip: Remove the transaction from the database
+page_title: 'Really erase this transaction?'
 format: certificate
 twig: ''
 button: 'Yes I''m sure'
@@ -15,19 +15,19 @@ access:
     admin: admin
     payer: 0
     payee: 0
-    manager: 0
+    manager: manager
     helper: 0
   pending: 
     admin: admin
     payer: 0
     payee: 0
-    manager: 0
+    manager: manager
     helper: 0
-  undone: { }
+  undone: 
+    admin: admin
+    payer: 0
+    payee: 0
+    manager: manager
+    helper: 0
 status: true
 weight: 5
-
-send: 1
-subject: 'Transaction [mcapi:serial] was deleted'
-body: "Dear [user:name],\r\n"
-cc: carboncopy@drupal.org

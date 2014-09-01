@@ -119,6 +119,16 @@ mcapi.admin.workflow:
   options:
     _admin_route: TRUE
 
+mcapi.admin.workflow.flip:
+  path: '/admin/accounting/workflow/{transition}/flip'
+  defaults:
+    _form: '\Drupal\mcapi\Form\TransitionFlip'
+    _title_callback: '\Drupal\mcapi\Form\TransitionFlip::title'
+  requirements:
+    _permission: 'configure mcapi'
+  options:
+    _admin_route: TRUE
+
 mcapi.workflow_settings:
   path: '/admin/accounting/workflow/{transition}'
   defaults:

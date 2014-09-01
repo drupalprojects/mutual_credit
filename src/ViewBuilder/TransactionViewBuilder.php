@@ -140,3 +140,12 @@ class TransactionViewBuilder extends EntityViewBuilder {
   }
 
 }
+
+//shows the most common transitions
+//TODO this is used only once so could be incorporated
+function show_transaction_transitions($view = TRUE) {
+  $exclude = array('create');
+  if (!$view) $exclude[] = 'view';
+  return \Drupal::service('mcapi.transitions')->active($exclude);
+}
+

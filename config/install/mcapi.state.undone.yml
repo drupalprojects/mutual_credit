@@ -1,5 +1,0 @@
-id: undone
-label: Undone
-description: Erased or deleted, according to the 'indelible' setting.
-module: mcapi
-counted: false

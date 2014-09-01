@@ -64,11 +64,10 @@ class Worth extends FormElement {
         $element['#default_value'][] = array('curr_id' => $curr_id, 'value' => $blank);
       }
     }
-
     if (empty($element['#default_value'])) {
       drupal_set_message('No currencies have been specified in the worth field.', 'error');
     }
-    //sort the currencies by weight.
+    //TODO sort the currencies by weight.
     return $element;
   }
 
@@ -110,22 +109,22 @@ class Worth extends FormElement {
           //then we ignore the options and use the numeric sub-widget
           if (isset($options) && array_key_exists(@$parts[$i], $options)) {
             $element[$curr_id][$i] += array(
-                '#type' => 'select',
-                '#options' => $options
+              '#type' => 'select',
+              '#options' => $options
             );
           }
           else {
             $size = strlen($component);
             $element[$curr_id][$i] += array(
-                '#type' => $element['#config'] ? 'textfield' : 'number',
-                '#max' => $i == 1 ? pow(10, strlen($component))-1 : $component,//first component matters only for the num of digits
-                '#min' => 0,
-                '#step' => $step,
-                '#size' => $size,//no effect in opera
-                '#max_length' => $size,
-                //the size needs to be larger because the widget spinners take up space
-                //TODO find out what's going on with the browsers. We want the number field for its validation but the spinners are really bad
-                '#attributes' => array('style' => 'width:'. ($size) .'em;'),
+              '#type' => $element['#config'] ? 'textfield' : 'number',
+              '#max' => $i == 1 ? pow(10, strlen($component))-1 : $component,//first component matters only for the num of digits
+              '#min' => 0,
+              '#step' => $step,
+              '#size' => $size,//no effect in opera
+              '#max_length' => $size,
+              //the size needs to be larger because the widget spinners take up space
+              //TODO find out what's going on with the browsers. We want the number field for its validation but the spinners are really bad
+              '#attributes' => array('style' => 'width:'. ($size) .'em;'),
             );
             if ($element['#config']) {
               if (array_key_exists('#placeholder', $element)) {
@@ -182,3 +181,4 @@ class Worth extends FormElement {
     //be aware that the child widgets will add to this and then be cleaned up in mcapi_worth_element_validate
     return $output;
   }
+}

@@ -96,6 +96,7 @@ class WorthFieldItemList extends FieldItemList {
   /**
    * undocumented
    * used in function intertrading_new_worths()
+   * @todo tidy this up
    */
   public function curr_ids() {
     foreach ($this->list as $item) {
@@ -103,9 +104,11 @@ class WorthFieldItemList extends FieldItemList {
     }
     return $curr_ids;
   }
+
   /**
    * undocumented
    * used in function intertrading_new_worths()
+   * @todo tidy this up
    */
   public function val($curr_id) {
     foreach ($this->list as $item) {

@@ -47,6 +47,7 @@ use Drupal\user\UserInterface;
  *   }
  * )
  */
+
 class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwnerInterface {
 
   //configEntity ids are usually strings, but this must be numeric because it is used as a fieldListItems key
@@ -59,6 +60,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   public $zero;
   public $color;
   public $weight;
+  public $deletion;
   public $ticks; //exchange rate, expressed in ticks.
 
   function __construct($values) {
@@ -76,6 +78,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       'zero' => FALSE,
       'color' => '000',
       'ticks' => 1,
+      'deletion' => array('erase' => 'erase'),
       'weight' => 0,
       'uid' => \Drupal::CurrentUser()->id() ? : 1
     );
@@ -124,19 +127,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       ->getStorage('mcapi_transaction')
       ->volume($this->id());
   }
-
-  /**
-   * @see \Drupal\mcapi\Entity\CurrencyInterface::delete()
-   */
-  public function delete() {
-    if ($num = $this->transactions()) {
-      drupal_set_message(t('Before the currency can be deleted, @num transactions must be deleted from the database.', array('@num' => $num)) .' '.
-        t('Use drush-wipeslate or edit the database manually'), 'error');
-      return;
-    }
-    parent::delete();
-  }
-
 
   /**
    * {@inheritdoc}
@@ -296,9 +286,12 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     return $this->EntityManager()->getStorage('mcapi_exchange')->using_currency($this);
   }
 
-
-  static function user(AccountInterface $account = NULL, $status = FALSE, $ticks = FALSE) {
-    return exchange_currencies(Exchange::referenced_exchanges($account, $status), $ticks);
+  /**
+   * {@inheritdoc}
+   */
+  static function user(AccountInterface $account = NULL) {
+    $exchanges = Exchange::referenced_exchanges($account, TRUE);
+    return exchange_currencies($exchanges, $ticks);
   }
 
 }

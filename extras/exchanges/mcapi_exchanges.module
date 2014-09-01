@@ -1,5 +1,38 @@
 <?php
 
+use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Entity\TransactionInterface;
+use Drupal\mcapi\Entity\WalletInterface;
+
+/**
+ * implements hook_modules_uninstalled().
+ * THIS ISN"T RUNNING move to mcapi_exchanges_uninstall
+ *
+ * @todo move to .install file, which in alpha14 isn't included
+ */
+function mcapi_exchanges_uninstall() {
+//  if (in_array('mcapi_exchanges', $modules)) {
+    //delete all transactions
+    module_load_install('mcapi_tester');
+    mcapi_tester_delete_transactions();
+    //delete all the provided currencies
+    foreach (Currency::loadMultiple(array('pp', 'mm', 'ss', 'jj')) as $currency) {
+      $currency->delete();
+    }
+    //delete all exchanges except 1
+    foreach (Exchange::loadMultiple() as $exchange) {
+      if ($exchange->id() > 1) {
+        $exchange->delete();
+      }
+    }
+
+    put_users_in_exchanges();
+    echo 'Removed all testing currencies and exchanges.';
+    drupal_set_message('Removed all testing currencies and exchanges.');
+//  }
+}
 
 /**
  * implements hook_entity_info_alter().
@@ -13,22 +46,21 @@ function mcapi_exchanges_entity_type_alter(array &$entity_types) {
   $e->setFormClass("delete", "Drupal\mcapi_exchanges\Form\ExchangeDeleteConfirm");
   $e->setFormClass("enable", "Drupal\mcapi_exchanges\Form\ExchangeEnableConfirm");
   $e->setFormClass("disable", "Drupal\mcapi_exchanges\Form\ExchangeDisableConfirm");
-  $e->setLinkClass("canonical", "mcapi.exchange.view");
-  $e->setLinkClass("edit-form", "mcapi.exchange.edit");
-  $e->setLinkClass("admin-form", "mcapi.admin_exchange_list");
-  $e->setLinkClass("delete-form", "mcapi.exchange.delete_confirm");
-  $e->setLinkClass("enable", "mcapi.exchange.enable_confirm");
-  $e->setLinkClass("disable", "mcapi.exchange.disable_confirm");
+  $e->setLinkTemplate("canonical", "mcapi.exchange.view");
+  $e->setLinkTemplate("edit-form", "mcapi.exchange.edit");
+  $e->setLinkTemplate("admin-form", "mcapi.admin_exchange_list");
+  $e->setLinkTemplate("delete-form", "mcapi.exchange.delete_confirm");
+  $e->setLinkTemplate("enable", "mcapi.exchange.enable_confirm");
+  $e->setLinkTemplate("disable", "mcapi.exchange.disable_confirm");
 
-  $e->setViewBuilderClass('view_builder', "Drupal\mcapi_exchanges\ExchangeViewBuilder");
-  $e->setAccessClass('access', "Drupal\mcapi_exchanges\ExchangeAccessController");
-  $e->setListbuilderClass('list_builder', "Drupal\mcapi_exchanges\ExchangeListBuilder");
+  $e->setViewBuilderClass("Drupal\mcapi_exchanges\ExchangeViewBuilder");
+  $e->setAccessClass("Drupal\mcapi_exchanges\ExchangeAccessController");
+  $e->setListbuilderClass("Drupal\mcapi_exchanges\ExchangeListBuilder");
 }
 
 
 function mcapi_exchanges_menu_links_discovered_alter(&$definitions) {
   unset($definitions['mcapi.exchange.masspay']);
-
 }
 
 /**
@@ -53,26 +85,26 @@ function mcapi_exchanges_entity_extra_field_info() {
  * adds extra_fields to the exchange
  */
 function mcapi_exchanges_mcapi_exchange_view(&$build, $entity, $mode, $language) {
-
   $count = db_select("user__exchanges", 'e')->fields('e', array('entity_id'))
   ->condition('exchanges_target_id', $entity->id())
   ->countQuery()->execute()->fetchField();
   $build['members_link'] = array(
-      '#type' => 'item',
-      '#title' => t('@count members', array('@count'=> $count)),
-      'link' => array(
-          '#type' => 'link',
-          '#title' => t('Show members'),
-          '#href' => 'exchange/'.$entity->id().'/members',
-          //maybe instead put a view with the last five members here
-          '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
-      )
+    '#type' => 'item',
+    '#title' => t('@count members', array('@count'=> $count)),
+    'link' => array(
+      '#type' => 'link',
+      '#title' => t('Show members'),
+      '#href' => 'exchange/'.$entity->id().'/members',
+      //maybe instead put a view with the last five members here
+      '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
+    )
   );
   //get all the wallets in this exchange
   $wids = \Drupal\mcapi\Storage\WalletStorage::filter(array('exchanges' => array($entity->id())));
   //get all the transactions in those wallets
   $serials = $wids ?
-  \Drupal\mcapi\Storage\TransactionStorage::filter(array('involving' => $wids)) : array();
+  \Drupal\mcapi\Storage\TransactionStorage::filter(array('involving' => $wids)) :
+  array();
 
   $build['transactions_link'] = array(
     '#type' => 'item',
@@ -85,4 +117,228 @@ function mcapi_exchanges_mcapi_exchange_view(&$build, $entity, $mode, $language)
       '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
     )
   );
+}
+
+
+/**
+ * get the exchanges a transaction and its children are in.
+ * Children may be in a different exchange to their parents
+ *
+ * @param Drupal\mcapi\Entity\Transaction $transaction
+ *   A single transaction entity, (with no children)
+ *
+ * @todo check that we actually have a good use for this function. SHould it return ids or entities?
+ *
+ * @return integer[]
+ *   the first value will be the parent transaction exchange ID
+ */
+function mcapi_transaction_get_exchanges(Transaction $transaction) {
+  foreach ($transaction->flatten() as $t) {
+    //generally we only need one, so take the first
+    $exchanges[] = $t->exchange->target_id;
+  }
+  return exchanges;
+}
+
+/**
+ * implements hook_mcapi_transaction_alter().
+ * identify which exchange a transaction was in.
+ */
+function mcapi_exchanges_mcapi_transaction_alter($transaction) {
+  $violations = array();
+  $transaction->payer_currencies_available = array_keys($transaction->payer->entity->currencies_available());
+  $transaction->payee_currencies_available = array_keys($transaction->payee->entity->currencies_available());
+  foreach ($transaction->worth->getValue() as $item) {
+    $transaction->curr_ids_required[] = $item['curr_id'];
+  }
+  if (empty($transaction->curr_ids_required)) {
+    //this is because the currency is needed to help determine the exchange
+    throw new \Exception('New transactions must have a worth value by default');
+  }
+  //to determine the given currencies are shared between both users
+  $transaction->common_curr_ids = array_intersect($transaction->payer_currencies_available, $transaction->payee_currencies_available);
+  if (array_diff($transaction->curr_ids_required, $transaction->common_curr_ids)) {
+    //We have to check if a transaction is even possible.
+    //this means there is at least one currency in the transaction not common to both wallets' exchanges
+    //so the only way to do this transaction is with intertrading.
+    //That means we create a transaction between each wallet and its exchange's _intertrading wallet
+    //In effect the current transaction is altered and a child added
+    //Whichever wallet which can use all the currencies in the transaction is the 'source' wallet.
+    //In an intertrading split the source wallet takes the existing transactions
+    //The dest wallet takes the new (child) transaction and the converted currency values.
+
+    //Identify which wallet will use the current transaction
+    //and which wallet will use the new child transaction
+    $curr_ids_payer_cannot_see = array_diff($transaction->curr_ids_required, $transaction->payer_currencies_available);
+    if (!$curr_ids_payer_cannot_see) {
+      $transaction->source_participant = 'payer';
+      $transaction->dest_participant = 'payee';
+    }
+    else {
+      $curr_ids_payee_cannot_see = array_diff($transaction->curr_ids_required, $transaction->payee_currencies_available);
+      if (!$curr_ids_payee_cannot_see) {
+        $transaction->source_participant = 'payee';
+        $transaction->dest_participant = 'payer';
+      }
+      else {
+        echo "unable to get source and dest participants or intertrade";
+        echo "\n<br />payer wid: ".$transaction->get('payer')->value;
+        echo "\n<br />payee wid: ".$transaction->get('payee')->value;
+        echo '\n<br />curr_ids_required: '; print_R($transaction->curr_ids_required);
+        echo '\n<br />payee_currencies_available: '; print_R($transaction->payee_currencies_available);
+        //this should be a violation
+        $violations[] = array(
+          key($transaction->curr_ids_required),
+          t('Neither wallet has access to all the currencies specified in the transaction.')
+        );
+        return $violations;
+      }
+    }
+    //now find which of the leading wallet's parents' exchanges can access
+    //ALL the currencies in $transaction->worth
+    $found = FALSE;
+    $source_wallet = $transaction->{$transaction->source_participant}->entity;
+    foreach ($transaction->worth->getValue() as $item) {
+      $curr_ids[] = $item['curr_id'];
+    }
+
+    foreach($source_wallet->in_exchanges() as $exchange) {
+      $currencies = array();
+      foreach ($exchange->currencies->referencedEntities() as $currency) {
+        $currencies[$currency->id] = $currency;
+      }
+
+      if (array_diff($curr_ids, array_keys($currencies))) continue;//no currencies common to transaction and leading exchange
+      $transaction->source_exchange = $exchange;
+      break;
+    }
+
+    if (!$transaction->source_exchange) {
+      //this should be a violation
+      $violations[] = array(
+        key($transaction->curr_ids_required),
+        t(
+          'Wallet !wallet is not a member of an exchange that can intertrade with the requested currencies',
+          array('!wallet' => $source_wallet->label())
+        )
+      );
+      return $violations;
+    }
+
+    //we might want to abstract this into a plugin or something to allow
+    //different mechanisms for taking a commission. We would need much
+    //better separation between validation and generation
+    //This function adds new properties to the transaction
+    //$transaction->dest_exchange the id of the destination exchange
+    //$transaction->dest_worths the id of the destination exchange
+    $transaction->warnings = intertrading_new_worths($transaction, $transaction->{$transaction->dest_participant}->entity);
+    if ($warnings) {
+      //TODO are violations are warnings returned
+      return $warnings;
+    }
+    $new_transaction = clone($transaction);//since it hasn't been save there is no xid or serial number yet
+    $new_transaction->uuid->setValue(\Drupal::service('uuid')->generate());
+    $transaction->set($transaction->dest_participant, $transaction->source_exchange->intertrading_wallet()->id());
+    $new_transaction->set($transaction->source_participant, $transaction->dest_exchange->intertrading_wallet()->id());
+    $new_transaction->worth->setValue($transaction->dest_worths);
+    $transaction->children[] = $new_transaction;
+  }
+  else {
+    return $violations;
+    //TODO remove this diagnostic stuff
+    echo ('<br />Normal transaction - no intertrading...');
+    echo '<br />traders: '.$transaction->get('payer')->target_id.', '.$transaction->get('payee')->target_id;
+    echo '<br />payer_currencies_available '; print_r($transaction->payer_currencies_available);
+    echo '<br />payee_currencies_available '; print_r($transaction->payee_currencies_available);
+    echo '<br />required currs '; print_r($transaction->curr_ids_required);
+    echo '<br />common_curr_ids '; print_r($transaction->common_curr_ids);
+  }
+  return $violations;
+}
+
+
+/**
+ * Provide the new worthItemList array for an intertrading child transaction
+ * @param TransactionInterface $transaction
+ *
+ * @param WalletInterface $dest_wallet
+ *   The wallet in the remote exchange
+ * @return array
+ *   violation, keyed by fieldname
+ */
+function intertrading_new_worths(TransactionInterface $transaction, WalletInterface $dest_wallet) {
+  $source_curr_ids = $transaction->get('worth')->curr_ids();
+
+  //We need to identify a dest exchange whose intertrading wallet can be used
+  //which of the $dest_wallet's parent's exchanges is most suitable, if any?
+  //it must contain all the worth's currencies bar one.
+  foreach ($dest_wallet->in_exchanges() as $dest_exchange) {
+    $dest_exchange_currencies = exchange_currencies(array($dest_exchange));
+    $diff = array_diff_key(array_flip($source_curr_ids), $dest_exchange_currencies);
+    //diff is the currencies in worth which are not in the dest exchange
+    //if there is no diff, we shouldn't be intertrading but doing a straight transaction
+    if (!$diff) {
+      throw new Exception('Intertrading calculation is running when worth currencies are all matched');
+    }
+    if (count($diff) > 1) {
+      continue;//we won't attempt to convert more than one currency in a transaction
+    }
+    $source_currency_id = key($diff);
+    $source_ticks = Currency::load($source_currency_id)->ticks;
+    if (!$source_ticks) {//the one diff currency in this exchange is not intertradable
+      continue;
+    }
+    //when we have found a suitable exchange, stop looping because we need the variables above
+    $found = TRUE;
+    break;
+  }
+  if (!isset($found)) {
+    return array(
+      $source_currency_id,
+      //this string is identical to another
+      t('There is no way to intertrade this currency between these wallets')
+    );
+  }
+  $transaction->dest_exchange = $dest_exchange;
+  //so now we have our dest $exchange, a list of $exchange_currencies in it
+  //get the first tradable currency in the exchange which isn't one of the other worth values.
+  foreach ($dest_exchange_currencies as $dest_currency) {
+    if ($dest_currency->ticks) continue;
+    unset($dest_currency);
+    break;
+  }
+  if (!isset($dest_currency)) {
+    return array(
+      $source_currency_id,
+      //this string is identical to another
+      t('The destination exchange has no tradable currency.')
+    );
+  }
+
+  //now add the dest value
+  //conversion may not be exact
+  $dest_worths[] = array(
+    'curr_id' => $dest_currency->id(),
+    'value' => floor($dest_currency->ticks / $source_ticks * $transaction->worth->val($source_currency_id))
+  );
+  $transaction->dest_worths = $dest_worths;
+  return array();//no problems
+}
+
+/**
+ * implements hook_ENTITY_TYPE_delete().
+ * Remove references to exchanges
+ * TODO surely entity reference deletion should happen automatically??
+ */
+function mcapi_exchanges_mcapi_exchange_delete($exchange) {
+  foreach (Exchange::getEntityFieldnames() as $entity_type => $fieldname) {
+    db_delete($entity_type.'__'.$fieldname)
+      ->condition($fieldname.'_target_id', $exchange->id())
+      ->condition('entity_id', 1, '>')
+      ->execute();
+    db_delete($entity_type.'_revision__'.$fieldname)
+      ->condition($fieldname.'_target_id', $exchange->id())
+      ->condition('entity_id', 1, '>')
+      ->execute();
+  }
 }

@@ -58,10 +58,6 @@ class ExchangeAccessController extends EntityAccessController {
       $exchange->reason = t('Exchange must be disabled');
       return FALSE;
     }
-    if (\Drupal::config('mcapi.misc')->get('indelible')) {
-      $exchange->reason = t("Indelible Accounting flag is enabled.");
-      return FALSE;
-    }
     if (count($exchange->intertrading_wallet()->history())) {
       $exchange->reason = t('Exchange intertrading wallet has transactions');
       return FALSE;

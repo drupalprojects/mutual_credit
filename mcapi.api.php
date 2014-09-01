@@ -26,7 +26,7 @@ function hook_mcapi_info_drupal_permissions(){}
  * $param TransactionInterface $transaction
  *   this CAN be edited
  */
-function hook_mapi_transaction_validate($transaction){}
+function hook_mcapi_transaction_validate($transaction){}
 
 /**
  * generate the $transaction->children
@@ -36,7 +36,7 @@ function hook_mapi_transaction_validate($transaction){}
  * @return array
  *   an array of transactions to be put in the $children property
  */
-function hook_mapi_transaction_children($transaction){}
+function hook_mcapi_transaction_children($transaction){}
 
 /**
  * alter the $transaction->children
@@ -45,22 +45,35 @@ function hook_mapi_transaction_children($transaction){}
  * $param TransactionInterface $transaction
  *   Editing this will have no effect
  */
-function hook_mapi_transaction_children_alter($children, $cloned_transaction){}
+function hook_mcapi_transaction_children_alter($children, $cloned_transaction){}
 
 /**
  * Let other modules respond to a transaction transition
  *
  * @param $transaction
+ *   the Transaction entity
+ *
  * @param $context
  *   an array consisting of op: the transition plugin name; old_state: the state before the transition happened; config: the plugin configuration;
+ *
  * @return array
  *   permission array as in hook_permission
  */
-function hook_mapi_transaction_operated($transaction, $context){
-
+function hook_mcapi_transition($transaction, $context){
+  $subject = $context['config']['subject'];
+  $body = $context['config']['body'];
+  if ($subject || $body) {
+    $params += array(
+        'subject' => $subject,
+        'body' => $body,
+        'cc' => $context['config']['cc'],
+        'transaction' => $this
+    );
+    drupal_mail('mcapi', 'transition', $to = '???', $language->language, $params);
+  }
 }
 
-/*
+/**
  *
  * Retrieves transaction summary data for a user in a given currency
  *
@@ -80,9 +93,6 @@ function hook_mapi_transaction_operated($transaction, $context){
 //not implemented yet
 $account->getTradeSummary();
 
-/*
- *
- */
 
 /**
  * Viewing a transaction
@@ -100,7 +110,7 @@ entity_view($transaction, 'some arbitrary twig {{ payee }}');
  * Each transition triggers a transaction update event
  */
 
-/*
+/**
  * Worth element
  * a drupal element #type => worth contains MANY transaction flows in different currencies.
  * for an
@@ -136,7 +146,7 @@ array(
   )
 );
 
-/*
+/**
  * Worth fieldType
  * It is commonly used as an array so that the application natively handles transactions with multiple currencies (mixed transactions)
  * This datatype is hard coded to the transaction as an FieldAPI ItemList, allowing many values in one entity.

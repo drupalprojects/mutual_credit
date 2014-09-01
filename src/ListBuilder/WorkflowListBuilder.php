@@ -22,9 +22,10 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
 
   public function buildHeader() {
     return array(
-      'name' => t('Name'),
+      'name' => t('Transition'),
       'description' => t('Description'),
       'operations' => t('Link'),
+      'flip' => '',
       'weight' => t('Weight'),
     );
   }
@@ -52,11 +53,42 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
       'operations' => array(
         '#markup' => $this->l($this->t('Settings'), 'mcapi.workflow_settings', array('transition' => $id))
       ),
+      'flip' => array(
+        '#markup' => l(t('Disable'), 'admin/accounting/workflow/'. $id .'/flip'),
+      ),
       'weight' => array(
         '#type' => 'weight',
         '#title' => t('Weight for @title', array('@title' => $transition->label)),
         '#title_display' => 'invisible',
         '#default_value' => $config['weight'],
+        '#attributes' => array('class' => array('weight')),
+      ),
+    );
+  }
+  public function disabledRow($transition) {
+    $id = $transition->getPluginId();
+
+    $config = $transition->getConfiguration();
+    return array(
+      '#weight' => 100,
+      '#attributes' => array('class' => array('draggable')),
+      'name' => array(
+        '#markup' => $config['title']
+      ),
+      'description' => array(
+        '#markup' => $transition->description
+      ),
+      'operations' => array(
+        '#markup' => $this->t('Disabled'),
+      ),
+      'flip' => array(
+        '#markup' => l(t('Enable'), 'admin/accounting/workflow/'. $id .'/flip')
+      ),
+      'weight' => array(
+        '#type' => 'weight',
+        '#title' => t('Weight for @title', array('@title' => $transition->label)),
+        '#title_display' => 'invisible',
+        '#default_value' => 100,
         '#attributes' => array('class' => array('weight')),
       ),
     );
@@ -75,11 +107,17 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
         ),
       ),
     );
-    foreach (transaction_transitions() as $id => $plugin) {
-      //TODO remove edit from this OR make the edit plugin work
-      if ($id == 'create' || $id == 'edit') continue;//empty rows break the tabledrag.js
-      $form['plugins'][$id] = $this->buildRow($plugin);
+    foreach (\Drupal::service('mcapi.transitions')->all() as $id => $plugin) {
+      if ($id == 'create') continue;
+      if ($plugin->getConfiguration('status')) {
+        $form['plugins'][$id] = $this->buildRow($plugin);
+      }
+      else {
+        //TODO put a submit button here
+        $form['plugins'][$id] = $this->disabledRow($plugin);
+      }
     }
+
     uasort($form['plugins'], array('\Drupal\Component\Utility\SortArray', 'sortByWeightProperty'));
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = array(
@@ -98,7 +136,6 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $plugins = transaction_transitions();
     $values = $form_state->getValues();
     foreach ($values['plugins'] as $id => $value) {
       \Drupal::config('mcapi.transition.'.$id)
@@ -124,7 +161,6 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     }
     $output .= "\n<dl>".implode("\n", $types) . "</dl>\n";
 
-    $output .= "\n<h4>".t('Transitions')."</h4>\n";
     return array('#markup' => $output);
   }
 }

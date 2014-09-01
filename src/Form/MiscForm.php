@@ -38,14 +38,6 @@ function __construct(ConfigFactoryInterface $config_factory) {
       '#default_value' => $config->get('sentence_template'),
       '#weight' => 2
     );
-
-    $form['indelible'] = array(
-      '#title' => t('Indelible accounting'),
-      '#description' => t('Ensure that transactions, exchanges and currencies are not deleted.'),
-      '#type' => 'checkbox',
-      '#default_value' => $config->get('indelible'),
-      '#weight' => 6
-    );
     $form['ticks_name'] = array(
       '#title' => t('Base Unit'),
       '#description' => t('Plural name of the base unit, used for intertrading.'),
@@ -105,11 +97,11 @@ function __construct(ConfigFactoryInterface $config_factory) {
       '#options' => mcapi_entity_label_list('mcapi_state'),
       '#default_value' => $config->get('counted'),
       '#weight' => 14,
-      'done' => array(
+      TRANSACTION_STATE_FINISHED => array(
     	  '#disabled' => TRUE,
         '#value' => TRUE,
       ),
-      'undone' => array(
+      TRANSACTION_STATE_ERASED => array(
     	  '#disabled' => TRUE,
         '#value' => FALSE,
       )
@@ -147,7 +139,6 @@ function __construct(ConfigFactoryInterface $config_factory) {
       ->set('worths_delimiter', $values['worths_delimiter'])
       ->set('child_errors', $values['child_errors'])
       ->set('counted', $values['counted'])
-      ->set('indelible', $values['indelible'])
       ->save();
 
     parent::submitForm($form, $form_state);

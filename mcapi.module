@@ -10,6 +10,7 @@ use Drupal\Core\Utility\Token;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
+use Drupal\mcapi\Plugin\Transition\TransitionInterface;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\ExchangeInterface;
 use Drupal\mcapi\Entity\Currency;
@@ -19,22 +20,23 @@ use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\Entity\Exchange;
 use Drupal\Component\Utility\NestedArray;
+use Drupal\user\EntityOwnerInterface;
+
+//states are mutually exclusive //is it appropriate to use constants for plugin names?
+const TRANSACTION_STATE_FINISHED = 'done';
+const TRANSACTION_STATE_ERASED = 'erased';
 
 //we could maybe do without these
-define('CURRENCY_TYPE_ACKNOWLEDGEMENT', 'acknowledgement');
-define('CURRENCY_TYPE_EXCHANGE', 'exchange');
-define('CURRENCY_TYPE_COMMODITY', 'commodity');
-
-//states are mutually exclusive
-define('TRANSACTION_STATE_FINISHED', 'done');
-define('TRANSACTION_STATE_UNDONE', 'undone');
+const CURRENCY_TYPE_ACKNOWLEDGEMENT = 'acknowledgement';
+const CURRENCY_TYPE_EXCHANGE = 'exchange';
+const CURRENCY_TYPE_COMMODITY = 'commodity';
 
 //negative numbers are used here, and positive numbers represetn uids in the db
-define('WALLET_ACCESS_OWNER', 'o');//this is replaced with a named user
-define('WALLET_ACCESS_EXCHANGE', 'e');
-define('WALLET_ACCESS_AUTH', '2');
-define('WALLET_ACCESS_ANY', '1');
-define('WALLET_ACCESS_USERS', 'u');
+const WALLET_ACCESS_OWNER =  'o';//this is replaced with a named user
+const WALLET_ACCESS_EXCHANGE = 'e';
+const WALLET_ACCESS_AUTH = '2';
+const WALLET_ACCESS_ANY = '1';
+const WALLET_ACCESS_USERS = 'u';
 
 /**
  * implements hook_requirements().
@@ -69,6 +71,7 @@ function mcapi_help($route_name) {
       return implode(' ', array(
         t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.'),
         t('Retired currencies can no longer be used, but transactions are still visible.'),
+        t('Only unused currencies can be deleted.'),
       ));
     case 'mcapi.admin.workflow':
       return implode(' ', array(
@@ -77,38 +80,6 @@ function mcapi_help($route_name) {
       ));
   }
 }
-
-/**
- * get a transaction transition plugin or array of all plugins
- * N.B. transitions are NOT configurable entities, but plugins with a settings file each
- *
- * @param string $op_name
- *   the plugin id of the transition
- * @return $plugin or array of plugins
- *   depending on whether an op_name was passed
- * @todo allow transitions to be disabled to save processing.
- * @todo perhaps this function shoul be in the plugin manager?
- * @todo rename transitions to transitions because d8 now has entity transitions which are not configurable and not very extensible.
- */
-function transaction_transitions($op_name = NULL) {
-  //TODO when to use drupal_static and when to use drupal_static_fast?
-  $plugins = &drupal_static(__FUNCTION__, array());
-  if (empty($plugins)) {
-    $manager = \Drupal::service('plugin.manager.mcapi.transaction_transition');
-    $plugins = $manager->loadActive();
-  }
-  if ($op_name) return $plugins[$op_name];
-  else return $plugins;
-}
-
-//shows the most common transitions
-function show_transaction_transitions($view = TRUE) {
-  $ops = transaction_transitions();
-  unset($ops['create']);
-  if (!$view) unset($ops['view']);
-  return $ops;
-}
-
 
 /**
  * implements hook_permission().
@@ -165,26 +136,6 @@ function mcapi_form_alter(&$form, FormStateInterface $form_state, $form_id) {
 }
 
 /**
- * just gets the children and puts them side by side with the parent
- * Makes it easier to iterate through
- *
- * @param TransactionInterface $transaction
- *
- * @return array
- *   transactions with the cloned parent transaction first and children property removed
- */
-function mcapi_transaction_flatten(TransactionInterface $transaction) {
-  $clone = clone($transaction);
-  $flatarray = array($clone);
-  if (!empty($clone->children)) {
-    foreach ($clone->children as $child) {
-      $flatarray[] = $child;
-    }
-  }
-  return $flatarray;
-}
-
-/**
  * get a string suitable describing the states
  * @return string
  *   the label and description of every state.
@@ -198,7 +149,6 @@ function mcapi_get_state_descriptions() {
   return t('State explanations: @explanations', array('@explanations' => implode(' | ', $desc)));
 }
 
-
 /**
  * implements mcapi hook_mcapi_info_drupal_permissions().
  */
@@ -206,7 +156,7 @@ function mcapi_mcapi_info_drupal_permissions() {
   $perms = array(
     'create own wallets' => array(
       'title' => t('Create own wallets'),
-      'description' => t('Users can have as many wallets as they like.')
+      'description' => t('Users can create wallets up to the maximum number per user')
     ),
     'manage own exchanges' => array(
       'title' => t('Manage exchanges'),
@@ -236,13 +186,17 @@ function mcapi_mcapi_info_drupal_permissions() {
  */
 function mcapi_mail($key, &$message, $params) {
   if ($key == 'transition') {
-//    echo 'mcapi_mail seems to have no language';print_r(array_keys($message));print_r(array_keys($params));
+    $params += array(
+      'user' => \Drupal::currentUser(),
+      //'mcapi_transaction' => $transaction
+    );
     $options = array('language' => $message['langcode'], 'sanitize' => FALSE);
     $message['subject'] =  \Drupal::Token()->replace($params['subject'], $params, $options);
     $message['body'][] =  \Drupal::Token()->replace($params['body'], $params, $options);
     $message['headers']['cc'] = $params['cc'];
   }
 }
+
 
 
 /**
@@ -299,17 +253,43 @@ function mcapi_entity_label_list($entity_type_id, array $data = array()) {
 }
 
 /**
- * example implementation of hook_mcapi_transaction_operated().
+ * example implementation of hook_mcapi_transition().
  * This invokes rules, if installed, but can be used by any module
  *
  * @param TransactionInterface $transaction
+ * @param TransitionInterface $transition
  * @param array $context
  *   consists of op_plugin_id; config, the transition plugin configuration; old_state: the state of the transaction before the transition
  */
-function mcapi_mcapi_transaction_operated($transaction, $context) {
+function mcapi_mcapi_transition(TransactionInterface $transaction, TransitionInterface $transition, array $context) {
   //TODO invoke rules hook
   if (\Drupal::currentUser()->id() == 1) drupal_set_message('Ran hook_transaction_operated');
+  //example code
+  if (@$context['config']['send']) {
+    $recipients = array();
+    //mail is sent to the user owners of wallets, and to cc'd people
+    foreach (array('payer', 'payee') as $participant) {
+      $recipients[] = User::load($transaction->{$participant}->entity->user_id())->mail->value;
+    }
+    //with multiple recipients we have to choose one language
+    //just English for now bcoz rules will sort this out
+    if ($recipients) {
+      drupal_mail(
+      'mcapi',
+      'transition',
+      implode(',', $recipients),
+      'en',
+      array(
+      'mcapi' => $transaction,
+      'cc' => $context['config']['cc'],
+      'subject' => $context['config']['subject'],
+      'body' => $context['config']['body']
+      )
+      );
+    }
+  }
 }
+
 
 /**
  * implements_hook_element_info().
@@ -484,8 +464,9 @@ function mcapi_element_info_alter(&$items) {
  * //TODO an array of uuids whose keys I haven't understood yet
  */
 function mcapi_default_exchange_id(ContentEntityInterface $entity, $field_definition) {
+  if ($entity->getEntityTypeId == 'user' && $entity->id() == 0)drupal_set_message('putting user 0 in default exchange. Prevent this!');
   $output = array();
-  foreach (Exchange::referenced_exchanges($entity, TRUE) as $exchange) {
+  foreach (Exchange::referenced_exchanges(NULL, TRUE) as $exchange) {
     $output[]['target_uuid'] = $exchange->get('uuid')->value;
   }
   return $output;
@@ -505,11 +486,65 @@ function mcapi_default_exchange_id(ContentEntityInterface $entity, $field_defini
  * @return array
  *   uuids whose keys I haven't understood yet
  */
-function mcapi_default_currency_id(ExchangeInterface $entity, $field_definition) {
+function mcapi_default_currency_id(ExchangeInterface $exchange, $field_definition) {
   $output = array();
-  //temporary until we work out what the default should be.
-  $output[]['target_uuid'] = Currency::load('cc')->get('uuid');
+  //default currencies are the currencies of the exchanges of which the current user is a member
+  foreach (exchange_currencies(Exchange::referenced_exchanges(NULL, TRUE)) as $currency) {
+    $output[]['target_uuid'] = $currency->uuid;
+  }
   return $output;
+}
+
+/**
+ * entity reference field default_value callback for $transaction->exchange
+ * Find an appropriate exchange, considering that intertrading hasn't been calculated yet
+ *
+ * @return uuid[]
+ *   The uuid of the calculated exchange
+ */
+function mcapi_exchanges_default(TransactionInterface $entity, $field_definition) {
+  $common = mcapi_wallet_common_exchanges($entity->payer->entity, $entity->payee->entity);
+  if (!$common) {
+    $common = $entity->payer->entity->in_exchanges();
+  }
+  $output[]['target_uuid'] = reset($common)->uuid->value;
+  return $output;
+}
+
+//get all the exchanges common to 2 wallets
+//this is only used in the above...
+function mcapi_wallet_common_exchanges($wallet1, $wallet2) {
+  if (!is_object($wallet2)){mdump($wallet1);mtrace();}
+  return array_intersect_key($wallet1->in_exchanges(), $wallet2->in_exchanges());
+}
+
+/**
+ * Determine whether the system architecture allows an entity to hold wallets.
+ * Regardles of config
+ * @param unknown $entity_type
+ *   an entity OR entityType object
+ *
+ * @param string $bundle
+ *   bundlename, if the first arg is an entityType
+ *
+ * @return boolean | string
+ *   TRUE means the entity is an exchange, string is the fieldname
+ */
+function mcapi_wallet_owning_entity($entity, $bundle = '') {
+  if ($entity instanceOf \Drupal\Core\Entity\Entity) {
+    $entity_type = $entity->getEntityType();
+    $bundle = $entity->bundle();
+  }
+  else $entity_type = $entity;
+  $type_id = $entity_type->id();
+  if ($type_id == 'user') return 'exchanges';
+  elseif ($type_id == 'mcapi_exchange') return TRUE;
+  //because simply $entity_type->getClass() instanceOf EntityOwnerInterface doesn't work
+  $myReflection = new ReflectionClass($entity_type->getClass());
+  if ($myReflection->isSubclassOf('\Drupal\user\EntityOwnerInterface')) {
+    $fieldnames = Exchange::getEntityFieldnames();
+    return @$fieldnames[$entity_type->id()];
+  }
 }
 
 /**
@@ -519,36 +554,49 @@ function mcapi_default_currency_id(ExchangeInterface $entity, $field_definition)
 function mcapi_entity_insert($entity) {
   //note that intertrading wallets are created in Exchange::postSave
   if (\Drupal::config('mcapi.wallets')->get('autoadd')) {
-    $type = $entity->getEntityTypeId();
-    //NB autoadd applies to ALL entity types or to none
-    $maxes = \Drupal::config('mcapi.wallets')->get('entity_types');
-    if ($max = @$maxes[$type .':'. $entity->bundle()]) {
-      //no need to check what the max is, since this is the first wallet created for this entity
-      Wallet::create(array(
-        'entity_type' => $type,
-        'pid' => $entity->id(),
-        //default access controls are set automatically
-      ))->save();
+    if (mcapi_wallet_owning_entity($entity)) {
+      $type = $entity->getEntityTypeId();
+      //NB autoadd applies to ALL entity types or to none
+      $maxes = \Drupal::config('mcapi.wallets')->get('entity_types');
+      if ($max = @$maxes[$type .':'. $entity->bundle()]) {
+        //no need to check what the max is, since this is the first wallet created for this entity
+        Wallet::create(array(
+          'entity_type' => $type,
+          'pid' => $entity->id(),
+          //default access controls are set automatically
+        ))->save();
+      }
     }
   }
   if ($entity->getEntityTypeId() == 'mcapi_wallet') {
-    mcapi_save_wallet_index($entity);
+    mcapi_save_wallet_index($entity->getOwner());
   }
 }
 
+/**
+ * implements hook_ENTITY_TYPE_update().
+ */
 function mcapi_entity_update($entity) {
-  if ($entity->getEntityTypeId() == 'mcapi_wallet') {
+  if (mcapi_wallet_owning_entity($entity)) {
     mcapi_save_wallet_index($entity);
   }
 }
 
-function mcapi_save_wallet_index($wallet) {
-  //update the exchanges index
-  $query = db_insert('mcapi_wallet_exchanges_index')->fields(array('wid', 'exid'));
-  foreach (array_keys(Exchange::referenced_exchanges($wallet->getOwner())) as $exid) {
-    $query->values(array('wid' => $wallet->id(), 'exid' => $exid));
+function mcapi_save_wallet_index($owner) {
+  //TODO move the deletion into here
+  if ($wids = mcapi_get_wallet_ids($owner)) {
+    db_delete('mcapi_wallet_exchanges_index')
+      ->condition('wid', $wids)
+      ->execute();
   }
-  $query->execute();
+  //update the exchanges index
+  foreach ($wids as $wid) {
+    $query = db_insert('mcapi_wallet_exchanges_index')->fields(array('wid', 'exid'));
+    foreach (array_keys(Exchange::referenced_exchanges($owner)) as $exid) {
+      $query->values(array('wid' => $wid, 'exid' => $exid));
+    }
+    $query->execute();
+  }
 }
 
 /**
@@ -558,43 +606,19 @@ function mcapi_save_wallet_index($wallet) {
  */
 function mcapi_entity_delete($entity) {
   //see Exchange::preDelete();
-  if ($entity instanceof ContentEntityInterface && $exchanges = Exchange::referenced_exchanges($entity)) {
-    $exchange = current($exchanges);//if the parent entity was in more than one exchange, this will pick a random one to take ownership
-    if ($wids = \Drupal\mcapi\Storage\WalletStorage::getOwnedWalletIds($entity)) {
-      foreach (Wallet::loadMultiple($wids) as $wallet) {
-        $wallet->orphan($exchange);
-      }
-    }
-  }
-  elseif($entity->getEntityTypeId() == 'mcapi_wallet') {
-    db_delete('mcapi_wallet_exchanges_index')->condition('wid', $entity->id())->execute();
+  if (mcapi_wallet_owning_entity($entity)) {
+    Wallet::orphan($entity);
   }
 }
-
-
 
 /**
- * get a list of all the entity types which have an entity reference field pointing to mcapi_exchange
- *
- * @param string $type
- *   (optional) the name of the entity type
- *
- * @return array
- *   a mapping of entityTypeId to the name of the exchanges entity_reference
- *   field or the fieldname for the given entitytype
- *
- * @todo cache and static this. cache should be cleared whenever fieldInfo changes
+ * implements hook_ENTITY_TYPE_delete().
+ * updates the wallet exchanges index table when a wallet is deleted
  */
-function get_exchange_entity_fieldnames() {
-  $types = array();
-  //get all the instances of these fields
-  foreach (entity_load_multiple_by_properties('field_storage_config', array('type' => 'entity_reference')) as $field) {
-    if ($field->settings['target_type'] == 'mcapi_exchange') {
-      $types[$field->entity_type] = $field->name;
-    }
-  }
-  return $types;
+function mcapi_mcapi_wallet_delete($entity) {
+  db_delete('mcapi_wallet_exchanges_index')->condition('wid', $entity->id())->execute();
 }
+
 
 /**
  * get all the currencies from (common to) the given exchanges, sorted
@@ -612,13 +636,10 @@ function get_exchange_entity_fieldnames() {
 function exchange_currencies(array $exchanges, $ticks = FALSE) {
   $currencies = array();
   foreach ($exchanges as $exchange) {
-    //TODO is there a shorter way to iterate through these referenced entities
-    //like $exchange->get('currencies')->entity
-    foreach ($exchange->get('currencies')->getValue(TRUE) as $item) {
-      if (empty($item))continue;//this should never happen because an exchange can't have no currencies
-      $currency = $item['entity'];
-      if ($ticks && !$currency->ticks) continue;
-      $currencies[$item['target_id']] = $currency;
+    foreach ($exchange->get('currencies')->referencedEntities() as $currency) {
+      if (!$ticks || $currency->ticks) {
+        $currencies[$currency->id()] = $currency;
+      }
     }
   }
   uasort($currencies, array('\Drupal\Component\Utility\SortArray', 'sortByWeightProperty'));
@@ -653,7 +674,7 @@ function _mcapi_block_view_system_menu_block_alter(&$build, $block) {
     if (!array_key_exists('content', $build)) {
       $build['content'] = array();
     }
-    foreach (Exchange::referenced_exchanges(NULL, TRUE) as $exchange) {
+    foreach (Exchange::referenced_exchanges() as $exchange) {
       //does a menu link really require all of these properties
       $renderable = array(
       	'#theme' => 'menu_link',
@@ -697,23 +718,6 @@ function mcapi_entity_operation_alter(&$operations, $entity) {
 }
 
 /**
- * get the Transition links for a transaction
- * @param TransactionInterface $transaction
- * @param boolean $view_link
- *
- * @return array
- *   a renderable array
- */
-function mcapi_get_links(TransactionInterface $transaction, $view_link = FALSE) {
-  static $transactionViewBuilder;
-  if (!$transactionViewBuilder) {
-    $transactionViewBuilder = \Drupal::EntityManager()->getViewBuilder('mcapi_transaction');
-  }
-  return $transactionViewBuilder->renderLinks($transaction, 'sentence');
-}
-
-
-/**
  * Get all the wallet ids in given exchanges.
  * this can also be done with Wallet::filter() but is quicker.
  * maybe not worth it if this is only used once, in any case the index table is needed for views.
@@ -737,14 +741,30 @@ function mcapi_wallets_in_exchanges(array $exchange_ids) {
 /**
  * Delete all transaction entities
  * For development only!
- * @TODO move this to be a drush command
+ * @todo move this to be a drush command
  */
 function mcapi_wipeslate() {
   $conf = \Drupal::config('mcapi.misc');
-  $indelible = $conf->get('indelible');
-  $conf->set('indelible', TRUE)->save();
   $controller = \Drupal::entityManager()->getStorage('mcapi_transaction');
   $entities = $controller->loadMultiple();
-  $controller->delete($entities, TRUE);
-  $conf->set('indelible', $indelible)->save();
+  $controller->delete($entities);
+  echo 'all transactions deleted';
+}
+
+/**
+ * Implements hook_hook_info().
+ * @todo is it worth creating hook group and filename extension?
+ */
+function mcapi_hook_info() {
+  $hooks = array(
+    'mcapi_transaction_children',
+    'mcapi_transaction_validate',
+    'mcapi_transaction_alter',
+    'mcapi_transition',
+    //and all the entity hooks e.g
+    'mcapi_wallet_update',
+    'mcapi_wallet_delete'
+    //...there are many
+  );
+  return array('group' => 'mcapi') + array_combine($hooks, $hooks);
 }

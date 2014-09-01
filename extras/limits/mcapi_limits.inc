@@ -9,66 +9,65 @@ use Drupal\mcapi\Entity\Wallet;
  * transferred implementation of hook_mcapi_transaction_validate().
  * check that none of the wallets involved goes over its limits,
  * and add excecptions to the main transaction object when they do
- * @param array $cluster
- *   a flattened transaction presented as an array of McapiTransactionInterface objects
  */
-function _mcapi_limits_mcapi_transaction_validate($cluster) {
+function _mcapi_limits_mcapi_transaction_validate($clusters) {
   $errors = $messages = $violations = array();
   //first add up all the transactions
   //to exclude the current transactions from the sum of saved transactions
   //compare the resulting balances for each wallet with its limits
-  foreach (_transactions_diff($cluster) as $wid => $percurrency) {
-    $wallet = Wallet::load($wid);
-    foreach ($percurrency as $curr_id => $diffs) {
-      //check to see if any of the skips apply.
-      $currency = mcapi_currency_load($curr_id);
-      $plugin = mcapi_limits_saved_plugin($currency);
-      if ($plugin->id == 'none') continue;
-      //upgraded sites need to check for the presence of the skip property
-      $replacements = array('@currency' => $currency->name);
-      $config = $plugin->getConfiguration();
-      if ($config['skip']['user1'] && \Drupal::currentUser()->id() == 1) {
-        $messages[$curr_id] = t("Skipped @currency balance limit check because you are user 1.", $replacements);
-      }
-      elseif ($config['skip']['owner'] && \Drupal::currentUser()->id() == $currency->uid) {
-        $messages[$curr_id] = t("Skipped @currency balance limit check because you are the currency owner.", $replacements);
-      }
-      elseif ($config['skip']['auto'] && current($cluster)->type == 'auto') {
-        $messages[$curr_id] = t("Skipped balance limit checks for @currency.", $replacements);
-      }
-      elseif ($config['skip']['mass'] && current($cluster)->type == 'mass') {
-        $messages[$curr_id] = t("Skipped balance limit checks for @currency.", $replacements);
-      }
-      if ($messages) continue;
-      $summary = $wallet->getStats($curr_id);
-      $diff = array_sum($diffs);
-      $projected = $summary['balance'] + $diff;
-      $limits = mcapi_limits($wallet)->limits($curr_id);//TODO consider making this call more elegant
-      extract ($limits);//produces $min and $max
-      //we could send 'worth' values to the exception, but they are hard to work with
-      //instead we'll send the currency and the quantities
-      if ($diff > 0 && $projected > 0 && is_numeric($max) && $projected > $max) {
-        $errors[$wid][] = array(
-          'currency' => $currency,
-          'limit' => $max,
-          'projected' => $projected,
-          'excess' => $projected - $max,
-          'wallet' => $wallet
-        );
-      }
-      elseif ($diff < 0 && $projected < 0 && is_numeric($min) && $projected < $min) {
-        $errors[$wid][] = array(
-          'currency' => $currency,
-          'limit' => $min,
-          'projected' => $projected,
-          'excess' => $min - $projected,
-          'wallet' => $wallet
-        );
+  foreach ($clusters as $transaction){
+    foreach (_transactions_diff($transaction->flatten()) as $wid => $percurrency) {
+      $wallet = Wallet::load($wid);
+      foreach ($percurrency as $curr_id => $diffs) {
+        //check to see if any of the skips apply.
+        $currency = mcapi_currency_load($curr_id);
+        $plugin = mcapi_limits_saved_plugin($currency);
+        if ($plugin->id == 'none') continue;
+        //upgraded sites need to check for the presence of the skip property
+        $replacements = array('@currency' => $currency->name);
+        $config = $plugin->getConfiguration();
+        if ($config['skip']['user1'] && \Drupal::currentUser()->id() == 1) {
+          $messages[$curr_id] = t("Skipped @currency balance limit check because you are user 1.", $replacements);
+        }
+        elseif ($config['skip']['owner'] && \Drupal::currentUser()->id() == $currency->uid) {
+          $messages[$curr_id] = t("Skipped @currency balance limit check because you are the currency owner.", $replacements);
+        }
+        elseif ($config['skip']['auto'] && $transaction->type->target_id == 'auto') {
+          $messages[$curr_id] = t("Skipped balance limit checks for @currency.", $replacements);
+        }
+        elseif ($config['skip']['mass'] && $transaction->type->target_id == 'mass') {
+          $messages[$curr_id] = t("Skipped balance limit checks for @currency.", $replacements);
+        }
+        if ($messages) continue;
+        $summary = $wallet->getStats($curr_id);
+        $diff = array_sum($diffs);
+        $projected = $summary['balance'] + $diff;
+        $limits = mcapi_limits($wallet)->limits($curr_id);//TODO consider making this call more elegant
+        extract ($limits);//produces $min and $max
+        //we could send 'worth' values to the exception, but they are hard to work with
+        //instead we'll send the currency and the quantities
+        if ($diff > 0 && $projected > 0 && is_numeric($max) && $projected > $max) {
+          $errors[$wid][] = array(
+            'currency' => $currency,
+            'limit' => $max,
+            'projected' => $projected,
+            'excess' => $projected - $max,
+            'wallet' => $wallet
+          );
+        }
+        elseif ($diff < 0 && $projected < 0 && is_numeric($min) && $projected < $min) {
+          $errors[$wid][] = array(
+            'currency' => $currency,
+            'limit' => $min,
+            'projected' => $projected,
+            'excess' => $min - $projected,
+            'wallet' => $wallet
+          );
+        }
       }
     }
   }
   //all balance errors are on the main transaction and can stop.
-  $main_transaction = reset($cluster);
   if (count($errors)) {
     //reformat the errors
     foreach ($errors as $wid => $info) {
@@ -77,7 +76,7 @@ function _mcapi_limits_mcapi_transaction_validate($cluster) {
 
         $violation = new McapiLimitsException($vars['currency'], $vars['limit'], $vars['projected'], $vars['excess'], $vars['wallet']);
         //TODO uncomment this when we have the violations working properly
-        $violations[] = array('worth', (string)$violation);
+        $violations[] = (string)$violation;
       }
     }
   }

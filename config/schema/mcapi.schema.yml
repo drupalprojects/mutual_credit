@@ -58,9 +58,6 @@ mcapi.misc:
         show_messages:
           type: string
           label: Show warning messages to user
-    indelible:
-      type: string
-      label: Indelible accounting
 
 mcapi.wallets:
   type: mapping
@@ -139,7 +136,21 @@ mcapi.currency.*:
     ticks:
       type: float
       label: Ticks
-
+    deletion:
+      type: mapping
+      label: Delete options
+      mapping:
+        erase: 
+          type: boolean
+          label: Erase
+        delete: 
+          type: boolean
+          label: Delete
+#not implemented
+        reverse: 
+          type: boolean
+          label: Reverse
+        
 mcapi.state.*:
   type: mapping
   label: Transaction workflow state

@@ -270,8 +270,8 @@ class FirstPartyFormDesigner extends EntityForm {
 
     //ensure the worth field is showing all possible currencies ()
     if ($exchange) {//for the exchange
-      foreach($exchange->currencies->getValue(FALSE) as $item) {
-        $curr_ids[] = $item['target_id'];
+      foreach($exchange->currencies->referencedEntities() as $entity) {
+        $curr_ids[] = $entity->id();
       }
     }
     else {//or for the whole system

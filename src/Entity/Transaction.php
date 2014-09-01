@@ -8,6 +8,8 @@
 
 namespace Drupal\mcapi\Entity;
 
+const MCAPI_MAX_DESCRIPTION = 255;
+
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\FieldDefinition;
@@ -98,34 +100,105 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    */
   protected function urlRouteParameters($rel) {
     return array(
-      'mcapi_transaction' => $this->get('serial')->value
+      'mcapi_transaction' => $this->serial->value
     );
   }
 
+
   /**
+   * {@inheritdoc}
+   */
+  public function save() {
+    $this->moduleHandler = \Drupal::moduleHandler();
+    $this->preValidate();
+    $storage = $this->entityManager()->getStorage($this->entityTypeId);
+
+    $this->moduleHandler->alter('mcapi_transaction', $this);
+    if ($violations = $this->validate()) {
+      //TODO put all the violations in here, somehow
+      reset($violations);
+      //throw new McapiTransactionException(key($violations), current($violations)->getMessage());
+      throw new McapiTransactionException(key($violations), current($violations) );
+    }
+
+    return $storage->save($this);
+  }
+
+
+  public function prevalidate() {
+    $clone = clone($this);
+    $this->children = $this->moduleHandler->invokeAll('mcapi_transaction_children', array($clone));
+    unset($clone); //save memory coz validation could be intense!
+
+  }
+
+  /**
+   * Validate a transaction cluster i.e. a transaction with children
    *
-   * @throws mcapiTransactionException
-   * @return Ambigous <void, multitype:unknown >
+   * @return Violation[]
    */
   function validate() {
     //all this does is check the field values against the field definitions.
     //Don't know how to include the worth field in that
     $violations = array();
-    $warnings = array();
     if ($this->isNew()) {
-      $this->state->setValue($this->type->entity->start_state);
-
-      $violations += $this->validateNew();
-      //for transactions created in code, this is the best place to throw
-      if ($warnings) {
-        $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
-        if (!$child_errors['allow']) {
-          throw new mcapiTransactionException(key($warnings), implode(' ', $warnings));
-        }
+      //check that the uuid doesn't already exist. i.e. that we are not resubmitting the same transactions
+      $properties = array('uuid' => $this->get('uuid')->value);
+      if (entity_load_multiple_by_properties('mcapi_transaction', $properties)) {
+        $violations['uuid'] = t('Transaction has already been inserted: @uuid', array('@uuid' => $this->uuid->value));
+      }
+      //ensure the transaction is in the right starting state
+      $start_state_id = $this->type->entity->start_state;
+      $this->state->setValue($start_state_id);
+      foreach ($this->children as $transaction) {
+        $transaction->state->setValue($start_state_id);
+        $transaction->parent->value = -1;//this will be set after the parent is saved
       }
     }
-    //validate is being broken by the timedate field in alpha11
-    //$violations = parent::validate();
+    $transactions = $this->flatten();//NB $transactions contains clones of the $this
+    $violations = self::validateTransaction(array_shift($transactions));
+    $child_warnings = array();
+    foreach ($transactions as $transaction) {
+      $child_warnings += self::validateTransaction($child);
+    }
+
+    //note that this validation cannot change the original transaction because a clone of it is passed
+    $violations += $this->moduleHandler->invokeAll('mcapi_transaction_validate', array(array(clone($this))));
+
+    if ($warnings = array_filter($child_warnings)) {
+      $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
+
+      foreach ($warnings as $e) {
+        if (!$child_errors['allow']) {
+          //actually these should be handled as violations or warnings
+          $violations[] = $e->getMessage();
+        }
+        else {
+          drupal_set_message($e->getMessage(), 'warning');
+        }
+
+        $replacements = array(
+          '!messages' => implode(' ', $warnings),
+        );
+        if ($child_errors['log']){
+          //TODO will there be an mcapi logger?
+          \Drupal::logger('mcapi')->error(
+            t("transaction failed validation with the following messages: !messages", array('!messages' => $message))
+          );
+        }
+        if ($child_errors['mail_user1']){
+          //should this be done using the drupal mail system? my life is too short for that rigmarole
+          mail(
+            User::load(1)->mail,
+            t('Child transaction error on !site', array('!site' => \Drupal::config('system.site')->get('name'))),
+            $replacements['!messages'] ."\n\n". $replacements['!dump']
+          );
+        }
+      }
+
+    }
+
+    //$violations = parent::validate();//doesn't exist
     $violation_messages = array();
     foreach ($violations as $violation) {
       //print_r($violation);print_r($this->created->getValue());die();
@@ -140,105 +213,48 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       [8] => getInvalidValue
       [9] => getCode
       (*/
-      $violation_messages[] = $violation[1];//TODO this is temp really we want (string)$violation
+      //TEMP violations are just strings for now.
+      $violation_messages[] = $violation;//TODO this is temp really we want (string)$violation
     }
-    //TODO after alpha11 how can the checkintegrity function return violations?
-    //then this function needs to return violations
-    $violation_messages += $this->checkIntegrity();
     //TODO check that transaction limit violations highlight the right currency field
     return $violation_messages; //temp need to tidy this up
   }
 
   /**
-   * Validate a transaction, and generate the children by calling hook_transaction_children,
-   * and validate the children
+   * validate a transaction entity i.e. 1 ledger entry
+   * There should be no children!
    *
-   * @return array $messages
-   *   a flat list of non-fatal exceptions from the parent and fatal exceptions in the child transactions
+   * @param Transaction $transaction
    *
-   * @throws McapiTransactionException
-   *   when the parent transaction has errors
+   * @return violation[]
+   *
+   * @todo Decide whether this should be static or not
    */
-  private function validateNew() {
-    //any thrown messages here are caught and shown to the user as a list of problems with the transaction.
-    $warnings = array();
+  private static function validateTransaction($transaction) {
     $violations = array();
-    $fatalities = array();
-    if (!$this->validated) {
-      $this->mcapiExceptions = array();
-      $this->moduleHandler = \Drupal::moduleHandler();
-
-      //we could do this on a loop with many validation functions e.g. $this->$functionname()
-      $violations += $this->checkUniqueUuid();
-
-      //on the parent transaction only, validate it and then pass it round to get child candidates
-      if ($this->parent->value == 0) {
-        $violations += $this->validateMakeChildren();//includes intertrading
-
-        if (empty($violations)) {
-          //note that this validation cannot change the original transaction because a clone of it is passed
-          $violations += $this->moduleHandler->invokeAll('mcapi_transaction_validate', array(mcapi_transaction_flatten($this)));
-
-          //validate the child candidates
-          foreach ($this->children as $child) {
-            //ensure the child transactions aren't mistaken for parents during validation
-            $child->parent->value = -1;
-            $child->violations = $child->validateNew();
-          }
-          //process the errors in the children.
-          $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
-          foreach ($this->children as $key => $child) {
-            $child->validate();
-            if ($child->mcapiExceptions) {
-              foreach ($child->mcapiExceptions as $warning) {
-                $warnings[] = $warning;
-              }
-              $replacements = array(
-                '!messages' => implode(' ', $warnings),
-                //'!dump' => print_r($this, TRUE)//TODO for some reason print_r is printing not returning
-              );
-              if ($child_errors['log']){
-                \Drupal::logger('mcapi')->error(
-                  t("transaction failed validation with the following messages: !messages", array('!messages' => $message))
-                );
-              }
-              if ($child_errors['mail_user1']){
-                //should this be done using the drupal mail system?
-                //my life is too short for that rigmarole
-                mail(
-                  User::load(1)->mail,
-                  t('Child transaction error on !site', array('!site' => \Drupal::config('system.site')->get('name'))),
-                  $replacements['!messages'] ."\n\n". $replacements['!dump']
-                );
-              }
-            }
-          }
-        }
-        //handle multiple stored exceptions, joining them together in one error message
-        foreach ($violations as $fieldname => $violation) {
-          $fatalities[$fieldname] = $violation;
-        }
-      }
+    //check the payer and payee aren't the same
+    if ($transaction->payer->target_id == $transaction->payee->target_id) {
+      $violations['payee'] = t('Wallet @num cannot pay itself.', array('@num' => $transaction->payer->target_id));
     }
-    $this->validated = TRUE;
-    return $fatalities;
-  }
-
-
-  /**
-   * needed for validation of non-new transactions
-   * last thing before writing to the database.
-   * transactions may be new or updated, and may not have been through the formAPI
-   * @return an array of violations
-   */
-  private function checkIntegrity() {
-    //we need to be throwing violations here
-    return $this->checkWalletAccess();
+    //check that the current user is permitted to pay out and in according to the wallet permissions
+    $walletAccess = \Drupal::entityManager()->getAccessController('mcapi_wallet');
+    if (!$walletAccess->checkAccess($transaction->payer->entity, 'payout', NULL, \Drupal::currentUser())) {
+      $violations['payer'] = t('You are not allowed to make payments from this wallet');
+    }
+    if (!$walletAccess->checkAccess($transaction->payee->entity, 'payout', NULL, \Drupal::currentUser())) {
+      $violations['payee'] = t('You are not allowed to pay into this wallet');
+    }
+    //check that the description isn't too long
+    $length = strlen($transaction->description->value);
+    if ($length > MCAPI_MAX_DESCRIPTION) {
+      $violations['payee'] = t(
+        'The description field is @num chars longer than the @max maximum',
+        array('@num' => $strlen-$max, '@max' => MCAPI_MAX_DESCRIPTION)
+      );
+    }
     //is it worth checking whether all the entity properties and fields are actually fieldItemLists?
-    //check that the description string isn't too long?
-    //check that the payer and payee wallets are in the same exchange?
+    return $violations;
   }
-
 
   /**
    * {@inheritdoc}
@@ -251,23 +267,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'created' => REQUEST_TIME,
       'creator' => \Drupal::currentUser()->id(),//uid of 0 means drush must have created it
       'parent' => 0,
-      //'children' => array(),
+      'payer' => 1,//chances are that these exist
+      'payee' => 2,
+      'children' => array(),
     );
   }
 
-  /**
-   * In the case of transactions made by code, not through the form interface,
-   * validation is done as part of saving.
-   * This is because there is no entity-level validation in drupal, at least yet
-   *
-   * @throws McapiTransactionException
-   *
-   * @see \Drupal\mcapi\Entity\TransactionInterface::preSave($storage_controller)
-   *
-   */
-  public function preSave(EntityStorageInterface $storage_controller) {
-    $this->validate();
-  }
 
   /**
    * save the child transactions, which refer to the saved parent
@@ -277,22 +282,28 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    */
   public function postSave(EntityStorageInterface $storage_controller, $update = TRUE) {
     parent::postSave($storage_controller, $update);
-    $this->clearWalletCache(array($this));
+    self::clearWalletCache($this);
   }
 
   public static function postDelete(EntityStorageInterface $storage_controller, array $entities) {
-    $this->clearWalletCache($entities);
     parent::postDelete($storage_controller, $entities);
+    foreach ($entities as $entity) {
+      self::clearWalletCache($entity);
+    }
+  }
+
+  public function erase() {
+    $this->entityManager()->getStorage('mcapi_transaction')->doErase(array($this));
   }
 
   //also needs doing when a wallet changes ownership
   //should this be in the interface??
-  private function clearWalletCache(array $transactions) {
-    foreach ($transactions as $t) {
-      $tags[] = $t->payer->entity->getCacheTag();
-      $tags[] = $t->payee->entity->getCacheTag();
+  private static function clearWalletCache($transaction) {
+    foreach ($transaction->flatten() as $t) {
+      $tags1 = $t->payer->entity->getCacheTag();
+      $tags2 = $t->payee->entity->getCacheTag();
     }
-    Cache::invalidateTags(array_unique($tags));//this isn't tested
+    \Drupal\Core\Cache\Cache::invalidateTags(array_merge_recursive($tags1, $tags2));//this isn't tested
   }
 
   /**
@@ -309,21 +320,20 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   /**
    * {@inheritdoc}
    */
-  public function transition($transition_name, array $values) {
+  public function transition($transition, array $values) {
     $context = array(
       'values' => $values,
       'old_state' => $this->get('state')->value,
-      'config' => \Drupal::config('mcapi.transition.'.$transition_name),
+      'config' => $transition->getConfiguration(),
     );
 
     //any problems need to be thrown
-    $renderable = transaction_transitions($transition_name)->execute($this, $context)
-      or $renderable = 'transition returned nothing renderable';
-    //notify other modules, especially rules.
-    //should we send a clone of $this?
-    //perhaps not because we need the context...
+    $renderable = $transition->execute($this, $context)
+    or $renderable = 'transition returned nothing renderable';
 
-    $renderable += \Drupal::moduleHandler()->invokeAll('mcapi_transaction_operated', array($this, $context));
+    //notify other modules, especially rules.
+    $renderable += \Drupal::moduleHandler()->invokeAll('mcapi_transition', array($this, $transition, $context));
+
     return $renderable;
   }
 
@@ -348,7 +358,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setLabel(t('Description'))
       ->setDescription(t('A one line description of what was exchanged.'))
       ->setRequired(TRUE)
-      ->setSettings(array('default_value' => '', 'max_length' => 255));
+      ->setSettings(array('default_value' => '', 'max_length' => MCAPI_MAX_DESCRIPTION));
 
     $fields['serial'] = FieldDefinition::create('integer')
       ->setLabel(t('Serial number'))
@@ -404,120 +414,19 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $fields;
   }
 
-  private function checkWalletAccess() {
-    //check that the payer and payee are not the same wallet
-    $violations = array();
-    //TODO return a violation
-    if ($this->payer->target_id == $this->payee->target_id) {
-      $violations['payee'] = t('Wallet @wid is attempting to pay itself.', array('@wid' => $this->payer->target_id));
-    }
-    //check that the current user is permitted to pay out and in according to the wallet permissions
-    else{
-      $walletAccess = $this->Entitymanager()->getAccessController('mcapi_wallet');
-      if (!$walletAccess->checkAccess($this->payer->entity, 'payout', NULL, \Drupal::currentUser())) {
-        $violations['payer'] = t('You are not allowed to make payments from this wallet');
-      }
-      if (!$walletAccess->checkAccess($this->payee->entity, 'payout', NULL, \Drupal::currentUser())) {
-        $violations['payee'] = t('You are not allowed to pay into this wallet');
-      }
-    }
-    return $violations;
-  }
-
-  /**
-   * This helps prevent double-click double submissions
-   */
-  private function checkUniqueUuid() {
-    $violations = array();
-    //check that the uuid doesn't already exist. i.e. that we are not resubmitting the same transactions
-    //TODO return a violation
-    $properties = array('uuid' => $this->get('uuid')->value);
-    if (entity_load_multiple_by_properties('mcapi_transaction', $properties)) {
-      $violations['uuid'] = t('Transaction has already been inserted: @uuid', array('@uuid' => $this->uuid->value));
-    }
-    return $violations;
-  }
-
-  //this runs only on the top-level transaction
-  private function validateMakeChildren() {
-    //prevent the main transaction being altered as we pass it round
-    //the main transaction was already altered in the preValidate hook.
-    $clone = clone($this);
-    $violations = array();
-    $this->children = array();//ONLY parent transactions have this property
-    //previous the children's parent was set to temp, but is that necessary?
-    $this->children = $this->moduleHandler->invokeAll('mcapi_transaction_children', array($clone));
-    //TODO how does the addition of children here affect intertrading? badly I suspect
-    $this->moduleHandler->alter('mcapi_transaction_children', $this->children, $clone);
-    //how the children have been created but before they are validated, we do the intertrading
-    $this->payer_currencies_available = array_keys($this->payer->entity->currencies_available());
-    $this->payee_currencies_available = array_keys($this->payee->entity->currencies_available());
-
-    foreach ($this->get('worth')->getValue() as $item) {
-      $this->curr_ids_required[] = $item['curr_id'];
-    }
-    //to determine the given currencies are shared between both users
-    $this->common_curr_ids = array_intersect($this->payer_currencies_available, $this->payee_currencies_available);
-    if (array_diff($this->curr_ids_required, $this->common_curr_ids)) {
-      //GENERATE AN INTERTRADING CHILD TRANSACTION
-      module_load_include('inc', 'mcapi');
-      //this means there is at least one currency in the transaction not common to both wallets' exchanges
-      //so the only way to do this transaction is with intertrading.
-      //That means we create a transaction between each wallet and its exchange's _intertrading wallet
-      //In effect the current transaction is altered and a child added
-
-      //this creates the following temp transaction properties:
-      //$this->source_exchange  an exchange ID whose intertrading wallet to use
-      //$this->source_participant //the property name of the participant in the source exchange; either payer or payee
-      //$this->dest_participant) //the property name of the participant in the source exchange; either payee or payer
-      $violations += intertrading_transaction_validate($this);
-      if ($violations) return $violations;
-      //we might want to abstract this into a plugin or something to allow
-      //different mechanisms for taking a commission. We would need much
-      //better separation between validation and generation
-      //This function adds new properties to the transaction
-      //$this->dest_exchange the id of the destination exchange
-      //$this->dest_worths the id of the destination exchange
-      $warnings = intertrading_new_worths($this, $this->{$this->dest_participant}->entity);
-      if ($warnings) {
-        return $warnings;
-      }
-      $new_transaction = clone($this);//since it hasn't been save there is no xid or serial number yet
-      $new_transaction->uuid->setValue(\Drupal::service('uuid')->generate());
-      $this->set($this->dest_participant, $this->source_exchange->intertrading_wallet()->id());
-      $new_transaction->set($this->source_participant, $this->dest_exchange->intertrading_wallet()->id());
-      $new_transaction->worth->setValue($this->dest_worths);
-      $this->children[] = $new_transaction;
-    }
-    else {
-      return $violations;
-      echo ('<br />Normal transaction - no intertrading...');
-      echo '<br />traders: '.$this->get('payer')->target_id.', '.$this->get('payee')->target_id;
-      echo '<br />payer_currencies_available '; print_r($this->payer_currencies_available);
-      echo '<br />payee_currencies_available '; print_r($this->payee_currencies_available);
-      echo '<br />required currs '; print_r($this->curr_ids_required);
-      echo '<br />common_curr_ids '; print_r($this->common_curr_ids);
-    }
-    return $violations;
-  }
-
   /**
    * {@inheritdoc}
    */
-  function exchanges() {
-    foreach (mcapi_transaction_flatten($transaction) as $t) {
-      $payer_exchanges = $this->payer->entity->in_exchanges();
-      $payee_exchanges = $this->payee->entity->in_exchanges();
-      if ($common = array_intersect_key($payer_exchanges, $payee_exchanges)) {
-        $exchange = reset($common);
-        //generally we only need one, so take the first
-        $exchanges[$exchange->id()] = $exchange;
-      }
-      else {
-        drupal_set_message('Data integrity question - there appears not to be an exchange in common between accounts:'.implode(', ', array($t->payer->target_id, $t->payee->target_id)));
+  function flatten() {
+    $clone = clone($this);
+    $flatarray = array($clone);
+    if (!empty($clone->children)) {
+      foreach ($clone->children as $child) {
+        $flatarray[] = $child;
       }
     }
-    return $exchanges;
+    unset($clone->children);
+    return $flatarray;
   }
 
 }

@@ -109,7 +109,7 @@ interface WalletInterface extends ContentEntityInterface {
    * If the wallet has no transactions it can be deleted
    * Otherwise make the passed exchange the parent, must be found.
    *
-   * @param ExchangeInterface $exchange
+   * @param ContentEntityInterface $owner
    */
-  public function orphan(ExchangeInterface $exchange = NULL);
+  static function orphan(ContentEntityInterface $owner);
 }

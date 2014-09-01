@@ -8,6 +8,7 @@
 namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Field\FieldDefinition;
@@ -205,16 +206,16 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
 
   /**
    * get the exchanges which this wallet can be used in.
-   * @return array
-   *   exchange entities, keyed by id
+   *
+   * @return Drupal\mcapi\Entity\Exchange[]
+   *   keyed by entity id
    */
   function in_exchanges() {
-    $owner = $this->getOwner();
-    if ($owner->getEntityTypeId() == 'mcapi_exchange') {
-      return array($owner->id() => $owner);
-    }
-    return Exchange::referenced_exchanges($owner);
+    return $this->entity_type == 'mcapi_exchange' ?
+      array($this->pid => $this->getOwner()) :
+      Exchange::referenced_exchanges($this->getOwner(), TRUE);
   }
+
   /**
    * get a list of all the currencies used and available to the wallet.
    */
@@ -242,6 +243,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    */
   function currencies_available() {
     if (!isset($this->currencies_available)) {
+      $this->currencies_available = array();
       foreach (exchange_currencies($this->in_exchanges()) as $currency) {
         $this->currencies_available[$currency->id()] = $currency;
       }
@@ -324,26 +326,34 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    * (non-PHPdoc)
    * @see \Drupal\mcapi\Entity\WalletInterface::orphan()
    */
-  public function orphan(ExchangeInterface $exchange = NULL) {
-    $conditions = array('involving' => $this->id());
-    if (\Drupal\mcapi\Storage\TransactionStorage::filter($conditions)) {
-      $new_name = t(
-        "Formerly !name's wallet: !label",
-        array('!name' => $this->label(), '!label' => $this->label(NULL, FALSE))
-      );
-      $this->set('name', $new_name);
-      $this->set('entity_type', 'mcapi_exchange');
-      $this->set('pid', $exchange->id());
-      //TODO make the number of wallets an exchange can own to be unlimited.
-      drupal_set_message(t(
-        "!name's wallets are now owned by exchange !exchange",
-        array('!name' => $this->label(), '!exchange' => l($exchange->label(), $exchange->url()))
-      ));
-      $this->save();
+  static function orphan(ContentEntityInterface $owner) {
+    if($exchanges = Exchange::referenced_exchanges($owner, FALSE)) {
+      $exchange = current($exchanges);//if the parent entity was in more than one exchange, this will pick a random one to take ownership
+      if ($wids = \Drupal\mcapi\Storage\WalletStorage::getOwnedWalletIds($owner, TRUE)) {
+        foreach (Wallet::loadMultiple($wids) as $wallet) {
+          //if there are transactions change parent, otherwise delete
+          if (\Drupal\mcapi\Storage\TransactionStorage::filter(array('involving' => $wallet->id()))) {
+            $new_name = t(
+              "Formerly !name's wallet: !label",
+              array('!name' => $wallet->label(), '!label' => $wallet->label(NULL, FALSE))
+            );
+            $wallet->set('name', $new_name);
+            $wallet->set('entity_type', 'mcapi_exchange');
+            $wallet->set('pid', $exchange->id());
+            //TODO make the number of wallets an exchange can own to be unlimited.
+            drupal_set_message(t(
+              "!name's wallets are now owned by exchange !exchange",
+              array('!name' => $wallet->label(), '!exchange' => l($exchange->label(), $exchange->url()))
+            ));
+            $wallet->save();
+          }
+          else {
+            $wallet->delete();
+          }
+        }
+      }
     }
-    else {
-      $this->delete();
-    }
+
   }
 
   //TODO put permissions and ops in the WalletInterface

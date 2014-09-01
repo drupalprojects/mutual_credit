@@ -43,6 +43,7 @@ function mcapi_modules_installed($modules) {
       array('!sitename' => \Drupal::config('system.site')->get('name'))
     ),
     'uid' => 1,
+    'mail' => \Drupal::config('system.site')->get('mail'),
     'currencies' => array('cc')
   );
   $ex = Exchange::create($props);
@@ -78,13 +79,15 @@ function mcapi_modules_installed($modules) {
  * @todo Remove the hard coded fieldAPI fields
  * need to do this in devel/php before uninstalling:
  *
+  \Drupal::moduleHandler()->uninstall(array('mcapi_tester'));
   use Drupal\field\Entity\FieldStorageConfig;
   FieldStorageConfig::load('mcapi_transaction.worth')->delete();
-  FieldStorageConfig::load('mcapi_exchange.currencies')->delete();
-  FieldStorageConfig::load('user.exchanges')->delete();
+  //FieldStorageConfig::load('mcapi_exchange.currencies')->delete();
+  //FieldStorageConfig::load('user.exchanges')->delete();
   field_purge_batch(3);
  */
 function mcapi_uninstall() {
+  return;
   $instances = array(
     'mcapi_exchange.currencies',
     'user.exchanges'
@@ -96,11 +99,6 @@ function mcapi_uninstall() {
     }
   }
   field_purge_batch(3);
-  drupal_set_message('now run cron to clear the fieldAPI');
-  return;
-  //this shouldn't be necessary!!
-  db_drop_table('user__exchanges');
-  db_drop_table('user_revision__exchanges');
 }
 
 /**
@@ -131,37 +129,3 @@ function mcapi_schema() {
   return $schema;
 }
 
-/*
- * change the database tables
- * DOES HOOK_UPDATE_N EXIST ANY MORE?
- */
-function mcapi_update_8000() {
-  //put the transaction description data into the entity table
-  db_query('DROP VIEW mcapi_index');
-  //change the mcapi_transactions table
-  //change the field_data_worth table into mcapi_transaction_data
-  //create the mcapi_index table
-  $tables = mcapi_schema();
-  db_create_table('mcapi_transactions_index', $tables['mcapi_transactions_index']);
-}
-
-/*
- * migrate any other data around
- */
-function __mcapi_update_8001() {
-
-  update_variables_to_config('node.misc', array(
-    // 'old_variable' => 'new_config.sub_key'
-  ));
-  //replace the token namespace in the transaction sentence from 'transaction' to 'mcapi'
-}
-
-
-/*
- * remove unneeded data
- */
-function __mcapi_update_8002() {
-  //deleted the field_data_worth field and tables (if not used elsewhere)
-  //delete the transaction description field and tables if not used elsewhere
-
-}

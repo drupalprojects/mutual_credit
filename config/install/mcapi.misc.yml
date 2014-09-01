@@ -15,4 +15,3 @@ child_errors:
   allow: 0
   log: log
   show_messages: show_messages
-indelible: true

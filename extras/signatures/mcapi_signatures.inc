@@ -134,13 +134,12 @@ function transactions_needing_sig_of_user($uid) {
  * implements template_preprocess_THEMEHOOK
  */
 function template_preprocess_mcapi_signatures(&$vars) {
-  $plugin = transaction_transitions('sign');
   foreach ($vars['transaction']->signatures as $uid => $signed) {
     $account = User::load($uid);
     $vars['signatures'][$uid] = array(
-        'account' => $account,
-        'class' => 'signature '. (empty($signed) ? 'pending' : 'signed'),
-        'name' =>  $account->getUsername(),
+      'account' => $account,
+      'class' => 'signature '. (empty($signed) ? 'pending' : 'signed'),
+      'name' =>  $account->getUsername(),
     );
   }
 }

@@ -25,7 +25,7 @@ use Drupal\Core\Form\FormStateInterface;
  *   }
  * )
  */
-class Create extends TransitionBase {
+class Create extends Transition2Step {
 
   /**
    * {@inheritdoc}
@@ -54,11 +54,7 @@ class Create extends TransitionBase {
   */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildConfigurationForm($form, $form_state);
-    unset(
-      $form['sure']['button'],
-      $form['sure']['cancel_button'],
-      $form['title']
-    );
+    unset($form['title']);//because this transition never appears as a link.
     return $form;
   }
 

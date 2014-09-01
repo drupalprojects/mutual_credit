@@ -54,11 +54,14 @@ class Transitions extends FieldPluginBase {
    */
   public function query() {
     $this->addAdditionalFields();
+    $this->viewBuilder = \Drupal::EntityManager()->getViewBuilder('mcapi_transaction');
   }
 
   function render(ResultRow $values) {
-    //need to work in the options[separator] somehow
-    return mcapi_get_links($this->getEntity($values), $this->options['view']);
+    return $this->viewBuilder->renderLinks(
+      $this->getEntity($values),
+      $this->options['view'] ? 'sentence' : 'certificate'
+    );
   }
 
 }

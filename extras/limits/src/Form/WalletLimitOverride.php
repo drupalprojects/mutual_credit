@@ -42,7 +42,7 @@ class WalletLimitOverride extends FormBase {
     $owner = $wallet->getOwner();
     $exchanges = Exchange::referenced_exchanges($owner);
     if (empty($exchanges)) {
-      drupal_set_message(t("!name is not currently in any active exchange"), array('!name' => $owner->getlabel()));
+      drupal_set_message(t("!name is not currently in any active exchange"), array('!name' => $owner->label()));
       return $form;
     }
 
@@ -95,7 +95,7 @@ class WalletLimitOverride extends FormBase {
     }
     //TODO the currencies could be sorted by weight; v low priority!
 
-    if (element_children($form)) {
+    if (\Drupal\Core\Render\Element::children($form)) {
       $form['help'] = array(
         '#markup' => t("Leave fields blank to use the currencies' own settings"),
         '#weight' => -1

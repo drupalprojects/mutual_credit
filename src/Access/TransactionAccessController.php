@@ -23,14 +23,14 @@ class TransactionAccessController extends EntityAccessController {
    */
   public function access(EntityInterface $transaction, $transition, $langcode = LanguageInterface::LANGCODE_DEFAULT, AccountInterface $account = NULL) {
     if ($transition == 'transition') {
-      //there is probably a better way of writing the router so the op is passed as a variable
-      $transition = \Drupal::request()->attributes->get('transition');
+      $transition = \Drupal::RouteMatch()->getparameter('transition');
+//TODO delete this $transition = \Drupal::request()->attributes->get('transition');
     }
     if (empty($account)) {
       $account = \Drupal::currentUser();
     }
-    if ($transition = transaction_transitions($transition)) {
-      return $transition->opAccess($transaction, $account);
+    if ($plugin = \Drupal::service('mcapi.transitions')->getPlugin($transition)) {
+      return $plugin->opAccess($transaction, $account);
     }
     return FALSE;
   }

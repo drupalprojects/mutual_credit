@@ -29,14 +29,6 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     $this->description = @$this->configuration['tooltip'] ? : $this->pluginDefinition['description'];
   }
 
-
-  /**
-   * {@inheritdoc}
-   */
-  abstract public function opAccess(TransactionInterface $transaction);
-
-
-
   /**
    * {@inheritdoc}
    */
@@ -44,7 +36,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     //gives array keyed page_title, twig, format, button, cancel_button
     module_load_include ('inc', 'mcapi');
     $tokens = implode(', ', mcapi_transaction_list_tokens (FALSE));
-    $help = t('Use the following twig tokens: @tokens.', array('@tokens' => $tokens)) .' '.
+    $this->help = t('Use the following twig tokens: @tokens.', array('@tokens' => $tokens)) .' '.
       l(
         t('What is twig?'),
         'http://twig.sensiolabs.org/doc/templates.html',
@@ -101,7 +93,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     );
     $form['sure']['twig'] = array(
       '#title' => t('Template'),
-      '#description' => $help,
+      '#description' => $this->help,
       '#type' => 'textarea',
       '#default_value' => @$this->configuration['twig'],
       '#states' => array(
@@ -113,88 +105,6 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
       ),
       '#weight' => 8
     );
-    $form['sure']['button']= array(
-      '#title' => t('Button text'),
-      '#description' => t('The text that appears on the button'),
-      '#type' => 'textfield',
-      '#default_value' => @$this->configuration['button'],
-      '#placeholder' => t ("I'm sure!"),
-      '#weight' => 10,
-      '#size' => 15,
-      '#maxlength' => 15,
-      '#required' => TRUE
-    );
-
-    $form['sure']['cancel_button']= array(
-      '#title' => t('Cancel button text'),
-      '#description' => t('The text that appears on the cancel button'),
-      '#type' => 'textfield',
-      '#default_value' => @$this->configuration['cancel_button'],
-      '#placeholder' => t('Cancel'),
-      '#weight' => 12,
-      '#size' => 15,
-      '#maxlength' => 15,
-      '#required' => TRUE
-    );
-
-    $form['feedback']= array(
-      '#title' => t('Feedback'),
-      '#type' => 'fieldset',
-      '#weight' => 6
-    );
-    $form['feedback']['format2']= array(
-      '#title' => t('Confirm form transaction display'),
-      '#type' => 'radios',
-      // TODO get a list of the transaction display formats from the entity type
-      '#options' => array(
-        'certificate' => t('Certificate'),
-        'twig' => t('Twig template'),
-        'redirect' => t('Redirect to path') ." TODO this isn't working yet"
-      ),
-      '#default_value' => @$this->configuration['format2'],
-      '#required' => TRUE,
-      '#weight' => 14
-   );
-    $form['feedback']['redirect'] = array(
-      '#title' => t('Redirect path'),
-      '#description' => implode(' ', array(
-        t('Enter a path from the Drupal root, without leading slash. Use replacements.') . '<br />',
-        t('@token for the current user id', array('@token' => '[uid]')),
-        t('@token for the current transaction serial', array('@token' => '[serial]'))
-      )),
-      '#type' => 'textfield',
-      '#default_value' => @$this->configuration['redirect'],
-      '#states' => array(
-        'visible' => array(
-          ':input[name="format2"]' => array(
-            'value' => 'redirect'
-          )
-        )
-      ),
-      '#weight' => 16
-    );
-    $form['feedback']['twig2']= array(
-      '#title' => t('Template'),
-      '#description' => $help,
-      '#type' => 'textarea',
-      '#default_value' => @$this->configuration['twig2'],
-      '#states' => array(
-        'visible' => array(
-          ':input[name="format2"]' => array(
-            'value' => 'twig'
-          )
-        )
-      ),
-      '#weight' => 16
-    );
-    $form['feedback']['message']= array(
-      '#title' => t('Success message'),
-      '#description' => t('Appears in the message box along with the reloaded transaction certificate.') . 'TODO: put help for user and mcapi_transaction tokens, which should be working',
-      '#type' => 'textfield',
-      '#default_value' => @$this->configuration['message'],
-      '#placeholder' => t('The transition was successful'),
-      '#weight' => 18
-    );
     return $form;
   }
 
@@ -203,7 +113,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    * {@inheritdoc}
    */
   public function validateConfigurationForm(array &$form, FormStateInterface $form_state){
-
+    //this is required by the interface
   }
 
   /**
@@ -215,7 +125,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
   }
 
   /**
-   * this method is for view and create plugins which don't have a form
+   * this method is for plugins which don't have a form, like view and create
    * @see \Drupal\mcapi\TransitionInterface::form($transaction)
    */
   public function form(TransactionInterface $transaction) {
@@ -231,12 +141,14 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     }
     return $this->configuration;
   }
+
   /**
    * {@inheritdoc}
    */
   public function setConfiguration(array $configuration) {
     $this->configuration = $configuration;
   }
+
   /**
    * {@inheritdoc}
    */
@@ -248,12 +160,6 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
       'page_title' => '',
       'format' => '',
       'twig' => '',
-      'button' => '',
-      'cancel_button' => '',
-      'format2' => '',
-      'redirect' => '',
-      'twig2' => '',
-      'message' => ''
     );
   }
 
@@ -274,42 +180,60 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     exit();
   }
 
-
   /**
    * {@inheritdoc}
    */
-  public function execute(TransactionInterface $transaction, array $context) {
-
-    drupal_set_message('TODO: finish making the mail work in Transitionbase::execute - it might work already!');
-
-    //TODO who are we actually notifying here
-    $to = '???';
-    return;
-    if ($this->configuration['send']) {
-      $subject = $this->configuration['subject'];
-      $body = $this->configuration['body'];
-      if (!$subject || !$body) continue;
-
-      //send one mail at a time, to the owner responsible for each wallet.
-      //There is nothing that says the entity owning each wallet has to be connected to a user.
-      //Although we could require that all wallet owners themselves should implement ownerInterface
-      global $language;
-
-      $params['transaction'] = $transaction;
-      $params += array(
-      	'subject' => $subject,
-        'body' => $body,
-        'cc' => $this->configuration['cc']
-        //bcc is not supported! This is not some cloak and dagger thing!
-      );
-      drupal_mail('mcapi', 'transition', $to, $language->language, $params);
-    }
-  }
-
   public function calculateDependencies() {
     return array(
-    	'module' => array('mcapi')
+      'module' => array('mcapi')
     );
+  }
+
+
+
+  /**
+   *  access callback for transaction transition 'view'
+   *  @return boolean
+  */
+  public function opAccess(TransactionInterface $transaction) {
+    $options = array_filter($this->configuration['access']);
+    if (!array_key_exists($transaction->state->target_id, $options)) {
+      drupal_set_message(
+        t(
+          "Please resave the @label transition, paying attention to access control for the unconfigured new '@statename' state:",
+          array(
+            '@statename' => $transaction->state->target_id,
+            '@label' => $this->label
+          )
+        ) . ' '.l('admin/accounting/workflow/undo', 'admin/accounting/workflow/undo'),
+        'warning',
+        FALSE
+      );
+    }
+    $account = \Drupal::currentUser();
+    foreach ($options[$transaction->state->target_id] as $option) {
+      switch ($option) {
+      	case 'helper':
+      	  if ($account->hasPermission('exchange helper')) return TRUE;
+      	  continue;
+      	case 'admin':
+      	  if ($account->hasPermission('manage mcapi')) return TRUE;
+      	  continue;
+      	case 'payer':
+      	case 'payee':
+      	  $wallet = $transaction->{$option}->entity;
+      	  $parent = $$wallet->getOwner();
+      	  if ($parent && $wallet->pid->value == $account->id() && $parent->getEntityTypeId() == 'user') {
+      	    return TRUE;
+      	  }
+      	  continue;
+      	case 'creator':
+      	  if ($transaction->creator->target_id == $account->id()) return TRUE;
+      	  continue;
+      }
+    }
+
+    return FALSE;
   }
 
 }

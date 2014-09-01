@@ -29,9 +29,10 @@ class McapiBlockBase extends BlockBase {
    * in profile mode, hide the block if we are not on a profile page
    */
   public function access(AccountInterface $account) {
-    $request = \Drupal::request();;
+    $account = \Drupal::routeMatch()->getParameter('user');
+    mdump($account);die('died mcapiBlockBase::access()');
     if($this->configuration['user_source'] == MCAPIBLOCK_USER_MODE_PROFILE) {
-      if ($account = $request->attributes->get('user')) {
+      if ($account = \Drupal::request()->attributes->get('user')) {
         $this->account = $account;
       }
       else return FALSE;

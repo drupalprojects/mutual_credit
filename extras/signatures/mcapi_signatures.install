@@ -4,19 +4,6 @@
 function mcapi_signatures_install() {
 
   module_set_weight('mcapi_signatures', 2);
-  return;
-  //TODO move these into whatever the notification framework will look like
-  $mcapi_signed_off_notify_template = array(
-    'subject' =>  t('Transaction signed off'),
-    'body' => t('The following transaction has been signed off: @token', array('@token' => '[transaction:url]'))
-  );
-  variable_set('mcapi_signed_off_notify_template', $mcapi_signed_off_notify_template);
-  $mcapi_sign_notify_template = array(
-    'subject' =>  t('Your signature is required'),
-    'body' => t('Your signature is required on @token', array('@token' => '[transaction:url]'))
-  );
-  variable_set('mcapi_sign_notify_template', $mcapi_sign_notify_template);
-
 }
 
 function mcapi_signatures_modules_installed($modules) {
@@ -27,6 +14,7 @@ function mcapi_signatures_modules_installed($modules) {
     ));
   }
 }
+
 /*
  * implements hook_uninstall
  * @todo ideally we would prevent this module from uninstalling if ANY transactions
@@ -66,6 +54,21 @@ function mcapi_signatures_schema() {
   );
   return $schema;
 }
+
+
+//TODO migrate these into whatever the notification framework will look like
+/*
+ $mcapi_signed_off_notify_template = array(
+     'subject' =>  t('Transaction signed off'),
+     'body' => t('The following transaction has been signed off: @token', array('@token' => '[transaction:url]'))
+ );
+variable_set('mcapi_signed_off_notify_template', $mcapi_signed_off_notify_template);
+$mcapi_sign_notify_template = array(
+    'subject' =>  t('Your signature is required'),
+    'body' => t('Your signature is required on @token', array('@token' => '[transaction:url]'))
+);
+variable_set('mcapi_sign_notify_template', $mcapi_sign_notify_template);
+*/
 
 function mcapi_signatures_update_8000() {
   //replace the db pending field with the new signed field.

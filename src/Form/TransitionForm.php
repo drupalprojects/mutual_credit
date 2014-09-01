@@ -11,16 +11,18 @@ use Drupal\Core\Form\FormStateInterface;
 class TransitionForm extends EntityConfirmFormBase {
 
   private $op;
-  private $configuration;
   private $transaction;
   private $destination;
+  private $transition;
 
   function __construct() {
     $request = \Drupal::request();
-    $this->transition = $request->attributes->get('transition') ? : 'view';
-    $this->configuration = $this->config('mcapi.transition.'.$this->transition);
+//    $this->transition = $request->attributes->get('transition') ? : 'view';
+    $id = \Drupal::RouteMatch()->getparameter('transition') ? : 'view';
+    $this->transition = \Drupal::service('mcapi.transitions')
+      ->getPlugin($id);
 
-    if ($path = $this->configuration->get('redirect')) {
+    if ($path = $this->transition->getConfiguration('redirect')) {
       $this->destination = $path;
     }
     else {
@@ -42,7 +44,7 @@ class TransitionForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getQuestion() {
-    return $this->configuration->get('page_title');
+    return $this->transition->getConfiguration('page_title');
   }
 
   /**
@@ -51,7 +53,7 @@ class TransitionForm extends EntityConfirmFormBase {
    * How do we go back
    */
   public function getCancelUrl() {
-    if ($this->transition == 'create') {//the transaction hasn't been created yet
+    if ($this->transition->getConfiguration('id') == 'create') {//the transaction hasn't been created yet
       //we really want to go back the populated transaction form using the back button in the browser
       //failing that we want to go back to whatever form it was, fresh
       //failing that we go to the user page user.page
@@ -64,7 +66,7 @@ class TransitionForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelText() {
-    return $this->configuration->get('cancel_button') ? : '';
+    return $this->transition->getConfiguration('cancel_button') ? : '';
   }
 
   /**
@@ -74,12 +76,12 @@ class TransitionForm extends EntityConfirmFormBase {
     //$this->entity->noLinks = FALSE;//this is a flag which ONLY speaks to template_preprocess_mcapi_transaction
     $this->entity->noLinks = TRUE;
     //this provides the transaction_view part of the form as defined in the transition settings
-    switch($this->configuration->get('format')) {
+    switch($this->transition->getConfiguration('format')) {
     	case 'twig':
     	  module_load_include('inc', 'mcapi');
-    	  return mcapi_render_twig_transaction($this->configuration->get('twig'), $this->entity);
+    	  return mcapi_render_twig_transaction($this->transition->getConfiguration('twig'), $this->entity);
     	default://certificate or even sentence, but without the links
-    	  $renderable = entity_view($this->entity, $this->configuration->get('format'));
+    	  $renderable = entity_view($this->entity, $this->transition->getConfiguration('format'));
     	  return drupal_render($renderable);
     }
   }
@@ -89,16 +91,18 @@ class TransitionForm extends EntityConfirmFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildForm($form, $form_state);
+    //no form elements yet have a #weight
     //this may be an entity form but we don't want the FieldAPI fields showing up.
-    foreach (element_children($form) as $fieldname) {
+    foreach (\Drupal\Core\Render\Element::children($form) as $fieldname) {
       if (array_key_exists('#type', $form[$fieldname]) && $form[$fieldname]['#type'] == 'container') {
         unset($form[$fieldname]); //should do it;
       }
     }
 
     //add any extra form elements as defined in the transition plugin.
-    $form += transaction_transitions($this->transition)->form($this->entity, $this->configuration);
-    if ($this->transition == 'view') {
+    $form += $this->transition->form($this->entity);
+
+    if ($this->transition->getConfiguration('id') == 'view') {
       unset($form['actions']);
     }
 
@@ -136,22 +140,19 @@ class TransitionForm extends EntityConfirmFormBase {
 
     //the op might have injected values into the form, so it needs to be able to access them
     form_state_values_clean($form_state);
+    $values = $form_state->getValues();
+
+    print_R($values); die('these are not the submitted values of the added fields');
+
+    unset($values['confirm'], $values['langcode']);
     try {
-      $renderable = $transaction->transition($this->transition, $form_state['values']);
+      $renderable = $transaction->transition($this->transition, $values);
     }
     catch (\Exception $e) {
       throw new \Exception("An error occurred in performing the transition:".$e->getMessage());
     }
-    if ($message = $this->configuration->get('message')) {
-      //TODO put tokens in the message
-      $tokens = array(
-      	'user' => \Drupal::currentUser()->id(),
-        'mcapi_transaction' => $transaction
-      );
-      drupal_set_message(\Drupal::token()->replace($message, $tokens));
-    }
     //if there is no redirect then the link to this form should have a destination
-    if ($redirect = $this->configuration->get('redirect')) {
+    if ($redirect = $this->transition->getConfiguration('redirect')) {
       $path = strtr($redirect, array(
         '[uid]' => \Drupal::currentUser()->id(),
         '[serial]' => $transaction->serial->value
@@ -164,40 +165,6 @@ class TransitionForm extends EntityConfirmFormBase {
         'mcapi.transaction_view',
         array('mcapi_transaction' => $transaction->serial->value)
       );
-    }
-
-
-    //but since rules isn't written yet, we're going to use the transition settings to send a notification.
-    if ($this->configuration->get('send')) {
-      $recipients = array();
-      //mail is sent to the user owners of wallets, and to cc'd people
-      foreach (array('payer', 'payee') as $participant) {
-        $walletowner = $transaction->payer->entity->getOwner();
-        //note that a wallet owner can be any contentEntity, and is nothing to do with EntityOwnerInterface.
-        //
-        if ($walletowner->getEntityTypeId() == 'user') {
-          $recipients[] = $walletowner->get('mail')->value;
-        }
-        elseif ($walletowner instanceof EntityOwnerInterface) {
-          $recipients[] = $walletowner->getowner()->get('mail')->value;
-        }
-      }
-      //with multiple recipients we have to choose one language
-      //just English for now bcoz rules will sort this out
-      if ($recipients) {
-        drupal_mail(
-          'mcapi',
-          'transition',
-          implode(',', $recipients),
-          'en',
-          array(
-          	'mcapi' => $transaction,
-          	'cc' => $this->configuration->get('cc'),
-          	'subject' => $this->configuration->get('subject'),
-          	'body' => $this->configuration->get('body')
-          )
-        );
-      }
     }
 
     return $renderable;

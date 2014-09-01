@@ -41,7 +41,8 @@ class Settings extends ConfigFormBase {
       t("When the last signature is gathered the transaction moves automatically into 'finished' state.")
     ));
     foreach (Type::loadMultiple() as $type) {
-      $form[$type->id()] = array(
+      $id = $type->id();
+      $form[$id] = array(
     	  '#title' => t('Who must approve transactions of type @name?', array('@name' => $type->label)),
         '#description' => $type->description,
         '#type' => 'checkboxes',
@@ -51,7 +52,7 @@ class Settings extends ConfigFormBase {
         ),
         //checkboxes are a bit strange.
         //if we don't array filter, every array key will be read as a checked box
-        '#value' => array_filter((array)$this->settings->get($type->id())),
+        '#value' => array_filter(_mcapi_signature_overrides($id)),
       );
     }
     $form['signatures']['both']['#disabled'] = TRUE;

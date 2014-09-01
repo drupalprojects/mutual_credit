@@ -50,12 +50,20 @@ class ExchangeForm extends ContentEntityForm {
       '#weight' => 3
     );
 
+    $form['mail'] = array(
+    	'#title' => t('Main contact email'),
+      '#type' => 'email',
+      '#default_value' => $exchange->mail->value,
+      '#required' => TRUE,
+      '#weight' => 4
+    );
+
     $form['visibility'] = array(
       '#title' => t('Visibility'),
       '#description' => t('Is this exchange hidden from members of other exchanges?'),
       '#type' => 'radios',
       '#options' => $this->entity->visibility_options(),
-      '#default_value' => $exchange->get('visibility')->value,
+      '#default_value' => $exchange->visibility->value,
       '#required' => TRUE,
       '#weight' => 6
     );
@@ -63,7 +71,7 @@ class ExchangeForm extends ContentEntityForm {
       '#title' => t('Open'),
       '#description' => t('Is this exchange open to trade with other exchanges?'),
       '#type' => 'checkbox',
-      '#default_value' => $exchange->get('open')->value,
+      '#default_value' => $exchange->open->value,
       '#weight' => 9
     );
     //hide the currencies field if only one currency is available

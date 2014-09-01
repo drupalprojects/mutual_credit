@@ -76,17 +76,11 @@ interface CurrencyInterface extends ConfigEntityInterface {
   public function faux_format($raw_num, $format = array());
 
   /**
-   * Load currencies for a given wallet, or common to 2 given users
-   * A list of all the currencies in the marketplaces of which the user is a member.
-   *
-   * @param AccountInterface $account
-   *   an entity which might be in an exchange
-   *
-   * @param boolean $ticks
-   *   TRUE to return only currencies with a positive $ticks property
+   * Load currencies for a given wallet
+   * A list of all the currencies in active exchanges of which the user is a member.
    *
    * @return array
    *   of currencies
    */
-  public static function user(AccountInterface $account = NULL, $ticks = FALSE);
+  public static function user(AccountInterface $account = NULL);
 }

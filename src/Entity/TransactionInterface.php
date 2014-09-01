@@ -44,10 +44,13 @@ interface TransactionInterface extends ContentEntityInterface {
   public function validate();
 
   /**
-   * Work out which exchanges a transaction could be said to be in.
+   * just gets the children and puts them side by side with the parent
    *
-   * @return \Drupal\mcapi\Entity\Exchange[]
+   * @return Transaction[]
+   *   transactions with the cloned parent transaction first and children property removed
+   *
+   * @todo would be nice to just have an iterator so we can do foreach ($transaction as $t)
    */
-  public function exchanges();
+  public function flatten();
 
 }

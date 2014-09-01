@@ -1,5 +1,5 @@
 services:
-  plugin.manager.mcapi.transaction_transition:
+  mcapi.transitions:
     class: Drupal\mcapi\Plugin\TransitionManager
     arguments: ['@container.namespaces', '@cache.entity', @module_handler, @config.factory]
 

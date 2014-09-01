@@ -154,6 +154,18 @@ class CurrencyForm extends EntityForm {
       '#default_value' => $currency->ticks,
       '#weight' => 6
     );
+
+    $form['deletion'] = array(
+      '#title' => t('Delete options'),
+      '#type' => 'checkboxes',
+      '#options' => array(
+    	  'delete' => $this->t('Delete - remove completely from the database'),
+    	  'erase' => $this->t('Erase - remove completely from the database'),
+        'reverse' => $this->t('Reverse - add a counter transaction')
+      ),
+      '#default_value' => $currency->deletion,
+      '#weight' => 7
+    );
     $form['display'] = array(
       '#title' => t('Appearance'),
       '#type' => 'fieldset',

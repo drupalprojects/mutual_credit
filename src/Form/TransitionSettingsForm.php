@@ -22,7 +22,7 @@ class TransitionSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $transition = NULL) {
-    $this->plugin = transaction_transitions($transition);
+    $this->plugin = \Drupal::service('mcapi.transitions')->getPlugin($transition);
 
   	$form = $this->plugin->buildConfigurationForm($form, $form_state);
 

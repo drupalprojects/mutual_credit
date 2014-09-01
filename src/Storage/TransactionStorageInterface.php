@@ -112,5 +112,10 @@ interface TransactionStorageInterface extends FieldableEntityStorageInterface {
    */
   public function timesBalances($wallet_id, $curr_id, $since);
 
+  /**
+   * Mark a transaction deleted
+   * @param array $transactions
+   */
+  public function doErase(array $transactions);
 
 }

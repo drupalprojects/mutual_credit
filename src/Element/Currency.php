@@ -1,0 +1,76 @@
+<?php
+
+/**
+ * @file
+ * Contains \Drupal\mcapi\Element\Currency.
+ */
+
+namespace Drupal\Core\Render\Element;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Element;
+
+/**
+ * Provides a widget to select currencies
+ *
+ * @FormElement("mcapi_currency_select")
+ */
+class Currency extends FormElement {
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getInfo() {
+    $class = get_class($this);
+    return array(
+      '#input' => TRUE,
+      '#process' => array(
+        array($class, 'mcapi_process_currcodes'),
+        'ajax_process_form'
+      ),
+      '#theme_wrappers' => array('form_element'),
+      '#multiple' => FALSE,
+      '#options' => array(),//array of curr_ids and currency names
+      '#status' => TRUE //filter only for active currences
+    );
+  }
+
+  /**
+   * process callback
+   */
+  function mcapi_process_currcodes($element) {
+    $conditions = array();
+    if ($element['#status']) {
+      $conditions['status'] = TRUE;
+    }
+    if (empty($element['#options']) && !empty($element['#curr_ids'])) {
+      //shows the intersection of all currencies and currencies provided
+      $element['#options'] = array_intersect_key(
+          mcapi_entity_label_list('mcapi_currency', $element['#curr_ids']),
+          entity_load_multiple_by_properties('mcapi_currency', $conditions)
+      );
+    }
+    elseif (empty($element['#options'])) {
+      $element['#options'] = $element['#options'] = mcapi_entity_label_list('mcapi_currency', $conditions);
+    }
+    elseif ($element['#options'] == 'all') {
+      $element['#options'] = mcapi_entity_label_list('mcapi_currency');
+    }
+
+    if (count($element['#options']) == 1) {
+      //$element['#type'] = 'value';
+      $element['#type'] = 'value';
+      $element['#theme_wrappers'] = array();
+      $element['#default_value'] = key($element['#options']);
+    }
+    elseif ($element['#multiple']) {
+      //have to do some of the checkbox processing manually coz we missed it
+      $element['#type'] = 'checkboxes';
+      $element['#value'] = array_filter($element['#default_value']);
+      $element = form_process_checkboxes($element);
+    }
+    else {
+      $element['#theme'] = 'select';
+    }
+    return $element;
+  }
+}

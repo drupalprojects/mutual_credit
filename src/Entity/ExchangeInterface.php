@@ -69,5 +69,15 @@ interface ExchangeInterface extends ContentEntityInterface, EntityOwnerInterface
    */
   static function referenced_exchanges(ContentEntityInterface $entity = NULL, $enabled = FALSE, $open = FALSE);
 
-
+  /**
+   * get a list of all the entity types which have an entity reference field pointing to mcapi_exchange
+   *
+   * @param string $type
+   *   (optional) the name of the entity type
+   *
+   * @return array
+   *   a mapping of entityTypeId to the name of the exchanges entity_reference
+   *   field or the fieldname for the given entitytype
+   */
+  static function getEntityFieldnames();
 }

@@ -17,7 +17,7 @@ use Drupal\views\Plugin\views\argument_default\ArgumentDefaultPluginBase;
  *
  * @ViewsArgumentDefault(
  *   id = "route_wallets",
- *   title = @Translation("Wallets from route context ")
+ *   title = @Translation("Wallets from route entity ")
  * )
  */
 class RouteWallets extends ArgumentDefaultPluginBase {
@@ -31,7 +31,7 @@ class RouteWallets extends ArgumentDefaultPluginBase {
     //only for ONE given specific entityType
     //so this function needs to decide whether to return an argument
     foreach (\Drupal::service('current_route_match')->getParameters()->all() as $key => $val) {
-      if ($val instanceOf EntityOwnerInterface && $val->has('exchanges')) {
+      if (mcapi_wallet_owning_entity($val)) {
         $ids = \Drupal\mcapi\Storage\WalletStorage::getOwnedWalletIds($val);
       }
     }

@@ -43,7 +43,7 @@ class WorthWidget extends WidgetBase {
       '#type' => 'worth',
       '#default_value' => $items->getValue(),
       '#allowed_curr_ids' => array_keys(exchange_currencies(Exchange::referenced_exchanges(NULL, TRUE))),
-      '#theme_wrappers' => array('form_element'),
+      //'#theme_wrappers' => array('form_element'),
     );
   }
 

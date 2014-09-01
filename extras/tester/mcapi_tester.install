@@ -10,7 +10,9 @@ use Drupal\taxonomy\Entity\Term;
 use Drupal\field\Entity\FieldInstanceConfig;
 
 function mcapi_tester_install() {
-
+  if (\Drupal::CurrentUser()->id() == 0) {//drush runs as user 0 but that buggers things up
+    \Drupal::CurrentUser()->setAccount(User::load(1));
+  }
   //clear the entity cache because for some reasont user 1 has lost the contents of the exchanges field
   //I don't know the best way to do this yet, or whether the entity cache or field cache is effected
   //or whether this is because of a bug in alpha 11
@@ -25,16 +27,7 @@ function mcapi_tester_install() {
     ))->save();
   }
   echo "Created taxonomy terms";
-  if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-    $names = array(
-      'Pluto' => 'Pluto Pesos',
-      'Mars' => 'Martian Moolah',
-      'Saturn' => 'Saturnine Schillings',
-      'Jupiter' => 'Jovial Jewels'
-    );
-    $exchange_ids = mcapi_tester_make_exchanges($names);
-    echo "\nCreated exchanges";
-  }
+
   //now
   mcapi_tester_make_users(26);//should make wallets as well
   echo "\nCreated users";
@@ -43,39 +36,47 @@ function mcapi_tester_install() {
   echo "\n200 transactions created";
 
   if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-    //make some intertrading transactions
-    mcapi_tester_make_transactions(25, TRUE);
-    echo "\n25 intertrading transactions created";
-    //close the last exchange and disable its currency
-    $last_exchange = Exchange::load(end($exchange_ids));
-    drupal_set_message('Closing the last exchange: '.$last_exchange->label());
-    $last_exchange->set('status', 0);
-    $last_exchange->save();
+    multiple_exchanges();
   }
+}
+
+function mcapi_tester_modules_installed($modules) {
+  if (in_array('mcapi_exchanges', $modules)) {
+    mcapi_tester_delete_transactions();
+    multiple_exchanges();
+    mcapi_tester_make_transactions(200);
+  }
+}
+
+
+
+function multiple_exchanges() {
+  $exchange_ids = mcapi_tester_make_exchanges();
+  put_users_in_exchanges();
+  //make some intertrading transactions
+  mcapi_tester_make_transactions(25, TRUE);
+  echo "\n25 intertrading transactions created";
+  //close the last exchange and disable its currency
+  $last_exchange = Exchange::load(end($exchange_ids));
+  drupal_set_message('Closing the last exchange: '. ($last_exchange->label()));
+  $last_exchange->set('status', 0);
+  $last_exchange->save();
 }
 
 /**
  * implements hook_uninstall().
  */
 function mcapi_tester_uninstall() {
-  //to delete properly we have to temporarily change the delete mode
-  $misc_conf = \Drupal::config('mcapi.misc');
-  $indelible = $misc_conf->get('indelible');
-  $misc_conf->set('indelible', 0)->save();
+  //in case drush is running
+  \Drupal::CurrentUser()->setAccount(User::load(1));
 
-  if ($instance = FieldInstanceConfig::load('mcapi_transaction.mcapi_transaction.field_categories')) {
-    //$instance->delete();
-  }
-
+  module_load_install('mcapi_tester');
+  mcapi_tester_delete_transactions();
   //remove the categories
   //TODO why isn't taxonomy_term recognised as an entity type?
   //foreach (entity_load_multiple_by_properties('taxonomy_term', array('vid' => 'categories')) as $term) {
     //$term->delete();
   //}
-  //delete test transactions
-  $storage = \Drupal::EntityManager()->getStorage('mcapi_transaction');
-  $transactions = $storage->loadByProperties(array('type' => 'test'));
-  $storage->delete($transactions);
   //delete test users
   foreach (User::loadMultiple() as $user) {
     if ($user->id() < 2) continue;
@@ -84,17 +85,24 @@ function mcapi_tester_uninstall() {
   //delete all exchanges except the first
   foreach (Exchange::loadMultiple() as $exchange) {
     if ($exchange->id() == 1)continue;
-    $exchange->status->setValue(FALSE);
+    $exchange->status->setValue(FALSE);//necessary?
     $exchange->save();
     $exchange->delete();//their intertrading wallets should go automatically
   }
+
   foreach (Currency::loadMultiple() as $currency) {
     if ($currency->weight > 3) {
       $currency->delete();
     }
   }
-  $misc_conf->set('indelible', $indelible);
   field_purge_batch(5);
+}
+
+function mcapi_tester_delete_transactions() {
+  //delete test transactions
+  $storage = \Drupal::EntityManager()->getStorage('mcapi_transaction');
+  $transactions = $storage->loadByProperties(array('type' => 'test'));
+  $storage->delete($transactions);
 }
 
 /**
@@ -102,13 +110,16 @@ function mcapi_tester_uninstall() {
  * each argument is the name of an exchange.
  * N.B. each exchange will have its own intertrading wallet
  *
- * @param string
- *   the name of the first exchange
  * @return array
  *   the ids of the newly created exchanges
  */
-function mcapi_tester_make_exchanges($names) {
-
+function mcapi_tester_make_exchanges() {
+  $names = array(
+    'Pluto' => 'Pluto Pesos',
+    'Mars' => 'Martian Moolah',
+    'Saturn' => 'Saturnine Schillings',
+    'Jupiter' => 'Jovial Jewels'
+  );
   $w = 4;//because 3 currencies are already provided
   //this is less code and less maintainance than providing config files
   foreach ($names as $exchange_name => $currname) {
@@ -129,7 +140,8 @@ function mcapi_tester_make_exchanges($names) {
 
     $props = array(
     	'name' => $exchange_name,
-      'currencies' => array($c->id())
+      'currencies' => array($c->id()),
+      'mail' => \Drupal::config('system.site')->get('mail'),
     );
     $e = Exchange::create($props);
     $e->save();
@@ -142,6 +154,7 @@ function mcapi_tester_make_exchanges($names) {
     $account->save();
     $ids[] = $e->id();
   }
+  echo "\nCreated exchanges";
   return $ids;
 }
 
@@ -157,42 +170,53 @@ function mcapi_tester_make_exchanges($names) {
  *   the $account->id()s created
  */
 function mcapi_tester_make_users($num = 26) {
-  $manager_role = Role::load('manager');
-  $helper_role = Role::load('helper');
-  $all_exchange_ids = array_keys(Exchange::loadMultiple());
 
   //create users
   $first = array('Alice', 'Bobby', 'Carry', 'Dave', 'Ebeneezer', 'Fanny', 'Garry', 'Harry', 'Isa', 'Josephine', 'Kerry', 'Larry', 'Mathieu', 'Nancy', 'Oliver', 'Perry', 'Quentin', 'Ruby', 'Sylvester', 'Trudy', 'Ursula', 'Veronica', 'William', 'Xanadu', 'Yuri', 'Zoe');
   $last = array('Arachnid', 'Boulder', 'Castaway', 'Deathwish', 'Emerald', 'Frogleg', 'Golden', 'Handiman', 'Indignado', 'Janitor', 'Kant', 'Landrover', 'Mandrake', 'Nakomoto', 'Orwell', 'Python', 'Quarkson', 'Rhodes', 'Smythe', 'Trenchfoot', 'Ustinov', 'Victor', 'Wellington', 'X', 'Ypres', 'Zenithson');
   shuffle($last);
-  $usersperexchange = ceil(26/count(Exchange::loadMultiple()));
   for ($i = 0; $i < $num; $i++) {
     $props = array(
     	'name' => $first[$i] .' '. $last[$i],
-      'mail' => strtolower($first[$i]).'@mutualcreditmodule.matslats.net',
+      'mail' => strtolower($first[$i]).'@matslats.net',
       'pass' => 'a',
-      'status' => 1
+      'status' => 1,
     );
-    $u = User::create($props);
-    //give the first user in each exchange the manager role and the second the helper
-    $memnum = ($i+1) % $usersperexchange;
-    if ($memnum == 0) $u->addRole($manager_role->id());
-    elseif ($memnum == 1) $u->addRole($helper_role->id());
-    //we'll put the users sequentially into the exchanges so that its easy to guess where they are
-    //assume the exchange ids are sequential, starting at 1
+    $u = User::create($props)->save();
 
-    $exchange_id = $all_exchange_ids[intval(floor(($i)/$usersperexchange))];
-    $u->get('exchanges')->setValue(array($exchange_id));
-    $u->save();
-    $uids[] = $u->id();
-
-    if ($memnum == 1) {//tell the exchange that it is owned by the manager
-      $exchange = Exchange::load($exchange_id);
-      $exchange->uid->value = $u->id();
-      $exchange->save();
-    }
   }
   return $uids;
 }
 
+function put_users_in_exchanges() {
+  $manager_role = Role::load('manager');
+  $helper_role = Role::load('helper');
+  $exchanges = Exchange::loadMultiple();
+  $all_exchange_ids = array_keys($exchanges);
+  $accounts = User::loadMultiple();
+  unset($accounts[0], $accounts[1]);
+  $usersperexchange = floor(count($accounts)/count($all_exchange_ids));
+  foreach ($accounts as $account) {
+    if (count($all_exchange_ids) == 1) {
+      $account->exchanges->setValue(array(1));
+    }
+    else {
+      //give the first user in each exchange the manager role and the second the helper
+      $memnum = ($account->id() + 1) % $usersperexchange;
+      if ($memnum == 0) $account->addRole($manager_role->id());
+      elseif ($memnum == 1) $account->addRole($helper_role->id());
+      //we'll put the users sequentially into the exchanges so that its easy to guess where they are
+      $exchange_id = $all_exchange_ids[$account->id() % $usersperexchange];
+      $account->exchanges->setValue(array($exchange_id));
+      if ($memnum == 1) {//tell the exchange that it is owned by the manager
+        $exchange = Exchange::load($exchange_id);
+        $exchange->uid->value = $account->id();
+        $exchange->save();
+      }
+    }
+    $account->save();
+    $uids[] = $account->id();
+  }
+
+}
 

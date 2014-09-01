@@ -32,10 +32,5 @@ class McapiTesterSwitchuser extends ControllerBase {
     if ($account = user_load_by_name($name)) {
       user_login_finalize($account);
     }
-    $destination = drupal_get_destination();
-    $url = $this->urlGenerator()
-      ->generateFromPath($destination['destination'], array('absolute' => TRUE));
-
-    return new RedirectResponse($url);
   }
 }

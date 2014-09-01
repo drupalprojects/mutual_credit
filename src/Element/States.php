@@ -24,7 +24,7 @@ class States extends Radios {
     return array(
       '#title_display' => 'before',
       '#process' => array(
-        array($this, 'mcapi_process_states'),
+        array($class, 'mcapi_process_states'),
         'ajax_process_form'
       ),
       '#theme_wrappers' => array('radios'),

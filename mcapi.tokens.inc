@@ -77,7 +77,7 @@ function mcapi_token_info() {
   //this really should be more automated in core
   foreach ($definitions as $key => $def) {
     $info['tokens']['mcapi'][$key] = array(
-      'name' => $def->getLabel(),
+      'name' => $def->label(),
       'description' => $def->getDescription()
     );
   }

@@ -1,7 +1,7 @@
 <?php
 
 use Drupal\Core\Language\Language;
-use Drupal\Core\Template\Attribute;
+//use Drupal\Core\Template\Attribute;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Form\FormStateInterface;
@@ -637,7 +637,7 @@ function template_preprocess_certificate(&$vars) {
 
 	mcapi_transaction_process_vars($vars, $transaction);
   //hide the field api label
-	foreach(element_children($element) as $sub) {
+	foreach(Element::children($element) as $sub) {
 	  if (array_key_exists('#theme', $element[$sub]) && $element[$sub]['#theme'] == 'field') {
 	    $element[$sub]['#label_display'] = 'hidden';
 	  }
@@ -740,7 +740,7 @@ function mcapi_render_twig_transaction($template, TransactionInterface $transact
     ->viewMultiple($entities, 'certificate');
   mcapi_transaction_process_vars($vars, $transaction);
   //hide the labels from the standard field rendering
-  foreach(element_children($build[$xid]) as $sub) {
+  foreach(Element::children($build[$xid]) as $sub) {
     if ($build[$xid][$sub]['#theme'] == 'field') {
       $build[$xid][$sub]['#label_display'] = 'hidden';
     }
@@ -847,12 +847,12 @@ function mcapi_transaction_list_tokens($include_virtual = FALSE) {
 
 /**
  * get all the bundles which have the exchange field attached
- * which is to say all the entity types which can own wallets
+ * which is to say all the entity types which CAN own wallets
  * @return array
  *   arrays of bundles with bundleInfo keyed by entityTypeId
  */
 function bundles_in_exchanges() {
-  foreach (get_exchange_entity_fieldnames() as $entity_type_id => $fieldname) {
+  foreach (Exchange::getEntityFieldnames() as $entity_type_id => $fieldname) {
     if ($entity_type_id == 'mcapi_exchange') continue;
     $bundles[$entity_type_id] = entity_get_bundles($entity_type_id);
   }
@@ -869,7 +869,7 @@ function mcapi_exchanges_changed_submit($form, FormStateInterface $form_state) {
   //the stored entity isn't updated.
   $entity = $form_state->get('controller')->getEntity();
   //lookup the name of the exchanges field.
-  $fieldnames = get_exchange_entity_fieldnames();
+  $fieldnames = Exchange::getEntityFieldnames();
   $fieldname = $fieldnames[$entity->getEntityTypeId()];
   $new = $saved = array();
   //compare the saved entity with the submitted values
@@ -877,8 +877,8 @@ function mcapi_exchanges_changed_submit($form, FormStateInterface $form_state) {
   foreach ($values[$fieldname] as $item) {
     $new[] = $item['target_id'];
   }
-  foreach ($entity->{$fieldname}->getValue(FALSE) as $item) {
-    $saved[] = $item['target_id'];
+  foreach ($entity->{$fieldname}->referencedEntities() as $entity) {
+    $saved[] = $entity->id();
   }
   sort($new);
   sort($saved);
@@ -895,153 +895,3 @@ function mcapi_exchanges_changed_submit($form, FormStateInterface $form_state) {
   }
 }
 
-/**
- * Since both wallets are not in the same exchange, we have to check if a transaction is even possible.
- * This sets some temp transaction properties needed to make an intertrade
- * @param TransactionInterface $transaction
- * @return violation
- * @see Transaction::makeChildren()
- */
-function intertrading_transaction_validate(TransactionInterface $transaction) {
-  //Any wallet which can use all the currencies in the transaction is the source wallet.
-  //In an intertrading split the source wallet takes the existing transactions
-  //The dest wallet takes the new (child) transaction and the converted currency values.
-  //Identify which wallet will use the current transaction
-  //and which wallet will use the new child transaction
-  $curr_ids_payer_cannot_see = array_diff($transaction->curr_ids_required, $transaction->payer_currencies_available);
-  if (!$curr_ids_payer_cannot_see) {
-    $transaction->source_participant = 'payer';
-    $transaction->dest_participant = 'payee';
-  }
-  else {
-    $curr_ids_payee_cannot_see = array_diff($transaction->curr_ids_required, $transaction->payee_currencies_available);
-    if (!$curr_ids_payee_cannot_see) {
-      $transaction->source_participant = 'payee';
-      $transaction->dest_participant = 'payer';
-    }
-    else {
-      echo "unable to get source and dest participants or intertrade";
-      echo "\n<br />payer wid: ".$transaction->get('payer')->value;
-      echo "\n<br />payee wid: ".$transaction->get('payee')->value;
-      echo '\n<br />curr_ids_required: '; print_R($transaction->curr_ids_required);
-      echo '\n<br />payee_currencies_available: '; print_R($transaction->payee_currencies_available);
-      //this should be a violation
-      return array(
-        key($transaction->curr_ids_required),
-        t('Neither wallet has access to all the currencies specified in the transaction.')
-      );
-    }
-  }
-  //now find which of the leading wallet's parents' exchanges can access
-  //ALL the currencies in $transaction->worth
-  $found = FALSE;
-  $source_wallet = $transaction->{$transaction->source_participant}->entity;//entity reference array
-  foreach ($transaction->worth->getValue() as $item) {
-    $curr_ids[] = $item['curr_id'];
-  }
-//echo "<br />The transaction has currencies: ".implode(', ', $curr_ids);
-
-  foreach($source_wallet->in_exchanges() as $exchange) {
-    //echo "\n<br />The leading wallet is in exchange ".$exchange->id();
-    //echo " which has currencies ".implode(', ', _get_entity_reference_targets($exchange->get('currencies')));
-    if (array_diff_key(array_flip($curr_ids), _get_entity_reference_targets($exchange->get('currencies')))) continue;
-    //echo "which is good enough for this transaction...";
-    $found = TRUE;
-    $transaction->source_exchange = $exchange;
-    break;
-  }
-
-  if (!$found) {
-    //this should be a violation
-    return array(
-      key($transaction->curr_ids_required),
-      //this string is identical to another in intertrading_new_worths
-      t(
-        'Wallet !wallet is not a member of an exchange that can intertrade with the requested currencies',
-        array('!wallet' => $source_wallet->label())
-      )
-    );
-  }
-  return array();
-}
-
-/**
- * Provide the new worthItemList array for an intertrading child transaction
- * @param TransactionInterface $transaction
- *
- * @param WalletInterface $dest_wallet
- *   The wallet in the remote exchange
- * @return array
- *   violation, keyed by fieldname
- */
-function intertrading_new_worths(TransactionInterface $transaction, WalletInterface $dest_wallet) {
-  $source_curr_ids = $transaction->get('worth')->curr_ids();
-
-  //We need to identify a dest exchange whose intertrading wallet can be used
-  //which of the $dest_wallet's parent's exchanges is most suitable, if any?
-  //it must contain all the worth's currencies bar one.
-  foreach ($dest_wallet->in_exchanges() as $dest_exchange) {
-    $dest_exchange_currencies = exchange_currencies(array($dest_exchange));
-    $diff = array_diff_key(array_flip($source_curr_ids), $dest_exchange_currencies);
-    //diff is the currencies in worth which are not in the dest exchange
-    //if there is no diff, we shouldn't be intertrading but doing a straight transaction
-    if (!$diff) {
-      throw new Exception('Intertrading calculation is running when worth currencies are all matched');
-    }
-    if (count($diff) > 1) {
-      continue;//we won't attempt to convert more than one currency in a transaction
-    }
-    $source_currency_id = key($diff);
-    $source_ticks = Currency::load($source_currency_id)->ticks;
-    if (!$source_ticks) {//the one diff currency in this exchange is not intertradable
-      continue;
-    }
-    //when we have found a suitable exchange, stop looping because we need the variables above
-    $found = TRUE;
-    break;
-  }
-  if (!isset($found)) {
-    return array(
-      $source_currency_id,
-      //this string is identical to another
-      t('There is no way to intertrade this currency between these wallets')
-    );
-  }
-  $transaction->dest_exchange = $dest_exchange;
-  //so now we have our dest $exchange, a list of $exchange_currencies in it
-  //get the first tradable currency in the exchange which isn't one of the other worth values.
-  foreach ($dest_exchange_currencies as $dest_currency) {
-    if ($dest_currency->ticks) continue;
-    unset($dest_currency);
-    break;
-  }
-  if (!isset($dest_currency)) {
-    return array(
-      $source_currency_id,
-      //this string is identical to another
-      t('The destination exchange has no tradable currency.')
-    );
-  }
-
-  //now add the dest value
-  //conversion may not be exact
-  $dest_worths[] = array(
-    'curr_id' => $dest_currency->id(),
-    'value' => floor($dest_currency->ticks / $source_ticks * $transaction->worth->val($source_currency_id))
-  );
-  $transaction->dest_worths = $dest_worths;
-  return array();//no problems
-}
-
-/**
- * helper to get all the entity references as an array of ids
- * @param FieldInterface $field
- * @return integer[]
- * @todo after alpha12 check the entityreference fieldtype for a similar function. Nobrainer if you as me.
- */
-function _get_entity_reference_targets($field) {
-  foreach ($field->getValue() as $ref) {
-    $dests[$ref['target_id']] = $ref['target_id'];
-  }
-  return $dests;
-}
