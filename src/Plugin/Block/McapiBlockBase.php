@@ -30,7 +30,8 @@ class McapiBlockBase extends BlockBase {
    */
   public function access(AccountInterface $account) {
     $account = \Drupal::routeMatch()->getParameter('user');
-    mdump($account);die('died mcapiBlockBase::access()');
+    //don't we need to call the parent?  See blockbase::access after alpha14
+    debug($this->getPluginDefinition(), 'check that block access is working');
     if($this->configuration['user_source'] == MCAPIBLOCK_USER_MODE_PROFILE) {
       if ($account = \Drupal::request()->attributes->get('user')) {
         $this->account = $account;

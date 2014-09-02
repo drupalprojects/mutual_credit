@@ -782,7 +782,6 @@ function mcapi_render_twig($template, array $tokens) {
     eval('?' . '>' . $twig_service->compileSource($template, $name));
   }
   $twig = new $cls($twig_service);
-//  print_R($tokens);
   return $twig->render($tokens);
 }
 

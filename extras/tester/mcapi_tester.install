@@ -29,7 +29,7 @@ function mcapi_tester_install() {
   echo "Created taxonomy terms";
 
   //now
-  mcapi_tester_make_users(26);//should make wallets as well
+  $uids = mcapi_tester_make_users(26);//should make wallets as well
   echo "\nCreated users";
   //make some transactions within the exchanges.
   mcapi_tester_make_transactions(200);
@@ -182,8 +182,9 @@ function mcapi_tester_make_users($num = 26) {
       'pass' => 'a',
       'status' => 1,
     );
-    $u = User::create($props)->save();
-
+    $u = User::create($props);
+    $u->save();
+    $uids[] = $u->id();
   }
   return $uids;
 }

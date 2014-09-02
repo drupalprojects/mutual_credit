@@ -79,8 +79,6 @@ class FirstPartyEditFormList extends ConfigEntityListBuilder{
         $build['list']['#rows'][$entity->id()] = $row;
       }
     }
-    //get the form and put it in the final row of the table
-    $build['form'] = \Drupal::formBuilder()->getForm($this);
     return $build;
   }
 
@@ -90,47 +88,6 @@ class FirstPartyEditFormList extends ConfigEntityListBuilder{
   public function getFormID() {
     return 'exchanges_list';
   }
-
-  //this is no longer a form controller
-  public function buildForm(array $form, $form_state) {
-    //$form = parent::buildForm($form, $form_state);
-    $form['title'] = array(
-      '#type' => 'textfield',
-      '#title_display' => 'invisible',
-      '#title' => t('Name of new exchange'),
-      '#size' => 15,
-      '#prefix' => '<div class="label-input"><div class="add-new-placeholder">' . $this->t('Add new currency') .'</div>',
-    );
-    //I can't help but think there's a better way to get a list of entity labels, keyed by entity id
-    foreach (Exchange::loadMultiple() as $id => $exchange) {
-      $options[$id] = $exchange->label();
-    }
-    $form['id'] = array(
-    	'#type' => 'machine_name',
-    	'#default_value' => '',
-    	'#machine_name' => array(
-    		'exists' => 'mcapi_editform_load',
-    		'source' => array('title'),
-    	),
-    	'#maxlength' => 12,
-    );
-    $form['exchange'] = array(
-      '#title' => t('Exchange') .':',
-    	'#type' => 'select',
-      '#empty_option' => t('- All -'),
-      '#empty_value' => '',
-      '#options' => $options,
-    );
-
-    $form['actions']  = array(
-      'submit' => array(
-        '#type' => 'submit',
-        '#value' => t('Continue')
-      )
-    );
-    return $form;
-  }
-
 
   /**
    * {@inheritdoc}

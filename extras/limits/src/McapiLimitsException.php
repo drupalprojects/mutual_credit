@@ -30,6 +30,7 @@ class McapiLimitsException extends McapiTransactionWorthException {
   }
 
   function __toString() {
+    //TODO check whether the current user has permission to view a wallets aggregate stats before showing the !limit or !projected
     $replacements = array(
       '!wallet' => $this->wallet->label(),
       '!excess' => $this->currency->format($this->excess),

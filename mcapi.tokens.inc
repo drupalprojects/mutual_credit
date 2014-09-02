@@ -21,6 +21,9 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
   foreach ($tokens as $name => $original) {
     $replacements[$original] = $replaced[$name];
   }
+  //TODO there seems to be some confusion about when something is a render array and when rendered
+  $replacements['[mcapi:worth]'] = drupal_render($replacements['[mcapi:worth]']);//hack
+
   //handle any entity references - tokens within tokens
   $token_service = \Drupal::token();
   if ($payer_tokens = $token_service->findWithPrefix($tokens, 'payer')) {

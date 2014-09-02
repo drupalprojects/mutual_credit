@@ -74,7 +74,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     $form['mywallet'] = array(
       '#title' => t('My wallet')
     );
-    $my_wallets = mcapi_entity_label_list('user', mcapi_get_wallet_ids($account));
+    $my_wallets = mcapi_entity_label_list('mcapi_wallet', mcapi_get_wallet_ids($account));
     //if I only have one wallet, we'll put a bogus disabled chooser
     //however disabled widgets don't return a value, so we'll store the value we need in a helper element
     if (\Drupal::config('mcapi.wallets')->get('entity_types.user:user') > 1) {//show a widget
@@ -91,12 +91,11 @@ class FirstPartyTransactionForm extends TransactionForm {
         '#value' => key($my_wallets)
       );
     }
-    $form['partner']['#element_validate'] = array('local_wallet_validate_id');
-    $form['partner']['#exchanges'] = Exchange::referenced_exchanges();
-
-    if ($config->partner['preset']) {
-      $form['partner']['#default_value'] = $config->partner['preset'];
-    }
+    $form['partner'] = array(
+      '#element_validate' => array('local_wallet_validate_id'),
+      '#exchanges' => array_keys(Exchange::referenced_exchanges()),
+      '#default_value' => $config->partner['preset']
+    ) + $form['partner'];
 
     $form['direction'] = array(
       '#type' => $config->direction['widget'],
@@ -178,7 +177,6 @@ class FirstPartyTransactionForm extends TransactionForm {
     //TODO contextual_links would be nice to jump straight to the edit form
     //pretty hard because it is designed to work only with templated themes, not theme functions
     //instead we'll probably just put a link in the menu
-
     return $form;
   }
 
@@ -186,7 +184,6 @@ class FirstPartyTransactionForm extends TransactionForm {
    * element validator for 'partner'
    * set the payer and payee from the mywallet, partner and direction
    */
-
   function firstparty_convert_direction(&$element, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     $form = $form_state->getCompleteForm();

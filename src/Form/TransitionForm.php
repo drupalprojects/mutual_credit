@@ -129,7 +129,6 @@ class TransitionForm extends EntityConfirmFormBase {
   }
 
   public function validate(array $form, FormStateInterface $form_state) {
-
   }
 
   /**
@@ -142,7 +141,6 @@ class TransitionForm extends EntityConfirmFormBase {
     form_state_values_clean($form_state);
     $values = $form_state->getValues();
 
-    print_R($values); die('these are not the submitted values of the added fields');
 
     unset($values['confirm'], $values['langcode']);
     try {

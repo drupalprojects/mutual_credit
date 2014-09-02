@@ -124,9 +124,7 @@ class TransactionForm extends ContentEntityForm {
    * this is unusual because normally build a temp object
    */
   public function validate(array $form, FormStateInterface $form_state) {
-
     form_state_values_clean($form_state);//without this, buildentity fails, but not so in nodeFormController
-
     $transaction = $this->buildEntity($form, $form_state);
 
     // The date element contains the date object.
@@ -140,44 +138,35 @@ class TransactionForm extends ContentEntityForm {
     if (!$transaction->creator->target_id) {
       $transaction->set('creator', \Drupal::currentUser()->id());
     }
-    else $form_state->set('mcapi_validated', TRUE);
-
-    //validate the fieldAPI widgets
-    $this->getFormDisplay($form_state)->validateFormValues($transaction, $form, $form_state);
-
-    //TODO take this out of the global scope
-    if ($form_state->getErrors()) {
-      return;
-    }
-
 
     //node_form controller runs a hook for validating the node
     //however we do it here IN the transaction entity validation which is less form-dependent
 
-    try {
-      //curiously, I can't find an instance of the entity->validate() being called. I think it might be new in alpha 11
-      if ($violations = $transaction->validate()) {
-        //TEMP this throws just one
-        foreach ($violations as $field => $message) {
-          throw new McapiTransactionException($field, $message);
-        }
-      }
-      $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
-      foreach ($transaction->warnings as $message) {
-        if (!$child_errors['allow']) {
-          $form_state->setErrorByName(key($message), $message);
-        }
-        elseif ($child_errors['show_messages']) {
-          drupal_set_message($e->getMessage, 'warning');
-        }
-      }
-      //now validated, this is what we will put in the tempstore
-      $this->entity = $transaction;
+
+    //validate the fieldAPI widgets
+    $this->getFormDisplay($form_state)->validateFormValues($transaction, $form, $form_state);
+
+    if ($form_state->getErrors()) {
+      return;
     }
-    catch (McapiTransactionException $e) {
-      //The Exception message may have several error messages joined together
-      $form_state->setErrorByName($e->getField(), $e->getMessage());
+
+    //curiously, I can't find an instance of the entity->validate() being called. I think it might be new in alpha 11
+    if ($violations = $transaction->validate()) {
+      foreach ($violations as $field => $message) {
+        $form_state->setErrorByName($field, $message);
+      }
     }
+    //show the warnings
+    $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
+    foreach ($transaction->warnings as $message) {
+      if ($child_errors['show_messages']) {
+        drupal_set_message($e->getMessage, 'warning');
+      }
+    }
+    //now validated, this is what we will put in the tempstore
+    $this->entity = $transaction;
+
+    $form_state->set('mcapi_validated', TRUE);
   }
 
   public function submit(array $form, FormStateInterface $form_state) {

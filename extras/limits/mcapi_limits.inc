@@ -46,6 +46,7 @@ function _mcapi_limits_mcapi_transaction_validate($clusters) {
         extract ($limits);//produces $min and $max
         //we could send 'worth' values to the exception, but they are hard to work with
         //instead we'll send the currency and the quantities
+//debug("New $curr_id balance for $wid will be $projected while range is $min to $max");
         if ($diff > 0 && $projected > 0 && is_numeric($max) && $projected > $max) {
           $errors[$wid][] = array(
             'currency' => $currency,

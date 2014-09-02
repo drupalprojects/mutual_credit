@@ -109,27 +109,29 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * {@inheritdoc}
    */
   public function save() {
-    $this->moduleHandler = \Drupal::moduleHandler();
-    $this->preValidate();
-    $storage = $this->entityManager()->getStorage($this->entityTypeId);
-
-    $this->moduleHandler->alter('mcapi_transaction', $this);
-    if ($violations = $this->validate()) {
-      //TODO put all the violations in here, somehow
-      reset($violations);
-      //throw new McapiTransactionException(key($violations), current($violations)->getMessage());
-      throw new McapiTransactionException(key($violations), current($violations) );
+    if (!$this->validated) {
+      if ($violations = $this->validate()) {
+        //TODO put all the violations in here, somehow
+        reset($violations);
+        //throw new McapiTransactionException(key($violations), current($violations)->getMessage());
+        throw new McapiTransactionException(key($violations), current($violations) );
+      }
     }
-
-    return $storage->save($this);
+    return $this->entityManager()->getStorage($this->entityTypeId)->save($this);
   }
 
-
+  /**
+   * an opportunity to add children to the transaction
+   */
   public function prevalidate() {
+    $this->moduleHandler = \Drupal::moduleHandler();
+    $this->moduleHandler->alter('mcapi_transaction', $this);
     $clone = clone($this);
-    $this->children = $this->moduleHandler->invokeAll('mcapi_transaction_children', array($clone));
-    unset($clone); //save memory coz validation could be intense!
 
+    $this->children = array_merge(
+      \Drupal::moduleHandler()->invokeAll('mcapi_transaction_children', array($clone)),
+      $this->children
+    );
   }
 
   /**
@@ -138,9 +140,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * @return Violation[]
    */
   function validate() {
+    $violations = array();
+
+    if ($this->validated) return $violations;
+    $this->preValidate();
+
     //all this does is check the field values against the field definitions.
     //Don't know how to include the worth field in that
-    $violations = array();
     if ($this->isNew()) {
       //check that the uuid doesn't already exist. i.e. that we are not resubmitting the same transactions
       $properties = array('uuid' => $this->get('uuid')->value);
@@ -159,45 +165,40 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $violations = self::validateTransaction(array_shift($transactions));
     $child_warnings = array();
     foreach ($transactions as $transaction) {
-      $child_warnings += self::validateTransaction($child);
+      $child_warnings += self::validateTransaction($transaction);
     }
 
     //note that this validation cannot change the original transaction because a clone of it is passed
-    $violations += $this->moduleHandler->invokeAll('mcapi_transaction_validate', array(array(clone($this))));
+    $violations += \Drupal::moduleHandler()->invokeAll('mcapi_transaction_validate', array(array(clone($this))));
 
-    if ($warnings = array_filter($child_warnings)) {
+    if ($child_warnings) {
       $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
 
-      foreach ($warnings as $e) {
+      foreach ($child_warnings as $e) {
         if (!$child_errors['allow']) {
           //actually these should be handled as violations or warnings
           $violations[] = $e->getMessage();
         }
         else {
-          drupal_set_message($e->getMessage(), 'warning');
+          $this->warnings[] = $e->getMessage();
         }
 
-        $replacements = array(
-          '!messages' => implode(' ', $warnings),
-        );
         if ($child_errors['log']){
           //TODO will there be an mcapi logger?
           \Drupal::logger('mcapi')->error(
-            t("transaction failed validation with the following messages: !messages", array('!messages' => $message))
+            t("transaction failed validation with the following messages: !messages", array('!messages' => implode(' ', $warnings)))
           );
         }
         if ($child_errors['mail_user1']){
-          //should this be done using the drupal mail system? my life is too short for that rigmarole
+          //should this be done using the drupal mail system? my life is too short for such a rigmarole
           mail(
             User::load(1)->mail,
             t('Child transaction error on !site', array('!site' => \Drupal::config('system.site')->get('name'))),
-            $replacements['!messages'] ."\n\n". $replacements['!dump']
+            implode('\n', $warnings)
           );
         }
       }
-
     }
-
     //$violations = parent::validate();//doesn't exist
     $violation_messages = array();
     foreach ($violations as $violation) {
@@ -216,6 +217,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       //TEMP violations are just strings for now.
       $violation_messages[] = $violation;//TODO this is temp really we want (string)$violation
     }
+    $this->validated = TRUE;
     //TODO check that transaction limit violations highlight the right currency field
     return $violation_messages; //temp need to tidy this up
   }
@@ -270,9 +272,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'payer' => 1,//chances are that these exist
       'payee' => 2,
       'children' => array(),
+      'exchange' => 1
     );
   }
-
 
   /**
    * save the child transactions, which refer to the saved parent
@@ -407,9 +409,16 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setRequired(TRUE);
 
     $fields['created'] = FieldDefinition::create('created')
-      ->setLabel(t('Created'))
-      ->setDescription(t('The time that the transaction was created.'))
-      ->setTranslatable(TRUE);
+    ->setLabel(t('Created'))
+    ->setDescription(t('The time that the transaction was created.'))
+    ->setTranslatable(TRUE);
+
+    $fields['exchange'] = FieldDefinition::create('entity_reference')
+      ->setLabel(t('Exchange'))
+      ->setDescription(t('Exchange governing this transaction'))
+      ->setSetting('target_type', 'mcapi_exchange')
+      ->setReadOnly(TRUE)
+      ->setRequired(TRUE);
 
     return $fields;
   }

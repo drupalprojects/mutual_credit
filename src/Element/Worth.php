@@ -67,7 +67,7 @@ class Worth extends FormElement {
     if (empty($element['#default_value'])) {
       drupal_set_message('No currencies have been specified in the worth field.', 'error');
     }
-    //TODO sort the currencies by weight.
+    //sort the currencies by weight.
     return $element;
   }
 
@@ -181,4 +181,3 @@ class Worth extends FormElement {
     //be aware that the child widgets will add to this and then be cleaned up in mcapi_worth_element_validate
     return $output;
   }
-}

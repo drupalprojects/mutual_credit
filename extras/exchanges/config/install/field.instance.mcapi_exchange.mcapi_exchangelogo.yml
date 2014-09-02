@@ -3,10 +3,10 @@ langcode: en
 status: true
 dependencies:
   entity:
-    - field.storage.mcapi_exchange.field_logo
-id: mcapi_exchange.mcapi_exchange.field_logo
+    - field.storage.mcapi_exchange.logo
+id: mcapi_exchange.mcapi_exchange.logo
 label: Logo
-field_name: field_logo
+field_name: logo
 entity_type: mcapi_exchange
 bundle: mcapi_exchange
 description: ''

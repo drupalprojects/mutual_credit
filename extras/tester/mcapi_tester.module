@@ -99,12 +99,17 @@ function mcapi_tester_make_transactions($num, $inter = FALSE) {
 
     if ($inter) {
       //get an exchange the payer is in, and an open currency in that exchange
-      foreach (Exchange::referenced_exchanges(Wallet::load($props['payer'])->getOwner()) as $exchange) {
+      $owner = Wallet::load($props['payer'])->getOwner();
+      foreach (Exchange::referenced_exchanges($owner) as $exchange) {
         foreach ($exchange->currencies->referencedEntities() as $currency) {
           if ($currency->ticks) break;
         }
       }
-      if (!$currency) drupal_set_message('No currencies in exchange '.$exchange->id());
+      if (!isset($currency)) {
+        drupal_set_message($owner->getEntityTypeId() .' '.$owner->id() .' is not in any exchanges');
+        continue;
+        //drupal_set_message('No currencies in exchange '.$exchange->id());
+      }
     }
     else {
       $currencies = exchange_currencies(array($exchange));
@@ -120,7 +125,8 @@ function mcapi_tester_make_transactions($num, $inter = FALSE) {
 
     try {
       //there is no way to get the soft error messages out when a transaction is created in code.
-      Transaction::create($props)->save();
+      $transaction = Transaction::create($props);
+      $transaction->save();
     }
     catch (McapiTransactionException $e) {
       //todo
@@ -133,7 +139,9 @@ function mcapi_tester_make_transactions($num, $inter = FALSE) {
       if ($inter) continue;
       throw new Exception($e->getMessage);
     }
-    if ($num == 1)drupal_set_message(l('Created transaction', $transaction->url('canonical')));
+    if ($num == 1 && $transaction){
+      drupal_set_message(l('Created transaction', $transaction->url('canonical')));
+    }
   }
 }
 

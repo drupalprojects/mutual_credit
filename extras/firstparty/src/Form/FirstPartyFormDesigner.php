@@ -255,6 +255,8 @@ class FirstPartyFormDesigner extends EntityForm {
     foreach (mcapi_1stparty_fieldAPI() as $field_name => $data) {//need the fieldname & label & widget
       //this element will contain the default value ONLY for the fieldAPI element
       //assumes a cardinality of 1!
+      $element = array();
+      $element['#required'] = FALSE;
       $form['fieldapi_presets'][$field_name] = array(
         '#title' => $this->t('@fieldname preset', array('@fieldname' => $data['definition']->label())),
         '#description' => $this->t(
@@ -263,7 +265,7 @@ class FirstPartyFormDesigner extends EntityForm {
         ),
         '#type' => 'details',
         '#group' => 'steps',
-        'preset' => $data['widget']->formElement($template_transaction->{$field_name}, 0, array(), $form, $form_state),
+        'preset' => $data['widget']->formElement($template_transaction->{$field_name}, 0, $element, $form, $form_state),
         '#weight' => $w++
       );
     }

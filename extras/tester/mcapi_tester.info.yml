@@ -6,6 +6,7 @@ type: module
 version: VERSION
 
 dependencies:
+  - views
   - views_ui
   - field_ui
   - contextual

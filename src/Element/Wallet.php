@@ -56,7 +56,7 @@ class Wallet extends FormElement {
    * process callback
    */
   function mcapi_process_select_wallet($element, FormStateInterface $form_state) {
-    $exchanges = array_keys(Exchange::referenced_exchanges());
+    $exchanges = $element['#exchanges'] ? : array_keys(Exchange::referenced_exchanges());
     $element['#autocomplete_route_parameters'] = array('exchanges' => implode(',', $exchanges));
     return $element;
   }
@@ -85,12 +85,9 @@ class Wallet extends FormElement {
       if (!$wallet) {
         $message = t('Invalid wallet id: @value', array('@value' => $element['#value']));
       }
-      elseif($wallet->name->value == '_intertrading') {
-        $message = t('You cannot trade with wallet #@value directly', array('@value' => $element['#value']));
-      }
     }
     if ($message) {
-      \Drupal::formBuilder()->setError($element, $form_state, $message);
+      $form_state->setError($element, $message);
     }
   }
 

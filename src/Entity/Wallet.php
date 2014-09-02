@@ -210,10 +210,10 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    * @return Drupal\mcapi\Entity\Exchange[]
    *   keyed by entity id
    */
-  function in_exchanges() {
+  function in_exchanges($open = FALSE) {
     return $this->entity_type == 'mcapi_exchange' ?
       array($this->pid => $this->getOwner()) :
-      Exchange::referenced_exchanges($this->getOwner(), TRUE);
+      Exchange::referenced_exchanges($this->getOwner(), TRUE, $open);
   }
 
   /**

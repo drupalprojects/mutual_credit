@@ -235,15 +235,16 @@ function mcapi_currency_load($id) {
  *   The entity names, keyed by entity id
  */
 function mcapi_entity_label_list($entity_type_id, array $data = array()) {
-  if (empty($entities)) {
+  if (empty($data)) {
     $entities = \Drupal::entityManager()->getStorage($entity_type_id)->loadMultiple();
   }
-  elseif(is_string(key($entities))) {
+  elseif(is_string(key($data))) {
     $entities = entity_load_multiple_by_properties($entity_type_id, $data);
   }
-  elseif(is_integer(reset($entities))) {
-    $entities = \Drupal::entityManager()->getStorage($entity_type_id)->loadMultiple($entities);
+  elseif(is_numeric(reset($data))) {
+    $entities = \Drupal::entityManager()->getStorage($entity_type_id)->loadMultiple($data);
   }
+  else $entities = $data;
   $list = array();
   foreach ($entities as $entity) {
     $list[$entity->id()] = $entity->label();
@@ -377,14 +378,10 @@ function mcapi_process_currcodes($element) {
 }
 
 /**
- * select_wallet element callbacks
- * these could all go in a different file
- */
-/**
  * process callback for wallet_select element
  */
 function mcapi_process_select_wallet($element, FormStateInterface $form_state) {
-  $exchanges = array_keys(Exchange::referenced_exchanges());
+  $exchanges = $element['#exchanges'] ? : array_keys(Exchange::referenced_exchanges());
   $element['#autocomplete_route_parameters'] = array('exchanges' => implode(',', $exchanges));
   return $element;
 }
@@ -413,12 +410,9 @@ function local_wallet_validate_id(&$element, FormStateInterface $form_state) {
     if (!$wallet) {
       $message = t('Invalid wallet id: @value', array('@value' => $element['#value']));
     }
-    elseif($wallet->name->value == '_intertrading') {
-      $message = t('You cannot trade with wallet #@value directly', array('@value' => $element['#value']));
-    }
   }
   if ($message) {
-    \Drupal::formBuilder()->setError($element, $form_state, $message);
+    $form_state->setError($element, $message);
   }
 }
 
@@ -495,26 +489,10 @@ function mcapi_default_currency_id(ExchangeInterface $exchange, $field_definitio
   return $output;
 }
 
-/**
- * entity reference field default_value callback for $transaction->exchange
- * Find an appropriate exchange, considering that intertrading hasn't been calculated yet
- *
- * @return uuid[]
- *   The uuid of the calculated exchange
- */
-function mcapi_exchanges_default(TransactionInterface $entity, $field_definition) {
-  $common = mcapi_wallet_common_exchanges($entity->payer->entity, $entity->payee->entity);
-  if (!$common) {
-    $common = $entity->payer->entity->in_exchanges();
-  }
-  $output[]['target_uuid'] = reset($common)->uuid->value;
-  return $output;
-}
 
 //get all the exchanges common to 2 wallets
 //this is only used in the above...
 function mcapi_wallet_common_exchanges($wallet1, $wallet2) {
-  if (!is_object($wallet2)){mdump($wallet1);mtrace();}
   return array_intersect_key($wallet1->in_exchanges(), $wallet2->in_exchanges());
 }
 
@@ -757,10 +735,12 @@ function mcapi_wipeslate() {
  */
 function mcapi_hook_info() {
   $hooks = array(
-    'mcapi_transaction_children',
-    'mcapi_transaction_validate',
-    'mcapi_transaction_alter',
+    //TODO document these properly in mcapi.api.php
+    'mcapi_transaction_children',//add children without affecting parent
+    'mcapi_transaction_validate',//throw violations without affecting transaction
+    'mcapi_transaction_alter',//alter the main transaction
     'mcapi_transition',
+    'mcapi_info_drupal_permissions',
     //and all the entity hooks e.g
     'mcapi_wallet_update',
     'mcapi_wallet_delete'

@@ -54,14 +54,25 @@ class Edit extends Transition2Step {
     $object = new \Drupal\mcapi\Form\TransactionForm(\Drupal::EntityManager());
     $object->setEntity($transaction);
     $object->setModuleHandler(\Drupal::moduleHandler());
-    $form = \Drupal::formBuilder()->getForm($object);
+
+    //oops! this changes the form_id and breaks form submission
+    $form = array();
+    $form_state = new FormState();
+    $display = entity_get_form_display('mcapi_transaction', 'mcapi_transaction', 'default');
+    $object->setFormDisplay($display, $form_state);
+    $transaction_form = $object->form($form, $form_state);
+
 
     $additional_fields = array();
     foreach (array_filter($this->configuration['fields']) as $fieldname) {
-      $additional_fields[$fieldname] = $form[$fieldname];
-      $additional_fields[$fieldname]['#weight'] = 15;
+      $additional_fields[$fieldname] = $transaction_form[$fieldname];
     }
-    //how do we set the weights? we're not using the display!!
+    //payer and payee wallets MUST be limited to the same exchange as the transaction
+    foreach (array('payer', 'payee') as $wallet) {
+      if (array_key_exists($wallet, $additional_fields)) {
+        $additional_fields[$wallet]['#exchanges'] = array($transaction->exchange->target_id);
+      }
+    }
 
     return $additional_fields;
   }
