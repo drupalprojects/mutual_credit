@@ -9,9 +9,9 @@ minmax:
   min:
     -
       curr_id: cc
-      value: -100
+      value: -1000
   max:
     -
       curr_id: cc
-      value: 150
+      value: 1000
 plugin: explicit

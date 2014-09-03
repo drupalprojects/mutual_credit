@@ -153,7 +153,7 @@ function mcapi_exchanges_mcapi_transaction_alter(TransactionInterface $transacti
     return;
   }
 
-  $transaction_curr_ids = $transaction->worth->curr_ids();
+  $transaction_curr_ids = $transaction->worth->currencies();
   $my_exchanges = Exchange::referenced_exchanges();
   if (!is_array($my_exchanges)){print_r($my_exchanges);die();}
   $payer_exchanges = $transaction->payer->entity->in_exchanges(TRUE);

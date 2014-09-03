@@ -93,17 +93,6 @@ class WorthFieldItemList extends FieldItemList {
     );
   }
 
-  /**
-   * undocumented
-   * used in function intertrading_new_worths()
-   * @todo tidy this up
-   */
-  public function curr_ids() {
-    foreach ($this->list as $item) {
-      $curr_ids[] = $item->curr_id;
-    }
-    return $curr_ids;
-  }
 
   /**
    * undocumented
@@ -115,5 +104,17 @@ class WorthFieldItemList extends FieldItemList {
       if ($item->curr_id == $curr_id) return $item->value;
     }
     return 0;
+  }
+
+  public function currencies($full = FALSE) {
+    foreach ($this->list as $item) {
+      if ($full) {
+        $c[$item->curr_id] = mcapi_currency_load($item->curr_id);
+      }
+      else {
+        $c[] = $item->curr_id;
+      }
+    }
+    return $c;
   }
 }

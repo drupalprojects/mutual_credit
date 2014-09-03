@@ -137,19 +137,8 @@ mcapi.currency.*:
       type: float
       label: Ticks
     deletion:
-      type: mapping
+      type: integer
       label: Delete options
-      mapping:
-        erase: 
-          type: boolean
-          label: Erase
-        delete: 
-          type: boolean
-          label: Delete
-#not implemented
-        reverse: 
-          type: boolean
-          label: Reverse
         
 mcapi.state.*:
   type: mapping

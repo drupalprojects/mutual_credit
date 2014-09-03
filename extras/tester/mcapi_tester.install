@@ -130,6 +130,7 @@ function mcapi_tester_make_exchanges() {
       'name' => $currname,
       'zero' => rand(0, 1),
       'issuance' => CURRENCY_TYPE_EXCHANGE,
+      'deletion' => 1,
       'format' => array($first.$first, '000', ':', '99'),
       'weight' => $w,
       'ticks' => 10*rand(1, 6)

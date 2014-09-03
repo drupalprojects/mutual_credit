@@ -82,10 +82,10 @@ class CurrencyForm extends EntityForm {
     );
     $form['acknowledgement'] = array(
       '#type' => 'container',
-      '#children' => implode("\n<br /><br />\n", array(
-        t('Acknowledgement currencies are abundant - they are issued whenever valued is created; they can be used as a medium of exchange but there is no guarantee of redemption.'),
-        t("These are sometimes called 'social' currencies, because by encouraging and recognising volunteer service, they bind the community together."),
-        t('This is the choice for all timebanking systems and most LETS.')
+      '#children' => implode(" ", array(//<br /> breaks don't work here
+        t('Acknowledgement currencies are abundant - they are usually issued to pay for something of value and are not redeemable.'),
+        t("These are sometimes called 'fiat' currencies and have no value in themselves."),
+        t('Most timebanking systems and most LETS should choose this.')
       )),
       '#states' => array(
         'visible' => array(
@@ -96,7 +96,7 @@ class CurrencyForm extends EntityForm {
     );
     $form['exchange'] = array(
       '#type' => 'container',
-      '#children' => implode("\n<br /><br />\n", array(
+      '#children' => implode(" ", array(
         t("Exchange currencies are 'sufficient' - they are issued and redeemed as as users earn and spend."),
         t('The sum of all balances of active accounts, including the reservoir account, is zero, and ideally, accounts are returned to zero before being deactivated.'),
         t('To stop accounts straying too far from zero, positive and negative balance limits are often used.'),
@@ -111,11 +111,11 @@ class CurrencyForm extends EntityForm {
     );
     $form['commodity'] = array(
       '#type' => 'container',
-      '#children' => implode("\n<br /><br />\n", array(
-        t('Commodity currencies are scarce - the quantity is tied to the amount of a valuable commodity in a trusted warehouse.'),
+      '#children' => implode(" ", array(
+        t('Commodity currencies are limited to the quantity of a valuable commodity in storage.'),
         t('They are valued according to that commodity, and redeemed for that commodity, although fractional reserve rules may apply.'),
-        t('Effectively the commodity is monetised, this brings confidence to the commodity, for the cost of the stuff in storage.'),
-        t("This would be the choice for all 'dollar-backed' complementary currencies.")
+        t('Effectively the commodity is monetised, for the cost of the stuff in storage.'),
+        t("This would be the choice for all 'backed' complementary currencies.")
       )),
       '#states' => array(
         'visible' => array(
@@ -156,12 +156,13 @@ class CurrencyForm extends EntityForm {
     );
 
     $form['deletion'] = array(
-      '#title' => t('Delete options'),
-      '#type' => 'checkboxes',
+      '#title' => t('Deletion'),
+      '#type' => 'radios',
       '#options' => array(
-    	  'delete' => $this->t('Delete - remove completely from the database'),
-    	  'erase' => $this->t('Erase - remove completely from the database'),
-        'reverse' => $this->t('Reverse - add a counter transaction')
+        //'0' => $this->t('Delete nothing but add a counter transaction'),//reverse mode
+        '0' => $this->t('Transactions are permanent (but reverse transactions can be made manually)'),
+    	  '1' => $this->t('keep transaction in a deleted state'),
+    	  '2' => $this->t('remove completely from the database'),
       ),
       '#default_value' => $currency->deletion,
       '#weight' => 7

@@ -50,7 +50,10 @@ class TransitionManager extends DefaultPluginManager {
     return $this->plugins;
   }
 
-  public function active(array $exclude = array()) {
+  public function active(array $exclude = array(), $worth) {
+    if ($worth) {
+      $exclude = array_merge($exclude, $this->deletemodes($worth->currencies(TRUE)));
+    }
     //static shouldn't be needed
     foreach ($this->all() as $id => $plugin) {
       if (!in_array($id, $exclude)) {
@@ -69,5 +72,19 @@ class TransitionManager extends DefaultPluginManager {
     }
     return $this->plugins[$id];
   }
+
+  private function deletemodes(array $currencies) {
+    $modes = array(
+    	'1' => 'erase',
+      '2' => 'delete'
+    );
+    foreach ($currencies as $currency) {
+      $deletemodes[] = intval($currency->deletion);
+    }
+    $deletemode = min($deletemodes);
+    //return everything larger than the min to be excluded
+    return array_slice($modes, min($deletemodes));
+  }
+
 }
 

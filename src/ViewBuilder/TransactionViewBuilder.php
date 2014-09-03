@@ -8,6 +8,9 @@
 namespace Drupal\mcapi\ViewBuilder;
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
 use Drupal\Core\Template\Attribute;
 use Drupal\Component\Utility\NestedArray;
@@ -18,6 +21,13 @@ use Drupal\Core\Render\Element;
  * Render controller for transactions.
  */
 class TransactionViewBuilder extends EntityViewBuilder {
+
+  private $transitionManager;
+
+  public function __construct(EntityTypeInterface $entity_type, EntityManagerInterface $entity_manager, LanguageManagerInterface $language_manager) {
+    $this->transitionManager = \Drupal::service('mcapi.transitions');
+    parent::__construct($entity_type, $entity_manager, $language_manager);
+  }
 
   /**
    * Provides entity-specific defaults to the build process.
@@ -99,8 +109,11 @@ class TransactionViewBuilder extends EntityViewBuilder {
     $renderable = array();
     //child transactions and unsaved transactions never show links
     if (!$transaction->parent->value && $transaction->serial->value) {
-      $view_link = $view_mode != 'certificate';
-      foreach (show_transaction_transitions($view_link) as $transition => $plugin) {
+
+      $exclude = array('create');
+      if ($view_mode == 'certificate') $exclude[] = 'view';
+
+      foreach ($this->transitionManager->active($exclude, $transaction->worth) as $transition => $plugin) {
         if ($transaction->access($transition)) {
           $renderable['#links'][$transition] = array(
             'title' => $plugin->label,
@@ -144,8 +157,6 @@ class TransactionViewBuilder extends EntityViewBuilder {
 //shows the most common transitions
 //TODO this is used only once so could be incorporated
 function show_transaction_transitions($view = TRUE) {
-  $exclude = array('create');
-  if (!$view) $exclude[] = 'view';
-  return \Drupal::service('mcapi.transitions')->active($exclude);
+
 }
 
