@@ -4,7 +4,8 @@
  * Default theme implementation to display a wallet's balance history.
  * some javascript has been added in the header already
  *
- * data #the data for generating the chart
+ * columns
+ * date_rows
  * functionname
  * id #the unique id of the chart
  * currency #the currency object
@@ -16,15 +17,22 @@
 <script>
 google.setOnLoadCallback({{ functionname }});
 function {{ functionname }}() {
-  {{ data }}
-  var options = {
+  var data = new google.visualization.DataTable();
+  {% for name, column in columns %}
+  data.addColumn('{{ name }}', '{{ column }}');
+  {% endfor %}
+  {% for row in daterows %}
+  data.addRow([new Date('{{ row.0 }}'), {{ row.1 }}]);
+  {% endfor %}
+var options = {
     width: {{ width }},
     height: {{ height }},
     colors: ['{{ currency.color }}'],
     legend: {position: 'none'},
-    vAxis: { ticks: [{% for tick in vaxislabels %}
-      {v:{{ tick.value }}, f:"{{ tick.label }}"},
-      {% endfor %}
+    vAxis: { ticks: [
+    {% for tick in vaxislabels %}
+    {v:{{ tick.value }}, f:"{{ tick.label }}"},
+  {% endfor %}
     ]}
   }
   new google.visualization.LineChart(document.getElementById('{{ id }}')).draw(data, options);

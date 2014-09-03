@@ -72,18 +72,20 @@ function mcapi_preprocess_wallet_history(&$vars) {
   );
 
   //set up the javascript data object
-  $vars['data'] = "
-  var data = new google.visualization.DataTable();
-  data.addColumn('date', 'Date');
-  data.addColumn('number', '".$currency->label()."')
-  data.addColumn({type:'string', role:'tooltip'})";
+  $vars['data'] = "\nvar data = new google.visualization.DataTable();";
+  $vars['columns'] = array(
+    'date' => t('Date'),
+    'number' => $currency->label()
+  );
 
   //populate the javascript data object
   foreach ($vars['history'] as $timestamp => $balance) {
-    $balance .= ', "'.$currency->format($balance, TRUE) .'"';
     //this has a resolution of one day, not very satisfying perhaps
-    $date = date('m/d/Y', $timestamp);
-    $vars['data'] .= "\n  data.addRow([new Date('$date'), $balance]);";//note that $balance is actually 2 items in the row
+    $vars['daterows'][] = array(
+      date('m/d/Y', $timestamp),
+      $balance,
+      $currency->format($balance, TRUE)
+    );
   }
 }
 
@@ -148,6 +150,8 @@ function template_preprocess_wallet_balance_bars(&$vars) {
   $vars['outgoing'] = $data['gross_out'];
   $vars['show_in'] = $currency->format($data['gross_in'], TRUE);
   $vars['show_out'] = $currency->format($data['gross_out'], TRUE);
+  $vars['given'] = t('Given');
+  $vars['gotten'] = t('Gotten');
   $max = _mcapi_get_axis_max(max($data['gross_in'], $data['gross_out']));
   $vars['max'] = $max;
   $vars['vaxislabels'] = array(

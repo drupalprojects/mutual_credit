@@ -97,12 +97,8 @@ class WalletLimits {//couldn't be bothered to make an interface for this
     if (array_key_exists($curr_id, $this->limits)) {
       return $this->limits[$curr_id];
     }
-    else {
-      //this should never happen
-      drupal_set_message('Currency '.$curr_id.' is not available to wallet '. $this->wallet->id());
-      //TODO log this event
-      return array('min' => NULL, 'max' => NULL);
-    }
+    //else the wallet has stopped trading so limits are irrelevant
+    return array('min' => NULL, 'max' => NULL);
   }
 
   function __toString() {

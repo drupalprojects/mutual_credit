@@ -10,6 +10,8 @@
  * outgoing     #raw outgoing value
  * show_in      #formatted incoming value
  * show_out     #formatted outgoing value
+ * given        #translation of 'Gotten'
+ * gotten       #translation of 'Given'
  * currency     #configEntity object
  * max
  * vaxislabels
@@ -24,13 +26,13 @@ function {{ functionname }}() {
     ['', {{ incoming }}, {{ outgoing }}]
   ]);
   var options = {
-    title:"{{ currency.label }} Given / Gotten",
-    width:{{ 120 }},
-    height:{{ 240 }},
+    title:"{{ currency.label }}",
+    width: 150,
+    height: 150 ,
     enableInteractivity: false,
     vAxis: {viewWindowMode: 'explicit'},
     vAxis: {viewWindow: {min: 0, max: {{ max  }}}},
-    hAxis: {title: "{{ show_in }}, {{ show_out }}"},
+    hAxis: {title: "{{ given }}, {{ gotten }}"},
     legend: {position: 'none'},
     colors: ['#2aab49', '#21a0db'],
     vAxis: { ticks: [{% for tick in vaxislabels %}
@@ -41,4 +43,4 @@ function {{ functionname }}() {
   new google.visualization.ColumnChart(document.getElementById('{{ id }}')).draw(data, options);
 }
 </script>
-<div class = "givengotten" id = "{{ id }}" style = "width:120px;"></div>
+<div class = "givengotten" id = "{{ id }}" style = "width:150px;"></div>
