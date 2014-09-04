@@ -65,7 +65,7 @@ function mcapi_signatures_views_data() {
     'title' => t('Date of signature'),
     'help' => t('The date the transaction was signed'),
     'field' => array(
-      'id' => 'date',
+      'id' => 'signed_date',
     ),
     'sort' => array(
       'id' => 'date'
@@ -94,4 +94,12 @@ function mcapi_signatures_views_data_alter(&$data) {
     'left_field' => 'serial',
     'field' => 'serial',
   );
+  /* This would involve joining with a subquery
+  $data['mcapi_transaction']['last_signature'] = array(
+    'title' => t('Latest signature date'),
+    'field' => array(
+      'id' => 'last_signature_date'
+    )
+    //would be great to have a sort as well
+  */
 }

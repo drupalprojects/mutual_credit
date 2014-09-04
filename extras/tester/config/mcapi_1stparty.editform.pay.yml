@@ -1,0 +1,36 @@
+id: pay
+exchange: ''
+path: 'transact/pay'
+menu:
+  title: 'Pay someone'
+  menu_name: Tools
+  weight: 5
+title: 'Pay someone'
+status: 1
+type: default
+mywallet:
+  unused: disabled
+  widget: select
+partner:
+  preset: ''
+direction:
+  preset: outgoing
+  widget: radios
+  incoming: Incoming
+  outgoing: Outgoing
+description:
+  preset: ''
+  placeholder: ''
+fieldapi_presets:
+  worth:
+other:
+  intertrade: false
+experience:
+  twig: "Pay: {{ partner }}\r\n{{ worth }}\r\nfor {{ description }}"
+  button: Preview
+  preview: page
+cache: ''
+uuid: a2afbadb-a9db-4895-ba01-1d94483cb783
+langcode: en
+dependencies: {  }
+

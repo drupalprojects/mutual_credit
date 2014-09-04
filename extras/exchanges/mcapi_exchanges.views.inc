@@ -87,9 +87,23 @@ function mcapi_exchanges_views_data() {
 
 /*
  * implements hook_views_data_alter
- * make an argument for every entity that uses the field 'exchanges'
 */
 function mcapi_exchanges_views_data_alter(&$data) {
+  $data['mcapi_transaction']['exchange'] = array(
+    'title' => t('Exchange'),
+    'help' => t('Exchange governing the transaction.'),
+    'field' => array(
+      'id' => 'standard'
+    ),
+    'filter' => array(
+      'id' => 'standard',
+    ),
+    'argument' => array(
+      'id' => 'standard',
+    )
+  );
+
+  //make an argument for every entity that uses the field 'exchanges'
   foreach (Exchange::getEntityFieldnames() as $entity_type => $fieldname) {
     if (!$fieldname) continue;
     $argument = &$data[$entity_type .'__'. $fieldname][$fieldname .'_target_id']['argument'];
@@ -99,4 +113,5 @@ function mcapi_exchanges_views_data_alter(&$data) {
     unset($data[$entity_type .'__'. $fieldname]['delta']);
     unset($data[$entity_type .'__'. $fieldname][$fieldname .'_revision_id']);
   }
+
 }

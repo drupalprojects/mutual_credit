@@ -413,6 +413,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     ->setDescription(t('The time that the transaction was created.'))
     ->setTranslatable(TRUE);
 
+    $fields['changed'] = FieldDefinition::create('changed')
+      ->setLabel(t('Changed'))
+      ->setDescription(t('The time that the transaction was last saved.'))
+      ->setTranslatable(TRUE);
+
     $fields['exchange'] = FieldDefinition::create('entity_reference')
       ->setLabel(t('Exchange'))
       ->setDescription(t('Exchange governing this transaction'))

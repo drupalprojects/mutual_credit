@@ -35,7 +35,7 @@ class Sign extends TransitionBase {
     module_load_include('inc', 'mcapi_signatures');
     transaction_sign($transaction, \Drupal::currentUser());
 
-    if ($transaction->state->value == TRANSACTION_STATE_FINISHED) {
+    if ($transaction->state->target_id == TRANSACTION_STATE_FINISHED) {
       $message = t('@transaction is signed off', array('@transaction' => $transaction->label()));
     }
     else{
@@ -57,7 +57,7 @@ class Sign extends TransitionBase {
   */
   public function opAccess(TransactionInterface $transaction) {
     //Only the designated users can sign transactions, and
-    if ($transaction->state->value == TRANSACTION_STATE_PENDING //the transaction is pending
+    if ($transaction->state->target_id == TRANSACTION_STATE_PENDING //the transaction is pending
       && isset($transaction->signatures) && is_array($transaction->signatures)// signatures property is populated
       && array_key_exists(\Drupal::currentUser()->id(), $transaction->signatures)//the current user is a signatory
       && $transaction->signatures[\Drupal::currentUser()->id()] == 0//the curreny user hasn't signed

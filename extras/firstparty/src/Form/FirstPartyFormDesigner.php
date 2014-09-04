@@ -288,7 +288,7 @@ class FirstPartyFormDesigner extends EntityForm {
       '#markup' => 'blah',
       '#weight' => $w++
     );
-
+    //TODO check in 8.0 whether form elements can have rich text descriptions
     $help = l(
       t('What is twig?'),
       'http://twig.sensiolabs.org/doc/templates.html',

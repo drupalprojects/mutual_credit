@@ -37,6 +37,7 @@ class CurrencyController extends ControllerBase {
    *   The page title.
    */
   public function pageTitle(CurrencyInterface $mcapi_currency) {
+    mtrace();
     return t('Activity in !currency', array('!currency' => String::checkPlain($mcapi_currency->label())));
   }
 

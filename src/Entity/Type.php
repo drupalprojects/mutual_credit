@@ -57,10 +57,4 @@ class Type extends ConfigEntityBase {
    */
   public $start_state;
 
-  public function getStartState() {
-    $state = State::load($this->start_state);
-    return $state->value;
-  }
-
-
 }

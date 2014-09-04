@@ -41,7 +41,7 @@ class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
   public function getLimits(WalletInterface $wallet){
     //the stored value is a 1 item array keyed by curr_id
     //we don't need to lookup the curr_id, we can just get the first value
-    $val = reset();
+    $val = $this->configuration['liquidity'][0]['value'];
     $limits = array(
       'min' => -$val,
       'max' => $val

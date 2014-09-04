@@ -41,7 +41,7 @@ class Erase extends Transition2Step {
    *  @return boolean
   */
   public function opAccess(TransactionInterface $transaction) {
-    if ($transaction->state->value != TRANSACTION_STATE_ERASED) {
+    if ($transaction->state->target_id != TRANSACTION_STATE_ERASED) {
       return parent::opAccess($transaction);
     }
     return FALSE;

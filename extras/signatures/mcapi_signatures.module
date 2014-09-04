@@ -24,18 +24,22 @@ function mcapi_signatures_mcapi_type_load($entities) {
  */
 function mcapi_signatures_mcapi_transaction_presave($transaction) {
   //the start state has already been set in transaction::validate
-  if ($transaction->isNew() && $transaction->state->target_id == 'pending') {
-    $override = _mcapi_signature_overrides($transaction->type->value);//should always return an array for pending transactions
-    if ($override['both']) {
-      $transaction->signatures[$transaction->payer->entity->user_id()] = 0;
-      $transaction->signatures[$transaction->payee->entity->user_id()] = 0;
-    }
-    //TODO move this into mcapi_exchanges.module
-    //the exchange manager should also sign
-    if($override['exman']) {
-      foreach ($transaction->flatten() as $t) {
-        $transaction->signatures[$t->exchange->entity->getOwnerId()] = 0;
+  if ($transaction->state->target_id == 'pending') {
+    if ($transaction->isNew()) {
+      $override = _mcapi_signature_overrides($transaction->type->target_id);//should always return an array for pending transactions
+      if ($override['both']) {
+        $transaction->signatures[$transaction->payer->entity->user_id()] = 0;
+        $transaction->signatures[$transaction->payee->entity->user_id()] = 0;
       }
+      //the exchange manager should also sign
+      if($override['exman']) {
+        foreach ($transaction->flatten() as $t) {
+          $transaction->signatures[$t->exchange->entity->getOwnerId()] = 0;
+        }
+      }
+      //this autosign sets the transaction state so must happen before the transaction entity is written
+      module_load_include('inc', 'mcapi_signatures');
+      transaction_sign($transaction, \Drupal::currentUser());
     }
   }
 }
@@ -47,7 +51,7 @@ function mcapi_signatures_mcapi_transaction_presave($transaction) {
 function mcapi_signatures_mcapi_transaction_load($entities) {
   //as we put the signatures into the transaction objects, we check that each transaction is pending
   foreach ($entities as $key => $transaction) {
-    if ($override = _mcapi_signature_overrides($transaction->type->value)) {
+    if ($override = _mcapi_signature_overrides($transaction->type->target_id)) {
       $transaction->signatures = db_select('mcapi_signatures', 's')
         ->fields('s', array('uid', 'signed'))
         ->condition('serial', $transaction->serial->value)
@@ -75,13 +79,9 @@ function mcapi_signatures_mcapi_transaction_insert($transaction) {
   if (!isset($transaction->signatures)) return;
 
   $uid = \Drupal::currentUser()->id();
-  if (TRUE) {//TODO is it worth making a config option for the current user to sign automatically?
-    module_load_include('inc', 'mcapi_signatures');
-    transaction_sign($transaction, \Drupal::currentUser());
-  }
-
   $q = db_insert('mcapi_signatures')
     ->fields(array('serial', 'uid', 'signed'));
+
   foreach ($transaction->signatures as $uid => $signed_unixtime) {
     $q->values(array($transaction->serial->value, $uid, $signed_unixtime));
   }
@@ -186,10 +186,12 @@ function mcapi_signatures_user_view(&$build, $mode, $language) {
  * @todo rethink or remove exman coz it belongs in mcapi_exchanges.module
  */
 function _mcapi_signature_overrides($transaction_type) {
+  if (empty($transaction_type))mtrace();
   $override = &drupal_static(__FUNCTION__);
   if (!$override) {
     $override = array_filter(\Drupal::config('mcapi.signatures')->getRawData());
   }
+
   return array_key_exists($transaction_type, $override) ?
     $override[$transaction_type] :
     array('both' => FALSE, 'exman' => TRUE);

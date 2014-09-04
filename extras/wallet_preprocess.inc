@@ -115,7 +115,7 @@ function template_preprocess_wallet_stats(&$vars) {
  */
 function template_preprocess_wallet_summary(&$vars) {
   $vars['url'] = url('wallet/'.$vars['wallet']->id());
-  $vars['name'] = $vars['wallet']->get('name')->value;
+  $vars['name'] = $vars['wallet']->label();
   //TODO would be nice to sort the $vars['currencies'] in order of the number of trades
   //however can't do that because the currencies haven't been preprocessed yet
   //would need a quite different approach

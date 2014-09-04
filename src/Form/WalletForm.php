@@ -63,15 +63,55 @@ class WalletForm extends ContentEntityForm {
       );
     }
 
+    $types = array('user' => t('User'));
     $form['transfer'] = array(
     	'#title' => t('Change ownership'),
       '#type' => 'details',
-      'newowner' => array(
-    	  '#title' => t('New owner'),
-        '#type' => 'textfield',
-        '#placeholder' => 'not implemented yet'
+      'entity_type' => array(
+    	  '#title' => t('New owner type'),
+        '#type' => 'select',
+        '#options' => array('' => 'Choose') + $types,
+        '#required' => FALSE,
+        '#access' => \Drupal::currentUser()->haspermission('manage exchange')
       )
     );
+
+    /* I don't know how to later retrieve the entity from the label for an unknown entity type
+    $autocomplete_routes = array(
+    	'user' => 'user.autocomplete',
+      'mcapi_exchange' => 'mcapi.exchange.autocomplete'
+    );
+    foreach ($types as $type => $label) {
+      $id = $type .'_entity_id';
+      $form['transfer'][$id] = array(
+      	'#title' => t('Name or unique ID'),
+        '#type' => 'textfield',
+        '#placeholder' => '0',
+        '#states' => array(
+          'visible' => array(
+            ':input[name="entity_type"]' => array('value' => $type)
+          )
+        ),
+      );
+      if (array_key_exists($type, $autocomplete_routes)) {
+        $form['transfer'][$id]['#autocomplete_route_name'] = $autocomplete_routes[$type];
+        //$form['transfer'][$id]['#autocomplete_route_parameters'] = array();
+      }
+    }
+    */
+    $form['transfer']['entity_id'] = array(
+      '#title' => t('Unique ID'),
+      '#description' => 'TODO make this work with autocompleted entity names',
+      '#type' => 'number',
+      '#weight' => 1,
+      '#states' => array(
+        'invisible' => array(
+          ':input[name="entity_type"]' => array('value' => '')
+        )
+      ),
+    );
+
+
     return $form;
   }
 
@@ -86,8 +126,8 @@ class WalletForm extends ContentEntityForm {
     foreach ($this->entity->ops() as $op_name) {
       if ($values[$op_name] == WALLET_ACCESS_OWNER) {
         $values[$op_name] = WALLET_ACCESS_USERS;
-        $values[$op_name.'_users'] = $this->entity->getOwner()->getOwner()->getUsername();
-        drupal_set_message('replaced owner with user '.$this->entity->getOwner()->getOwner()->getUsername());
+        $owner_user = User::load($this->entity->user_id());
+        $values[$op_name.'_users'] = $owner_user->getUsername();
       }
       if ($values[$op_name] == WALLET_ACCESS_USERS) {
         //TODO isn't there a function for getting the user objects out of the user autocomplete multiple?
@@ -97,6 +137,14 @@ class WalletForm extends ContentEntityForm {
         $this->entity->access[$op_name] = array_keys($users);
       }
       else $this->entity->access[$op_name] = $values[$op_name];
+    }
+
+    //check for the change of ownership
+    if (isset($values['entity_type']) && isset($values['entity_id'])) {
+      $this->entity->set('entity_type', $values['entity_type']);
+      $this->entity->set('pid', $values['entity_id']);
+      entity_load($values['entity_type'], $values['entity_id']);
+      drupal_set_message(t('Wallet has been transferred to !name', array('!name' => $entity->getLabel())));
     }
     $this->entity->save();
     $form_state->setRedirect('mcapi.wallet_view', array('mcapi_wallet' => $this->entity->id()));

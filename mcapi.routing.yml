@@ -1,7 +1,7 @@
 mcapi.admin:
   path: '/admin/accounting'
   defaults:
-    _content: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _content: 'Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
     _title: 'Accounting'
   requirements:
     _permission: 'access administration pages'
@@ -70,7 +70,7 @@ mcapi.admin_currency_delete:
 mcapi.admin.transactions:
   path: '/admin/accounting/transactions'
   defaults:
-    _content: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _content: 'Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
     _title: 'Transactions'
   requirements:
     _permission: 'access administration pages'
@@ -112,7 +112,7 @@ mcapi.transaction.op:
 mcapi.admin.workflow:
   path: '/admin/accounting/workflow'
   defaults:
-    _content: '\Drupal\mcapi\ListBuilder\WorkflowListBuilder::render'
+    _content: 'Drupal\mcapi\ListBuilder\WorkflowListBuilder::render'
     _title: 'Workflow transitions'
   requirements:
     _permission: 'access administration pages'
@@ -122,8 +122,8 @@ mcapi.admin.workflow:
 mcapi.admin.workflow.flip:
   path: '/admin/accounting/workflow/{transition}/flip'
   defaults:
-    _form: '\Drupal\mcapi\Form\TransitionFlip'
-    _title_callback: '\Drupal\mcapi\Form\TransitionFlip::title'
+    _form: 'Drupal\mcapi\Form\TransitionFlip'
+    _title_callback: 'Drupal\mcapi\Form\TransitionFlip::title'
   requirements:
     _permission: 'configure mcapi'
   options:
@@ -144,7 +144,8 @@ mcapi.wallet_view:
   path: '/wallet/{mcapi_wallet}'
   defaults:
     _entity_view: 'mcapi_wallet.summary'
-#    _title_callback: '\Drupal\mcapi\Controller\WalletController::pageTitle'
+   #TODO entity is not being passed
+    _title_callback: 'Drupal\mcapi\Controller\WalletController::pageTitle'
   requirements:
     _entity_access: 'mcapi_wallet.summary'
 
@@ -152,7 +153,7 @@ mcapi.wallet_log:
   path: '/wallet/{mcapi_wallet}/list'
   defaults:
     _entity_view: 'mcapi_wallet.list'
-#    _title_callback: '\Drupal\mcapi\Controller\WalletController::pageTitle'
+    _title_callback: 'Drupal\mcapi\Controller\WalletController::pageTitle'
   requirements:
     _entity_access: 'mcapi_wallet.details'
 
@@ -175,7 +176,7 @@ mcapi.admin_wallets:
 mcapi.wallets.autocomplete:
   path: '/mcapi/walletcomplete/{exchanges}'
   defaults:
-    _controller: '\Drupal\mcapi\Controller\WalletAutocompleteController::autocomplete'
+    _controller: 'Drupal\mcapi\Controller\WalletAutocompleteController::autocomplete'
   requirements:
     _permission: 'access content'
 

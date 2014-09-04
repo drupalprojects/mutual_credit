@@ -43,6 +43,7 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
     //note that this clones the parent tranaction
     foreach ($entity->flatten() as $transaction) {
       $record = $this->mapToStorageRecord($transaction);
+      $record->changed = REQUEST_TIME;
       if (!$is_new) {
         //TODO drupal_get_complete_schema doesn't return entity tables in alpha14
         //$return = drupal_write_record('mcapi_transaction', $record, 'xid');

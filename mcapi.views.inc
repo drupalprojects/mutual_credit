@@ -177,6 +177,19 @@ function mcapi_views_data() {
       'id' => 'date',
     ),
   );
+  $data['mcapi_transaction']['changed'] = array(
+    'title' => t('Changed'),
+    'help' => t('The second the transaction was last saved.'),
+    'field' => array(
+      'id' => 'date',
+    ),
+    'sort' => array(
+      'id' => 'date'
+    ),
+    'filter' => array(
+      'id' => 'date',
+    ),
+  );
   $data['mcapi_transaction']['created_year_month'] = array(
     'title' => t('Created year + month'),
     'help' => t('Date in the form of YYYYMM.'),
@@ -187,34 +200,19 @@ function mcapi_views_data() {
   );
 
   $data['mcapi_transaction']['created_year'] = array(
-      'title' => t('Created year'),
-      'help' => t('Date in the form of YYYY.'),
-      'argument' => array(
-        'field' => 'created',
-        'id' => 'date_year',
-      ),
-  );
-  $data['mcapi_transaction']['exchange'] = array(
-    'title' => t('Current Exchange'),
-    'help' => t('Any of the exchanges the current user is a member of'),
-    'filter' => array(
-      'id' => 'mcapi_current_exchange',
+    'title' => t('Created year'),
+    'help' => t('Date in the form of YYYY.'),
+    'argument' => array(
+      'field' => 'created',
+      'id' => 'date_year',
     ),
   );
-
   //virtual fields
   $data['mcapi_transaction']['transitions'] = array(
     'title' => t('Transitions'),
     'help' => t('What the user can do to the transaction'),
     'field' => array(
       'id' => 'transaction_transitions',
-    )
-  );
-  $data['mcapi_transaction']['exchange'] = array(
-    'title' => t('Exchange'),
-    'help' => t('The exchange in which the transaction happened'),
-    'argument' => array(
-      'id' => 'transaction_exchange',
     )
   );
 
