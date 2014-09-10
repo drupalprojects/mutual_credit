@@ -259,7 +259,9 @@ function mcapi_help($section, $arg) {
       return mcapi_workflow_help();
     case 'admin/accounting/fields':
       module_load_include('admin.inc', 'mcapi');
-      return drupal_render(drupal_get_form('mcapi_description_field'));
+      $form = drupal_get_form('mcapi_description_field');
+      //TODO this shouldn't be in help that was a stupid idea
+      return drupal_render($form);
     case 'admin/accounting/currencies':
       $currencies = currencies_load();
       if (count($currencies) > 1) {
@@ -1438,7 +1440,7 @@ function _worthitems_to_worths(array $worthitems) {
   $worths = array();
   foreach ($worthitems as $worth_item) {
     if (isset($currencies[$worth_item['currcode']])) {
-      $worths[$worth_item['currcode']] = @$worth_item['quantity'];
+      $worths[$worth_item['currcode']] = array_key_exists('quantity', $worth_item) ? $worth_item['quantity'] : @$worth_item['main_quant'];
     }
   }
   return $worths;

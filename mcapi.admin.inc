@@ -988,9 +988,10 @@ function mcapi_transaction_entity_uid_submit($form, &$form_state) {
  * this means we can't do form_load_include
  */
 function mcapi_dependent_transaction_action_form($context) {
-  drupal_set_message('This tool is a bit crude but it will have to do until someone can figure out how to do it with rules');
-  drupal_set_message('This action ONLY goes on one the hook, and adds a dependent transaction to the cluster. with the same serial number');
-  drupal_set_message('It will be easy to make this action more sophisticated');
+  drupal_set_message('This action adds a dependent transaction to the cluster. with the same serial number');
+
+debug($context['presets']['worth_items']['worths']);
+
   //set the defaults
   $context += array(
     'conditions' => array(
@@ -1054,7 +1055,7 @@ function mcapi_dependent_transaction_action_form($context) {
       '#tree' => TRUE,
       'worths' => array(
         //'#title' => t('Worths'),
-        '#description' => t('Enter a number, a percentage, or a formula using [q] for the transaction quantity.'),
+        '#description' => t('Enter a number, a percentage, or a formula using [q] for the transaction quantity.') . ' Ignore the fractions widget if there is one',
         '#type' => 'worths',
         '#default_value' => isset($context['presets']['worth_items']['worths']) ? _worthitems_to_worths($context['presets']['worth_items']['worths']) : array(),
         '#calc' => TRUE,//allow a formula
@@ -1071,6 +1072,7 @@ function mcapi_dependent_transaction_action_form($context) {
       )
     )
   );
+debug($form['presets']['worth_items']['worths']);
 
   if (variable_get('transaction_description_field')) {
     $form['presets']['description'] = array(
