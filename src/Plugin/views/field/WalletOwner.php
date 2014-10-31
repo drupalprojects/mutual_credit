@@ -36,7 +36,7 @@ class WalletOwner extends Standard {
   function render(ResultRow $values) {
     $owner = $this->getEntity($values)->getOwner();
     if ($url = $owner->url()) {
-      return l($owner->label(), $url);
+      return \Drupal::l($owner->label(), $url);
     }
     else {
       return \Drupal::Config('system.site')->get('name');

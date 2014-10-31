@@ -8,15 +8,17 @@
 
 namespace Drupal\mcapi\Entity;
 
+use Drupal\mcapi\TransactionInterface;
+
 const MCAPI_MAX_DESCRIPTION = 255;
 
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\Core\Field\FieldDefinition;
+use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\mcapi\McapiTransactionException;
 use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\mcapi\Access\WalletAccessController;
+use Drupal\mcapi\Access\WalletAccessControlHandler;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\State;
 
@@ -24,33 +26,34 @@ use Drupal\mcapi\Entity\State;
  * Defines the Transaction entity.
  * Transactions are grouped and handled by serial number
  * but the unique database key is the xid.
- *
+ *alter
  * @ContentEntityType(
  *   id = "mcapi_transaction",
  *   label = @Translation("Transaction"),
- *   base_table = "mcapi_transaction",
- *   controllers = {
+ *   handlers = {
  *     "storage" = "Drupal\mcapi\Storage\TransactionStorage",
+ *     "storage_schema" = "Drupal\mcapi\Storage\TransactionStorageSchema",
  *     "view_builder" = "Drupal\mcapi\ViewBuilder\TransactionViewBuilder",
- *     "access" = "Drupal\mcapi\Access\TransactionAccessController",
+ *     "access" = "Drupal\mcapi\Access\TransactionAccessControlHandler",
  *     "form" = {
  *       "transition" = "Drupal\mcapi\Form\TransitionForm",
  *       "masspay" = "Drupal\mcapi\Form\MassPay",
  *       "admin" = "Drupal\mcapi\Form\TransactionForm",
  *       "delete" = "Drupal\mcapi\Form\TransactionDeleteConfirm",
  *     },
+ *     "views_data" = "Drupal\mcapi\Views\TransactionViewsData"
  *   },
  *   admin_permission = "configure mcapi",
+ *   base_table = "mcapi_transaction",
  *   entity_keys = {
  *     "id" = "xid",
  *     "uuid" = "uuid",
  *     "name" = "description"
  *   },
- *   fieldable = TRUE,
+ *   field_ui_base_route = "mcapi.admin.transactions",
  *   translatable = FALSE,
  *   links = {
- *     "canonical" = "mcapi.transaction_view",
- *     "admin-form" = "mcapi.admin.transactions"
+ *     "canonical" = "mcapi.transaction_view"
  *   }
  * )
  */
@@ -107,6 +110,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
   /**
    * {@inheritdoc}
+   * does the same as Entity::save but validates first.
    */
   public function save() {
     if (!$this->validated) {
@@ -121,7 +125,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   }
 
   /**
-   * an opportunity to add children to the transaction
+   * work on the transaction prior to validation
+   * 
+   * @return NULL
+   * 
+   * @todo handle errors coming from the hook implementations
+   * 
+   * @throws McapiException
    */
   public function prevalidate() {
     $this->moduleHandler = \Drupal::moduleHandler();
@@ -129,7 +139,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $clone = clone($this);
 
     $this->children = array_merge(
-      \Drupal::moduleHandler()->invokeAll('mcapi_transaction_children', array($clone)),
+      $this->moduleHandler->invokeAll('mcapi_transaction_children', array($clone)),
       $this->children
     );
   }
@@ -143,8 +153,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $violations = array();
 
     if ($this->validated) return $violations;
-    $this->preValidate();
-
+    try{
+      $this->preValidate();
+    }
+    catch(\Exception $e) {
+      $violations[] = $e->getMessage();
+    }
     //all this does is check the field values against the field definitions.
     //Don't know how to include the worth field in that
     if ($this->isNew()) {
@@ -157,6 +171,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       $start_state_id = $this->type->entity->start_state;
       $this->state->setValue($start_state_id);
       foreach ($this->children as $transaction) {
+        //child transactions inherit the state from the parent, regardless of the child type
         $transaction->state->setValue($start_state_id);
         $transaction->parent->value = -1;//this will be set after the parent is saved
       }
@@ -167,7 +182,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     foreach ($transactions as $transaction) {
       $child_warnings += self::validateTransaction($transaction);
     }
-
     //note that this validation cannot change the original transaction because a clone of it is passed
     $violations += \Drupal::moduleHandler()->invokeAll('mcapi_transaction_validate', array(array(clone($this))));
 
@@ -239,7 +253,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       $violations['payee'] = t('Wallet @num cannot pay itself.', array('@num' => $transaction->payer->target_id));
     }
     //check that the current user is permitted to pay out and in according to the wallet permissions
-    $walletAccess = \Drupal::entityManager()->getAccessController('mcapi_wallet');
+    $walletAccess = \Drupal::entityManager()->getAccessControlHandler('mcapi_wallet');
     if (!$walletAccess->checkAccess($transaction->payer->entity, 'payout', NULL, \Drupal::currentUser())) {
       $violations['payer'] = t('You are not allowed to make payments from this wallet');
     }
@@ -344,81 +358,81 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     //note that the worth field is field API because we can't define multiple cardinality fields in this entity.
-    $fields['xid'] = FieldDefinition::create('integer')
+    $fields['xid'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Transaction ID'))
       ->setDescription(t('The unique transaction ID.'))
       ->setReadOnly(TRUE)
       ->setSetting('unsigned', TRUE);
 
-    $fields['uuid'] = FieldDefinition::create('uuid')
+    $fields['uuid'] = BaseFieldDefinition::create('uuid')
       ->setLabel(t('UUID'))
       ->setDescription(t('The transaction UUID.'))
       ->setReadOnly(TRUE);
 
     //borrowed from node->title
-    $fields['description'] = FieldDefinition::create('string')
+    $fields['description'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Description'))
       ->setDescription(t('A one line description of what was exchanged.'))
       ->setRequired(TRUE)
       ->setSettings(array('default_value' => '', 'max_length' => MCAPI_MAX_DESCRIPTION));
 
-    $fields['serial'] = FieldDefinition::create('integer')
+    $fields['serial'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Serial number'))
       ->setDescription(t('Grouping of related transactions.'))
       ->setReadOnly(TRUE);
 
-    $fields['parent'] = FieldDefinition::create('integer')
+    $fields['parent'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Parent xid'))
       ->setDescription(t('Parent transaction that created this transaction.'))
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 
-    $fields['payer'] = FieldDefinition::create('entity_reference')
+    $fields['payer'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Payer'))
       ->setDescription(t('Id of the giving wallet'))
       ->setSetting('target_type', 'mcapi_wallet')
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 
-    $fields['payee'] = FieldDefinition::create('entity_reference')
+    $fields['payee'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Payee'))
       ->setDescription(t('Id of the receiving wallet'))
       ->setSetting('target_type', 'mcapi_wallet')
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 
-    $fields['type'] = FieldDefinition::create('entity_reference')
+    $fields['type'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Type'))
       ->setDescription(t('The type/workflow path of the transaction'))
       ->setSetting('target_type', 'mcapi_type')
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 
-    $fields['state'] = FieldDefinition::create('entity_reference')
+    $fields['state'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('State'))
       ->setDescription(t('Completed, pending, disputed, etc.'))
       ->setSetting('target_type', 'mcapi_state')
       ->setReadOnly(FALSE)
       ->setRequired(TRUE);
 
-    $fields['creator'] = FieldDefinition::create('entity_reference')
+    $fields['creator'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Creator'))
       ->setDescription(t('The user who created the transaction'))
       ->setSetting('target_type', 'user')
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 
-    $fields['created'] = FieldDefinition::create('created')
+    $fields['created'] = BaseFieldDefinition::create('created')
     ->setLabel(t('Created'))
     ->setDescription(t('The time that the transaction was created.'))
     ->setTranslatable(TRUE);
 
-    $fields['changed'] = FieldDefinition::create('changed')
+    $fields['changed'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))
       ->setDescription(t('The time that the transaction was last saved.'))
       ->setTranslatable(TRUE);
 
-    $fields['exchange'] = FieldDefinition::create('entity_reference')
+    $fields['exchange'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Exchange'))
       ->setDescription(t('Exchange governing this transaction'))
       ->setSetting('target_type', 'mcapi_exchange')
@@ -443,4 +457,30 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $flatarray;
   }
 
+
+  /**
+   * calculate a transaction quantity based on a provided formala and input quantity
+  *
+  * @param string $formula
+  *   formula using [q] for base_quant. If it is just a number the number is returned as is
+  *   otherwise [q]% should work or other variables to be determined
+  *
+  * @param integer $base_value
+  *
+  * @return interger | NULL
+  */
+  public static function calc($formula, $base_value) {
+    if (is_null($base_value)) return 0;
+    if (is_numeric($formula)) return $formula;
+    $proportion = str_replace('%', '', $formula);
+    if (empty($base_value)) $base_quant = 0;
+    if (is_numeric($proportion)) {
+      return $base_value * $proportion/100;
+    }
+    //$formula = str_replace('/', '//', $formula);
+    $equation = str_replace('[q]', $base_value, $formula) .';';
+    $val = eval('return '. $equation);
+    if (is_numeric($val)) return $val;
+    drupal_set_message(t('Problem with calculation for dependent transaction: @val', array('@val' => $val)));
+  }
 }

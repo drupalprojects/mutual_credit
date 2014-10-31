@@ -1,0 +1,8 @@
+id: mcapi_exchange
+label: 'Exchange contact form'
+recipients: 
+  #this will be swopped out later
+  mcapi_exchange@drupal
+reply: ''
+weight: 0
+status: true

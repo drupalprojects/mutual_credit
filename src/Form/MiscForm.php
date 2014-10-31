@@ -8,13 +8,6 @@ use Drupal\Core\Form\FormStateInterface;
 
 class MiscForm extends ConfigFormBase {
 
-private $settings;
-
-function __construct(ConfigFactoryInterface $config_factory) {
-  parent::__construct($config_factory);
-  $this->settings = $config_factory->get('mcapi.misc');
-}
-
   /**
    * {@inheritdoc}
    */
@@ -26,7 +19,7 @@ function __construct(ConfigFactoryInterface $config_factory) {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->settings;
+    $config = $this->configFactory->get('mcapi.misc');
     module_load_include('inc', 'mcapi');
     foreach (mcapi_transaction_list_tokens(TRUE) as $token) {
       $tokens[] = "[mcapi:$token]";
@@ -92,7 +85,7 @@ function __construct(ConfigFactoryInterface $config_factory) {
     //because transaction states have no ui to edit them
     $form['counted'] = array(
     	'#title' => t('Counted transaction states'),
-      '#description' => t('The user balance is comprised of transactions in which states?'),
+      '#description' => t("Transactions in these states will comprise the wallet's balance"),
       '#type' => 'checkboxes',
       '#options' => mcapi_entity_label_list('mcapi_state'),
       '#default_value' => $config->get('counted'),
@@ -106,6 +99,7 @@ function __construct(ConfigFactoryInterface $config_factory) {
         '#value' => FALSE,
       )
     );
+    //TODO only show this button if transactions are present
     $form['rebuild_mcapi_index'] = array(
       '#title' => t('Rebuild index'),
       '#description' => t('The transaction index table stores the transactions in an alternative format which is helpful for building views'),
@@ -114,6 +108,9 @@ function __construct(ConfigFactoryInterface $config_factory) {
       'button' => array(
         '#type' => 'submit',
         '#value' => 'rebuild_mcapi_index',
+        '#submit' => array(
+          array(get_class($this), 'rebuild_mcapi_index')
+        )
       )
     );
     return parent::buildForm($form, $form_state);
@@ -128,9 +125,9 @@ function __construct(ConfigFactoryInterface $config_factory) {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
-    $indexRebuild = $this->settings->get('counted') != $values['counted'];
+    $config = $this->configFactory->get('mcapi.misc');
 
-    $this->settings
+    $config
       ->set('sentence_template', $values['sentence_template'])
       //careful the mix_mode flag is inverted!!
       ->set('exchange_menu', !$values['exchange_menu'])
@@ -142,14 +139,18 @@ function __construct(ConfigFactoryInterface $config_factory) {
       ->save();
 
     parent::submitForm($form, $form_state);
-
-    if($indexRebuild || $form_state['triggering_element']['#value'] == 'rebuild_mcapi_index') {
-      //not sure where to put this function
-       \Drupal::entityManager()->getStorage('mcapi_transaction')->indexRebuild();
-       drupal_set_message("Index table is rebuilt");
-       $form_state->setRedirect('system.status');
+    if($config->get('counted') != $values['counted']) {
+      rebuild_mcapi_index($form, $form_state);
     }
   }
+
+  static function rebuild_mcapi_index(array &$form, FormStateInterface $form_state) {
+    //not sure where to put this function
+    \Drupal::entityManager()->getStorage('mcapi_transaction')->indexRebuild();
+    drupal_set_message("Index table is rebuilt");
+    $form_state->setRedirect('system.status');
+  }
+
 }
 
 

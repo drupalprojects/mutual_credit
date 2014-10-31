@@ -8,8 +8,10 @@
 
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
-use \Drupal\mcapi\Entity\WalletInterface;
+use \Drupal\mcapi\WalletInterface;
 use Drupal\Core\Form\FormStateInterface;
+Use Drupal\mcapi_limits\Plugin\McapiLimitsInterface;
+Use Drupal\mcapi_limits\Plugin\McapiLimitsBase;
 
 /**
  * No balance limits
@@ -29,7 +31,7 @@ class Explicit extends McapiLimitsBase implements McapiLimitsInterface {
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $args = func_get_args();
     $subform['minmax'] =  array(
-    	'#type' => 'minmax',
+      '#type' => 'minmax',
       '#default_value' => array(
         'min' => $this->configuration['minmax']['min'][0]['value'],
         'max' => $this->configuration['minmax']['max'][0]['value']

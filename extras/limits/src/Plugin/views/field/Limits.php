@@ -38,11 +38,11 @@ class Limits extends FieldPluginBase {
       '#default_value' => $this->options['currencies'],
     );
     $form['absolute'] = array(
-    	'#title' => t('Range'),
+      '#title' => t('Range'),
       '#type' => 'radios',
       '#options' => array(
-    	  'absolute' => t('Show min, max and current balance'),
-    	  'relative' => t('Show limits for earning and spending, relative to balance'),
+        'absolute' => t('Show min, max and current balance'),
+        'relative' => t('Show limits for earning and spending, relative to balance'),
       ),
       '#default_value' => $this->options['absolute'],
       '#weight' => '5'

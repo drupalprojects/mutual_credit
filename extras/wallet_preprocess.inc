@@ -5,7 +5,6 @@ _drupal_add_css(drupal_get_path('module', 'mcapi').'/css/wallets.css');
 /**
  * implements template_preprocess_THEME
  * modify the history points for aesthetic reasons, or to save resources
- * @todo could these long functions go in another file?
  */
 function template_preprocess_wallet_history(&$vars) {
   $storage = \Drupal::entityManager()->getStorage('mcapi_transaction');
@@ -43,6 +42,8 @@ function template_preprocess_wallet_history(&$vars) {
     }
   }
   $vars['history'] = $history;
+
+//  $vars += _mcapi_links_to_wallet($vars['wallet']);
 }
 
 /**
@@ -104,8 +105,33 @@ function template_preprocess_wallet_stats(&$vars) {
     $vars['currdata'][$curr_id]['partners'] = $data['partners'];
     $vars['currdata'][$curr_id]['trades'] = $data['trades'];
   }
-  $vars['url'] = url('wallet/'.$vars['wallet']->id());
-  $vars['name'] = $vars['wallet']->get('name')->value;
+  $vars += _mcapi_links_to_wallet($vars['wallet']);
+}
+
+/**
+ * @param $wallet
+ * @return mixed
+ * @todo static this?
+ */
+function _mcapi_links_to_wallet($wallet) {
+  $links['label'] = $wallet->label();
+  $links['wallet_link'] = $wallet->link(
+    $links['label'],
+    'canonical',
+    array(
+      'title' => t('Show stats'),
+      'classes' => array('wallet-title')
+    )
+  );
+  $links['wallet_log_link'] = $wallet->link(
+    $links['label'],
+    'log',
+    array(
+      'title' => t('Show transactions'),
+      'classes' => array('wallet-title')
+    )
+  );
+  return $links;
 }
 
 /**
@@ -114,15 +140,16 @@ function template_preprocess_wallet_stats(&$vars) {
  * @todo this theme callback is cached - when to clear the cache and what cache is it?
  */
 function template_preprocess_wallet_summary(&$vars) {
-  $vars['url'] = url('wallet/'.$vars['wallet']->id());
-  $vars['name'] = $vars['wallet']->label();
+  $vars += _mcapi_links_to_wallet($vars['wallet']);
   //TODO would be nice to sort the $vars['currencies'] in order of the number of trades
   //however can't do that because the currencies haven't been preprocessed yet
   //would need a quite different approach
 }
 
+//<a class = "wallet-title" href="{{ href }}" title="Show stats">{{ name }}</a><br />
+
 function template_preprocess_wallet_summary_currency(&$vars) {
-  $vars['url'] = url('wallet/'.$vars['wallet']->id().'/inex/'.$vars['currency']->id());
+  $vars['href'] = 'wallet/'.$vars['wallet']->id().'/inex/'.$vars['currency']->id();//TODO use \Drupal::url()
   $vars += $vars['wallet']->getStats($vars['currency']->id());
   $vars['balance'] = $vars['currency']->format($vars['balance'], TRUE);
 }
@@ -160,6 +187,8 @@ function template_preprocess_wallet_balance_bars(&$vars) {
     array('value' => $max, 'label' => $currency->format($max), TRUE)
   );
   mcapi_add_gchart_js('corechart');
+
+  //$vars += _mcapi_links_to_wallet($vars['wallet']);
 }
 
 

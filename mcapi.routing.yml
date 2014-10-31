@@ -53,7 +53,7 @@ mcapi.admin_currency_add:
     _entity_form: 'mcapi_currency.edit'
     _title: 'Editing currency'
   requirements:
-    _permission: 'configure mcapi'
+    _entity_create_access: mcapi_currency
   options:
     _admin_route: TRUE
 
@@ -144,15 +144,14 @@ mcapi.wallet_view:
   path: '/wallet/{mcapi_wallet}'
   defaults:
     _entity_view: 'mcapi_wallet.summary'
-   #TODO entity is not being passed
     _title_callback: 'Drupal\mcapi\Controller\WalletController::pageTitle'
   requirements:
     _entity_access: 'mcapi_wallet.summary'
 
 mcapi.wallet_log:
-  path: '/wallet/{mcapi_wallet}/list'
+  path: '/wallet/{mcapi_wallet}/log'
   defaults:
-    _entity_view: 'mcapi_wallet.list'
+    _entity_view: 'mcapi_wallet.log'
     _title_callback: 'Drupal\mcapi\Controller\WalletController::pageTitle'
   requirements:
     _entity_access: 'mcapi_wallet.details'
@@ -189,16 +188,6 @@ mcapi.masspay:
   requirements:
     _permission: 'manage mcapi'
 
-#TEMP
-mcapi.wallet.log:
-  path: '/wallet/{mcapi_wallet}/log'
-  defaults:
-    #_entity_view: \Drupal\mcapi\Controller\WalletController::page
-    _entity_view: mcapi_wallet.log
-    _title: Wallet history
-  requirements:
-    _entity_access: 'mcapi_wallet.view'
-
 mcapi.exchange.delete_confirm:
   path: '/exchange/{mcapi_exchange}/delete'
   defaults:
@@ -208,20 +197,3 @@ mcapi.exchange.delete_confirm:
   options:
     _admin_route: TRUE
 
-mcapi.exchange.enable_confirm:
-  path: '/exchange/{mcapi_exchange}/enable'
-  defaults:
-    _entity_form: 'mcapi_exchange.enable'
-  requirements:
-    _permission: 'manage mcapi'
-  options:
-    _admin_route: TRUE
-
-mcapi.exchange.disable_confirm:
-  path: '/exchange/{mcapi_exchange}/disable'
-  defaults:
-    _entity_form: 'mcapi_exchange.disable'
-  requirements:
-    _permission: 'manage mcapi'
-  options:
-    _admin_route: TRUE

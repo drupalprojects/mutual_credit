@@ -10,7 +10,7 @@ namespace Drupal\mcapi\Controller;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\mcapi\Entity\TransactionInterface;
+use Drupal\mcapi\TransactionInterface;
 
 /**
  * Returns responses for Transaction routes.
@@ -18,7 +18,7 @@ use Drupal\mcapi\Entity\TransactionInterface;
 class TransactionController extends ControllerBase {
 
   /**
-   * @param Drupal\mcapi\Entity\TransactionInterface $transaction
+   * @param Drupal\mcapi\TransactionInterface $transaction
    *
    * @return array
    *  An array suitable for drupal_render().
@@ -30,7 +30,7 @@ class TransactionController extends ControllerBase {
   /**
    * The _title_callback for the transaction.view route.
    *
-   * @param Drupal\mcapi\Entity\TransactionInterface $transaction
+   * @param Drupal\mcapi\TransactionInterface $transaction
    *
    * @return string
    *   The page title.
@@ -42,7 +42,7 @@ class TransactionController extends ControllerBase {
   /**
    * Builds a transaction page render array.
    *
-   * @param Drupal\mcapi\Entity\TransactionInterface $transaction
+   * @param Drupal\mcapi\TransactionInterface $transaction
    *
    * @return array
    *   An array suitable for drupal_render().

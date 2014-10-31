@@ -101,7 +101,7 @@ class TransitionSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state, $transition = NULL) {
-  	form_state_values_clean($form_state);
+  	$form_state->cleanValues();;
 
   	$this->plugin->submitConfigurationForm($form, $form_state);
 

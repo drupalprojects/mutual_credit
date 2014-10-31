@@ -4,9 +4,9 @@ status: true
 dependencies:
   module:
     - image
-    - mcapi
+    - mcapi_exchanges
 id: mcapi_exchange.logo
-name: logo
+field_name: logo
 entity_type: mcapi_exchange
 type: image
 settings:

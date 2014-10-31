@@ -8,13 +8,14 @@
 namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
-use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Field\FieldDefinition;
+use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\mcapi\Entity\Exchange;
 use Drupal\mcapi\Entity\Currency;
-use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\mcapi\WalletInterface;
 
 /**
  * Defines the wallet entity.
@@ -26,26 +27,28 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *   id = "mcapi_wallet",
  *   label = @Translation("Wallet"),
  *   module = "mcapi",
- *   base_table = "mcapi_wallet",
- *   controllers = {
+ *   handlers = {
  *     "view_builder" = "Drupal\mcapi\ViewBuilder\WalletViewBuilder",
  *     "storage" = "Drupal\mcapi\Storage\WalletStorage",
- *     "access" = "Drupal\mcapi\Access\WalletAccessController",
+ *     "storage_schema" = "Drupal\mcapi\Storage\WalletStorageSchema",
+ *     "access" = "Drupal\mcapi\Access\WalletAccessControlHandler",
  *     "form" = {
  *       "edit" = "Drupal\mcapi\Form\WalletForm",
  *     },
+ *     "views_data" = "Drupal\mcapi\Views\WalletViewsData"
  *   },
  *   admin_permission = "configure mcapi",
+ *   base_table = "mcapi_wallet",
  *   entity_keys = {
  *     "id" = "wid",
  *     "uuid" = "uuid"
  *   },
- *   fieldable = TRUE,
  *   translatable = FALSE,
  *   links = {
  *     "canonical" = "mcapi.wallet_view",
- *     "admin-form" = "mcapi.admin_wallets"
- *   }
+ *     "log" = "mcapi.wallet_log"
+ *   },
+ *   field_ui_base_route = "mcapi.admin_wallets"
  * )
  */
 class Wallet extends ContentEntityBase  implements WalletInterface{
@@ -151,33 +154,33 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
-    $fields['wid'] = FieldDefinition::create('integer')
+    $fields['wid'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Wallet ID'))
       ->setDescription(t('The unique wallet ID.'))
       ->setReadOnly(TRUE)
       ->setSetting('unsigned', TRUE);
 
-    $fields['uuid'] = FieldDefinition::create('uuid')
+    $fields['uuid'] = BaseFieldDefinition::create('uuid')
       ->setLabel(t('UUID'))
       ->setDescription(t('The wallet UUID.'))
       ->setReadOnly(TRUE);
 
-    $fields['name'] = FieldDefinition::create('string')
+    $fields['name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Name'))
       ->setDescription(t("The owner's name for this wallet"))
       ->addConstraint('max_length', 64)
       ->setDisplayOptions(
-          'view',
-          array('label' => 'hidden', 'type' => 'string', 'weight' => -5))
+        'view',
+        array('label' => 'hidden', 'type' => 'string', 'weight' => -5))
       ->setSetting('default_value', array(0 => ''));//if we leave the default to be NULL it is difficult to filter with mysql
 
-    $fields['entity_type'] = FieldDefinition::create('string')
+    $fields['entity_type'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Owner entity type'))
       ->setDescription(t('The timezone of this user.'))
       ->setSetting('max_length', 32)
       ->setRequired(TRUE);
 
-    $fields['pid'] = FieldDefinition::create('integer')
+    $fields['pid'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Owner entity ID'));
 
     $defaults = array(
@@ -192,13 +195,13 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
       }
     }
     foreach ($defaults as $key => $info) {
-      $fields[$key] = FieldDefinition::create('integer')
+      $fields[$key] = BaseFieldDefinition::create('integer')
         ->setLabel($info[0])
         ->setDescription($info[1])
         ->setSetting('default_value', array($defaults[$key][2]));
     }
 
-    $fields['orphaned'] = FieldDefinition::create('boolean')
+    $fields['orphaned'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Orphaned'));
 
     return $fields;
@@ -207,7 +210,10 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
   /**
    * get the exchanges which this wallet can be used in.
    *
-   * @return Drupal\mcapi\Entity\Exchange[]
+   * @param boolean $open
+   *   filter for open exchanges only
+   *
+   * @return \Drupal\mcapi\Entity\Exchange[]
    *   keyed by entity id
    */
   function in_exchanges($open = FALSE) {
@@ -248,6 +254,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
         $this->currencies_available[$currency->id()] = $currency;
       }
     }
+    //TODO get these in weighted order
     return $this->currencies_available;
   }
 
@@ -261,7 +268,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
         if (!array_key_exists($curr_id, $this->stats)) {
           $this->stats[$curr_id] = array(
             'balance' => 0,
-          	'trades' => 0,
+            'trades' => 0,
             'volume' => 0,
             'gross_in' => 0,
             'gross_out' => 0,
@@ -275,7 +282,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
 
   /**
    * (non-PHPdoc)
-   * @see \Drupal\mcapi\Entity\WalletInterface::getStats()
+   * @see \Drupal\mcapi\WalletInterface::getStats()
    */
   function getStats($curr_id) {
     $summaries = $this->getSummaries();
@@ -286,7 +293,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
 
   /**
    * (non-PHPdoc)
-   * @see \Drupal\mcapi\Entity\WalletInterface::getStat()
+   * @see \Drupal\mcapi\WalletInterface::getStat()
    */
   function getStat($curr_id, $stat) {
     $stats = getStats($curr_id);
@@ -300,7 +307,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    */
   //in parent, configEntityBase, $rel is set to edit-form by default - why would that be?
   //Is is assumed that every entity has an edit-form link? Any case this overrides it
-  public function urlInfo($rel = 'canonical') {
+  public function urlInfo($rel = 'canonical', array $options = array()) {
     return parent::urlInfo($rel);
   }
 
@@ -311,7 +318,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    */
   public function history($from = 0, $to = 0) {
     $conditions = array(
-    	'involving' => $this->id()
+      'involving' => $this->id()
     );
     if ($from) {
       $conditions['from'] = $from;
@@ -324,9 +331,9 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
 
   /**
    * (non-PHPdoc)
-   * @see \Drupal\mcapi\Entity\WalletInterface::orphan()
+   * @see \Drupal\mcapi\WalletInterface::orphan()
    */
-  static function orphan(ContentEntityInterface $owner) {
+  static function orphan(EntityInterface $owner) {
     if($exchanges = Exchange::referenced_exchanges($owner, FALSE)) {
       $exchange = current($exchanges);//if the parent entity was in more than one exchange, this will pick a random one to take ownership
       if ($wids = \Drupal\mcapi\Storage\WalletStorage::getOwnedWalletIds($owner, TRUE)) {
@@ -343,7 +350,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
             //TODO make the number of wallets an exchange can own to be unlimited.
             drupal_set_message(t(
               "!name's wallets are now owned by exchange !exchange",
-              array('!name' => $wallet->label(), '!exchange' => l($exchange->label(), $exchange->url()))
+              array('!name' => $wallet->label(), '!exchange' => \Drupal::l($exchange->label(), $exchange->url()))
             ));
             $wallet->save();
           }
@@ -356,8 +363,15 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
 
   }
 
-  //TODO put permissions and ops in the WalletInterface
-  static function permissions() {
+  /**
+   * Check if an entity is the owner of a wallet
+   * @todo this is really a constant, but constants can't store arrays
+   *
+   * @return array
+   *   THE list of permissions used by walletAccess. Note this is not connected
+   *   to the roles/permissions system for account entity
+   */
+  public static function permissions() {
     return array(
       //TODO only wallets owned by user entities can have this option
       WALLET_ACCESS_OWNER => t('Just the owner'),
@@ -367,6 +381,14 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
       WALLET_ACCESS_USERS => t('Named users...')
     );
   }
+
+  /**
+   * Check if an entity is the owner of a wallet
+   * @todo this is really a constant, but constants can't store arrays
+   *
+   * @return ops
+   *   THE list of ops because arrays cannot be stored in constants
+   */
   public static function ops() {
     return array('details', 'summary', 'payin', 'payout');
   }

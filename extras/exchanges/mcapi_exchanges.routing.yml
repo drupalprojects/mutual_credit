@@ -13,10 +13,12 @@ mcapi.admin_exchange_list:
 mcapi.exchange.view:
   path: '/exchange/{mcapi_exchange}'
   defaults:
-    _content: '\Drupal\mcapi_exchanges\ExchangeController::page'
-    _title_callback: '\Drupal\mcapi_exchanges\ExchangeController::pageTitle'
+    _content: '\Drupal\mcapi_exchanges\Controller\ExchangeController::page'
+    _title_callback: '\Drupal\mcapi_exchanges\Controller\ExchangeController::pageTitle'
   requirements:
-    _entity_access: 'mcapi_exchange.view'
+  #this MUST be public if joining is to be allowed.
+    _access: 'TRUE'
+#    _entity_access: 'mcapi_exchange.view'
 
 mcapi.exchange.add:
   path: '/exchange/add'
@@ -24,7 +26,7 @@ mcapi.exchange.add:
     _entity_form: 'mcapi_exchange.add'
     _title: Create exchange
   requirements:
-    _permission: 'manage mcapi'
+    _entity_create_access: mcapi_exchange
   options:
     _admin_route: TRUE
 
@@ -44,13 +46,52 @@ mcapi.exchange.masspay:
   requirements:
     _entity_access: 'mcapi_exchange.manage'
 
-mcapi.exchange.masspay:
-  path: '/exchange/{mcapi_exchange}/masspay'
+mcapi.exchange.join:
+  path: '/exchange/{mcapi_exchange}/join'
   defaults:
-    _entity_form: 'mcapi_exchange.masspay'
-    _title: 'Mass payment'
+    _content: '\Drupal\mcapi_exchanges\Controller\ExchangeJoin::page'
+    _title: '\Drupal\mcapi_exchanges\Controller\ExchangeJoin::title'
   requirements:
-    _entity_access: 'mcapi_exchange.manage'
+    _exchange_join_access: 'TRUE'
+  options:
+    parameters:
+      exid: mcapi_exchange
+
+mcapi.contact.exchange:
+  path: '/exchange/{mcapi_exchange}/contact'
+  defaults:
+    _title: 'Contact'
+    _content: '\Drupal\mcapi_exchanges\Controller\ExchangeContactController::page'
+  requirements:
+    _access: 'TRUE'
+
+mcapi.exchange.enable_confirm:
+  path: '/exchange/{mcapi_exchange}/enable'
+  defaults:
+    _entity_form: 'mcapi_exchange.enable'
+  requirements:
+    _permission: 'manage mcapi'
+  options:
+    _admin_route: TRUE
+
+mcapi.exchange.disable_confirm:
+  path: '/exchange/{mcapi_exchange}/disable'
+  defaults:
+    _entity_form: 'mcapi_exchange.disable'
+  requirements:
+    _permission: 'manage mcapi'
+  options:
+    _admin_route: TRUE
+
+mcapi.exchange.delete_confirm:
+  path: '/exchange/{mcapi_exchange}/delete'
+  defaults:
+    _entity_form: 'mcapi_exchange.delete'
+  requirements:
+    _permission: 'manage mcapi'
+  options:
+    _admin_route: TRUE
+
 
 #TODO not sure the best way to make a tab on the exchanges page which shows the wallet log for its _intertrading wallet
 #mcapi.exchange.wallet:

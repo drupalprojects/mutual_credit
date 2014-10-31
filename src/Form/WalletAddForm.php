@@ -100,7 +100,7 @@ class WalletAddForm extends Formbase {
    * {@inheritdoc}
    */
   function submitForm(array &$form, FormStateInterface $form_state) {
-    form_state_values_clean($form_state);
+    $form_state->cleanValues();;
     $wallet = Wallet::create($form_state->getValues());
     $wallet->save();
     $pid = $wallet->get('pid')->value;

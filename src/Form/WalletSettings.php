@@ -4,6 +4,7 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 
 class WalletSettings extends ConfigFormBase {
 
@@ -20,15 +21,15 @@ class WalletSettings extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->configFactory()->get('mcapi.wallets');
     $form['creation'] = array(
-    	'#title' => t('Wallet creation'),
+      '#title' => t('Wallet creation'),
       '#type' => 'fieldset',
       '#collapsed' => FALSE
     );
     $form['creation']['add_link_location'] = array(
       '#title' => t("Location of 'new wallet' link"),
       '#type' => 'radios',
-      '#options' => array(
-    	  'local_action' => t('As a local action on the entity display page'),
+      '#options' => array(//TODO change this to 2 checkboxes
+        'local_action' => t("Local action on the owner's display page"),
         'summaries' => t('In the wallet summaries block'),
         'both' => t('Both')
       ),
@@ -38,8 +39,16 @@ class WalletSettings extends ConfigFormBase {
     //A wallet can be attached to any entity with an entity reference field pointing towards the exchange entity
     //OR to an exchange entity itself
     $form['creation']['entity_types'] = array(
-    	'#title' => t('Max number of wallets'),
-    	'#description' => t("Wallets can be owned by any entity type which implements !interface and has an entity_references field to 'exchange' entities.", array('!interface' => l('EntityOwnerInterface', 'https://api.drupal.org/api/drupal/core!modules!user!src!EntityOwnerInterface.php/interface/EntityOwnerInterface/8'))),
+      '#title' => t('Max number of wallets'),
+      '#description' => t(
+        "Wallets can be owned by any entity type which implements !interface and has an entity_references field to 'exchange' entities.", 
+        array(
+          '!interface' => \Drupal::l(
+            'EntityOwnerInterface',
+            Url::fromUri('https://api.drupal.org/api/drupal/core!modules!user!src!EntityOwnerInterface.php/interface/EntityOwnerInterface/8')
+          )
+        )
+      ),
       '#type' => 'fieldset',
       '#weight' => 2,
       '#tree' => TRUE
@@ -54,7 +63,7 @@ class WalletSettings extends ConfigFormBase {
       foreach ($bundles as $bundle_name => $bundle_info) {
         if (mcapi_wallet_owning_entity($entity_type, $bundle_name)) {
           $form['creation']['entity_types']["$entity_type_id:$bundle_name"] = array(
-          	'#title' => $entity_label.$bundle_info['label'],
+            '#title' => $entity_label.$bundle_info['label'],
             '#description' => t('The maximum number of wallets for a @type.', array('@type' => $bundle_info['label'])),
             '#type' => 'number',
             '#min' => 0,
@@ -76,7 +85,7 @@ class WalletSettings extends ConfigFormBase {
     $permissions = \Drupal\mcapi\Entity\Wallet::permissions();
 
     $form['wallet_access'] = array(
-    	'#title' => t('Default access of users to wallets'),
+      '#title' => t('Default access of users to wallets'),
       '#description' => t('Determine which users can see, pay and charge from wallets by default.') .' '.
         t("If more than one box is checked, the first one will be the default for new wallets, and the owner of the wallet will be allowed to configure on their wallet 'edit tab'."),
       '#type' => 'details',

@@ -10,7 +10,7 @@
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\entity\Entity\EntityFormDisplay;
+use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Wallet;
@@ -98,7 +98,7 @@ class MassPay extends TransactionForm {
       $form['payee']['#access'] = FALSE;
       $form['many']['#title'] = t('The many wallets');
       //modify the widget to return multiple values
-      $form['many']['#value_callback'] = array($this, 'form_type_select_wallets_value');
+      $form['many']['#value_callback'] = array(get_class($this), 'form_type_select_wallets_value');
       $form['mode']['#weight'] = 7;
       $form['one']['#weight'] = 8;
       $form['direction']['#weight'] = 9;
@@ -133,7 +133,7 @@ class MassPay extends TransactionForm {
     if ($form_state->getErrors()) return;
     //only validate step 1
     if (empty($form_state->get('validated_transactions'))) {
-      form_state_values_clean($form_state);//without this, buildentity fails, but again, not so in nodeFormController
+      $form_state->cleanValues();;//without this, buildentity fails, but again, not so in nodeFormController
 
       $form_state->addValue('creator', \Drupal::currentUser()->id());
       $form_state->addValue('type', 'mass');

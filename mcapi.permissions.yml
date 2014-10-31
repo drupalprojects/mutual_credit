@@ -1,0 +1,17 @@
+'create own wallets':
+  title: 'Create own wallets'
+  description: 'Users can create wallets up to the maximum number per user'
+  'restrict access': TRUE
+'manage own exchanges':
+  title: 'Manage exchanges'
+  description: 'Accounting permissions in all exchanges of which the user is a member'
+  'restrict access': TRUE
+'configure mcapi':
+  title: 'Configure community accounting'
+  description: 'Design and setup the accounting system'
+  'restrict access': TRUE
+'manage mcapi':
+  title: 'Manage community accounting'
+  description: 'Suitable for accountants'
+  'restrict access': TRUE
+

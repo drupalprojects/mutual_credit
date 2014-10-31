@@ -28,7 +28,9 @@ class CurrencyListBuilder extends DraggableListBuilder {
     $header['transactions'] = t('Uses');
     $header['volume'] = t('Volume');
     $header['issuance'] = t('Issuance');
-    $header['exchanges'] = t('Used in');
+    if ($this->moduleHandler->moduleExists('mcapi_exchange')) {
+      $header['exchanges'] = t('Used in');
+    }
     return $header + parent::buildHeader();
   }
 
@@ -65,14 +67,17 @@ class CurrencyListBuilder extends DraggableListBuilder {
     );
     $names = array();
     $used_in = $entity->used_in();
-    if (count($used_in) > 1) {
-      $row['exchanges']['#markup'] = $this->t('@count exchanges', array('@count' => count($used_in)));
-    }
-    else {
-      foreach (Exchange::loadMultiple($used_in) as $e) {
-        $names[] = l($e->label(), $e->url());
+    if ($this->moduleHandler->moduleExists('mcapi_exchange')) {
+      if (count($used_in) > 1) {
+        $row['exchanges']['#markup'] = $this->t('@count exchanges', array('@count' => count($used_in)));
       }
-      $row['exchanges']['#markup'] = implode(', ', $names);
+      else {
+        foreach (Exchange::loadMultiple($used_in) as $e) {
+          debug($e->link());
+          $names[] = \Drupal::l($e->label(), $e->link());
+        }
+        $row['exchanges']['#markup'] = implode(', ', $names);
+      }
     }
 
     //make sure that a currency with transactions in the database can't be deleted.

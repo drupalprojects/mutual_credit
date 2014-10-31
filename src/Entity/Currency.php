@@ -11,8 +11,10 @@ namespace Drupal\mcapi\Entity;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\mcapi\Plugin\Field\FieldType\Worth;
+use Drupal\mcapi\CurrencyInterface;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\user\UserInterface;
+use Drupal\Core\Session\AccountInterface;
 
 /**
  * Defines the Currency entity.
@@ -20,8 +22,8 @@ use Drupal\user\UserInterface;
  * @ConfigEntityType(
  *   id = "mcapi_currency",
  *   label = @Translation("Currency"),
- *   controllers = {
- *     "access" = "Drupal\mcapi\Access\CurrencyAccessController",
+ *   handlers = {
+ *     "access" = "Drupal\mcapi\Access\CurrencyAccessControlHandler",
  *     "view_builder" = "Drupal\mcapi\ViewBuilder\CurrencyViewBuilder",
  *     "form" = {
  *       "add" = "Drupal\mcapi\Form\CurrencyForm",
@@ -96,7 +98,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
-   * @see \Drupal\mcapi\Entity\CurrencyInterface::label()
+   * @see \Drupal\mcapi\CurrencyInterface::label()
    */
   public function label($langcode = NULL) {
     //TODO how to we translate this?
@@ -105,7 +107,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
 
 
   /**
-   * @see \Drupal\mcapi\Entity\CurrencyInterface::transactions()
+   * @see \Drupal\mcapi\CurrencyInterface::transactions()
    */
   public function transactions(array $conditions = array(), $serial = FALSE) {
     $conditions += array('curr_id' => $this->id());
@@ -119,7 +121,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
-   * @see \Drupal\mcapi\Entity\CurrencyInterface::volume()
+   * @see \Drupal\mcapi\CurrencyInterface::volume()
    */
   public function volume(array $conditions = array()) {
     //get the transaction storage controller
@@ -163,13 +165,13 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    */
   //in parent, configEntityBase, $rel is set to edit-form by default - why would that be?
   //Is is assumed that every entity has an edit-form link? Any case this overrides it
-  public function urlInfo($rel = 'canonical') {
+  public function urlInfo($rel = 'canonical', array $options = array()) {
     return parent::urlInfo($rel);
   }
 
 
   /**
-   * @see \Drupal\mcapi\Entity\CurrencyInterface::format()
+   * @see \Drupal\mcapi\CurrencyInterface::format()
    */
   function format($raw_num) {
     if (!is_numeric($raw_num) || !is_integer($raw_num + 0)) {
@@ -211,7 +213,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
-   * @see \Drupal\mcapi\Entity\CurrencyInterface::faux_format()
+   * @see \Drupal\mcapi\CurrencyInterface::faux_format()
    */
   public function faux_format($raw_num, $format = array()) {
     //this is a wrapper around $this->format which temporarily changes the configured
@@ -289,10 +291,20 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * {@inheritdoc}
    */
-  static function user(AccountInterface $account = NULL) {
+  public static function user(AccountInterface $account = NULL) {
     $exchanges = Exchange::referenced_exchanges($account, TRUE);
     return exchange_currencies($exchanges, $ticks);
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  function deletable() {
+    $all_transactions = $this->transactions(array('state' => 0));
+    $deleted_transactions = $this->transactions(array('state' => 0));
+    return $all_transactions == $deleted_transactions;
+  }
+
 }
+
 

@@ -3,58 +3,56 @@
 /**
  * @file
  * Contains \Drupal\mcapi_1stparty\TransactionFormAccessCheck.
+ * @todo deprecate this in favour of 'use' op on the Designed form entity
  */
 
 namespace Drupal\mcapi_1stparty;
 
-use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Access\AccessCheckInterface;
 use Symfony\Component\Routing\Route;
-use Symfony\Component\HttpFoundation\Request;
-use Drupal\Core\Access\AccessInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Entity\EntityAccessCheck;
+use Drupal\Core\Entity\EntityType;
 use Drupal\user\Entity\User;
+use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
 
 
 /**
  * Forms which designate certain exchanges can only be accessed in those exchanges
  */
-class TransactionFormAccessCheck implements AccessCheckInterface {
-
-  /**
-   * @inheritDoc
-   */
-  //not too many examples of this in core to work with
-  public function applies(Route $route) {
-    return array_key_exists('_transaction_editform_access', $route->getRequirements());
-  }
+class TransactionFormAccessCheck extends EntityAccessCheck {
 
   /**
    * The transaction form can only be visited if it is in all exchanges
    * or the user is in the exchange the the form designates.
    *
-   * @param AccountInterface $account
+   * @return AccessResultInterface
    *
-   * @return AccessInterface constant
-   *   a constant either ALLOW, DENY, or KILL
-   *
-   * @todo sort this out when the interface has settled down - alpha12
    */
-  public function access(AccountInterface $account) {
-return AccessInterface::ALLOW;
-      if (!($account instanceOf Drupal\user\UserInterface)) {
-        $account = User::load($account->id());
-      }
+  public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
+    $result = AccessResult::forbidden();//TODO when to invalidate this?
+    $user = User::load($account->id());
+    if ($wids = \Drupal::entityManager()->getStorage('mcapi_wallet')->getOwnedWalletIds($user)) {
+      $editform = FirstPartyFormDesign::load($route->getOption('parameters')['1stparty_editform']);
+      //TODO the caching
       if ($account->hasPermission('configure mcapi')) {
-        return AccessInterface::ALLOW;
+        $result = AccessResult::allowed();
       }
-      else {
-//how do we get the form_id we are testing for?
-
-        return $editform && mcapi_1stparty_access($editform, $account)
-          ? AccessInterface::ALLOW
-          : AccessInterface::DENY;
+      //TODO how do we get $editform? //do we need a 'custom' access controller?
+      elseif ($exchange_id = $editform->get('exchange')) {
+        $exchange = Exchange::load($exchange_id);
+        if (is_object($exchange) && $exchange->is_member($account)) {
+          $result = AccessResult::allowed();
+        }
       }
+      //user can access the form if they are in at least one exchange
+      elseif (count(Exchange::referenced_exchanges($account, TRUE)) != 0) {
+        $result = AccessResult::allowed();
+      }
+    }
+    return $result;
   }
-
 }
 

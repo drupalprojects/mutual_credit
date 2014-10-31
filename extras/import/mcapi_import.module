@@ -5,6 +5,7 @@ use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\Entity\State;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\field\Entity\FieldConfig;
 
 //100 takes 20 seconds on this server. timeout is usually 30
 define('MCAPI_IMPORT_TRANSACTION_BATCH_SIZE', 100);
@@ -33,7 +34,7 @@ function mcapi_import_help($path) {
       $help[] = t('Prepare a csv file and paste as text into the box below.');
       $help[] = t('Payer and Payee should be user IDs or email addresses.');
       $help[] = t('Category names should be comma separated in the same field.');
-      $help[] = t("'created' is optional, but will be converted to unixtime using php function !strtotime.", array('!strtotime' => l('strtotime', 'http://php.net/strtotime', array('absolute' => TRUE))));
+      $help[] = t("'created' is optional, but will be converted to unixtime using php function !strtotime.", array('!strtotime' => \Drupal::l('strtotime', 'http://php.net/strtotime', array('absolute' => TRUE))));
       $help[] = t("Other field API fields must have the same name; a cardinality of 1 will be assumed and the value will be put in the 'value' column.");
       break;
     case 'admin/accounting/import/balances':
@@ -83,7 +84,7 @@ function import_transactions_form($form, $form_state) {
     '"payer*"' => t('uid or email of a user'),
     '"payee*"' => t('uid or email of a user'),
     '"quantity*"' => t('floating point number, consistent with the currency settings'),
-    '"created"' => t("a string which can be parsed by php's !strtotime", array('!strtotime' => l('strtotime()', 'http://php.net/strtotime'))),
+    '"created"' => t("a string which can be parsed by php's !strtotime", array('!strtotime' => \Drupal::l('strtotime()', 'http://php.net/strtotime'))),
     '"state"' => t('integer transaction state'),
     '"type"' => t('machine name of transaction type'),
     '"description"' => t('one line describing what was exchanged')
@@ -102,7 +103,7 @@ function import_transactions_form($form, $form_state) {
   module_load_include('inc', 'mcapi');
   $currencies = currencies_load();
   $form['curr_id'] = array(
-  	'#type' => 'mcapi_currency_select'
+    '#type' => 'mcapi_currency_select'
   );
   unset($form['curr_id']['#title_display']);
   $form['transaction_type'] = array(
@@ -173,7 +174,7 @@ function import_transactions_form_validate(&$form, $form_state) {
   $user_ids = array_unique($user_ids);
   if ($form_state['values']['test']) {
     //test for any other field_api fields.
-    foreach (FieldInstanceConfig::loadByName('mcapi_transaction', 'mcapi_transaction') as $instance) {
+    foreach (FieldConfig::loadByName('mcapi_transaction', 'mcapi_transaction') as $instance) {
       if (array_key_exists($instance['field_name'], $row)) {
         $field_info = FieldConfig::loadByName('mcapi_transaction', $instance['field_name']);
         if ($field_info['module'] == 'taxonomy') continue;
@@ -240,7 +241,7 @@ function mcapi_import_review_transaction_data($success, $results, $operations, $
 
 function import_transactions_form_submit($form, $form_state) {
   $csv = mcapi_parse_getcsv($form_state['values']['data']);
-  form_state_values_clean($form_state);
+  $form_state->cleanValues();;
   unset($form_state['values']['data']);
   //store the earliest dates for each transaction
 
@@ -316,7 +317,7 @@ function mcapi_import_batch_create_transaction($csv, $settings, &$context) {
 function _mcapi_import_generate_transactions($rows, &$settings) {
   $reservoir = Currency::load($settings['curr_id'])->reservoir;
   list($field_info, $vocab) = mcapi_import_detect_categories();
-  $instances = FieldInstanceConfig::loadByName('mcapi_transaction', 'mcapi_transaction');
+  $instances = FieldConfig::loadByName('mcapi_transaction', 'mcapi_transaction');
   if (array_key_exists($field_info['field_name'], $instances)) {
     unset($instances[$fieldname]);
   }
@@ -355,7 +356,7 @@ function import_balances_form($form, $form_state) {
   $currencies = currencies_load();
   module_load_include('inc', 'mcapi');
   $form['curr_id'] = array(
-  	'#type' => 'mcapi_currency_select'
+    '#type' => 'mcapi_currency_select'
   );
   unset($form['curr_id']['#title_display']);
   $form['curr_id']['#required'] = TRUE;
@@ -605,7 +606,7 @@ function mcapi_import_check_terms($rows, $create) {
 
 //this returns the field_info for the first taxonomy field instance it finds on the transaction entity
 function mcapi_import_detect_categories() {
-  foreach (FieldInstanceConfig::loadByName('mcapi_transaction', 'mcapi_transaction') as $field_name => $instance) {
+  foreach (FieldConfig::loadByName('mcapi_transaction', 'mcapi_transaction') as $field_name => $instance) {
     $field_info = FieldConfig::loadByName('mcapi_transaction', $instance['field_name']);
     if ($field_info['module'] == 'taxonomy') {
       return array($field_info, $vocab = taxonomy_vocabulary_machine_name_load($field_info['settings']['allowed_values'][0]['vocabulary']));

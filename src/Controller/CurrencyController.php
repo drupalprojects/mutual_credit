@@ -9,7 +9,7 @@ namespace Drupal\mcapi\Controller;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\mcapi\CurrencyInterface;
 
 /**
  * Returns responses for Exchange routes.
@@ -37,7 +37,6 @@ class CurrencyController extends ControllerBase {
    *   The page title.
    */
   public function pageTitle(CurrencyInterface $mcapi_currency) {
-    mtrace();
     return t('Activity in !currency', array('!currency' => String::checkPlain($mcapi_currency->label())));
   }
 

@@ -9,34 +9,34 @@ function mcapi_limits_install() {
 
 function mcapi_limits_schema() {
   return array(
-  	'mcapi_wallets_limits' => array(
-  	  'description' => 'Per-wallet limit settings',
-  	  'fields' => array(
-  		  'wid' => array(
-		      'description' => 'the unique wallet ID',
-		      'type' => 'int',
-		      'size' => 'normal',
-		      'not null' => TRUE,
-  	    ),
-  		  'curr_id' => array(
+    'mcapi_wallets_limits' => array(
+      'description' => 'Per-wallet limit settings',
+      'fields' => array(
+        'wid' => array(
+          'description' => 'the unique wallet ID',
+          'type' => 'int',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ),
+        'curr_id' => array(
           'description' => 'The currency ID',
           'type' => 'varchar',
           'length' => '32',
         ),
-  	    'min' => array(
-  		  	'description' => 'The minimum, in native units',
+        'min' => array(
+          'description' => 'The minimum, in native units',
           'type' => 'int',
           'size' => 'normal',
           'not null' => FALSE,
           'default' => NULL
-  		  ),
-  	    'max' => array(
-  		  	'description' => 'The maximum, in native units',
+        ),
+        'max' => array(
+          'description' => 'The maximum, in native units',
           'type' => 'int',
           'size' => 'normal',
           'not null' => FALSE,
           'default' => NULL
-  		  ),
+        ),
         'editor' => array(
           'description' => 'the id of the user who saved this',
           'type' => 'int',
@@ -49,11 +49,11 @@ function mcapi_limits_schema() {
           'size' => 'normal',
           'not null' => TRUE,
         )
-  	  ),
-  	  'unique_keys' => array(
+      ),
+      'unique_keys' => array(
         'wid_cur' => array('wid', 'curr_id')
       )
-  	  //phpmyadmin says 'no index defined' - is an index so necessary?
+      //phpmyadmin says 'no index defined' - is an index so necessary?
     )
   );
 

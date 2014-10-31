@@ -60,14 +60,6 @@ class WorthItem extends FieldItemBase {
   /**
    * {@inheritdoc}
    */
-  public function getItemDefinition() {
-    //TODO this function seems not to be needed
-    die('WorthItem getItemDefinition');
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function setValue($value, $notify = true) {
     $this->set('curr_id', $value['curr_id']);
     $this->set('value', $value['value']);
@@ -82,7 +74,8 @@ class WorthItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public function isEmpty() {
-    return empty($this->get('value'));
+    $val = $this->get('value');
+    return empty($val);
   }
 
   /**
@@ -94,12 +87,9 @@ class WorthItem extends FieldItemBase {
     if ($value) {
       $markup = $currency->format($value);
     }
+    //optional special display if the item is zero in this currency
     elseif ($currency->zero) {
       $markup = \Drupal::config('mcapi.misc')->get('zero_snippet');
-    }
-    else {
-      //this should never happen //TODO log this?
-      $markup = '';
     }
     return array('#markup' => $markup);
   }

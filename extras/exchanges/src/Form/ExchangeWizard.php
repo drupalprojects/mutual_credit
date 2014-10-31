@@ -11,6 +11,7 @@ namespace Drupal\mcapi_exchanges\Form;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Template\Attribute;
 
 
 class ExchangeWizard extends ExchangeForm {
@@ -33,7 +34,7 @@ class ExchangeWizard extends ExchangeForm {
       $form['uid']['#required'] = FALSE;
       $form['uid']['#empty_option'] = t('- Create new -');
       $form['manager_new'] = array(
-      	'#title' => t('Create new exchange manager'),
+        '#title' => t('Create new exchange manager'),
         '#type' => 'details',
         '#open' => TRUE,
         '#tree' => TRUE,
@@ -43,12 +44,12 @@ class ExchangeWizard extends ExchangeForm {
           '#type' => 'textfield',
           '#maxlength' => USERNAME_MAX_LENGTH,
           '#description' => $this->t('Spaces are allowed; punctuation is not allowed except for periods, hyphens, apostrophes, and underscores.'),
-          '#attributes' => array(
+          '#attributes' => new Attribute(array(
             'class' => array('username'),
             'autocorrect' => 'off',
             'autocapitalize' => 'off',
             'spellcheck' => 'false',
-          ),
+          )),
           '#weight' => 1,
         ),
         'pass' => array(
@@ -59,7 +60,7 @@ class ExchangeWizard extends ExchangeForm {
           // Do not let web browsers remember this password, since we are
           // trying to confirm that the person submitting the form actually
           // knows the current one.
-          '#attributes' => array('autocomplete' => 'off'),
+          '#attributes' => new Attribute(array('autocomplete' => 'off')),
         ),
         'mail' => array(
           '#title' => $this->t('E-mail address'),
@@ -81,8 +82,8 @@ class ExchangeWizard extends ExchangeForm {
           '#weight' => 5,
         ),
         '#states' => array(
-        	'visible' => array(
-        	  ':input[name="uid"]' => array('value' => '')
+          'visible' => array(
+            ':input[name="uid"]' => array('value' => '')
           )
         )
       );
@@ -99,7 +100,7 @@ class ExchangeWizard extends ExchangeForm {
     //NB currencies are entity_reference field API, hard coded onto the Exchange entity
     $form['currencies_new'] = array(
       '#title' => t('New currency...'),
-    	'#type' => 'details',
+      '#type' => 'details',
       '#open' => FALSE,
       '#weight' => 10,
       'currency_name' => array(

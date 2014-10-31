@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Plugin\views\field\ExchangeVisibility.
+ * Definition of Drupal\mcapi_exchanges\Plugin\views\field\ExchangeVisibility.
  */
 
-namespace Drupal\mcapi\Plugin\views\field;
+namespace Drupal\mcapi_exchanges\Plugin\views\field;
 
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\Component\Annotation\PluginID;

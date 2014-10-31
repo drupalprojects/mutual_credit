@@ -15,7 +15,8 @@ services:
     tags:
      - { name: event_subscriber }
 
-  access_check.add_wallet:
+  access_check.wallet.add:
+    #if this class implementes AccessCheckInterface, it is a dynamic check in Beta2
     class: Drupal\mcapi\Access\WalletAddAccessCheck
     tags:
       - { name: access_check, applies_to: _wallet_add_access  }

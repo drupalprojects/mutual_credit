@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Form\CurrencyFormController.
+ * Definition of Drupal\mcapi\Form\CurrencyForm.
  */
 
 namespace Drupal\mcapi\Form;
@@ -181,7 +181,9 @@ class CurrencyForm extends EntityForm {
       '#description' => implode(' ', $help),
       '#type' => 'textfield',
       '#default_value' => implode('', $currency->format),
-      '#element_validate' => array(array($this, 'validate_format')),
+      '#element_validate' => array(
+        array($this, 'validate_format')
+      ),
       '#max_length' => 16,
       '#size' => 10,
     );

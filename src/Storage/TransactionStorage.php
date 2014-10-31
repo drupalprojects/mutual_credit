@@ -13,15 +13,15 @@
 
 namespace Drupal\mcapi\Storage;
 
-use Drupal\Core\Entity\ContentEntityDatabaseStorage;
+use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\Core\Database\Database;
-use Drupal\mcapi\Entity\TransactionInterface;
+use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\Entity\State;
 
 
-class TransactionStorage extends ContentEntityDatabaseStorage implements TransactionStorageInterface {
+class TransactionStorage extends TransactionIndexStorage {
 
   /**
    * because the transaction entity is keyed by serial number not xid,
@@ -31,30 +31,30 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
    *
    * @see EntityStorageBase::save().
    */
-  public function save(EntityInterface $entity) {
 
+  public function save(EntityInterface $entity) {
     $this->invokeHook('presave', $entity);
     //this $entity is coming from above where it may have $children
     //and in fact be several records
     //NB currently transactions are NOT revisionable
-    $is_new = $entity->isNew();
-    $serial = $is_new ? $this->nextSerial() : $entity->serial->value;
+    if ($entity->isNew()) {
+      $entity->serial->value = $this->nextSerial();
+    }
+    else echo 'not new';
     $parent = 0;
     //note that this clones the parent tranaction
     foreach ($entity->flatten() as $transaction) {
+      $transaction->serial = $entity->serial->value;
       $record = $this->mapToStorageRecord($transaction);
       $record->changed = REQUEST_TIME;
-      if (!$is_new) {
-        //TODO drupal_get_complete_schema doesn't return entity tables in alpha14
-        //$return = drupal_write_record('mcapi_transaction', $record, 'xid');
+      
+      if (!$entity->isNew()) {
         $return = SAVED_UPDATED;
-        //debug(array_keys((array)$record));
         $this->database
           ->update('mcapi_transaction')
           ->fields((array) $record)
           ->condition('xid', $record->xid)
           ->execute();
-
         $cache_ids = array($transaction->id());
         $this->resetCache($cache_ids);
         $this->indexDrop($serial);
@@ -65,20 +65,18 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
         $return = SAVED_NEW;
         // Ensure the entity is still seen as new after assigning it an id while storing its data.
         $transaction->enforceIsNew();
-        $record->serial = $serial;
+        //$record->serial = $serial;
         //the first transaction is the parent,
         //and the subsequent transactions must have its xid as their parent
         if ($parent) $record->parent = $parent;
         $insert_id = $this->database
-          ->insert('mcapi_transaction', array('return' => Database::RETURN_INSERT_ID))
-          ->fields((array) $record)
-          ->execute();
-
+        ->insert('mcapi_transaction', array('return' => Database::RETURN_INSERT_ID))
+        ->fields((array) $record)
+        ->execute();
         $transaction->xid->value = $insert_id;
         if (!$parent) {
           //alter the passed entity, at least the parent
           $parent = $entity->xid->value = $insert_id;
-          $entity->serial->value = $serial;
         }
 
         $this->invokeFieldMethod('insert', $transaction);
@@ -89,75 +87,15 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
         // Reset general caches, but keep caches specific to certain entities.
         $cache_ids = array();
       }
-      $this->saveFieldItems($transaction, !$is_new);
-
-      if (isset($insert_id)) {
-        db_delete('mcapi_transactions_index')->condition('xid', $insert_id)->execute();
-      }
-      // we only index transactions in states which are 'counted'
-      if (in_array($record->state, mcapi_states_counted(TRUE))) {
-        $query = db_insert('mcapi_transactions_index')
-          ->fields(array('xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'));
-
-        foreach ($transaction->worth->getValue() as $worth) {
-          $query->values(array(
-            'xid' => $transaction->xid->value,
-            'serial' => $record->serial,
-            'wallet_id' => $record->payer,
-            'partner_id' => $record->payee,
-            'state' => $record->state,
-            'curr_id' => $worth['curr_id'],
-            'volume' => $worth['value'],
-            'incoming' => 0,
-            'outgoing' => $worth['value'],
-            'diff' => -$worth['value'],
-            'type' => $record->type,
-            'created' => $record->created,
-            //could this be more elegant?
-            'child' => intval((bool)$record->parent)
-          ));
-          $query->values(array(
-            'xid' => $transaction->xid->value,
-            'serial' => $record->serial,
-            'wallet_id' => $record->payee,
-            'partner_id' => $record->payer,
-            'state' => $record->state,
-            'curr_id' => $worth['curr_id'],
-            'volume' => $worth['value'],
-            'incoming' => $worth['value'],
-            'outgoing' => 0,
-            'diff' => $worth['value'],
-            'type' => $record->type,
-            'created' => $record->created,
-            'child' => intval((bool)$record->parent)
-          ));
-        }
-        $query->execute();
-      }
-      // Allow code to run after saving.
-      $entity->postSave($this, !$is_new);
-      unset($entity->original);
+      $this->saveFieldItems($transaction, $return == SAVED_UPDATED);
+echo 'saved fields';
     }
+    // Allow code to run after saving.
+    $entity->postSave($this, $return == SAVED_UPDATED);
+echo 'postsaved';
+    unset($entity->original);
+
     return $return;
-  }
-
-
-  /**
-   * {@ineritdoc}
-   */
-  protected function doDelete($entities) {
-    //first of all we need to get a flat array of all the entities.
-    foreach ($entities as $entity) {
-      $serials[] = $entity->serial->value;
-      foreach($entity->flatten() as $transaction) {
-        $transactions[$transaction->id()] = $transaction;
-      }
-    }
-    parent::doDelete($transactions);
-    $this->resetCache(array_keys($transactions));
-
-    //maybe this should be in postDelete
-    $this->indexDrop($serials);
   }
 
   /**
@@ -165,6 +103,7 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
    */
   public function doErase(array $transactions) {
     foreach ($transactions as $transaction) {
+      //its only necessary to set the state of the parent
       $transaction->set('state', TRANSACTION_STATE_ERASED);
       $transaction->save($transaction);
     }
@@ -172,159 +111,66 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
 
 
   /**
-   * for development use only! This is not (yet in the interface)
+   * for development use only!
    */
   public function wipeslate($curr_id = NULL) {
-    //save loading all transactions into memory at the same time
-    //I don't know a more elegant way...
-    if ($curr_id) {
-      $serials = db_select("mcapi_transactions_index", 't')
-        ->fields('t', array('serial'))
-        ->condition('curr_id', $curr_id)
-        ->execute();
-      $this->delete($serials->fetchCol(), TRUE);
-    }
-    else {
-      //this will reset the xid autoincremented field
-      db_truncate('mcapi_transaction')->execute();
-      //and the index table
-      db_truncate('mcapi_transactions_index')->execute();
-    }
+    $serials = parent::wipeslate($curr_id);
+    $this->delete($serials, TRUE);
+    //reset the entity table
+    $this->database->truncate('mcapi_transaction')->execute();
   }
-
-  /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::indexRebuild()
-   */
-  public function indexRebuild() {
-    $states = $this->counted_states();
-    db_truncate('mcapi_transactions_index')->execute();
-    db_query("
-      INSERT INTO {mcapi_transactions_index} (
-        SELECT
-          t.xid,
-        	t.serial,
-          t.payer AS wallet_id,
-          t.payee AS partner_id,
-          t.state,
-          t.type,
-          t.created,
-          worth_curr_id,
-          0 AS incoming,
-          worth_value AS outgoing,
-          - worth_value AS diff,
-          worth_value AS volume,
-      	  t.parent as child
-        FROM {mcapi_transaction} t
-        RIGHT JOIN {mcapi_transaction__worth} w ON t.xid = w.entity_id
-        WHERE state IN ($states)
-      )"
-    );
-    db_query(
-      "INSERT INTO {mcapi_transactions_index} (
-        SELECT
-          t.xid,
-      		t.serial,
-          t.payee AS wallet_id,
-          t.payer AS partner_id,
-          t.state,
-          t.type,
-          t.created,
-          worth_curr_id,
-          worth_value AS incoming,
-          0 AS outgoing,
-          worth_value AS diff,
-          worth_value AS volume,
-      		t.parent as child
-        FROM {mcapi_transaction} t
-        RIGHT JOIN {mcapi_transaction__worth} w ON t.xid = w.entity_id
-        WHERE state IN ($states)
-      ) "
-    );
-  }
-  /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::indexCheck()
-   */
-  public function indexCheck() {
-    if (db_query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
-      $states = $this->counted_states();
-      $volume_index = db_query("SELECT sum(incoming) FROM {mcapi_transactions_index}")->fetchField();
-      $volume = db_query("SELECT sum(w.worth_value)
-        FROM {mcapi_transaction} t
-        LEFT JOIN {mcapi_transaction__worth} w ON t.xid = w.entity_id AND t.state IN ($states)"
-      )->fetchField();
-      if ($volume_index == $volume) return TRUE;
-    }
-    return FALSE;
-  }
-  /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::indexDrop()
-   */
-  public function indexDrop($serials) {
-    db_delete('mcapi_transactions_index')
-      ->condition('serial', (array)$serials)
-      ->execute();
-  }
-
-  /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::nextSerial()
-   */
-  protected function nextSerial() {
-    //TODO: I think this needs some form of locking so that we can't get duplicate transactions.
-    return db_query("SELECT MAX(serial) FROM {mcapi_transaction}")->fetchField() + 1;
-  }
-
 
   /**
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::filter()
+   * @note the parent function is very similar but works on the index table and doesn't know payer and payee conditions.
    */
   public static function filter(array $conditions = array(), $offset = 0, $limit = 0) {
     $query = db_select('mcapi_transaction', 'x')
       ->fields('x', array('xid', 'serial'))
       ->orderby('created', 'DESC');
-    foreach(array('state', 'serial', 'payer', 'payee', 'creator', 'type') as $field) {
-      if (array_key_exists($field, $conditions)) {
-        $query->condition($field, (array)$conditions[$field]);
-        unset($conditions[$field]);
-      }
-    }
-    if (!array_key_exists('state', $conditions)) {
-      $query->condition('state', mcapi_states_counted());
-    }
-    //TODO decide definitively whether 'involving' and 'including' are the same
-    //because transactions can only ever happen within an exchange.
-    //unless wallets change owners or owners move between exchanges
-    if (array_key_exists('involving', $conditions)) {
-      $wids = (array)$conditions['involving'];
-      $query->condition(db_and()
-          ->condition('payer', $wids)
-          ->condition('payee', $wids)
-      );
-      unset($conditions['involving']);
-    }
-    if (array_key_exists('including', $conditions)) {
-      $wids = (array)$conditions['including'];
-      $query->condition(db_or()
-        ->condition('payer', $wids)
-        ->condition('payee', $wids)
-      );
-      unset($conditions['involving']);
-    }
-    if (array_key_exists('from', $conditions)) {
-      $query->condition('created', $conditions['from'], '>');
-      unset($conditions['from']);
-    }
-    if (array_key_exists('to', $conditions)) {
-      $query->condition('created', $conditions['to'], '<');
-      unset($conditions['to']);
-    }
-
-    if (array_key_exists('curr_id', $conditions) || array_key_exists('value', $conditions)) {
+    //take account for the worth table.
+    if (array_key_exists('value', $conditions) || array_key_exists('curr_id', $conditions)) {
       $query->join('mcapi_transaction__worth', 'w', 'x.xid = w.entity_id');
-      foreach (array('curr_id', 'value') as $field) {
-        if (array_key_exists($field, $conditions)) {
-          $query->condition('worth_'. $field, $conditions[$field]);
-        }
+      if (array_key_exists('value', $conditions)) {
+        $conditions['w.worth_value'] = $conditions['value'];
       }
+      if (array_key_exists('curr_id', $conditions)) {
+        $conditions['w.worth_curr_id'] = $conditions['curr_id'];
+      }
+    }
+    //TODO generalise this to take account of other fieldAPI fields?
+    $conditions + array(
+      'state' => mcapi_states_counted()
+    );
+debug($conditions);
+    foreach($conditions as $field => $value) {
+      switch($field) {
+      	case 'state':
+      	case 'serial':
+      	case 'payer':
+      	case 'payee':
+      	case 'creator':
+      	case 'type':
+      	case 'w.worth_value':
+      	case 'w.worth_curr_id':
+      	  $query->condition($field, (array)$value);
+      	  break;
+      	case 'involving':
+      	  $value = (array)$value;
+      	  $cond_group = count($value) == 1 ? db_or() : db_and();
+      	  $query->condition($cond_group
+    	      ->condition('payer', $value)
+    	      ->condition('payee',$value)
+      	  );
+          break;
+      	case 'from':
+          $query->condition('created', $value, '>');
+          break;
+      	case 'to':
+          $query->condition('created', $value, '<');
+          break;
+      }
+      unset($conditions[$field]);
     }
     if ($limit) {
       //assume that nobody would ask for unlimited offset results
@@ -333,264 +179,4 @@ class TransactionStorage extends ContentEntityDatabaseStorage implements Transac
     return $query->execute()->fetchAllKeyed();
   }
 
-  /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::summaryData()
-   */
-  public function summaryData($wallet_id, array $conditions = array()) {
-    //TODO We need to return 0 instead of null for empty columns
-    //then get rid of the last line of this function
-    $query = db_select('mcapi_transactions_index', 'i')->fields('i', array('curr_id'));
-    $query->addExpression('COUNT(DISTINCT i.serial)', 'trades');
-    $query->addExpression('SUM(i.incoming)', 'gross_in');
-    $query->addExpression('SUM(i.outgoing)', 'gross_out');
-    $query->addExpression('SUM(i.diff)', 'balance');
-    $query->addExpression('SUM(i.volume)', 'volume');
-    $query->addExpression('COUNT(DISTINCT i.partner_id)', 'partners');
-    $query->condition('i.wallet_id', $wallet_id)
-      ->groupby('curr_id');
-    $this->parseConditions($query, $conditions);
-    $result = $query->execute()->fetchAllAssoc('curr_id', \PDO::FETCH_ASSOC);
-    //if ($result)
-      return $result;
-    //return array('curr_id' =>);
-  }
-
-  //experimental
-  public function balances ($curr_id, $wids = array(), array $conditions = array()) {
-    $query = db_select('mcapi_transactions_index', 'i')->fields('i', array('wallet_id'));
-    $query->addExpression('SUM(i.diff)', 'balance');
-    if ($wids) {
-      $query->condition('i.wallet_id', $wids);
-    }
-    $query->condition('i.curr_id', $curr_id)
-    ->groupby('curr_id');
-    $this->parseConditions($query, $conditions);
-    return $query->execute()->fetchAllKeyed();
-  }
-
-  /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::timesBalances()
-   */
-  public function timesBalances($wallet_id, $curr_id, $since = 0) {
-    //TODO cache this, and clear the cache whenever a transaction changes state or is deleted
-    //this is a way to add up the results as we go along
-    db_query("SET @csum := 0");
-    //I wish there was a better way to do this.
-    //It is cheaper to do stuff in mysql
-    $all_balances = $this->database->query(
-      "SELECT created, (@csum := @csum + diff) as balance
-        FROM {mcapi_transactions_index}
-        WHERE wallet_id = $wallet_id AND curr_id = '$curr_id'
-        ORDER BY created"
-    )->fetchAll();
-    $history = array();
-    //having done the addition, we can chop the beginning off the array
-    //if two transactions happen on the same second, the latter running balance will be shown only
-    foreach ($all_balances as $point) {
-      //@todo this could be optimised since we could be running through a lot of points in chronological order
-      //we just need to remove all array values with keys smaller than $since.
-      //I think it can't be done in the SQL coz we need them for adding up.
-      if ($point->created < $since) continue;
-      $history[$point->created] = $point->balance;
-    }
-    return $history;
-  }
-
-  /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::count()
-   */
-  public function count($curr_id = '', $conditions = array(), $serial = FALSE) {
-    $query = db_select('mcapi_transaction__worth', 'w');
-    $query->join('mcapi_transaction', 't', 't.xid = w.entity_id');
-    $query->addExpression('count(w.entity_id)');
-    if ($curr_id) {
-      $query->condition('w.worth_curr_id', $curr_id);
-    }
-    $this->parseConditions($query, $conditions);
-    return $query->execute()->fetchField();
-  }
-
-  /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::volume()
-   */
-  public function volume($curr_id, $conditions = array()) {
-    $query = db_select('mcapi_transaction__worth', 'w');
-    $query->join('mcapi_transaction', 't', 't.xid = w.entity_id');
-    $query->addExpression('SUM(w.worth_value)');
-    $query->condition('w.worth_curr_id', $curr_id);
-    $this->parseConditions($query, $conditions);
-    return $query->execute()->fetchField();
-  }
-
-  /**
-   * Add an array of conditions to the select query
-   *
-   * @param SelectInterface $query
-   * @param array $conditions
-   */
-  private function parseConditions(SelectInterface $query, array $conditions) {
-    foreach ($conditions as $fieldname => $value) {
-      $query->conditions($fieldname, $value);
-    }
-    if (!in_array('state', $conditions) || !is_null($conditions['state'])) {
-      $query->conditions('state', $this->counted_states());
-    }
-  }
-
-  /**
-   * helper function to filter queries by counted states only
-   * @return string
-   *   a comma separated list of state ids, in quote marks
-   */
-  private function counted_states() {
-    foreach (mcapi_states_counted(TRUE) as $state_id) {
-      $counted_states[] = "'".$state_id."'";
-    }
-    return implode(', ', $counted_states);
-  }
-
-  function getSchema() {
-    $schema = parent::getSchema();
-    $schema['mcapi_transaction'] += array(
-      'indexes' => array(
-        'parent' => array('parent'),
-      ),
-      //drupal doesn't actually do anything with these
-      'foreign keys' => array(
-        'payer' => array(
-          'table' => 'users',
-          'columns' => array('uid' => 'uid'),
-        ),
-        'payee' => array(
-          'table' => 'users',
-          'columns' => array('uid' => 'uid'),
-        )
-      )
-    );
-    $schema['mcapi_transactions_index'] = array(
-      'description' => 'currency transactions between users',
-      'fields' => array(
-        'xid' => array(
-          'description' => 'the unique transaction ID',
-          'type' => 'int',
-          'size' => 'normal',
-          'not null' => TRUE,
-        ),
-        'serial' => array(
-          'description' => 'serial number (integer)',
-          'type' => 'int',
-          'size' => 'normal',
-          'not null' => FALSE,
-        ),
-        'wallet_id' => array(
-          'description' => 'the id of the wallet we are viewing',
-          'type' => 'int',
-          'size' => 'small',
-          'not null' => TRUE,
-        ),
-        'partner_id' => array(
-          'description' => 'the id of the 2nd wallet in the transaction',
-          'type' => 'int',
-          'size' => 'small',
-          'not null' => TRUE,
-        ),
-        'state' => array(
-          'description' => 'Completed, pending, disputed, etc',
-          'type' => 'varchar',
-          'length' => '16',
-          'not null' => TRUE,
-          'default' => TRANSACTION_STATE_FINISHED
-        ),
-        'type' => array(
-          'description' => 'The type of transaction, types are provided by modules',
-          'type' => 'varchar',
-          'length' => '32',
-          'not null' => TRUE,
-        ),
-        'created' => array(
-          'description' => 'Unixtime that the transaction was recorded',
-          'type' => 'int',
-          'size' => 'normal',
-          'not null' => TRUE,
-        ),
-        'curr_id' => array(
-          'description' => 'The currency ID',
-          'type' => 'varchar',//when to use varchar and when string?
-          'length' => '8',
-        ),
-        'incoming' => array(
-          'description' => 'Income',
-          'type' => 'int',
-          'size' => 'normal',
-          'not null' => TRUE,
-          'default' => 0
-        ),
-        'outgoing' => array(
-          'description' => 'Outgoing',
-          'type' => 'int',
-          'size' => 'normal',
-          'not null' => TRUE,
-          'default' => 0
-        ),
-        'diff' => array(
-          'description' => 'Change in balance',
-          'type' => 'int',
-          'size' => 'normal',
-          'not null' => TRUE,
-          'default' => 0
-        ),
-        'volume' => array(
-          'description' => 'Volume',
-          'type' => 'int',
-          'size' => 'normal',
-          'not null' => TRUE,
-          'default' => 0
-        ),
-        'child' => array(
-          'description' => 'whether this transaction is a child',
-          'type' => 'int',
-          'size' => 'small',
-          'not null' => TRUE,
-        ),
-      ),
-      'primary key' => array('xid', 'wallet_id', 'curr_id'),
-      'indexes' => array(
-        'wallet_id' => array('wallet_id'),
-        'partner_id' => array('partner_id'),
-      ),
-    );
-    return $schema;
-  }
-}
-
-
-/**
- * load the transaction states and filter them according to the misc settings
- *
- * @param boolean $counted
- *
- * @return Drupal\Core\Config\Entity\ConfigEntityInterface[]
- *
- * @todo later we might want to provide a fuller interface for editing states
- * types, esp the name and description e.g. admin/accounting/workflow/states
- *
- * @todo cache this
- *
- */
-function mcapi_states_counted($counted = TRUE) {
-  $counted_states = \Drupal::config('mcapi.misc')->get('counted');
-  foreach (State::loadMultiple() as $state) {
-    if (array_key_exists($state->id, $counted_states)) {
-      if ($counted_states[$state->id] == $counted) {
-        $result[] = $state->id;
-      }
-    }
-    else {
-      //look at the state entities own setting if it hasn't been saved
-      if ($state->counted == $counted) {
-        $result[] = $state->id;
-      }
-    }
-  }
-  return $result;
 }

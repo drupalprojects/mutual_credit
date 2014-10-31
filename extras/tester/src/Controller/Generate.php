@@ -50,7 +50,7 @@ class Generate extends ConfigFormBase {
       '#min' => 0,
       '#weight' => 2
     );
-    $link = l('edit', 'admin/accounting/wallets');
+    $link = \Drupal::l('edit', 'admin/accounting/wallets');
     $form['users'] = array(
       '#title' => t('New users'),
       '#description' => 'Each user will have their own wallet.',
@@ -95,8 +95,8 @@ class Generate extends ConfigFormBase {
     $currencies = array();
     for ($i = 2; $i < $values['currencies']+2; $i++) {
       $props = array(
-      	'id' => 'currency_'.$i,
-      	'name' => 'Currency #'.$i,
+        'id' => 'currency_'.$i,
+        'name' => 'Currency #'.$i,
         'intertrade' => 1,
         'type' => 'time',
         'widget' => 'currency_time_single',
@@ -179,8 +179,8 @@ class Generate extends ConfigFormBase {
       $props = array(
         'payer' => reset($wids),
         'payee' => next($wids),
-        'worths' => array(
-          1 => array(
+        'worth' => array(
+          0 => array(
             'curr_id' => 1,
             'value' => rand(100, 5000)
           )

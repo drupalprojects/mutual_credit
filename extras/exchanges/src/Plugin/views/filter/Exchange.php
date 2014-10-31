@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Plugins\views\filter\Exchange.
+ * Definition of Drupal\mcapi_exchanges\Plugins\views\filter\Exchange.
  */
 
-namespace Drupal\mcapi\Plugin\views\filter;
+namespace Drupal\mcapi_exchanges\Plugin\views\filter;
 
 use Drupal\Component\Annotation\PluginID;
 use Drupal\views\Plugin\views\filter\FilterPluginBase;

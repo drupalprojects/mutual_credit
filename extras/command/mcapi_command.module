@@ -4,10 +4,12 @@
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Transaction;
 
-/*
- * implements hook_perm
+
+/**
+ * implements hook_mcapi_permissions().
+ * puts all the mcapi permissions together on the permissions page
  */
-function mcapi_command_mcapi_info_drupal_permissions() {
+function mcapi_command_mcapi_permissions() {
   return array(
     'transact via sms' => array(
       'title' => t('Transact via sms'),
@@ -24,8 +26,8 @@ function process_mcapi_command($message, $sender_account = NULL, $really = FALSE
   $transaction = mcapi_command_execute($message, $sender_account);
   //this has no idea whether the transaction is pending.
   if ($really) {
-  	$storage = \Drupal::entityManager()->getStorage('mcapi_transaction');
-  	$stats = $wallet->getStats(\Drupal::config('mcapi.command')->get('curr_id'));
+    $storage = \Drupal::entityManager()->getStorage('mcapi_transaction');
+    $stats = $wallet->getStats(\Drupal::config('mcapi.command')->get('curr_id'));
 
     return t('Transaction created.').' '.
       t('Your current balance is @num', array('@num' => $stats['balance']));//no need the format this
@@ -83,7 +85,7 @@ function mcapi_parse_command($message) {
     }
   }
   if (!isset($longest_matching_expression)) {
-  	throw new Exception(\Drupal::config('mcapi.command')->get('syntax_error'));
+    throw new Exception(\Drupal::config('mcapi.command')->get('syntax_error'));
   }
 
   array_shift($most_matches);//remove the first which was the matched expression
@@ -154,7 +156,7 @@ function mcapi_command_sms_incoming($op, $number, $message) {
     $sender = User::load($sender_uid);
     $transaction = mcapi_command_execute($message, $sender, TRUE);
     if (!$transaction) {
-    	$message = \Drupal::config('mcapi.command')->get('syntax_error');
+      $message = \Drupal::config('mcapi.command')->get('syntax_error');
       throw new Exception($message);
     }
   }
@@ -164,11 +166,11 @@ function mcapi_command_sms_incoming($op, $number, $message) {
 
   $langcode = user_preferred_language($sender)->language;
   if ($transaction->state == TRANSACTION_STATE_COMPLETED) {
-  	$message = \Drupal::config('mcapi.command')->get('syntax_error');
-  	$curr_id = \Drupal::config('mcapi.command')->get('commands_currcode ');
+    $message = \Drupal::config('mcapi.command')->get('syntax_error');
+    $curr_id = \Drupal::config('mcapi.command')->get('commands_currcode ');
 
-  	$stats = $wallet->getStats($curr_id);
-  	$currency = mcapi_currency_load($curr_id);
+    $stats = $wallet->getStats($curr_id);
+    $currency = mcapi_currency_load($curr_id);
 
     $response = t(
       "Transaction created. Your new balance is @num",

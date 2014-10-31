@@ -1,6 +1,8 @@
 <?php
 //Id;
 
+Use \Drupal\Core\Url;
+
 function mcapi_signatures_install() {
 
   module_set_weight('mcapi_signatures', 2);
@@ -9,8 +11,8 @@ function mcapi_signatures_install() {
 function mcapi_signatures_modules_installed($modules) {
   if (in_array('mcapi_signatures', $modules) && !in_array('mcapi', $modules)) {
     drupal_set_message(t(
-      "Currency settings should be reviewed to take account of transaction signing. !link",
-      array('!link' => l('admin/accounting/currencies', 'admin/accounting/currencies'))
+      "Workflow settings should be reviewed to take account of transaction signing. !link",
+      array('!link' => \Drupal::l('admin/accounting/workflow', Url::fromRoute('mcapi.admin.workflow')))
     ));
   }
 }

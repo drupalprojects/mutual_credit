@@ -3,17 +3,18 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Controller\WorkflowListBuilder.
- * @TODO this would like to be a draggable list,
- * but the DraggableListBuilder is designed for entities, not plugins
+ * NB this isn't an entity list
  */
 
 namespace Drupal\mcapi\ListBuilder;
 
+use Drupal\Core\Url;//isn't this in the controllerBase?
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Form\FormInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\Entity\State;
+use Drupal\Core\Template\Attribute;
 
 /**
  * Displays the workflow page in the management menu admin/accounting/workflow
@@ -43,7 +44,8 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     $config = $transition->getConfiguration();
     return array(
       '#weight' => $config['weight'],
-      '#attributes' => array('class' => array('draggable')),
+      '#attributes' => new Attribute(array('class' => array('draggable'))),
+      '#attributes' => array('class' => array('draggable')),//TODO sort this out. see \Drupal\Core\Config\Entity\DraggableListBuilder
       'name' => array(
         '#markup' => $config['title']
       ),
@@ -51,27 +53,29 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
         '#markup' => $transition->description
       ),
       'operations' => array(
-        '#markup' => $this->l($this->t('Settings'), 'mcapi.workflow_settings', array('transition' => $id))
+        '#markup' => $this->l($this->t('Settings'), Url::fromRoute('mcapi.workflow_settings', array('transition' => $id)))
       ),
       'flip' => array(
-        '#markup' => l(t('Disable'), 'admin/accounting/workflow/'. $id .'/flip'),
+        '#markup' => $this->l(t('Disable'), Url::fromRoute('mcapi.admin.workflow.flip', array('transition' => $id))),
       ),
       'weight' => array(
         '#type' => 'weight',
         '#title' => t('Weight for @title', array('@title' => $transition->label)),
         '#title_display' => 'invisible',
         '#default_value' => $config['weight'],
-        '#attributes' => array('class' => array('weight')),
+        '#attributes' => new Attribute(array('class' => array('weight'))),//TODO sort this out. see \Drupal\Core\Render\Element\RenderElement setAttribute()
+        '#attributes' => array('class' => array('weight'))
       ),
     );
   }
+
   public function disabledRow($transition) {
     $id = $transition->getPluginId();
 
     $config = $transition->getConfiguration();
     return array(
       '#weight' => 100,
-      '#attributes' => array('class' => array('draggable')),
+      '#attributes' => new Attribute(array('class' => array('draggable'))),
       'name' => array(
         '#markup' => $config['title']
       ),
@@ -82,14 +86,14 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
         '#markup' => $this->t('Disabled'),
       ),
       'flip' => array(
-        '#markup' => l(t('Enable'), 'admin/accounting/workflow/'. $id .'/flip')
+        '#markup' => \Drupal::l(t('Enable'), 'admin/accounting/workflow/'. $id .'/flip')
       ),
       'weight' => array(
         '#type' => 'weight',
         '#title' => t('Weight for @title', array('@title' => $transition->label)),
         '#title_display' => 'invisible',
         '#default_value' => 100,
-        '#attributes' => array('class' => array('weight')),
+        '#attributes' => new Attribute(array('class' => array('weight'))),
       ),
     );
   }

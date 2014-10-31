@@ -17,7 +17,7 @@ use Drupal\user\RoleInterface;
  * @ConfigEntityType(
  *   id = "mcapi_state",
  *   label = @Translation("Transaction state"),
- *   controllers = {
+ *   handlers = {
  *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
  *   },
  *   config_prefix = "state",

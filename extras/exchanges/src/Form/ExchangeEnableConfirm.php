@@ -46,7 +46,7 @@ class ExchangeEnableConfirm extends ContentEntityConfirmFormBase {
     $this->entity->save();
 
     drupal_set_message(t("Exchange '%label' is now active.", array('%label' => $this->entity->label())));
-    $form_state->setRedirect('mcapi.admin_exchange_list');
+    $form_state->setRedirectUrl($this->getCancelUrl());
   }
 
 }

@@ -38,7 +38,7 @@ class WorthWidget extends WidgetBase {
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     //element may already contain #allowed_curr_ids
     return $element + array(
-      '#title' => String::checkPlain($this->fieldDefinition->getLabel()),
+      '#title' => String::checkPlain($this->fieldDefinition->label()),
       '#title_display' => 'attribute',
       '#type' => 'worth',
       '#default_value' => $items->getValue(),
@@ -49,11 +49,10 @@ class WorthWidget extends WidgetBase {
 
   /**
    * {@inheritdoc}
+   * @todo
    */
-
   public function errorElement(array $element, ConstraintViolationInterface $violation, array $form, FormStateInterface $form_state) {
     echo "\Drupal\mcapi\Plugin\Field\FieldWidget\WorthWidget::errorElement hasn't been written yet";
-
     if ($violation->arrayPropertyPath == array('format') && isset($element['format']['#access']) && !$element['format']['#access']) {
       // Ignore validation errors for formats if formats may not be changed,
       // i.e. when existing formats become invalid. See filter_process_format().
@@ -61,5 +60,4 @@ class WorthWidget extends WidgetBase {
     }
     return $element;
   }
-
 }

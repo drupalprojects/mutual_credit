@@ -6,7 +6,7 @@ dependencies:
     - entity_reference
     - mcapi
 langcode: en
-name: exchanges
+field_name: exchanges
 entity_type: user
 type: entity_reference
 settings:

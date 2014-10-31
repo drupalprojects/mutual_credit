@@ -45,11 +45,11 @@ class BalanceLimits extends McapiBlockBase {
       }
     }
     $form['absolute'] = array(
-    	'#title' => t('Range'),
+      '#title' => t('Range'),
       '#type' => 'radios',
       '#options' => array(
-    	  'absolute' => t('Show min, max and current balance'),
-    	  'relative' => t('Show limits for earning and spending, relative to balance'),
+        'absolute' => t('Show min, max and current balance'),
+        'relative' => t('Show limits for earning and spending, relative to balance'),
       ),
       '#default_value' => $this->configuration['absolute'],
       '#weight' => '5'

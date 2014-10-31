@@ -9,12 +9,13 @@ namespace Drupal\mcapi_tester\Controller;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\mcapi\Entity\ExchangeInterface;
+use Drupal\mcapi\ExchangeInterface;
 use Drupal\mcapi\Storage\WalletStorage;
 use Drupal\mcapi\Entity\Exchange;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
+use Drupal\Core\Template\Attribute;
 
 /**
  * Returns responses for Exchange routes.
@@ -53,24 +54,28 @@ class DashboardController extends ControllerBase {
    */
   protected function buildPage() {
     $page['#prefix'] = 'Leave this tab open for reference<br />';
-    $header = array('Wallet', 'Name', 'Balance', 'Mins', 'Maxes', 'edit');
+    $header = array('Wallet', 'Name', 'Balance', 'Mins', 'Maxes', 'Edit limits');
     foreach (Exchange::loadMultiple() as $exchange) {
       $id = $exchange->id();
       $page[$id] = array(
-        '#title' => 'Exchange: '.$exchange->label() .($exchange->status ? ' (Open)' : ' (Closed)'),
+        '#title' => 'Exchange: '.$exchange->label() .($exchange->status->value ? ' (Active)' : ' (Inactive)'),
         '#type' => 'details',
-        '#open' => $exchange->status,
+        '#open' => $exchange->status->value,
         'manager' => array(
-      	  '#markup' => 'Managed by '.l(($exchange->getOwner()->label()),$exchange->getOwner()->url())
+          '#markup' => 'Managed by '.l(($exchange->getOwner()->label()),$exchange->getOwner()->url())
         ),
         'currencies' => array(
           '#prefix' => '<br />'
+        ),
+        'open' => array(
+          '#prefix' => '<br />',
+          '#markup' => 'Open to intertrade: '. ($exchange->open->value ? 'Yes' : 'No'),
         ),
         'wallets' => array()
       );
       $currnames = array();
       foreach ($exchange->currencies->referencedEntities() as $entity) {
-        $currnames[] = l($entity->label(), 'admin/accounting/currencies/'.$entity->id());
+        $currnames[] = \Drupal::l($entity->label(), 'admin/accounting/currencies/'.$entity->id());
       }
       $page[$id]['currencies']['#markup'] = 'Currencies: '.implode(', ', $currnames);
       $wids = mcapi_wallets_in_exchanges(array($id));
@@ -85,25 +90,31 @@ class DashboardController extends ControllerBase {
           $balances[] = $currency->format($summary['balance']);
         }
         $tbody[$wallet->id()] = array(
-          'id' => l('#'.$wallet->id(), 'wallet/'.$wallet->id()),
-          'name' => l($wallet->getOwner()->label(), $wallet->getOwner()->url()),
-          'balances' => implode('<br />', $balances),
-          'mins' => implode('<br />', $mins),
-          'maxes' => implode('<br />', $maxes),
-          'edit' => l('edit', 'wallet/'.$wallet->id().'/limits'),
+          'id' => \Drupal::l('#'.$wallet->id(), 'wallet/'.$wallet->id()),
+          'name' => \Drupal::l($wallet->getOwner()->label(), $wallet->getOwner()->url()),
+          'balances' => array(
+            'data' => array('#markup' => implode('<br />', $balances))
+          ),
+          'mins' => array(
+            'data' => array('#markup' => implode('<br />', $mins))
+          ),
+          'maxes' => array(
+            'data' => array('#markup' => implode('<br />', $maxes))
+          ),
+          'edit' => \Drupal::l('edit', 'wallet/'.$wallet->id().'/limits'),
         );
       }
       $page[$id]['wallets'] = array(
-      	'#theme' => 'table',
+        '#theme' => 'table',
         '#header' => $header,
         '#rows' => $tbody,
-        '#attributes' => array('border' => 1)
+        '#attributes' => new Attribute(array('border' => 1))
       );
       //show a list of forms which will work in this or all exchanges
       $forms = array();
       foreach (FirstPartyFormDesign::loadMultiple() as $editform) {
         if ($editform->exchange == $id || empty($editform->exchange)) {
-          $forms[] = l($editform->label(), $editform->path);
+          $forms[] = \Drupal::l($editform->label(), $editform->path);
         }
       }
       $page[$id]['forms'] = array('#markup' => 'Create transaction: '.implode(', ', $forms));

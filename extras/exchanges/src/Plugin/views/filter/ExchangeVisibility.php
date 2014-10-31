@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Plugins\views\filter\ExchangeVisibility.
+ * Definition of Drupal\mcapi_exchanges\Plugins\views\filter\ExchangeVisibility.
  */
 
-namespace Drupal\mcapi\Plugin\views\filter;
+namespace Drupal\mcapi_exchanges\Plugin\views\filter;
 
 use Drupal\views\Plugin\views\filter\FilterPluginBase;
 use Drupal\Component\Annotation\PluginID;

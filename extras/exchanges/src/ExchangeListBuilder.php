@@ -9,6 +9,7 @@ namespace Drupal\mcapi_exchanges;
 use Drupal\Core\Entity\EntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Utility\LinkGenerator;
+use Drupal\Core\Template\Attribute;
 
 /**
  * Provides a listing of exchanges
@@ -34,15 +35,15 @@ class ExchangeListBuilder extends EntityListBuilder {
    */
   public function buildRow(EntityInterface $entity) {
     $row = array(
-    	'class' => array($entity->status->value ? 'enabled' : 'disabled'),
+      'class' => array($entity->status->value ? 'enabled' : 'disabled'),
       'title' => array($entity->label()),
       'data' => array(
-    	  'title' => l($entity->label(), 'exchange/'.$entity->id()),
+        'title' => $entity->link(),
         'access' => $entity->get('status')->value ? t('Open') : t('Closed'),
         'members' => $entity->users(),
-        'transactions' => $entity->transactions(TRUE),
+        'transactions' => $entity->transactions(),
         'administrator' => array(
-       	  'data' => array(
+           'data' => array(
             '#theme' => 'username',
              '#account' => $entity->get('uid')->entity
           )
@@ -106,8 +107,8 @@ class ExchangeListBuilder extends EntityListBuilder {
     $entities = $this->load();
     $list['table'] = array(
       '#type' => 'table',
-      '#attributes' => array(
-        'class' => array('exchanges-listing-table'),
+      '#attributes' => new Attribute(
+        array('class' => array('exchanges-listing-table'))
       ),
       '#header' => $this->buildHeader(),
       '#rows' => array(),

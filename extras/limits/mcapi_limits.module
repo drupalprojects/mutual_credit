@@ -1,10 +1,10 @@
 <?php
 
 use Drupal\Core\Template\Attribute;
-use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\CurrencyInterface;
 use Drupal\mcapi_limits\WalletLimits;
-use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\WalletInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 
 /**
@@ -65,7 +65,7 @@ function mcapi_limits_saved_plugin(CurrencyInterface $currency, $name = '') {
  * @todo clear the wallet entity cache of all wallets that might be holding this currency
  */
 function mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) {
-  form_load_include($form_state, 'inc', 'mcapi_limits');
+  $form_state->loadInclude('mcapi_limits', 'inc');
   _mcapi_limits_form_mcapi_currency_edit_form_alter($form, $form_state);
 }
 
@@ -108,32 +108,32 @@ function mcapi_limits_theme($existing, $type, $theme, $path){
  * implements hook_entity_extra_field_info().
 */
 function mcapi_limits_entity_extra_field_info() {
-	return array(
-		'mcapi_wallet' => array(
-			'mcapi_wallet' => array(
-				'form' => array(
-					'mcapi_limits' => array(
-						'label' => t('Balance limits'),
-						'description' => t('Trading limits per currency'),
-						'weight' => 0,
-					),
-				),
-				'display' => array(
-				  //may show themes absolute or balanced depending on whether min and max are equal
-					'mcapi_limits_absolute' => array(
-						'label' => t('Absolute balance limits'),
-						'description' => t('Trading limits per currency'),
-						'weight' => 0,
-					),
-					'mcapi_limits_relative' => array(
-						'label' => t('Balance limits relative to the balance'),
-						'description' => t('Trading limits per currency'),
-						'weight' => 0,
-					),
-				)
-			)
-		)
-	);
+  return array(
+    'mcapi_wallet' => array(
+      'mcapi_wallet' => array(
+        'form' => array(
+          'mcapi_limits' => array(
+            'label' => t('Balance limits'),
+            'description' => t('Trading limits per currency'),
+            'weight' => 0,
+          ),
+        ),
+        'display' => array(
+          //may show themes absolute or balanced depending on whether min and max are equal
+          'mcapi_limits_absolute' => array(
+            'label' => t('Absolute balance limits'),
+            'description' => t('Trading limits per currency'),
+            'weight' => 0,
+          ),
+          'mcapi_limits_relative' => array(
+            'label' => t('Balance limits relative to the balance'),
+            'description' => t('Trading limits per currency'),
+            'weight' => 0,
+          ),
+        )
+      )
+    )
+  );
 }
 
 /**
@@ -187,66 +187,4 @@ function mcapi_view_limits(WalletInterface $wallet) {
     );
   }
   return $renderable;
-}
-
-/**
- * implements hook_element_info().
- * a new element for the upper and lower balance limits, a wrapper round 2 'worth' items
- */
-function mcapi_limits_element_info() {
-  return array(
-    'minmax' => array(
-  	  '#input' => TRUE,
-      '#tree' => TRUE,
-      '#process' => array('mcapi_limits_process_minmax'),
-      '#value_callback' => 'mcapi_limits_form_type_minmax_value',
-      '#minus' => FALSE
-    )
-  );
-}
-
-/**
- * processor for minmax element
- */
-function mcapi_limits_process_minmax(&$element) {
-  $element['min'] = array(
-    '#title' => t('Minimum balance'),
-    '#description' => t('Must be less than or equal to zero'),
-    '#type' => 'worth',
-    '#config' => TRUE,
-    '#default_value' => array(
-      array('curr_id' => $element['#curr_id'], 'value' => $element['#default_value']['min'])
-    ),
-    '#placeholder' => array(@$element['#placeholder']['min']
-    ),
-    '#minus' => TRUE
-  );
-  $element['max'] = array(
-    '#title' => t('Maximum balance'),
-    '#description' => t('Must be greater than 1.'),
-    '#type' => 'worth',
-    '#config' => TRUE,
-    //we key the default value with the curr_id to make the saved settings easier to read
-    '#default_value' => array(
-      array('curr_id' => $element['#curr_id'], 'value' => $element['#default_value']['max'])
-    ),
-    '#placeholder' => array(@$element['#placeholder']['max']),
-    '#weight' => 1,
-    '#min' => 1
-  );
-  return $element;
-}
-
-/**
- * value callback for minmax
- * take the two single worth fields above and represent them as
- * array($curr_id => array($min, $max));
- */
-//Why is this function running BEFORE the worth has been calculated? What an ugly hack. McNasty.
-function mcapi_limits_form_type_minmax_value(&$element, $input = FALSE, $form_state) {
-  if ($input === FALSE) return;
-  $element = mcapi_limits_process_minmax($element);//why was the element sent through partuly unprocessed?
-  $output['min'] = mcapi_form_type_worth_value($element['min'], $input['min'], $form_state);
-  $output['max'] = mcapi_form_type_worth_value($element['max'], $input['max'], $form_state);
-  return $output;
 }

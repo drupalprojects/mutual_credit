@@ -6,7 +6,7 @@ dependencies:
     - entity_reference
     - mcapi
 langcode: en
-name: currencies
+field_name: currencies
 entity_type: mcapi_exchange
 type: entity_reference
 settings:

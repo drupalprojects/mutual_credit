@@ -2,14 +2,14 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi_exchanges\ExchangeController.
+ * Contains \Drupal\mcapi_exchanges\Controller\ExchangeController.
  */
 
-namespace Drupal\mcapi\Controller;
+namespace Drupal\mcapi_exchanges\Controller;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\mcapi\Entity\ExchangeInterface;
+use Drupal\mcapi\ExchangeInterface;
 
 /**
  * Returns responses for Exchange routes.
@@ -24,7 +24,6 @@ class ExchangeController extends ControllerBase {
    *  An array suitable for drupal_render().
    */
   public function page(ExchangeInterface $mcapi_exchange) {
-
     return $this->buildPage($mcapi_exchange);
   }
 

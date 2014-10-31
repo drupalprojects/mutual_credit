@@ -7,10 +7,10 @@
 
 namespace Drupal\mcapi\Storage;
 
-use Drupal\Core\Entity\FieldableEntityStorageInterface;
+use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityInterface;
 
-interface ExchangeStorageInterface extends FieldableEntityStorageInterface {
+interface ExchangeStorageInterface extends EntityStorageInterface {
 
   /**
    * check if an exchange can be deactivated, which means that it is not the only active exchange

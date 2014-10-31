@@ -1,9 +1,10 @@
 <?php
 
-use \Drupal\mcapi\Entity\WalletInterface;
-use \Drupal\mcapi\Entity\TransactionInterface;
+use \Drupal\mcapi\WalletInterface;
+use \Drupal\mcapi\TransactionInterface;
 use \Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\Core\Template\Attribute;
 
 
 /**
@@ -37,9 +38,10 @@ function list_pending(Drupal\Core\Entity\ContentEntityInterface $entity) {
   if ($entity instanceOf WalletInterface) {
     $conditions['involving'] = array($entity->id());
   }
-  else {
-    $conditions['involving'] = \Drupal::EntityManager()->getStorage('mcapi_wallet')->getOwnedWalletIds($entity);
+  elseif ($wids = \Drupal::EntityManager()->getStorage('mcapi_wallet')->getOwnedWalletIds($entity)) {
+    $conditions['involving'] = $wids;
   }
+  else debug('entity '.$entity->getEntityTypeId().' '. $entity->id() .' owns no wallets');
   $serials = \Drupal::EntityManager()
   ->getStorage('mcapi_transaction')
   ->filter($conditions);
@@ -47,10 +49,11 @@ function list_pending(Drupal\Core\Entity\ContentEntityInterface $entity) {
 }
 
 function mcapi_signall($form, $form_state, $account) {
-  $form['preview'] = transaction_view(
-    Transaction::loadBySerials(transactions_needing_sig_of_user($account)),
-    \Drupal::config('mcapi.misc')->get('sentence_template')
-  );
+  $serials = transactions_needing_sig_of_user($account);
+  $form['preview'][] = \Drupal::entityManager()
+    ->getViewBuilder('mcapi_transaction')
+    ->viewMultiple(Transaction::loadBySerials($serials), 'sentence');
+
   $form['account'] = array(
     '#type' => 'value',
     '#value' => $account
@@ -86,24 +89,23 @@ function list_waiting_on_uid($uid) {
         '#text' => t('Sign all'),
         '#path' => "user/".$uid."/signall",
         '#options' => array(
-          'attributes' => array(),
+          'attributes' => new Attribute(),
           'html' => FALSE
         )
       );
     }
-    foreach ($serials as $serial) {
-      $transaction = Transaction::load($serial);
-      $output[] = entity_view($transaction, 'sentence');
-    }
-    return $output;
   }
+  return $output + \Drupal::entityManager()
+    ->getViewBuilder('mcapi_transaction')
+    ->viewMultiple(Transaction::loadBySerials($serials), 'sentence');
 }
 //returns a render array
 function list_waiting_not_on_uid($uid) {
+  $entityManager = \Drupal::entityManager();
   $waiting_on = $output = array();
-  $serials = \Drupal::entityManager()
-  ->getStorage('mcapi_transaction')
-  ->filter(array('involving' => $uid, 'state' => TRANSACTION_STATE_PENDING));
+  $serials = $entityManager
+    ->getStorage('mcapi_transaction')
+    ->filter(array('involving' => $uid, 'state' => TRANSACTION_STATE_PENDING));
   foreach ($serials as $serial) {
     foreach (Transaction::load($serial)->signatures as $uid => $signed) {
       if ($signed) continue;
@@ -111,11 +113,9 @@ function list_waiting_not_on_uid($uid) {
       $waiting_on[] = $serial;
     }
   }
-  foreach ($waiting_on as $serial) {
-    $transaction = Transaction::load($serial);
-    $output[] = entity_view($transaction, 'sentence');
-  }
-  return $output;
+  return $output + $entityManager
+    ->getViewBuilder('mcapi_transaction')
+    ->viewMultiple(Transaction::loadBySerials($waiting_on), 'sentence');
 }
 
 function transactions_needing_sig_of_user($uid) {

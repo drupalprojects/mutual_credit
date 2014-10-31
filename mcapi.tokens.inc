@@ -10,12 +10,6 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
 
   $replacements = $replaced = array();
   $transaction = $data['mcapi'];
-  if (array_key_exists('sentence', $tokens)) {
-    $template = \Drupal::config('mcapi.misc')->get('sentence_template');
-    $replacements[$tokens['sentence']] = \Drupal::Token()->replace($template, $data, $options);
-    unset($tokens['sentence']);//otherwise it is replaced by nothing a few lines below
-  }
-
   module_load_include('inc', 'mcapi');
   mcapi_transaction_process_vars($replaced, $transaction);
   foreach ($tokens as $name => $original) {
@@ -91,7 +85,6 @@ function mcapi_token_info() {
   );
   $info['tokens']['mcapi']['url'] =  array(
     'name' => t('URL'),
-    'description' => t("The url of the transaction"),
   );
 
   return $info;

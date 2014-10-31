@@ -37,7 +37,7 @@ class WalletLabel extends Standard {
     $wallet = $this->getEntity($values);
     //TODO wait until https://www.drupal.org/node/2320989 is fixed
     if (!$wallet) return 'Bug in D8 alpha14';
-    return l($wallet->label(), $wallet->url('canonical'));
+    return $wallet->link();
   }
 
 }

@@ -5,11 +5,10 @@
  * Install, update and uninstall functions for the transactions module.
  */
 
-
 use Drupal\user\Entity\User;
-use Drupal\field\Entity\FieldInstanceConfig;
 use Drupal\mcapi\Entity\Exchange;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\Core\Url;
 
 /**
  * Implements hook_install().
@@ -18,27 +17,11 @@ function mcapi_install() {
   module_set_weight('field_ui', -1);//mcapi has to be after field_ui for mcapi_local_tasks_alter
   //see field_ui_local_tasks_alter() where
   //$local_task->alterLocalTasks($local_tasks); replaces some tasks already passed
-}
-
-
-/**
- * implements hook_modules_installed().
- * continue setting up the module, but after the config has been enabled
- */
-function mcapi_modules_installed($modules) {
-  if (!in_array('mcapi', $modules)) return;
-
-  //for the rest of this we need the config files
-  //set the path of the zero image in currency 1
-  $config = \Drupal::config('mcapi.misc');
-  $path = url(drupal_get_path('module', 'mcapi') . '/templates/present.png');
-  $config->set('zero', '<img src = "'. $path .'" width = "31" />');
-  $config->save();
 
   //default exchange
   //according to the default settings this will have autocreated a wallet for the exchange !
   $props = array(
-  	'name' => t(
+    'name' => t(
       'First !sitename exchange',
       array('!sitename' => \Drupal::config('system.site')->get('name'))
     ),
@@ -75,8 +58,25 @@ function mcapi_modules_installed($modules) {
 }
 
 /**
+ * implements hook_modules_installed().
+ * continue setting up the module, but after the config has been enabled
+ * @todo move this into hook_install
+ */
+function mcapi_modules_installed($modules) {
+  if (!in_array('mcapi', $modules)) return;
+
+  //for the rest of this we need the config files
+  //set the path of the zero image in currency 1
+  $config = \Drupal::config('mcapi.misc');
+  $zero_icon = 'base://'. drupal_get_path('module', 'mcapi') . '/templates/present.png';
+  $path = Url::fromUri($zero_icon)->getUri();
+  $config->set('zero_snippet', '<img src = "'. $path .'" width = "31" />');
+  $config->save();
+
+}
+
+/**
  * Implements hook_uninstall().
- * @todo Remove the hard coded fieldAPI fields
  * need to do this in devel/php before uninstalling:
  *
   \Drupal::moduleHandler()->uninstall(array('mcapi_tester'));
@@ -84,48 +84,24 @@ function mcapi_modules_installed($modules) {
   FieldStorageConfig::load('mcapi_transaction.worth')->delete();
   //FieldStorageConfig::load('mcapi_exchange.currencies')->delete();
   //FieldStorageConfig::load('user.exchanges')->delete();
-  field_purge_batch(3);
- */
-function mcapi_uninstall() {
-  return;
-  $instances = array(
-    'mcapi_exchange.currencies',
-    'user.exchanges'
-  );
-  foreach ($instances as $config) {
-    if ($instance = FieldInstanceConfig::load($config)) {
-      drupal_set_message("deleting field $config");
-      $instance->delete();
-    }
-  }
-  field_purge_batch(3);
-}
+  field_purge_batch(10000);
 
-/**
- * Implements hook_schema().
+$extension_config = \Drupal::config('core.extension');
+$extension_config->clear("module.mcapi")->save();
+db_drop_table('mcapi_transaction');
+db_drop_table('mcapi_exchange');
+db_drop_table('mcapi_transactions_index');
+db_drop_table('mcapi_wallet');
+db_drop_table('mcapi_wallets_access');
+db_drop_table('mcapi_wallet_exchange');
+db_drop_table('mcapi_wallet_exchanges_index');
+db_drop_table('mcapi_transaction__worth');
+db_drop_table('mcapi_exchange__currencies');
+db_delete('config')->condition('name', '%mcapi%', 'LIKE')->execute();
+db_truncate('cache_config')->execute();
+$extension_config = \Drupal::config('core.extension');
+$extension_config->clear("module.mcapi")->save();
+drupal_flush_all_caches();
+ *
  */
-function mcapi_schema() {
-  //not sure whether this belongs in the wallet or in the Exchange storage controller
-  $schema['mcapi_wallet_exchanges_index'] = array(
-    'description' => "Index to look up wallets parents' exchanges",
-    'fields' => array(
-      'wid' => array(
-        'description' => 'the wallet ID',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-      'exid' => array(
-        'description' => 'the exchange ID',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      )
-    ),
-    'unique keys' => array(
-      'wid_exit' => array('wid', 'exid'),
-    )
-  );
-  return $schema;
-}
 

@@ -5,13 +5,6 @@ mcapi.admin:
   parent: system.admin
   weight: 4
 
-mcapi.admin_exchange_list:
-  title: Exchanges
-  description: The groups, communities or marketplaces where transactions happen
-  route_name: mcapi.admin_exchange_list
-  parent: mcapi.admin
-  weight: 0
-
 mcapi.admin_currency_list:
   title: Currencies
   description: Each currency implies a set of values and a community of users who economic fortunes are intertwined

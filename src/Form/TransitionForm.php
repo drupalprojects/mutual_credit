@@ -6,6 +6,7 @@ namespace Drupal\mcapi\Form;
 use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Template\Attribute;
 
 //I don't know if it is a good idea to extend the confirm form if we want ajax.
 class TransitionForm extends EntityConfirmFormBase {
@@ -111,7 +112,7 @@ class TransitionForm extends EntityConfirmFormBase {
 
     //this form will submit and expect ajax
     //TODO this doesn't work in D8
-    //$form['actions']['submit']['#attributes']['class'][] = 'use-ajax-submit';
+    $form['actions']['submit']['#attributes'] = new Attribute(array('class' => array('use-ajax-submit')));
     //TODO I don't know if those are needed
     $form['#attached']['js'][] = 'core/misc/jquery.form.js';
     $form['#attached']['js'][] = 'core/misc/ajax.js';
@@ -129,6 +130,8 @@ class TransitionForm extends EntityConfirmFormBase {
   }
 
   public function validate(array $form, FormStateInterface $form_state) {
+
+    //Array ( [langcode] => en [submit] => Confirm [confirm] => 1 [form_build_id] => form-BTLEz_Go1Ki2RPLIWTMrqStNN2fZUObxqA53BkydD5w [form_token] => 8ky7alqz0rLrAZy_wRyoyq3j2RMfomQEPtlx6yqBgJU [form_id] => transaction_transition_form_id [op] => Confirm )
   }
 
   /**
@@ -138,7 +141,7 @@ class TransitionForm extends EntityConfirmFormBase {
     $transaction = $this->entity;
 
     //the op might have injected values into the form, so it needs to be able to access them
-    form_state_values_clean($form_state);
+    $form_state->cleanValues();;
     $values = $form_state->getValues();
 
 

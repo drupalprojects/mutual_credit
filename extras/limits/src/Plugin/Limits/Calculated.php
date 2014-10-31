@@ -8,8 +8,10 @@
 
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
-use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\WalletInterface;
 use Drupal\Core\Form\FormStateInterface;
+Use Drupal\mcapi_limits\Plugin\McapiLimitsInterface;
+Use Drupal\mcapi_limits\Plugin\McapiLimitsBase;
 
 /**
  * Calculate the balance limits
@@ -27,20 +29,25 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $subform = parent::buildConfigurationForm($form, $form_state);
+    $class = get_class($this);
     $subform['max_formula'] = array(
       '#prefix' => t('N.B Result values are measured in native units, which might be cents, or seconds'),
-      '#title' => t('Formula to calculate minimum limit'),
+      '#title' => t('Formula to calculate maximum limit'),
       '#description' => t('Make a formula from the following variables: @vars', array('@vars' => $this->help())),
-    	'#type' => 'textfield',
+      '#type' => 'textfield',
       '#default_value' => $this->configuration['max_formula'],
-      '#element_validate' => array(array($this, 'validate_formula')),
+      '#element_validate' => array(
+        array($class, 'validate_formula')
+      ),
     );
     $subform['min_formula'] = array(
       '#title' => t('Formula to calculate minimum limit'),
       '#description' => t('Make a formula to output a NEGATIVE result from the following variables: @vars', array('@vars' => $this->help())),
-    	'#type' => 'textfield',
+      '#type' => 'textfield',
       '#default_value' => $this->configuration['min_formula'],
-      '#element_validate' => array(array($this, 'validate_formula'))
+      '#element_validate' => array(
+        array($class, 'validate_formula')
+      )
     );
     return $subform;
   }
@@ -65,7 +72,7 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
     $help[] = t('@out: the total ever expenditure of the user.');
     $help[] = t('@num: the number of trades.');
     $help[] = t('@ptn: the number of trading partners.');
-    $help[] = t('@beware division by zero!');
+    $help[] = t('Beware division by zero!');
     return implode('; ', $help);
   }
 

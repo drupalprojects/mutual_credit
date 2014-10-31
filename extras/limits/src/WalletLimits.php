@@ -7,8 +7,8 @@
 
 namespace Drupal\mcapi_limits;
 
-use Drupal\mcapi\Entity\CurrencyInterface;
-use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\CurrencyInterface;
+use Drupal\mcapi\WalletInterface;
 use Drupal\mcapi\Entity\Currency;
 
 
@@ -67,9 +67,9 @@ class WalletLimits {//couldn't be bothered to make an interface for this
    *   keys are available currencies values are arrays of max and min
    *   (Overridden values also show an editor user id and unixtime)
    */
-  public function calc(){
+  private function calc(){
     $needed_currencies = $this->wallet->currencies_available();
-
+    $this->limits = array();
     //get the default limits
     foreach ($needed_currencies as $curr_id => $currency) {
       $this->limits[$curr_id] = $this->default_limits($currency);

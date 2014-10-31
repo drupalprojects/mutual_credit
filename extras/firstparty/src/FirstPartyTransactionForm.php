@@ -2,19 +2,19 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi_1stparty\Form\FirstPartyTransactionForm.
+ * Definition of Drupal\mcapi_1stparty\FirstPartyTransactionForm.
  * Generate a Transaction form using the FirstParty_editform entity.
  * We have to override all references to the EntityFormDisplay
  */
 
 namespace Drupal\mcapi_1stparty;
 
-use Drupal\mcapi_1stparty\Entity\FirstPartyFormDisplay;
 use Drupal\mcapi\Form\TransactionForm;
 use Drupal\mcapi\Entity\Exchange;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
+use Drupal\Core\Template\Attribute;
 
 
 class FirstPartyTransactionForm extends TransactionForm {
@@ -27,9 +27,12 @@ class FirstPartyTransactionForm extends TransactionForm {
     $this->moduleHandler = \Drupal::moduleHandler();
 
     if (!$form_name) {
+      //TODO is there a more elegant way to get the route options parameters
+      //or to pass this property somewhere easier to access?
+      //see \Drupal\mcapi_1stparty\FirstPartyRoutes
       $options = \Drupal::request()->attributes->get('_route_object')->getOptions();
       //this is the only way I know how to get the args. Could it be more elegant?
-      $form_name = $options['parameters']['editform_id'];
+      $form_name = $options['parameters']['1stparty_editform'];
     }
     $this->config = entity_load('1stparty_editform', $form_name);
     //makes $this->entity;
@@ -51,11 +54,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     //@todo we need to be able to pass in an entity here from the context
     //and generate $this->entity from it before building the base transaction form.
     //have to wait and how that might work in panels & blocks in d8
-
-    //borrowed from unused ancestors
-    //$form['#process'][] = array($this, 'processForm');
     $config = $this->config;
-
     //TODO caching according to $config->get('cache')
     $form = parent::form($form, $form_state);
 
@@ -104,7 +103,9 @@ class FirstPartyTransactionForm extends TransactionForm {
         'incoming' => $config->direction['incoming'],
         'outgoing' => $config->direction['outgoing'],
       ),
-      '#element_validate' => array(array($this, 'firstparty_convert_direction'))
+      '#element_validate' => array(
+        array(get_class($this), 'firstparty_convert_direction')
+      )
     );
     //handle the description
     //dunno why $config->get('description.placeholder') isn't working
@@ -173,7 +174,6 @@ class FirstPartyTransactionForm extends TransactionForm {
     $form['#twig_tokens'][] = 'actions';
     $form['#theme'] = '1stpartyform';
 
-
     //TODO contextual_links would be nice to jump straight to the edit form
     //pretty hard because it is designed to work only with templated themes, not theme functions
     //instead we'll probably just put a link in the menu
@@ -184,7 +184,7 @@ class FirstPartyTransactionForm extends TransactionForm {
    * element validator for 'partner'
    * set the payer and payee from the mywallet, partner and direction
    */
-  function firstparty_convert_direction(&$element, FormStateInterface $form_state) {
+  static function firstparty_convert_direction(&$element, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     $form = $form_state->getCompleteForm();
     if ($values['direction'] == 'outgoing') {
@@ -204,8 +204,9 @@ class FirstPartyTransactionForm extends TransactionForm {
   protected function actions(array $form, FormStateInterface $form_state) {
     $actions = parent::actions($form, $form_state);
     if ($this->config->experience['preview'] == 'ajax') {
-      //this isn't working at all...
-      $actions['submit']['#attributes']['class'][] = 'use-ajax';
+      $actions['submit']['#attributes'] = new Attribute(array('class' => 'use-ajax'));
+      //TODO TEMP Attribute isn't working at all...
+      $actions['submit']['#attributes'] = array('class' => 'use-ajax');
       $actions['submit']['#attached']['library'][] = array('views_ui', 'drupal.ajax');
     }
     $actions['submit']['#value'] = $this->config->experience['button'];
@@ -216,7 +217,7 @@ class FirstPartyTransactionForm extends TransactionForm {
   /**
    * make the default transaction from the given settings
    */
-  function prepareTransaction() {
+  private function prepareTransaction() {
     //the partner is either the owner of the current page, under certain circumstances
     //or is taken from the form preset.
     //or is yet to be determined.

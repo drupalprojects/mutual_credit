@@ -35,7 +35,7 @@ class TransitionManager extends DefaultPluginManager {
    * @param ModuleHandlerInterface $module_Handler
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler, ConfigFactory $config_factory) {
-    parent::__construct('Plugin/Transition', $namespaces, $module_handler, '\Drupal\mcapi\Annotation\Transition');
+    parent::__construct('Plugin/Transition', $namespaces, $module_handler, '\Drupal\mcapi\Plugin\TransitionInterface', '\Drupal\mcapi\Annotation\Transition');
     //TODO Do we need to do anything to take advantage of the cache backend?
     $this->setCacheBackend($cache_backend, 'transaction_transitions');
     $this->config_factory = $config_factory;

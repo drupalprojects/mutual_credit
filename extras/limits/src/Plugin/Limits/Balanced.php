@@ -8,8 +8,10 @@
 
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
-use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\WalletInterface;
 use Drupal\Core\Form\FormStateInterface;
+Use Drupal\mcapi_limits\Plugin\McapiLimitsInterface;
+Use Drupal\mcapi_limits\Plugin\McapiLimitsBase;
 
 
 /**

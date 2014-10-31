@@ -1,0 +1,6 @@
+services:
+  access_check.exchange.join:
+    class: Drupal\mcapi_exchanges\ExchangeJoinAccess
+    tags:
+      - { name: access_check }
+

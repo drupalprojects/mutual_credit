@@ -5,19 +5,15 @@ use Drupal\user\Entity\User;
 use Drupal\user\Entity\Role;
 use Drupal\mcapi\Entity\Exchange;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\taxonomy\Entity\Term;
-use Drupal\field\Entity\FieldInstanceConfig;
 
 function mcapi_tester_install() {
+  drupal_set_message('blah');
   if (\Drupal::CurrentUser()->id() == 0) {//drush runs as user 0 but that buggers things up
     \Drupal::CurrentUser()->setAccount(User::load(1));
   }
-  //clear the entity cache because for some reasont user 1 has lost the contents of the exchanges field
-  //I don't know the best way to do this yet, or whether the entity cache or field cache is effected
-  //or whether this is because of a bug in alpha 11
-  //drupal_flush_all_caches();
-  //has no effect so I have prevented wallet 2 from being used when transactions are made
 
   $terms = array('Transport', 'Food', 'Care', 'Learning', 'Home', 'Leisure');
   foreach ($terms as $term_name) {
@@ -31,13 +27,13 @@ function mcapi_tester_install() {
   //now
   $uids = mcapi_tester_make_users(26);//should make wallets as well
   echo "\nCreated users";
-  //make some transactions within the exchanges.
-  mcapi_tester_make_transactions(200);
-  echo "\n200 transactions created";
 
   if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
     multiple_exchanges();
   }
+  //make some transactions within the exchanges.
+  mcapi_tester_make_transactions(200);
+  echo "\n200 transactions created";
 }
 
 function mcapi_tester_modules_installed($modules) {
@@ -65,18 +61,27 @@ function multiple_exchanges() {
 
 /**
  * implements hook_uninstall().
+ * 
+  FieldStorageConfig::load('mcapi_transaction.categories')->delete();
  */
 function mcapi_tester_uninstall() {
   //in case drush is running
   \Drupal::CurrentUser()->setAccount(User::load(1));
 
-  module_load_install('mcapi_tester');
-  mcapi_tester_delete_transactions();
-  //remove the categories
-  //TODO why isn't taxonomy_term recognised as an entity type?
-  //foreach (entity_load_multiple_by_properties('taxonomy_term', array('vid' => 'categories')) as $term) {
+  //should delete automatically
+  //foreach (Term::loadByProperties(array('vid' => 'categories')) as $term) {
     //$term->delete();
   //}
+
+  module_load_install('mcapi_tester');
+  mcapi_tester_delete_transactions();
+  
+  //delete test wallets
+  foreach (Wallet::loadMultiple() as $wallet) {
+    if ($wallet->id() < 2) continue;
+    $wallet->delete();//all users' wallets are now 'unused' so will be deleted also
+  }
+
   //delete test users
   foreach (User::loadMultiple() as $user) {
     if ($user->id() < 2) continue;
@@ -99,7 +104,6 @@ function mcapi_tester_uninstall() {
 }
 
 function mcapi_tester_delete_transactions() {
-  //delete test transactions
   $storage = \Drupal::EntityManager()->getStorage('mcapi_transaction');
   $transactions = $storage->loadByProperties(array('type' => 'test'));
   $storage->delete($transactions);
@@ -126,7 +130,7 @@ function mcapi_tester_make_exchanges() {
 
     $first = substr($currname, 0, 1);
     $props = array(
-    	'id' => strtoLower($first.$first),
+      'id' => strtoLower($first.$first),
       'name' => $currname,
       'zero' => rand(0, 1),
       'issuance' => CURRENCY_TYPE_EXCHANGE,
@@ -140,7 +144,7 @@ function mcapi_tester_make_exchanges() {
     $w++;
 
     $props = array(
-    	'name' => $exchange_name,
+      'name' => $exchange_name,
       'currencies' => array($c->id()),
       'mail' => \Drupal::config('system.site')->get('mail'),
     );
@@ -178,7 +182,7 @@ function mcapi_tester_make_users($num = 26) {
   shuffle($last);
   for ($i = 0; $i < $num; $i++) {
     $props = array(
-    	'name' => $first[$i] .' '. $last[$i],
+      'name' => $first[$i] .' '. $last[$i],
       'mail' => strtolower($first[$i]).'@matslats.net',
       'pass' => 'a',
       'status' => 1,

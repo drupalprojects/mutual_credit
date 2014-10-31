@@ -23,7 +23,7 @@ class ExchangeForm extends ContentEntityForm {
     $exchange = $this->entity;
 
     $form['id'] = array(
-    	'#type' => 'value',
+      '#type' => 'value',
       '#value' => $exchange->id()
     );
 
@@ -51,7 +51,7 @@ class ExchangeForm extends ContentEntityForm {
     );
 
     $form['mail'] = array(
-    	'#title' => t('Main contact email'),
+      '#title' => t('Main contact email'),
       '#type' => 'email',
       '#default_value' => $exchange->mail->value,
       '#required' => TRUE,
@@ -74,11 +74,6 @@ class ExchangeForm extends ContentEntityForm {
       '#default_value' => $exchange->open->value,
       '#weight' => 9
     );
-    //hide the currencies field if only one currency is available
-    if (count(entity_load_multiple_by_properties('mcapi_currency', array('status' => TRUE))) == 1) {
-      //TODO uncomment this when we are sure that the field is populating properly from installation
-//      $form['currencies']['#attributes']['style'] = 'display:none;';
-    }
 
     return $form;
   }

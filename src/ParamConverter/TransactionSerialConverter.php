@@ -18,11 +18,10 @@ use Drupal\mcapi\Entity\Transaction;
  *
  * Example:
  *
- * pattern: '/transaction/{transaction_serial}'
+ * path: '/transaction/{transaction_serial}'
  * options:
  *   parameters:
- *     transaction_serial:
- *       type: 'entity:mcapi_transaction'
+ *     mcapi_transaction:
  *       serial: TRUE
  *
  * The value for {view} will be converted to a view entity prepared for the
@@ -35,7 +34,7 @@ class TransactionSerialConverter extends EntityConverter implements ParamConvert
   /**
    * {@inheritdoc}
    */
-  public function convert($value, $definition, $name, array $defaults, Request $request) {
+  public function convert($value, $definition, $name, array $defaults) {
     //a $value of zero means that this is the are-you-sure page before the transaction has been saved
     //the transaction is retrieved therefore not in the normal way from the database but from the tempstore
     if ($value) {

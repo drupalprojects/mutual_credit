@@ -8,11 +8,12 @@
 
 namespace Drupal\mcapi\Plugin\Transition;
 
-use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\CurrencyInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\FormState;
-use Drupal\entity\Entity\EntityFormDisplay;
+use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\mcapi\Plugin\Transition2Step;
 
 /**
  * Edit transition

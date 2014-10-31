@@ -17,7 +17,7 @@ use Drupal\mcapi\Entity\State;
  * @ConfigEntityType(
  *   id = "mcapi_type",
  *   label = @Translation("Transaction type"),
- *   controllers = {
+ *   handlers = {
  *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
  *   },
  *   config_prefix = "type",

@@ -28,6 +28,19 @@ class WorthFieldItemList extends FieldItemList {
     $this->list = array();
   }
 
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getValue($include_computed = FALSE) {
+    $values = array();
+    foreach ($this->list as $delta => $item) {
+      $values[$delta] = $item->getValue($include_computed);
+    }
+    return $values;
+
+  }
+
   /**
    * {@inheritdoc}
    */
@@ -41,7 +54,6 @@ class WorthFieldItemList extends FieldItemList {
   public function first() {
     die("WorthFieldItemList:first should never be called.");
   }
-
 
   /**
    * We have to override this because the default behaviour is to create
@@ -76,7 +88,7 @@ class WorthFieldItemList extends FieldItemList {
   }
 
   public function __toString() {
-    return $this->view();
+    return render($this->view());
   }
 
   /**
@@ -97,13 +109,14 @@ class WorthFieldItemList extends FieldItemList {
   /**
    * undocumented
    * used in function intertrading_new_worths()
+   * @return integer | NULL
+   *   NULL if the currency isn't known
    * @todo tidy this up
    */
   public function val($curr_id) {
     foreach ($this->list as $item) {
       if ($item->curr_id == $curr_id) return $item->value;
     }
-    return 0;
   }
 
   public function currencies($full = FALSE) {

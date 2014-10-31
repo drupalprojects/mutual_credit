@@ -34,7 +34,6 @@ The currency 'type' refers to how the integers in the database are converted and
 Visit admin/accounting/transactions
 Here you can access a full transaction form and enter a raw transaction. 
 Normal users should always enter transactions using a more appropriate form, such as provided by the 1stparty module.
-Notice that transaction entity is fieldable
 Its possible to add a description, or a date, or an image or categories to your transaction object
 You can see the 'states' and 'types' which comprise the workflow map
 The transaction 'type' determines the 'start state' and hence the workflow path.

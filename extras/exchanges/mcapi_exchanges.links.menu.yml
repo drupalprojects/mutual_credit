@@ -9,6 +9,5 @@ mcapi.admin_exchange_list:
 mcapi.admin_exchanges_tab:
   route_name: mcapi.admin_exchange_list
   title: 'List'
-  base_route: mcapi.admin_exchange_list
   weight: 0
 

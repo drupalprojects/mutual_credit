@@ -8,9 +8,9 @@
 
 namespace Drupal\mcapi_signatures\Plugin\Transition;
 
-use Drupal\mcapi\Plugin\Transition\TransitionBase;
-use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\mcapi\Plugin\TransitionBase;
+use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\CurrencyInterface;
 
 /**
  * Sign transition

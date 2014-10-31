@@ -47,8 +47,6 @@ class WalletLimitOverride extends FormBase {
     }
 
     $overridden = mcapi_limits($wallet)->saved_overrides();
-    //TODO the limits are no longer stored in the currency
-
     foreach ($wallet->currencies_available() as $curr_id => $currency) {
       $config = mcapi_limits_saved_plugin($currency)->getConfiguration();
       if (!$config || $config['plugin'] == 'none') continue;
@@ -60,28 +58,23 @@ class WalletLimitOverride extends FormBase {
       if (array_key_exists('max', $limits)) {
         $desc[] = t('Max: !worth', array('!worth' => $currency->format($limits['max'])));
       }
-      $form[$curr_id] = array(
-        '#type' => 'fieldset',
-        '#tree' => TRUE,
-        '#title' => $currency->label(),
-        '#description' => $desc ?
-          t('Default values !values', array('!values' => implode(', ', $desc))) :
-          t('No default limits are set')
-      );
       if ($config['override']) {
         //for now the per-wallet override allows admin to declare absolute min and max per user.
         //the next thing would be for the override to support different plugins and settings per user.
         //this should be in the plugin
-        $form[$curr_id]['override'] = array(
+        $form[$curr_id] = array(
           '#title' => t('Values for this wallet'),
+          '#description' => $desc ?
+            t('Default values !values', array('!values' => implode(', ', $desc))) :
+            t('No default limits are set'),
+          '#type' => 'minmax',
           '#curr_id' => $curr_id,
-        	'#type' => 'minmax',
           '#default_value' => array(
             'min' => @$overridden[$curr_id]['min'],
             'max' => @$overridden[$curr_id]['max']
           ),
           '#placeholder' => array(
-          	'min' => $defaults['min'],
+            'min' => $defaults['min'],
             'max' => $defaults['max']
           )
         );
@@ -89,7 +82,7 @@ class WalletLimitOverride extends FormBase {
       else {//currency is not overridable
         //don't show anything
         $form[$curr_id]['override'] = array(
-        	'#markup' => t('This currency is not overridable')
+          '#markup' => t('This currency is not overridable')
         );
       }
     }
@@ -101,7 +94,7 @@ class WalletLimitOverride extends FormBase {
         '#weight' => -1
       );
       $form['submit'] = array(
-      	'#type' => 'submit',
+        '#type' => 'submit',
         '#value' => t('Save'),
         '#weight' => 10
       );
@@ -123,7 +116,7 @@ class WalletLimitOverride extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    form_state_values_clean($form_state);
+    $form_state->cleanValues();;
     $wid = $this->wallet->id();
     //clear db and rewrite
     try {
@@ -131,19 +124,29 @@ class WalletLimitOverride extends FormBase {
       db_delete('mcapi_wallets_limits')->condition('wid', $wid)->execute();
       $q = db_insert('mcapi_wallets_limits')->fields(array('wid', 'curr_id', 'min', 'max', 'editor', 'date'));
       $insert = FALSE;
-      foreach ($form_state->getValues() as $curr_id => $values) {
-        if (empty($values['override']['min']) && empty($values['override']['max'])) continue;
-        $q->values(array(
+      $values = $form_state->getValues();
+
+      //rearrange the values so they are easier to save currency by currency
+      foreach ($values as $curr_id => $minmax) {
+        unset($minmax['limits']);//here because I don't understand fully how the form values nesting works
+        foreach ($minmax as $limit => $worths) {
+          $limits[$curr_id][$limit] = $worths[0]['value'];
+        }
+      }
+      //to wade through the mess, we use only $worths with a numeric key
+      foreach ($limits as $curr_id => $minmax) {
+        $values = array(
           'wid' => $wid,
           'curr_id' => $curr_id,
-          'min' => $values['override']['min'][0]['value'],
-          'max' => $values['override']['max'][0]['value'],
+          'min' => $minmax['min'],
+          'max' => $minmax['max'],
           'editor' => \Drupal::CurrentUser()->id(),
           'date' => REQUEST_TIME
-        ));
+        );
+        $q->values($values);
         $insert = TRUE;
       }
-      if ($values) $q->execute();
+      if ($insert) $q->execute();
       else drupal_set_message('No limits were overridden');
     }
     catch (\Exception $e) {
@@ -155,7 +158,5 @@ class WalletLimitOverride extends FormBase {
     $form_state->setRedirect('mcapi.wallet_view', array('mcapi_wallet' => $this->wallet->id()));
 
   }
-
-
 
 }

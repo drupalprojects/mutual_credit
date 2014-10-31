@@ -66,9 +66,9 @@ function mcapi_signatures_mcapi_transaction_load($entities) {
  * delete the signature data when a transaction is deleted
  */
 function mcapi_signatures_mcapi_transaction_delete($transaction) {
-	db_delete('mcapi_signatures')
-  	->condition('serial', $transaction->serial->value)
-  	->execute();
+  db_delete('mcapi_signatures')
+    ->condition('serial', $transaction->serial->value)
+    ->execute();
 }
 
 /**
@@ -151,27 +151,31 @@ function mcapi_signatures_entity_extra_field_info() {
       )
     ),
     'mcapi_transaction' => array(
-    	'mcapi_transaction' => array(
-    	  'display' => array(
-    		  'mcapi_signatures' => array(
+      'mcapi_transaction' => array(
+        'display' => array(
+          'mcapi_signatures' => array(
             'label' => t('Signatures'),
             'description' => t('List of signatures needed and obtained'),
             'weight' => 5,
-    	    )
-    	  )
+          )
+        )
       )
     )
   );
 }
 
 /**
- * implement hook_user_view().
+ * Implements hook_ENTITY_TYPE_view() for user entities.
+ * add the extraField
  */
-function mcapi_signatures_user_view(&$build, $mode, $language) {
-  module_load_include('inc', 'mcapi_signatures');
-  $serials = list_pending($build['#user']);
-  foreach (Transaction::loadBySerials($serials) as $transaction) {
-    $build['mcapi_signatures'][] = entity_view($transaction, 'sentence');
+function mcapi_signatures_user_view(array &$build, \Drupal\user\UserInterface $account, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display) {
+  if ($display->getComponent('mcapi_signatures')) {
+    //TODO check if the extra field is visible
+    module_load_include('inc', 'mcapi_signatures');
+    $serials = list_pending($build['#user']);
+    foreach (Transaction::loadBySerials($serials) as $transaction) {
+      $build['mcapi_signatures'][] = entity_view($transaction, 'sentence');
+    }
   }
 }
 
@@ -186,7 +190,7 @@ function mcapi_signatures_user_view(&$build, $mode, $language) {
  * @todo rethink or remove exman coz it belongs in mcapi_exchanges.module
  */
 function _mcapi_signature_overrides($transaction_type) {
-  if (empty($transaction_type))mtrace();
+  if (empty($transaction_type))die('_mcapi_signature_overrides');
   $override = &drupal_static(__FUNCTION__);
   if (!$override) {
     $override = array_filter(\Drupal::config('mcapi.signatures')->getRawData());

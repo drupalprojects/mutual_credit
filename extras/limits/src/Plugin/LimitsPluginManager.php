@@ -28,7 +28,13 @@ class LimitsPluginManager extends DefaultPluginManager {
    *   Dunno
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler) {
-    parent::__construct('Plugin/Limits', $namespaces, $module_handler, 'Drupal\mcapi_limits\Annotation\Limits');
+    parent::__construct(
+      'Plugin/Limits',
+      $namespaces,
+      $module_handler,
+      '\Drupal\mcapi_limits\Plugin\McapiLimitsInterface',
+      'Drupal\mcapi_limits\Annotation\Limits'
+    );
     $this->setCacheBackend($cache_backend, 'mcapi_limits');
   }
 

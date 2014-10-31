@@ -45,7 +45,7 @@ class ExchangeDeleteConfirm extends ContentEntityConfirmFormBase {
     $this->entity->delete();
 
     drupal_set_message(t("Exchange '%label' has been deleted.", array('%label' => $this->entity->label())));
-    $form_state->setRedirect('mcapi.admin_exchange_list');
+    $form_state->setRedirectUrl($this->getCancelUrl());
   }
 
 }

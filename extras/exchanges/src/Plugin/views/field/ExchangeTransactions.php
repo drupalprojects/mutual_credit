@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Plugin\views\field\ExchangeTransactions.
+ * Definition of Drupal\mcapi_exchanges\Plugin\views\field\ExchangeTransactions.
  */
 
-namespace Drupal\mcapi\Plugin\views\field;
+namespace Drupal\mcapi_exchanges\Plugin\views\field;
 
 use Drupal\views\Plugin\views\area\Result;
 use Drupal\views\Plugin\views\field\FieldPluginBase;

@@ -45,7 +45,7 @@ class ExchangeDisableConfirm extends ContentEntityConfirmFormBase {
     $this->entity->save();
 
     drupal_set_message(t("Exchange '%label' is deactivated.", array('%label' => $this->entity->label())));
-    $form_state->setRedirect('mcapi.admin_exchange_list');
+    $form_state->setRedirectUrl($this->getCancelUrl());
   }
 
 }

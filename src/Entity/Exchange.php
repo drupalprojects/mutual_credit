@@ -10,13 +10,16 @@ namespace Drupal\mcapi\Entity;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\Core\Field\FieldDefinition;
+use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\user\UserInterface;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\ExchangeInterface;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\Core\Cache\CacheBackendInterface;
 
 define('EXCHANGE_VISIBILITY_PRIVATE', 0);
 define('EXCHANGE_VISIBILITY_RESTRICTED', 1);
@@ -28,13 +31,12 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  * @ContentEntityType(
  *   id = "mcapi_exchange",
  *   label = @Translation("Exchange"),
- *   base_table = "mcapi_exchange",
- *   controllers = {
+ *   handlers = {
  *     "storage" = "Drupal\mcapi\Storage\ExchangeStorage",
  *   },
  *   admin_permission = "configure mcapi",
- *   fieldable = TRUE,
  *   translatable = FALSE,
+ *   base_table = "mcapi_exchange",
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "name",
@@ -45,7 +47,6 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  * )
  */
 class Exchange extends ContentEntityBase implements EntityOwnerInterface, ExchangeInterface{
-
 
   /**
    * {@inheritdoc}
@@ -62,6 +63,9 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
 
   /**
    * Create the _intertrading wallet and ensure the manager user is in the exchange
+   * @param EntityStorageInterface $storage
+   * @param boolean $update
+   *   whether the wallet already existed
    */
   public function postSave(EntityStorageInterface $storage, $update = TRUE) {
     //TODO add the manager user to the exchange if it is not a member
@@ -97,18 +101,18 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
-    $fields['id'] = FieldDefinition::create('integer')
+    $fields['id'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Exchange ID'))
       ->setDescription(t('The unique exchange ID.'))
       ->setReadOnly(TRUE)
       ->setSetting('unsigned', TRUE);
 
-    $fields['uuid'] = FieldDefinition::create('uuid')
+    $fields['uuid'] = BaseFieldDefinition::create('uuid')
       ->setLabel(t('UUID'))
       ->setDescription(t('The exchange UUID.'))
       ->setReadOnly(TRUE);
 
-    $fields['name'] = FieldDefinition::create('string')
+    $fields['name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Full name'))
       ->setDescription(t('The full name of the exchange.'))
       ->setRequired(TRUE)
@@ -118,28 +122,28 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
         array('label' => 'hidden', 'type' => 'string', 'weight' => -5)
       );
 
-    $fields['uid'] = FieldDefinition::create('entity_reference')
+    $fields['uid'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Manager of the exchange'))
       ->setSetting('target_type', 'user')
       ->setRequired(TRUE);
 
-    $fields['status'] = FieldDefinition::create('boolean')
+    $fields['status'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Active'))
       ->setDescription(t('TRUE if the exchange is current and working.'))
       ->setSettings(array('default_value' => TRUE));
 
-    $fields['open'] = FieldDefinition::create('boolean')
+    $fields['open'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Open'))
       ->setDescription(t('TRUE if the exchange can trade with other exchanges'))
       ->setSettings(array('default_value' => TRUE));
 
-    $fields['visibility'] = FieldDefinition::create('integer')
+    $fields['visibility'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Visibility'))
       ->setDescription(t('Visibility of impersonal data in the exchange'))
       ->setRequired(TRUE)
       ->setSetting('default_value', EXCHANGE_VISIBILITY_RESTRICTED);
 
-    $fields['mail'] = FieldDefinition::create('email')
+    $fields['mail'] = BaseFieldDefinition::create('email')
       ->setLabel(t('Email'))
       ->setDescription(t('The official contact address'))
       ->setRequired(TRUE);
@@ -151,7 +155,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    * {@inheritdoc}
    */
   public function is_member(ContententityInterface $entity) {
-    if ($entity_type == 'mcapi_wallet') {
+    if ($entity->getEntityTypeId() == 'mcapi_wallet') {
       $entity = $entity->getOwner();
     }
     $id = $entity->id();
@@ -165,24 +169,16 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     return FALSE;
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function isManager(AccountInterface $account = NULL) {
-    if (is_null($account)) {
-      $account = \Drupal::currentUser();
-    }
-    return $account->id() == $this->uid->value;
-  }
 
   /**
    * {@inheritdoc}
    */
   function intertrading_wallet() {
-    return current(entity_load_multiple_by_properties(
-      'mcapi_wallet',
-      array('name' => '_intertrading', 'pid' => $this->id())
-    ));
+    $props = array('name' => '_intertrading', 'pid' => $this->id());
+    $wallets = \Drupal::EntityManager()
+      ->getStorage('mcapi_wallet')
+      ->loadByProperties($props);
+    return reset($wallets);
   }
 
 
@@ -236,19 +232,10 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   /**
    * {@inheritdoc}
    */
-  //in parent, configEntityBase, $rel is set to edit-form by default - why would that be?
-  //Is is assumed that every entity has an edit-form link? Any case this overrides it
-  public function _____urlInfo($rel = 'canonical') {
-    return parent::urlInfo($rel);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function hello(ContentEntityInterface $entity) {
     $moduleHandler = \Drupal::moduleHandler();
     drupal_set_message('User !name joined exchange !exchange,');
-    $moduleHandler->invokeAll('exchange_join', array($entity, $left));
+    $moduleHandler->invokeAll('exchange_join', array($entity));//TODO
   }
 
   /**
@@ -257,29 +244,21 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   public function goodbye(ContentEntityInterface $entity) {
     $moduleHandler = \Drupal::moduleHandler();
     drupal_set_message('User !name left exchange !exchange.');
-    $moduleHandler->invokeAll('exchange_leave', array($entity, $left));
+    $moduleHandler->invokeAll('exchange_leave', array($entity));//TODO
   }
 
   /**
    * {@inheritdoc}
    */
-  public function transactions($inclusive = TRUE) {
+  public function transactions() {
     //get all the wallets in this exchange
     $wids = mcapi_wallets_in_exchanges(array($this->id()));
-    $conditions = array();
-    //get all the transactions involving these wallets
-    if ($inclusive) {
-      $conditions['including'] = $wids;
-      $conditions['states'] = \Drupal::config('mcapi.misc')->get('counted');
-    }
-    else {
-      $conditions['involving'] = $wids;
-    }
+    //get all the transactions involving these and only these wallets
+    $conditions = array('involving'=> $wids);
     $serials = $this->entityManager()->getStorage('mcapi_transaction')->filter($conditions);
-    if ($inclusive) $serials = array_unique($serials);
-    return count($serials);
+    //serials are keyed by xid and there may be duplicates
+    return count(array_unique($serials));
   }
-
 
   /**
    * {@inheritdoc}
@@ -303,7 +282,6 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
             continue;
           }
           $exchanges[$entity->id()] = $entity;
-
         }
       }
     }
@@ -313,21 +291,53 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
 
   /**
    * {@inheritdoc}
-   * @todo is it worth caching this? cache would be cleared whenever fieldInfo changes
    */
   static function getEntityFieldnames() {
-    static $types = array();
-    if (empty($types)) {
-      //get all the instances of these fields
-      $field_defs = entity_load_multiple_by_properties('field_storage_config', array('type' => 'entity_reference'));
-      unset($field_defs['mcapi_transaction.exchange']);
+    if ($cache = \Drupal::cache()->get('exchange_references')) {
+      $types = $cache->data;
+    }
+    else{  //get all the instances of these entity_reference fields
+      $field_defs = \Drupal::EntityManager()
+        ->getStorage('field_storage_config')
+        ->loadByProperties(array('type' => 'entity_reference'));
+      unset($field_defs['mcapi_transaction.exchange']);//because we don't need it
+      //now find only the once which refer to exchanges
       foreach ($field_defs as $field) {
         if ($field->settings['target_type'] == 'mcapi_exchange') {
-          $types[$field->entity_type] = $field->name;
+          $types[$field->entity_type] = $field->field_name;
         }
       }
+      \Drupal::cache()->set(
+        'exchange_references',
+        $types,
+        CacheBackendInterface::CACHE_PERMANENT,
+        array()//TODO cache tags
+      );
     }
     return $types;
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  function deletable() {
+    if ($this->get('status')->value) {
+      $this->reason = t('Exchange must be disabled');
+      return FALSE;
+    }
+    if (count($this->intertrading_wallet()->history())) {
+      $this->reason = t('Exchange intertrading wallet has transactions');
+      return FALSE;
+    }
+    //if the exchange has wallets, even orphaned wallets, it can't be deleted.
+    $conditions = array('exchanges' => array($this->id()));
+    $wallet_ids = \Drupal::EntityManager()->getStorage('mcapi_wallet')->filter($conditions);
+    if (count($wallet_ids) > 1){
+      $this->reason = t('The exchange still owns wallets: @nums', array('@nums' => implode(', ', $wallet_ids)));
+      return FALSE;
+    }
+    return TRUE;
   }
 
 }

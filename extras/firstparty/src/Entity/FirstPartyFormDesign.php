@@ -9,17 +9,16 @@ namespace Drupal\mcapi_1stparty\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Entity\Annotation\EntityType;
 
 /**
- * Defines the 1stparty_form entity.
+ * Defines the 1stparty_editform entity.
  *
  * @ConfigEntityType(
  *   id = "1stparty_editform",
- *   label = @Translation("Designed transaction form"),
- *   controllers = {
- *     "access" = "Drupal\mcapi_1stparty\FirstPartyEditFormAccessController",
+ *   label = @Translation("Transaction form design"),
+ *   handlers = {
+ *     "access" = "Drupal\mcapi_1stparty\FirstPartyEditFormAccessControlHandler",
  *     "form" = {
  *       "add" = "Drupal\mcapi_1stparty\Form\FirstPartyFormDesigner",
  *       "edit" = "Drupal\mcapi_1stparty\Form\FirstPartyFormDesigner",
@@ -27,7 +26,7 @@ use Drupal\Core\Entity\Annotation\EntityType;
  *       "enable" = "Drupal\mcapi_1stparty\Form\FirstPartyEditFormEnableConfirm",
  *       "disable" = "Drupal\mcapi_1stparty\Form\FirstPartyEditFormDisableConfirm"
  *     },
- *     "list_builder" = "Drupal\mcapi_1stparty\FirstPartyEditFormList",
+ *     "list_builder" = "Drupal\mcapi_1stparty\FirstPartyEditFormListBuilder",
  *   },
  *   admin_permission = "configure mcapi",
  *   config_prefix = "editform",
@@ -37,11 +36,11 @@ use Drupal\Core\Entity\Annotation\EntityType;
  *     "label" = "title",
  *     "status" = "status"
  *   },
+ *   field_ui_base_route = "mcapi.admin_1stparty_editform_list",
  *   links = {
  *     "edit-form" = "mcapi.admin_1stparty_editform.edit",
  *     "enable" = "mcapi.admin.1stparty_editform.enable_confirm",
  *     "disable" = "mcapi.admin.1stparty_editform.disable_confirm",
- *     "admin-form" = "mcapi.admin_1stparty_editform_list",
  *     "delete-form" = "mcapi.admin.1stparty_editform.delete_confirm",
  *   }
  * )
@@ -73,26 +72,26 @@ class FirstPartyFormDesign extends ConfigEntityBase {
    */
   public static function preCreate(EntityStorageInterface $storage, array &$values) {
     $values += array(
-    	'id' => '',
+      'id' => '',
       'title' => '',
       'path' => '',
-    	'status' => 1,
+      'status' => 1,
       'type' => 'default',
       'exchange' => '0',
       'partner' => array(
         //@todo fill in the selection with something the entity_reference widget would understand
-    	  'selection' => '',
-      	'preset' => ''
+        'selection' => '',
+        'preset' => ''
       ),
-    	'direction' => array(
-    	  'preset' => 'outgoing',
-    		'widget' => 'radios',
-    		'incoming' => 'I request',
-    		'outgoing' => 'I am paying'
+      'direction' => array(
+        'preset' => 'outgoing',
+        'widget' => 'radios',
+        'incoming' => 'I request',
+        'outgoing' => 'I am paying'
       ),
       'description' => array(
-    	  'preset' => '',
-    	  'placeholder' => ''
+        'preset' => '',
+        'placeholder' => ''
       ),
       'fieldapi_presets' => array(
         'worth' => array(),//and there are likely others
@@ -100,35 +99,39 @@ class FirstPartyFormDesign extends ConfigEntityBase {
       'other' => array(
         'intertrade' => FALSE
       ),
-    	'step1' => array(
+      'step1' => array(
         'twig1' => 'Partner: [mcapiform:secondperson]
 Direction: [mcapiform:direction]
 [mcapiform:worth]',
-    	  'next1' => 'page',
+        'next1' => 'page',
         'button1' => t('Preview'), //each transaction type should have an initial state
-    	),
-    	'step2' => array(
-    		'title2' => t('Are you sure?'),
-    		'format2' => 'certificate',
-    	  'twig2' => '',
-    	  'next2' => 'page',
+      ),
+      'step2' => array(
+        'title2' => t('Are you sure?'),
+        'format2' => 'certificate',
+        'twig2' => '',
+        'next2' => 'page',
         'button2' => t('Confirm'),
-    		'redirect' => ''
-    	),
-    	'message' => '',
+        'redirect' => ''
+      ),
+      'message' => '',
       'cache' => NULL
     );
 
   }
+  
+  //TODO remove this once we've sorted out whether $values is required
+  //see \Drupal\Core\DependencyInjection\ClassResolver::getInstanceFromDefinition()
+  //see Drupal\Core\Config\Entity\ConfigEntityBase::__construct()
+  public function __construct($values = array(), $entity_type) {    
+    parent::__construct($values, $entity_type);
+  }
 
-  /**
-   * Gets the configuration dependency name (ConfigEntityInterface)
-   *
-   * @return string
-   *   The configuration dependency name.
-   */
-  function getConfigDependencyName() {
-    return 'mcapi';//don't know what this means
+  //this is expected by EntityManager
+  //TODO
+  function setStringTranslation($translationManager) {
+    //TODO make this work?
+    return $this;
   }
 
 }

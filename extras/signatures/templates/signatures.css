@@ -1,6 +1,6 @@
 /* the watermark on the pending transaction certificate. NB this creates a big space at the top of the certificate */
 div.pending-bgstamp{
-	float: left,
+  float: left,
   margin: 0px 0 0 0px;
   position: relative;
   font-family:arial, helvetica;
@@ -20,7 +20,7 @@ div.pending-bgstamp{
 #pending-signatures{float:right;}
 
 div.transaction.certificate td{
-	width:32px; 
+  width:32px;
   height:32px; 
   background-repeat: no-repeat; 
   background-position: center; 
@@ -28,9 +28,9 @@ div.transaction.certificate td{
 }
 
 div.transaction.certificate td.signature.signed{
-	background-image: url("finished.png"); 
+  background-image: url("finished.png");
 }
 div.transaction.certificate td.signature.pending{
-	background-image: url("pending.png");
+  background-image: url("pending.png");
 }
 

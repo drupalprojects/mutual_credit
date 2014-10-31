@@ -45,7 +45,7 @@ class McapiTesterSwitchUser extends BlockBase {
         $path = 'switch/' . $username;
         $dest = drupal_get_destination();
         $build['help'] = array('#markup' => "Switch user in one click isn't working:");
-        $build['logout'] = array('#markup' => l('Log out', $path, array('query' => $dest + array('token' => \Drupal::csrfToken()->get($path . '|' . $dest['destination'])))));
+        $build['logout'] = array('#markup' => \Drupal::l('Log out', $path, array('query' => $dest + array('token' => \Drupal::csrfToken()->get($path . '|' . $dest['destination'])))));
       }
       else {
         $build['devel_links'] = array('#theme' => 'links', '#links' => $links);

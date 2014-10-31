@@ -7,3 +7,4 @@ type: module
 dependencies:
   - mcapi
   - image
+  - contact

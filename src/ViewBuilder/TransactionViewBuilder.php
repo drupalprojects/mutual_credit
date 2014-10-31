@@ -14,7 +14,7 @@ use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
 use Drupal\Core\Template\Attribute;
 use Drupal\Component\Utility\NestedArray;
-use Drupal\mcapi\Entity\TransactionInterface;
+use Drupal\mcapi\TransactionInterface;
 use Drupal\Core\Render\Element;
 
 /**
@@ -51,17 +51,22 @@ class TransactionViewBuilder extends EntityViewBuilder {
     }
 
     $build = array();
+    //most entity types would build the render array for theming here.
+    //however the sentence and twig view modes don't need the theming flexibility
+    //even the certificate is rarely used..
     switch($view_mode) {
     	case 'certificate':
         $build['#theme'] = 'certificate';
         break;
     	case 'sentence':
-    	  $build['#theme'] = 'sentence';
+    	  $build['#markup'] = \Drupal::Token()->replace(
+  	      \Drupal::config('mcapi.misc')->get('sentence_template'),
+  	      array('mcapi' => $entity),
+  	      array('sanitize' => TRUE)
+    	  );
         break;
     	default:
-        $build['#theme'] = 'mcapi_twig';
-        $build['#twig_template'] = $view_config->get('twig');
-        $view_mode == 'twig';
+        $build['#markup'] = mcapi_render_twig_transaction($view_config->get('twig'), $entity);
     }
 
     $build += array(
@@ -79,15 +84,15 @@ class TransactionViewBuilder extends EntityViewBuilder {
 
     // Cache the rendered output if permitted by the view mode and global entity
     // type configuration.
-    if ($this->isViewModeCacheable($view_mode) && !$entity->isNew() && $entity->isDefaultRevision() && $this->entityType->isRenderCacheable()) {
+    if ($this->isViewModeCacheable($view_mode) && !$entity->isNew() && $this->entityType->isRenderCacheable()) {
       $build['#cache'] += array(
         'keys' => array(
           'entity_view',
           'mcapi_transaction',
-          $entity->id(),
+          $entity->serial->value,
           $view_mode,
           'cache_context.theme',
-          'cache_context.user.roles',
+          'cache_context.language',
         ),
         'bin' => 'render',//hardcoded for speed,
       );
@@ -124,13 +129,14 @@ class TransactionViewBuilder extends EntityViewBuilder {
             )
           );
           if ($dest_type == 'modal') {
-            $renderable['#links'][$transition]['attributes']['data-accepts'] = 'application/vnd.drupal-modal';
-            $renderable['#links'][$transition]['attributes']['class'][] = 'use-ajax';
+            $renderable['#links'][$transition]['attributes'] = new Attribute(
+              array('data-accepts' => 'application/vnd.drupal-modal', 'class' => array('use-ajax'))
+            );
           }
           elseif($dest_type == 'ajax') {
             //I think we need a new router path for this...
             $renderable['#attached']['js'][] = 'core/misc/ajax.js';
-            //$renderable['#links'][$op]['attributes']['class'][] = 'use-ajax';
+            //$renderable['#links'][$op]['attributes'] = new Attribute(array('class' => array('use-ajax')));
           }
           elseif(!$plugin->getConfiguration('redirect')){
             $renderable['#links'][$transition]['query'] = drupal_get_destination();
@@ -144,7 +150,6 @@ class TransactionViewBuilder extends EntityViewBuilder {
           '#attached' => array(
             'css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css')
           ),
-          //Attribute class not found
           '#attributes' => new Attribute(array('class' => array('transaction-transitions'))),
         );
       }

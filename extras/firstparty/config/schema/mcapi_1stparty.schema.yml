@@ -12,7 +12,7 @@ mcapi_1stparty.editform.*:
       type: label
       label: 'Form title'
     path:
-      type: string
+      type: path
       label: 'Path'
     menu:
       type: mapping

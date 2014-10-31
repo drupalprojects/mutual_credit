@@ -22,7 +22,7 @@ use Drupal\mcapi\Entity\Exchange;
 class TransactionForm extends ContentEntityForm {
 
   /**
-   * Overrides Drupal\Core\Entity\EntityFormController::form().
+   * Overrides Drupal\Core\Entity\EntityForm::form().
    */
   public function form(array $form, FormStateInterface $form_state) {
 
@@ -37,7 +37,7 @@ class TransactionForm extends ContentEntityForm {
       $form['#disabled'] = TRUE;
     }
 
-    //borrowed from NodeFormController::prepareEntity in alpha14
+    //borrowed from NodeForm::prepareEntity in alpha14
     $transaction->date = format_date($transaction->created->value, 'custom', 'Y-m-d H:i:s O');
     //but this looks better to me
     //$transaction->date = DrupalDateTime::createFromTimestamp($transaction->created->value);
@@ -55,15 +55,17 @@ class TransactionForm extends ContentEntityForm {
       '#title' => t('Description'),
       '#default_value' => $transaction->description->value,
       '#weight' => 3,
-      //the empty class causes an error in alpha11  _form_set_attributes()
       '#attributes' => new Attribute(
         array(
           'style' => "width:100%",
           'class' => array()
         )
       ),
-      //TEMP the old way
-      '#attributes' => array('style' => 'width:100%', 'class' => array())
+      //TODO TEMP
+      '#attributes' => array(
+        'style' => "width:100%",
+        'class' => array()
+      )
     );
 
     //lists all the wallets in the exchange
@@ -113,7 +115,19 @@ class TransactionForm extends ContentEntityForm {
     );
     $form = parent::form($form, $form_state);
 
+    //overwrites EntityForm::actions
+    $form['actions']['submit']['#submit'] = array('::submitForm');
+
     return $form;
+  }
+
+  /**
+   * Returns the action form element for the current entity form.
+   */
+  protected function actionsElement(array $form, FormStateInterface $form_state) {
+    $actions = parent::actions($form, $form_state);
+    $actions['submit']['#submit'] = array('::submitForm');
+    return $actions;
   }
 
   /**
@@ -124,7 +138,7 @@ class TransactionForm extends ContentEntityForm {
    * this is unusual because normally build a temp object
    */
   public function validate(array $form, FormStateInterface $form_state) {
-    form_state_values_clean($form_state);//without this, buildentity fails, but not so in nodeFormController
+    $form_state->cleanValues();;//without this, buildentity fails, but not so in nodeForm
     $transaction = $this->buildEntity($form, $form_state);
 
     // The date element contains the date object.
@@ -142,10 +156,10 @@ class TransactionForm extends ContentEntityForm {
     //node_form controller runs a hook for validating the node
     //however we do it here IN the transaction entity validation which is less form-dependent
 
-
     //validate the fieldAPI widgets
     $this->getFormDisplay($form_state)->validateFormValues($transaction, $form, $form_state);
 
+    //if there are errors at the form level don't bother validating the entity object
     if ($form_state->getErrors()) {
       return;
     }
@@ -165,13 +179,21 @@ class TransactionForm extends ContentEntityForm {
     }
     //now validated, this is what we will put in the tempstore
     $this->entity = $transaction;
-
     $form_state->set('mcapi_validated', TRUE);
+
   }
 
-  public function submit(array $form, FormStateInterface $form_state) {
-    $tempStore = \Drupal::service('user.tempstore');
-    $tempStore->get('TransactionForm')->set('entity', $this->entity);
+  /**
+   * submit handler specified in EntityForm::actions
+   * does NOT call parent
+   * @param array $form
+   * @param FormStateInterface $form_state
+   */
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    //TODO inject this
+    \Drupal::service('user.tempstore')
+      ->get('TransactionForm')
+      ->set('entity', $this->entity);
     //Drupal\mcapi\ParamConverter\TransactionSerialConverter
     //then
     //Drupal\mcapi\Plugin\Transition\Create

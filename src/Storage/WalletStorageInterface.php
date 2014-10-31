@@ -7,10 +7,10 @@
 
 namespace Drupal\mcapi\Storage;
 
-use Drupal\Core\Entity\FieldableEntityStorageInterface;
+use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 
-interface WalletStorageInterface extends FieldableEntityStorageInterface {
+interface WalletStorageInterface extends EntityStorageInterface {
 
   /**
    * get the wallets which belong to any entity

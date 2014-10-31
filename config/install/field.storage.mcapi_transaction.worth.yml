@@ -6,7 +6,7 @@ dependencies:
     - entity_reference
     - mcapi
 langcode: en
-name: worth
+field_name: worth
 entity_type: mcapi_transaction
 type: worth
 settings: {  }
@@ -15,7 +15,3 @@ locked: false
 cardinality: -1
 translatable: false
 indexes: {  }
-dependencies:
-  module:
-    - mcapi
-

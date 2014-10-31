@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Plugin\views\field;
 use Drupal\views\Plugin\views\field\Standard;
 use Drupal\views\ResultRow;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 
 /**
  * Field handler to link the transaction description to the transaction itself
@@ -45,10 +46,11 @@ class Description extends Standard {
    * {@inheritdoc}
    */
   function render(ResultRow $values) {
+    $txt = $values->{$this->field_alias};
     if ($this->options['link']) {
-      return l($values->{$this->field_alias}, $this->getEntity($values)->url());
+      return $this->getEntity($values)->link($txt);
     }
-    return $values->{$this->field_alias};
+    return $txt;
   }
 
 }

@@ -1,0 +1,29 @@
+id: mcapi_transaction.mcapi_transaction.default
+uuid: 1cff88e4-bc7c-4591-984f-7994a47b4119
+targetEntityType: mcapi_transaction
+bundle: mcapi_transaction
+mode: default
+content:
+  worth:
+    type: worth
+    weight: 0
+    settings: {  }
+    third_party_settings: {  }
+  categories:
+    type: taxonomy_autocomplete
+    weight: 1
+    settings:
+      size: 60
+      autocomplete_route_name: taxonomy.autocomplete
+      placeholder: 'Categories, comma separated'
+    third_party_settings: {  }
+hidden: {}
+status: true
+dependencies:
+  entity:
+    - field.field.mcapi_transaction.mcapi_transaction.categories
+    - field.field.mcapi_transaction.mcapi_transaction.worth
+  module:
+    - mcapi
+    - taxonomy
+third_party_settings: {  }

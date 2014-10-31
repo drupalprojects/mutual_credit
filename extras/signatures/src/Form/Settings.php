@@ -43,11 +43,11 @@ class Settings extends ConfigFormBase {
     foreach (Type::loadMultiple() as $type) {
       $id = $type->id();
       $form[$id] = array(
-    	  '#title' => t('Who must approve transactions of type @name?', array('@name' => $type->label)),
+        '#title' => t('Who must approve transactions of type @name?', array('@name' => $type->label)),
         '#description' => $type->description,
         '#type' => 'checkboxes',
         '#options' => array(
-      	  'both' => t('Payer & payee (The current user signs automatically)'),
+          'both' => t('Payer & payee (The current user signs automatically)'),
           'exman' => t('The exchange manager')
         ),
         //checkboxes are a bit strange.
@@ -68,7 +68,7 @@ class Settings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    form_state_values_clean($form_state);
+    $form_state->cleanValues();;
     foreach ($form_state->getValues() as $type_name => $vals) {
       //go to some extra effort to save booleans in the config
       $this->settings->set($type_name.'.both', !empty($vals['both']));

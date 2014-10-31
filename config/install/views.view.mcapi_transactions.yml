@@ -1,4 +1,3 @@
-uuid: 231cef64-dccb-4cb7-8034-52dee5cf37cd
 langcode: en
 status: true
 dependencies:
@@ -9,7 +8,7 @@ dependencies:
     - mcapi
     - user
 id: mcapi transactions
-label: Transaction Log
+label: ''
 module: views
 description: 'A list of all transactions'
 tag: ''

@@ -3,14 +3,15 @@
  * @file
  * Default theme implementation to display a (summary of a) wallet.
  * Variables:
- *   name //of the wallet
- *   url //to the wallet transaction listing
+ *   label //of the wallet
+ *   wallet_link #to the wallet uri
+ *   wallet_log_link #to the wallet transaction listing
  *   currencies //list
  */
 #}
 <div class = "wallet">
-  <a class = "wallet-title" href="{{ url }}" title="Show stats">{{ name }}</a><br />
+    {{ wallet_link }}
   {% for curr_sum in currencies %}
-    {{curr_sum}}
+    {{ curr_sum }}
   {% endfor %}
 </div><!--/wallet-->

@@ -3,8 +3,10 @@
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Exchange;
 use Drupal\mcapi\Entity\Transaction;
-use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\WalletInterface;
+use Drupal\Core\Template\Attribute;
+use Drupal\mcapi\McapiTransactionException;
 
 /**
  * implements hook_modules_uninstalled().
@@ -36,7 +38,7 @@ function mcapi_exchanges_uninstall() {
 
 /**
  * implements hook_entity_info_alter().
- * add new controllers for the Exchange entity
+ * add new handlers for the Exchange entity
  */
 function mcapi_exchanges_entity_type_alter(array &$entity_types) {
   $e = $entity_types['mcapi_exchange'];
@@ -48,14 +50,16 @@ function mcapi_exchanges_entity_type_alter(array &$entity_types) {
   $e->setFormClass("disable", "Drupal\mcapi_exchanges\Form\ExchangeDisableConfirm");
   $e->setLinkTemplate("canonical", "mcapi.exchange.view");
   $e->setLinkTemplate("edit-form", "mcapi.exchange.edit");
-  $e->setLinkTemplate("admin-form", "mcapi.admin_exchange_list");
+  $e->setLinkTemplate("field_ui_base_route", "mcapi.admin_exchange_list");
   $e->setLinkTemplate("delete-form", "mcapi.exchange.delete_confirm");
   $e->setLinkTemplate("enable", "mcapi.exchange.enable_confirm");
   $e->setLinkTemplate("disable", "mcapi.exchange.disable_confirm");
-
   $e->setViewBuilderClass("Drupal\mcapi_exchanges\ExchangeViewBuilder");
-  $e->setAccessClass("Drupal\mcapi_exchanges\ExchangeAccessController");
+  $e->setAccessClass("Drupal\mcapi_exchanges\ExchangeAccessControlHandler");
   $e->setListbuilderClass("Drupal\mcapi_exchanges\ExchangeListBuilder");
+  //there isn't an explicit method for views_data yet
+  $e->setHandlerClass('views_data', "Drupal\mcapi_exchanges\ExchangeViewsData");
+  $e->set('field_ui_base_route', "mcapi.admin_exchange_list");
 }
 
 
@@ -96,7 +100,9 @@ function mcapi_exchanges_mcapi_exchange_view(&$build, $entity, $mode, $language)
       '#title' => t('Show members'),
       '#href' => 'exchange/'.$entity->id().'/members',
       //maybe instead put a view with the last five members here
-      '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
+      '#options' => array(
+        'attributes' => new Attribute(array('title' => "This view doesn't exist yet"))
+      )
     )
   );
   //get all the wallets in this exchange
@@ -114,7 +120,9 @@ function mcapi_exchanges_mcapi_exchange_view(&$build, $entity, $mode, $language)
       '#title' => t('Show transactions'),
       '#href' => 'exchange/'.$entity->id().'/transactions',
       //TODO maybe instead put a view with the last five members here
-      '#options' => array('attributes' => array('title' => "This view doesn't exist yet"))
+      '#options' => array(
+        'attributes' => new Attribute(array('title' => "This view doesn't exist yet"))
+      )
     )
   );
 }
@@ -152,10 +160,9 @@ function mcapi_exchanges_mcapi_transaction_alter(TransactionInterface $transacti
     $transaction->set('exchange', reset($common_exchanges)->id());
     return;
   }
-
   $transaction_curr_ids = $transaction->worth->currencies();
   $my_exchanges = Exchange::referenced_exchanges();
-  if (!is_array($my_exchanges)){print_r($my_exchanges);die();}
+if (!is_array($my_exchanges)){print_r($my_exchanges);die();}
   $payer_exchanges = $transaction->payer->entity->in_exchanges(TRUE);
   foreach (array_intersect_key($payer_exchanges, $my_exchanges) as $exchange) {
     if (has_currencies($exchange, $transaction_curr_ids))  {
@@ -165,6 +172,7 @@ function mcapi_exchanges_mcapi_transaction_alter(TransactionInterface $transacti
       break;
     }
   }
+  $source = 0;
   if (empty($set))  {
     foreach (array_intersect_key($transaction->payee->entity->in_exchanges(TRUE), $my_exchanges) as $exchange) {
       if (has_currencies($exchange, $transaction_curr_ids))  {
@@ -175,12 +183,11 @@ function mcapi_exchanges_mcapi_transaction_alter(TransactionInterface $transacti
       }
     }
   }
+  $violations = array();
   if (!$source) {
-    throw new \Exception('Neither party can access all the currencies in the transaction: '.implode(', ', $transaction_curr_ids));
+    throw new McapiTransactionException('worth', 'Neither party can access all the currencies in the transaction: '.implode(', ', $transaction_curr_ids));
   }
 
-
-  $violations = array();
   //We have to check if a transaction is even possible.
   //this means there is at least one currency in the transaction not common to both wallets' exchanges
 
@@ -205,7 +212,7 @@ function mcapi_exchanges_mcapi_transaction_alter(TransactionInterface $transacti
     //if there is no diff, we shouldn't be intertrading but doing a straight transaction
     $source_currency_id = key($diff);//do this now to ensure there is a value for the error
     if (!$diff) {
-      throw new Exception('Intertrading calculation is running when worth currencies are all matched');
+      throw new McapiTransactionException('Intertrading calculation is running when worth currencies are all matched');
     }
     if (count($diff) > 1) {
       continue;//we won't attempt to convert more than one currency in a transaction
@@ -288,6 +295,7 @@ function intertrading_new_worths(TransactionInterface $transaction, WalletInterf
  * TODO surely entity reference deletion should happen automatically??
  */
 function mcapi_exchanges_mcapi_exchange_delete($exchange) {
+  return;
   foreach (Exchange::getEntityFieldnames() as $entity_type => $fieldname) {
     db_delete($entity_type.'__'.$fieldname)
       ->condition($fieldname.'_target_id', $exchange->id())
@@ -297,5 +305,27 @@ function mcapi_exchanges_mcapi_exchange_delete($exchange) {
       ->condition($fieldname.'_target_id', $exchange->id())
       ->condition('entity_id', 1, '>')
       ->execute();
+  }
+}
+
+/**
+ * Implements hook_mail_alter().
+ * divert exchange contact mails to the right exchange
+ */
+function mcapi_exchanges_mail_alter(&$message) {
+  print_r($message);die();
+  //if the recipient is mcapi_exchange@drupal then swop it for the owner of the current exchange
+  //either that or don't use the contact module to contact exchanges
+}
+
+/**
+ * implements hook_ENTITY_TYPE_load().
+ */
+function mcapi_exchanges_contact_category_load($entities) {
+  foreach ($entities as $category) {
+    if ($category->id == 'exchange') {
+      //this might work except for caching and we don't know what exchange we are trying to contact!
+      $category->recipients[] = 'mcapi_exchange@drupal';
+    }
   }
 }

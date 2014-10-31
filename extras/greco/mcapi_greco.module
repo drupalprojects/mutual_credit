@@ -63,8 +63,10 @@ function mcapi_index_views_cron() {
     else {
       $indicator = NULL;
     }
-    $row = array('curr_id' => $curr_id, 'timestamp' => REQUEST_TIME, 'value' => $indicator);
-    drupal_write_record('mcapi_greco', $row);
+
+    db_insert('mcapi_greco')
+      ->fields(array('curr_id' => $curr_id, 'timestamp' => REQUEST_TIME, 'value' => $indicator))
+      ->execute();
   }
 }
 

@@ -5,9 +5,10 @@
  * Contains \Drupal\mcapi\Element\Currency.
  */
 
-namespace Drupal\Core\Render\Element;
+namespace Drupal\mcapi\Element;
+
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Render\Element;
+use Drupal\Core\Render\Element\FormElement;
 
 /**
  * Provides a widget to select currencies
@@ -20,12 +21,10 @@ class Currency extends FormElement {
    * {@inheritdoc}
    */
   public function getInfo() {
-    $class = get_class($this);
     return array(
       '#input' => TRUE,
       '#process' => array(
-        array($class, 'mcapi_process_currcodes'),
-        'ajax_process_form'
+        array(get_class($this), 'process_currcodes'),
       ),
       '#theme_wrappers' => array('form_element'),
       '#multiple' => FALSE,
@@ -37,7 +36,7 @@ class Currency extends FormElement {
   /**
    * process callback
    */
-  function mcapi_process_currcodes($element) {
+  static function process_currcodes($element) {
     $conditions = array();
     if ($element['#status']) {
       $conditions['status'] = TRUE;
@@ -72,5 +71,10 @@ class Currency extends FormElement {
       $element['#theme'] = 'select';
     }
     return $element;
+  }
+
+   static function valueCallback(&$element, $input, FormStateInterface $form_state) {
+    if ($input == NULL) return;
+    return $input;
   }
 }

@@ -6,7 +6,7 @@ fields:
 exchange_menu: 'tools'
 ticks_name: Seconds
 worths_delimiter: '|'
-zero: '<img src = "present.png" width="31" />'
+zero_snippet: '<img src = "present.png" width="31" />'
 counted:
   done: true
   undone: false

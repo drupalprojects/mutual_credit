@@ -1,7 +1,7 @@
 <?php
 
 use Drupal\mcapi_limits\McapiLimitsException;
-use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\mcapi\CurrencyInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\mcapi\Entity\Wallet;
 
@@ -164,7 +164,7 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) 
   foreach(\Drupal::service('plugin.manager.mcapi_limits')->getDefinitions() as $name => $plugin) {
     $options[$name] = $plugin['label'];
   }
-  $currency = $form_state->get('controller')->getEntity();
+  $currency = $form_state->getFormObject()->getEntity();
   if ($values = $form_state->getValues()) {
     //get the plugin from the last form submission
     $plugin_id = $values['plugin'];
@@ -231,7 +231,8 @@ function mcapi_limits_submit(&$form, $form_state) {
   $form_state->get('limits_plugin')->submitConfigurationForm($form, $form_state);
 
   //load the plugin settings AS CONFIG
-  $config = \Drupal::config('mcapi.limits.'. $form_state->get('controller')->getEntity()->id());
+  $currency = $form_state->getFormObject()->getEntity();
+  $config = \Drupal::config('mcapi.limits.'. $currency->id());
   foreach ($form_state->get('limits_plugin')->getConfiguration() as $key => $val) {
     $config->set($key, $val);
   }

@@ -7,9 +7,9 @@
 
 namespace Drupal\mcapi\Storage;
 
-use Drupal\Core\Entity\ContentEntityDatabaseStorage;
+use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\WalletInterface;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\mcapi\Entity\Exchange;
@@ -19,7 +19,7 @@ use Drupal\mcapi\Entity\Exchange;
  * instead of the ContentEntityDatabaseStorage then the $values passed to the create
  * method work very differently, putting NULL in all database fields
  */
-class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorageInterface {
+class WalletStorage extends SqlContentEntityStorage implements WalletStorageInterface {
 
   /**
    * {@inheritdoc}
@@ -225,48 +225,6 @@ class WalletStorage extends ContentEntityDatabaseStorage implements WalletStorag
 
   private function dropindex($wids) {
     db_delete('mcapi_wallets_access')->condition('wid', $wids);
-  }
-
-  function getSchema() {
-    $schema = parent::getSchema();
-    $schema['mcapi_wallet'] += array(
-      'foreign keys' => array(
-        'mcapi_transactions_payee' => array(
-          'table' => 'mcapi_transaction',
-          'columns' => array('wid' => 'payee'),
-        ),
-        'mcapi_transactions_payer' => array(
-          'table' => 'mcapi_transaction',
-          'columns' => array('wid' => 'payer'),
-        ),
-      ),
-    );
-    $schema['mcapi_wallets_access'] = array(
-      'description' => "Access settings for wallet's operations",
-      'fields' => array(
-        'wid' => array(
-          'description' => 'the unique wallet ID',
-          'type' => 'int',
-          'size' => 'normal',
-          'not null' => TRUE,
-        ),
-        'operation' => array(
-          'description' => 'One of list, summary, payin, payout, edit',
-          'type' => 'varchar',
-          'length' => '8',
-        ),
-        'uid' => array(
-          'description' => 'A permitted user id',
-          'type' => 'int',
-          'length' => '8',
-        )
-      ),
-      'unique keys' => array(
-        'walletUserPerm' => array('wid', 'operation', 'uid'),
-      ),
-      //this table has no keys
-    );
-    return $schema;
   }
 
 }

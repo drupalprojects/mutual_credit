@@ -5,9 +5,9 @@
  * Contains \Drupal\mcapi\Element\Types.
  */
 
-namespace Drupal\Core\Render\Element;
+namespace Drupal\mcapi\Element;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Render\Element;
+use Drupal\Core\Render\Element\Radios;
 
 /**
  * Provides a form element for selecting a transaction state
@@ -26,7 +26,6 @@ class Types extends Radios {
       '#title_display' => 'before',
       '#process' => array(
         array($class, 'mcapi_process_types'),
-        'ajax_process_form'
       ),
       '#theme_wrappers' => array('form_element'),
       '#theme' => 'select'
@@ -39,8 +38,14 @@ class Types extends Radios {
    * @return array
    *   the processed $element
    */
-  function mcapi_process_types($element) {
+  static function mcapi_process_types($element) {
     $element['#options'] = mcapi_entity_label_list('mcapi_type');
     return $element;
   }
+
+  public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
+    if ($input == NULL) return;
+    return $input;
+  }
+
 }

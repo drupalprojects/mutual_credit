@@ -5,9 +5,10 @@
  * Contains \Drupal\mcapi\Element\States.
  */
 
-namespace Drupal\Core\Render\Element;
+namespace Drupal\mcapi\Element;
+
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Render\Element;
+use Drupal\Core\Render\Element\Radios;
 
 /**
  * Provides a form element for selecting a transaction state
@@ -25,7 +26,6 @@ class States extends Radios {
       '#title_display' => 'before',
       '#process' => array(
         array($class, 'mcapi_process_states'),
-        'ajax_process_form'
       ),
       '#theme_wrappers' => array('radios'),
       '#pre_render' => array('form_pre_render_conditional_form_element')
@@ -37,5 +37,10 @@ class States extends Radios {
     $element = form_process_radios($element);
     //sort the currencies by weight.
     return $element;
+  }
+
+  public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
+    if ($input == NULL) return;
+    return $input;
   }
 }

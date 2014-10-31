@@ -7,10 +7,10 @@
 
 namespace Drupal\mcapi\Storage;
 
-use Drupal\Core\Entity\FieldableEntityStorageInterface;
-use Drupal\mcapi\Entity\TransactionInterface;
+use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\mcapi\TransactionInterface;
 
-interface TransactionStorageInterface extends FieldableEntityStorageInterface {
+interface TransactionStorageInterface extends EntityStorageInterface {
 
   /**
    * truncate and rebuild the index table
@@ -65,7 +65,7 @@ interface TransactionStorageInterface extends FieldableEntityStorageInterface {
    * @return array
    *   keys are trades, gross_in, gross_out, balance, volume, partners
    *
-   * @see \Drupal\mcapi\Entity\WalletInterface::getSummaries()
+   * @see \Drupal\mcapi\WalletInterface::getSummaries()
    */
   public function summaryData($wallet_id, array $filters);
 

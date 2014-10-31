@@ -2,30 +2,30 @@
 
 function mcapi_greco_schema() {
   return array(
-  	'mcapi_greco' => array(
+    'mcapi_greco' => array(
     'description' => 'log of greco values over time',
-  	  'fields' => array(
+      'fields' => array(
         'timestamp' => array(
           'description' => 'Unixtime that the stat was logged',
           'type' => 'int',
           'size' => 'normal',
           'not null' => TRUE,
         ),
-    	  'curr_id' => array(
+        'curr_id' => array(
           'description' => 'The currency ID',
           'type' => 'varchar',
           'length' => '32',
         ),
         'quantity' => array(
-    	    'description' => 'Greco value',
-    	    'type' => 'numeric',
-    	    'size' => 'normal',
-    	    'precision' => 4,
-    	    'scale' => 1,
-    	    'not null' => TRUE,
-    	    'default' => 0
-    	  )
-  	  )
+          'description' => 'Greco value',
+          'type' => 'numeric',
+          'size' => 'normal',
+          'precision' => 4,
+          'scale' => 1,
+          'not null' => TRUE,
+          'default' => 0
+        )
+      )
     ),
     'unique keys' => array(
       'uuid' => array('timestamp', 'curr_id')

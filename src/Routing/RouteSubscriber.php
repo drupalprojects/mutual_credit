@@ -49,16 +49,13 @@ class RouteSubscriber extends RouteSubscriberBase {
         continue;
       }
       $path = $entity_route->getPath();
-      $route = new Route(
-        "$path/addwallet",
-        array(
-          '_form' => '\Drupal\mcapi\Form\WalletAddForm',
-        ),
-        array(
-          //connects via the access_check.add_wallet service to the accessCheck controller
-          '_wallet_add_access' => 'TRUE'
-        )
-      );
+      $route = new Route("$path/addwallet");
+      $route->setDefaults(array(
+        '_form' => '\Drupal\mcapi\Form\WalletAddForm'
+      ));
+      $route->setRequirements(array(
+         '_wallet_add_access' => 'grant'//TODO
+      ));
       //see Plugin/Derivative/WalletLocalAction...
       $collection->add("mcapi.wallet.add.$entity_type", $route);
     }
@@ -66,6 +63,7 @@ class RouteSubscriber extends RouteSubscriberBase {
 
   /**
    * {@inheritdoc}
+   * @todo is this needed?
    */
   public static function getSubscribedEvents() {
     $events = parent::getSubscribedEvents();
