@@ -4,13 +4,13 @@
  * @file
  * Definition of Drupal\mcapi_1stparty\FirstPartyTransactionForm.
  * Generate a Transaction form using the FirstParty_editform entity.
- * We have to override all references to the EntityFormDisplay
  */
 
 namespace Drupal\mcapi_1stparty;
 
 use Drupal\mcapi\Form\TransactionForm;
 use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
@@ -73,7 +73,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     $form['mywallet'] = array(
       '#title' => t('My wallet')
     );
-    $my_wallets = mcapi_entity_label_list('mcapi_wallet', mcapi_get_wallet_ids($account));
+    $my_wallets = mcapi_entity_label_list('mcapi_wallet', Wallet::ownedBy($account));
     //if I only have one wallet, we'll put a bogus disabled chooser
     //however disabled widgets don't return a value, so we'll store the value we need in a helper element
     if (\Drupal::config('mcapi.wallets')->get('entity_types.user:user') > 1) {//show a widget
@@ -81,6 +81,7 @@ class FirstPartyTransactionForm extends TransactionForm {
       $form['mywallet']['#options'] = $my_wallets;
       $form['mywallet']['#weight'] = -1;//ensure this is processed before the direction
     }
+    debug($form['mywallet']);
     if (count($my_wallets) < 2) {
       $form['mywallet']['#disabled'] = TRUE;
       $form['mywallet']['#default_value'] = reset($my_wallets);
@@ -187,13 +188,15 @@ class FirstPartyTransactionForm extends TransactionForm {
   static function firstparty_convert_direction(&$element, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     $form = $form_state->getCompleteForm();
+    $my_wallet = isset($values['mywallet_value']) ? $values['mywallet_value'] : $values['mywallet'];
+    debug($my_wallet);
     if ($values['direction'] == 'outgoing') {
       $form_state->setValueForElement($form['payer'], $values['partner']);
-      $form_state->setValueForElement($form['payee'], $values['mywallet_value']);
+      $form_state->setValueForElement($form['payee'], $my_wallet);
     }
     else {
       $form_state->setValueForElement($form['payee'], $values['partner']);
-      $form_state->setValueForElement($form['payer'], $values['mywallet_value']);
+      $form_state->setValueForElement($form['payer'], $my_wallet);
     }
   }
 

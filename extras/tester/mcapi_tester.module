@@ -20,17 +20,6 @@ function mcapi_tester_menu() {
     )
   );
 }
-/**
- * implements hook_permissions().
- */
-function mcapi_tester_permissions() {
-  return array(
-    'exchange helper' => array(
-      'title' => t('Helper within an exchange'),
-      'description' => t("Enhanced access within one's own exchanges")
-    )
-  );
-}
 
 /**
  * implements hook_mcapi_exchange_view()
@@ -63,7 +52,6 @@ function mcapi_tester_make_transactions($num, $inter = FALSE) {
   $all_exchanges = Exchange::loadMultiple();
   if ($inter) {
     //get a list of all wids
-    //pick a random wallet (not _intertrading);
     $wids = \Drupal\mcapi\Storage\WalletStorage::filter(array(), 0, 0);
 
     //remove wallet 2, belonging to user 1, because of a caching problem - very uncomfortable hack

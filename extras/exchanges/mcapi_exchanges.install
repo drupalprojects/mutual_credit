@@ -1,0 +1,14 @@
+<?php
+
+use Drupal\mcapi\Entity\Exchange;
+
+/**
+ * implements hook_install
+ * ensure the default exchage has an intertrading wallet
+ */
+function mcapi_exchanges_install() {
+  foreach (Exchange::loadMultiple() as $exchange) {
+    $exchange->addIntertradingWallet();
+  }
+}
+

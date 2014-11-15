@@ -297,7 +297,7 @@ display:
           validate_options: {  }
           plugin_id: standard
           provider: views
-      field_langcode: '***CURRENT_LANGUAGE***'
+      field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
       group_by: true
   wallet_stats:
@@ -307,7 +307,7 @@ display:
     position: 1
     provider: block
     display_options:
-      field_langcode: '***CURRENT_LANGUAGE***'
+      field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
       fields:
         curr_id:

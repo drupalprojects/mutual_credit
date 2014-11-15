@@ -37,10 +37,11 @@ class TransactionStorage extends TransactionIndexStorage {
     //this $entity is coming from above where it may have $children
     //and in fact be several records
     //NB currently transactions are NOT revisionable
-    if ($entity->isNew()) {
-      $entity->serial->value = $this->nextSerial();
+    if ($is_new = $entity->isNew()) {
+      $entity->serial->value = $this->database->query(
+        "SELECT MAX(serial) FROM {mcapi_transaction}"
+      )->fetchField() + 1;
     }
-    else echo 'not new';
     $parent = 0;
     //note that this clones the parent tranaction
     foreach ($entity->flatten() as $transaction) {
@@ -48,7 +49,7 @@ class TransactionStorage extends TransactionIndexStorage {
       $record = $this->mapToStorageRecord($transaction);
       $record->changed = REQUEST_TIME;
       
-      if (!$entity->isNew()) {
+      if (!$is_new) {
         $return = SAVED_UPDATED;
         $this->database
           ->update('mcapi_transaction')
@@ -70,9 +71,9 @@ class TransactionStorage extends TransactionIndexStorage {
         //and the subsequent transactions must have its xid as their parent
         if ($parent) $record->parent = $parent;
         $insert_id = $this->database
-        ->insert('mcapi_transaction', array('return' => Database::RETURN_INSERT_ID))
-        ->fields((array) $record)
-        ->execute();
+          ->insert('mcapi_transaction', array('return' => Database::RETURN_INSERT_ID))
+          ->fields((array) $record)
+          ->execute();
         $transaction->xid->value = $insert_id;
         if (!$parent) {
           //alter the passed entity, at least the parent
@@ -88,11 +89,11 @@ class TransactionStorage extends TransactionIndexStorage {
         $cache_ids = array();
       }
       $this->saveFieldItems($transaction, $return == SAVED_UPDATED);
-echo 'saved fields';
     }
     // Allow code to run after saving.
-    $entity->postSave($this, $return == SAVED_UPDATED);
-echo 'postsaved';
+    $this->postSave($entity, $return == SAVED_UPDATED);
+    $this->invokeHook($is_new ? 'insert' : 'update', $entity);
+    $entity->setOriginalId($entity->id());
     unset($entity->original);
 
     return $return;
@@ -108,7 +109,6 @@ echo 'postsaved';
       $transaction->save($transaction);
     }
   }
-
 
   /**
    * for development use only!
@@ -133,16 +133,18 @@ echo 'postsaved';
       $query->join('mcapi_transaction__worth', 'w', 'x.xid = w.entity_id');
       if (array_key_exists('value', $conditions)) {
         $conditions['w.worth_value'] = $conditions['value'];
+        unset($conditions['value']);
       }
       if (array_key_exists('curr_id', $conditions)) {
         $conditions['w.worth_curr_id'] = $conditions['curr_id'];
+        unset($conditions['curr_id']);
       }
     }
     //TODO generalise this to take account of other fieldAPI fields?
-    $conditions + array(
+    $conditions += array(
       'state' => mcapi_states_counted()
     );
-debug($conditions);
+
     foreach($conditions as $field => $value) {
       switch($field) {
       	case 'state':
@@ -169,6 +171,7 @@ debug($conditions);
       	case 'to':
           $query->condition('created', $value, '<');
           break;
+      	default: mtrace();
       }
       unset($conditions[$field]);
     }

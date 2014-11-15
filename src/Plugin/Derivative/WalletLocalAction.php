@@ -8,14 +8,15 @@
 namespace Drupal\mcapi\Plugin\Derivative;
 
 use Drupal\Core\Entity\EntityManagerInterface;
-use Drupal\Core\Plugin\Discovery\ContainerDerivativeInterface;
+use Drupal\Component\Plugin\Derivative\DeriverBase;
+use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
 use Drupal\Core\Routing\RouteProviderInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides local action definitions to create a wallet for all entities of types configured.
  */
-class WalletLocalAction  implements ContainerDerivativeInterface {
+class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface {
 
   /**
    * The route provider.

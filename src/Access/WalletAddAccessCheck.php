@@ -12,30 +12,15 @@ use Drupal\Core\Routing\Access\AccessInterface;
 use Symfony\Component\Routing\Route;
 use Drupal\Core\Access\AccessResult;
 use Drupal\user\Entity\User;
-use Drupal\Core\Routing\RouteMatch;
+use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Entity\Wallet;
 
 
 /**
  * Defines an access controller for adding new wallets to entity types
  */
 class WalletAddAccessCheck implements AccessInterface {
-
-  private $pluginManager;
-
-  /**
-   * {@inheritdoc}
-   */
-  public function applies(Route $route) {
-    $routes = [];
-    $types = \Drupal::config('mcapi.wallets')->get('entity_types');
-    foreach((array)$types as $entity_bundle => $max) {
-      if (!$max) continue;
-      list($entity_type, $bundle) = explode(':', $entity_bundle);
-      $routes[] = "mcapi.wallet.add.$bundle";
-    }
-    return $routes;
-  }
 
   /**
    * Wallets can only be added if:
@@ -45,6 +30,8 @@ class WalletAddAccessCheck implements AccessInterface {
    * and
    *  the max wallets threshhold is not reached for that entity
    *
+   * @param Route $account
+   * @param RouteMatchInterface $account
    * @param AccountInterface $account
    *
    * @return AccessInterface constant
@@ -52,13 +39,11 @@ class WalletAddAccessCheck implements AccessInterface {
    *
    * @todo work out how to do this now that the $request isn't passed
    */
-  public function access(AccountInterface $account) {
-   return AccessResult::allowed();
-
+  public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
 
     $config = \Drupal::config('mcapi.wallets');
     //this fetches the entity we are viewing - the would-be owner of the wallet we would add
-    $params = RouteMatch::createFromRequest($request)->getParameters()->all();
+    $params = $route_match->getParameters()->all();
     list($entity_type, $id) = each($params);
     $owner = \Drupal::EntityManager()->getStorage($entity_type)->load($id);
     $max = $config->get('entity_types.'.$entity_type);
@@ -92,16 +77,14 @@ class WalletAddAccessCheck implements AccessInterface {
           if ($owner->id() == $my_exchange->id()) {
             //the current manager-user is in the same exchange as the current entity
             //TODO inject the entityManager
-            if (\Drupal::entityManager()->getStorage('mcapi_wallet')->spare($owner)) {
+            if (Wallet::spare($owner)) {
               return AccessResult::allowed()->cachePerUser();
             }
-
-
           }
         }
       }
     }
-    return AccessResult::forbidden()->cachePerUser;
+    return AccessResult::forbidden()->cachePerUser();
   }
 
 }

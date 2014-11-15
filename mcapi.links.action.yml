@@ -4,10 +4,6 @@ mcapi_add_exchange_laction:
   appears_on:
     - mcapi.admin_exchange_list
 
-mcapi.addWallet.action :
-  class: \Drupal\Core\Menu\LocalActionDefault
-  derivative: \Drupal\mcapi\Plugin\Derivative\WalletLocalAction
-
 mcapi.admin.transaction:
   route_name: mcapi.transaction_admin
   title: 'Log Transaction'
@@ -19,3 +15,7 @@ mcapi.admin.currency.add:
   title: New currency
   appears_on:
     - mcapi.admin_currency_list
+
+mcapi.addWallet.action:
+  class: \Drupal\Core\Menu\LocalActionDefault
+  deriver: \Drupal\mcapi\Plugin\Derivative\WalletLocalAction

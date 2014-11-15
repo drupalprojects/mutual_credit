@@ -157,16 +157,18 @@ abstract class Transition2step extends TransitionBase {
    * {@inheritdoc}
    */
   public function defaultConfiguration() {
-    $config = parent::defaultConfiguration();
-    return array_merge($config, array(
-      'button' => '',
-      'cancel_button' => '',
-      'access' => '',
-      'format2' => '',
-      'redirect' => '',
-      'twig2' => '',
-      'message' => ''
-    ));
+    return array_merge(
+      parent::defaultConfiguration(),
+      array(
+        'button' => '',
+        'cancel_button' => '',
+        'access' => '',
+        'format2' => '',
+        'redirect' => '',
+        'twig2' => '',
+        'message' => ''
+      )
+    );
   }
 
 
@@ -191,7 +193,7 @@ abstract class Transition2step extends TransitionBase {
    */
   public function calculateDependencies() {
     return array(
-        'module' => array('mcapi')
+      'module' => array('mcapi')
     );
   }
 

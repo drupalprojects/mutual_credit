@@ -77,10 +77,10 @@ function mcapi_tester_uninstall() {
   mcapi_tester_delete_transactions();
   
   //delete test wallets
-  foreach (Wallet::loadMultiple() as $wallet) {
-    if ($wallet->id() < 2) continue;
-    $wallet->delete();//all users' wallets are now 'unused' so will be deleted also
-  }
+  //foreach (Wallet::loadMultiple() as $wallet) {
+  //  if ($wallet->id() < 3) continue;
+  //  $wallet->delete();//all users' wallets are now 'unused' so will be deleted also
+  //}
 
   //delete test users
   foreach (User::loadMultiple() as $user) {
@@ -101,6 +101,26 @@ function mcapi_tester_uninstall() {
     }
   }
   field_purge_batch(5);
+}
+
+/**
+ * implements hook_modules_uninstalled() for module mcapi_exchanges, if installed
+ */
+function mcapi_exchanges_uninstall() {
+  //delete all transactions
+  mcapi_tester_delete_transactions();
+  //delete all the provided currencies
+  foreach (Currency::loadMultiple(array('pp', 'mm', 'ss', 'jj')) as $currency) {
+    $currency->delete();
+  }
+  //delete all exchanges except 1
+  foreach (Exchange::loadMultiple() as $exchange) {
+    if ($exchange->id() > 1) {
+      $exchange->delete();
+    }
+  }
+  put_users_in_exchanges();
+  drupal_set_message('Removed all testing currencies and exchanges.');
 }
 
 function mcapi_tester_delete_transactions() {

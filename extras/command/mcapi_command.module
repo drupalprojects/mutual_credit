@@ -5,19 +5,6 @@ use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Transaction;
 
 
-/**
- * implements hook_mcapi_permissions().
- * puts all the mcapi permissions together on the permissions page
- */
-function mcapi_command_mcapi_permissions() {
-  return array(
-    'transact via sms' => array(
-      'title' => t('Transact via sms'),
-      'description' => t("Register new transactions over SMS"),
-    )
-  );
-}
-
 /*
  * returns a message
  */

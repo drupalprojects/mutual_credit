@@ -10,6 +10,8 @@ namespace Drupal\mcapi\Plugin\views\field;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\Component\Annotation\PluginID;
 use Drupal\views\ResultRow;
+use Drupal\views\ViewExecutable;
+use Drupal\views\Plugin\views\display\DisplayPluginBase;
 
 /**
  * Field handler for the name of the transaction state
@@ -20,8 +22,10 @@ use Drupal\views\ResultRow;
  */
 class State extends FieldPluginBase {
 
-  function query() {
-    parent::query();
+  private $states;
+
+  function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+    parent::init($view, $display, $options);//is this needed?
     $this->states = mcapi_entity_label_list('mcapi_state');
   }
 

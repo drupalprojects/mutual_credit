@@ -17,11 +17,11 @@ use Drupal\views\Plugin\views\field\FieldPluginBase;
 /**
  * Field handler to provide simple renderer that allows linking to a transaction.
  * Definition terms:
- * - link_to_transaction default: Should this field have the checkbox "link to transaction" enabled by default.
+ * - link_to_transaction default: //TODO Should this field have the checkbox "link to transaction" enabled by default.
  *
  * @ingroup views_field_handlers
  *
- * @ViewsField("entity")
+ * @ViewsField("mcapi_entity")
  */
 class McapiEntity extends FieldPluginBase {
 
@@ -71,7 +71,7 @@ class McapiEntity extends FieldPluginBase {
     if (!empty($this->options['link_to_transaction'])&& !empty($this->additional_fields['serial'])) {
       if ($data !== NULL && $data !== '') {
         $this->options['alter']['make_link'] = TRUE;
-        $this->options['alter']['path'] = $this->getEntity($values)->url()
+        $this->options['alter']['path'] = $this->getEntity($values)->url();
         if (isset($this->aliases['langcode'])) {
           $languages = language_list();
           $langcode = $this->getValue($values, 'langcode');

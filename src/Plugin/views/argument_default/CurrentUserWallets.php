@@ -28,7 +28,7 @@ class CurrentUserWallets extends ArgumentDefaultPluginBase {
    */
   public function getArgument() {
     $account = User::load(\Drupal::currentUser()->id());
-    $ids = \Drupal\mcapi\Storage\WalletStorage::getOwnedWalletIds($account);
+    $ids = \Drupal\mcapi\Storage\WalletStorage::getOwnedIds($account);
     return implode('+', $ids);
   }
 

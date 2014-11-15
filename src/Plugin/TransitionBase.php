@@ -138,10 +138,9 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    * {@inheritdoc}
    */
   public function getConfiguration($key = NULL) {
-    if ($key) {
-      return @$this->configuration[$key];
-    }
-    return $this->configuration;
+    return $key ? 
+      @$this->configuration[$key] :
+      $this->configuration;
   }
 
   /**
@@ -185,6 +184,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    * {@inheritdoc}
    */
   public function calculateDependencies() {
+    die('calculating dependencies');
     return array(
       'module' => array('mcapi')
     );

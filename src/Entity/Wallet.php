@@ -8,6 +8,7 @@
 namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
@@ -16,6 +17,7 @@ use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\mcapi\Entity\Exchange;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\WalletInterface;
+use Drupal\Core\Cache\Cache;
 
 /**
  * Defines the wallet entity.
@@ -57,6 +59,16 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
   private $stats = array();
   //access settings
   private $access;
+  
+  static function ___create(array $values = array()) {
+    //trying to inject storage or even entityManager
+    echo ('wallet::create');mdump($values);
+    return $values;
+  }
+  static function createInstance(array $values = array()) {
+    //trying to inject storage or even entityManager
+    die('Wallet::createInstance');
+  }
 
   /**
    * {@inheritdoc}
@@ -203,6 +215,12 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
 
     $fields['orphaned'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Orphaned'));
+    
+    //TODO in beta2, this field is required by views. Delete if pos
+    $fields['langcode'] = BaseFieldDefinition::create('language')
+    ->setLabel(t('Language code'))
+    ->setDescription(t('language code.'))
+    ->setSettings(array('default_value' => 'und'));
 
     return $fields;
   }
@@ -328,15 +346,26 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     }
     return $this->entitymanager()->getStorage('mcapi_transaction')->filter($conditions);
   }
+  
+  /**
+   * @see \Drupal\mcapi\Storage\WalletInterface::spare()
+   */
+  public static function spare(ContentEntityInterface $owner) {
+    //check the number of wallets already owned against the max for this entity type
+    $bundle = $owner->getEntityTypeId().':'.$owner->bundle();
+    $max = \Drupal::config('mcapi.wallets')->get('entity_types.'.$bundle);
+    $owned = \Drupal\mcapi\Storage\WalletStorage::getOwnedIds($owner);
+    return count($owned) < $max;
+  }
 
   /**
    * (non-PHPdoc)
    * @see \Drupal\mcapi\WalletInterface::orphan()
    */
-  static function orphan(EntityInterface $owner) {
+  static function orphan(ContentEntityInterface $owner) {
     if($exchanges = Exchange::referenced_exchanges($owner, FALSE)) {
       $exchange = current($exchanges);//if the parent entity was in more than one exchange, this will pick a random one to take ownership
-      if ($wids = \Drupal\mcapi\Storage\WalletStorage::getOwnedWalletIds($owner, TRUE)) {
+      if ($wids = \Drupal\mcapi\Storage\WalletStorage::getOwnedIds($owner, TRUE)) {
         foreach (Wallet::loadMultiple($wids) as $wallet) {
           //if there are transactions change parent, otherwise delete
           if (\Drupal\mcapi\Storage\TransactionStorage::filter(array('involving' => $wallet->id()))) {
@@ -360,12 +389,35 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
         }
       }
     }
+  }
 
+  /**
+   * {@inheritdoc}
+   */
+  static function ownedBy(ContentEntityInterface $entity) {
+    return \Drupal::EntityManager()
+      ->getStorage('mcapi_wallet')
+      ->getOwnedIds($entity);
+  }
+  
+  /**
+   * {inheritdoc}
+   * overrides parent function to also invalidate the wallet's parent's tag
+   */
+  protected function invalidateTagsOnSave($update) {
+    $tags = $this->getEntityType()->getListCacheTags();
+    //invalidate the parent, especially the entity view, see mcapi_entity_view()
+    $tags = Cache::mergeTags($tags, array($this->entity_type->value.':'.$this->pid->value));
+    if ($update) {
+      // An existing entity was updated, also invalidate its unique cache tag.
+      $tags = Cache::mergeTags($tags, $this->getCacheTag());
+    }
+    Cache::invalidateTags($tags);
   }
 
   /**
    * Check if an entity is the owner of a wallet
-   * @todo this is really a constant, but constants can't store arrays
+   * @todo this is really a constant, but constants can't store arrays. What @todo?
    *
    * @return array
    *   THE list of permissions used by walletAccess. Note this is not connected
@@ -384,9 +436,9 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
 
   /**
    * Check if an entity is the owner of a wallet
-   * @todo this is really a constant, but constants can't store arrays
+   * @todo this is really a constant, but constants can't store arrays. What @todo?
    *
-   * @return ops
+   * @return array
    *   THE list of ops because arrays cannot be stored in constants
    */
   public static function ops() {

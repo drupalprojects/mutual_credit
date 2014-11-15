@@ -8,7 +8,6 @@
 namespace Drupal\mcapi;
 
 use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Provides an interface defining an exchange entity.
@@ -110,8 +109,29 @@ interface WalletInterface extends ContentEntityInterface {
    * If the wallet has no transactions it can be deleted
    * Otherwise make the passed exchange the parent, must be found.
    *
-   * @param EntityInterface $owner
+   * @param ContentEntityInterface $owner
    */
-  static function orphan(EntityInterface $owner);
+  static function orphan(ContentEntityInterface $owner);
 
+  /**
+   * get the ids of the wallets owned by the given entity
+   *
+   * @param ContentEntityInterface $entity
+   *
+   * @return array
+   *   wallet ids belonging to the passed entity
+   */
+  public static function ownedBy(ContentEntityInterface $entity);
+  
+  
+  /**
+   * check if the max number of wallets has been reached for that entity
+   *
+   * @param ContentEntityInterface $owner
+   *
+   * @return boolean
+   *   TRUE if the limit has not been reached
+   */
+  public static function spare(ContentEntityInterface $owner);
+    
 }

@@ -230,7 +230,7 @@ display:
           validate_options: {  }
           plugin_id: standard
           provider: views
-      field_langcode: '***CURRENT_LANGUAGE***'
+      field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
   tradable_wallets:
     display_plugin: page
@@ -240,7 +240,7 @@ display:
     display_options:
       path: wallets
       display_comment: "There isn't really a use-case for this, especially as its not possible to filter by the exchange of the owner so its not in the menu system.\n@todo make a non-views display of all wallets whos owners are in a given exchange"
-      field_langcode: '***CURRENT_LANGUAGE***'
+      field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
       arguments: {  }
       defaults:

@@ -439,6 +439,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 
+    //TODO in beta2, this field is required by views. Delete if pos
+    $fields['langcode'] = BaseFieldDefinition::create('language')
+    ->setLabel(t('Language code'))
+    ->setDescription(t('language code.'))
+    ->setSettings(array('default_value' => 'und'));
+    
     return $fields;
   }
 

@@ -522,7 +522,7 @@ display:
           field: created_year
           plugin_id: date_year
           provider: views
-      field_langcode: '***CURRENT_LANGUAGE***'
+      field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
   embed_1:
     display_plugin: embed
@@ -530,7 +530,7 @@ display:
     display_title: Embed
     position: 1
     display_options:
-      field_langcode: '***CURRENT_LANGUAGE***'
+      field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
   page_1:
     display_plugin: page
@@ -548,6 +548,6 @@ display:
         weight: 3
         context: '0'
       enabled: false
-      field_langcode: '***CURRENT_LANGUAGE***'
+      field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
 

@@ -68,4 +68,19 @@ class State extends ConfigEntityBase {
   function __toString() {
     return $this->id;
   }
+  
+  
+/**
+ * get a string suitable describing the states
+ * @return string
+ *   the label and description of every state.
+ * NOT CURRENTLY USED
+ */
+  public static function descriptions() {
+  foreach (State::loadMultiple() as $state) {
+    //we'll save the translators the effort...
+    $desc[] = $state->label .' - '. $state->description .'.';
+  }
+  return t('State explanations: @explanations', array('@explanations' => implode(' | ', $desc)));
+}
 }

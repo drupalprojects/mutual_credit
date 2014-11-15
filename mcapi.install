@@ -82,18 +82,16 @@ function mcapi_modules_installed($modules) {
   \Drupal::moduleHandler()->uninstall(array('mcapi_tester'));
   use Drupal\field\Entity\FieldStorageConfig;
   FieldStorageConfig::load('mcapi_transaction.worth')->delete();
-  //FieldStorageConfig::load('mcapi_exchange.currencies')->delete();
-  //FieldStorageConfig::load('user.exchanges')->delete();
+  FieldStorageConfig::load('mcapi_exchange.currencies')->delete();
+  FieldStorageConfig::load('user.exchanges')->delete();
   field_purge_batch(10000);
 
 $extension_config = \Drupal::config('core.extension');
-$extension_config->clear("module.mcapi")->save();
 db_drop_table('mcapi_transaction');
 db_drop_table('mcapi_exchange');
 db_drop_table('mcapi_transactions_index');
 db_drop_table('mcapi_wallet');
 db_drop_table('mcapi_wallets_access');
-db_drop_table('mcapi_wallet_exchange');
 db_drop_table('mcapi_wallet_exchanges_index');
 db_drop_table('mcapi_transaction__worth');
 db_drop_table('mcapi_exchange__currencies');

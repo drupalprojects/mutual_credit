@@ -133,6 +133,8 @@ function mcapi_1stparty_transaction_tokens() {
   unset($tokens[array_search('state', $tokens)]);
   unset($tokens[array_search('serial', $tokens)]);
   unset($tokens[array_search('creator', $tokens)]);
+  //TODO remove this if it isn't required. @see Transaction::baseFieldDefinitions()
+  unset($tokens[array_search('langcode', $tokens)]);
   //replace payer and payee with partner and direction
   $tokens[array_search('payer', $tokens)] = 'partner';
   $tokens[array_search('payee', $tokens)] = 'mywallet';

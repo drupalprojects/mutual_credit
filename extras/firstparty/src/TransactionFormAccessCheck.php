@@ -34,7 +34,7 @@ class TransactionFormAccessCheck extends EntityAccessCheck {
   public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
     $result = AccessResult::forbidden();//TODO when to invalidate this?
     $user = User::load($account->id());
-    if ($wids = \Drupal::entityManager()->getStorage('mcapi_wallet')->getOwnedWalletIds($user)) {
+    if ($wids = \Drupal::entityManager()->getStorage('mcapi_wallet')->getOwnedIds($user)) {
       $editform = FirstPartyFormDesign::load($route->getOption('parameters')['1stparty_editform']);
       //TODO the caching
       if ($account->hasPermission('configure mcapi')) {

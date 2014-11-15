@@ -21,28 +21,6 @@ class WalletStorageSchema extends SqlContentEntityStorageSchema {
   protected function getEntitySchema(ContentEntityTypeInterface $entity_type, $reset = FALSE) {
     $schema = parent::getEntitySchema($entity_type, $reset = FALSE);
 
-    //todo put this in a separate file WalletStorageSchema
-    $schema['mcapi_wallet_exchanges_index'] = array(
-      'description' => "Index to look up wallets parents' exchanges",
-      'fields' => array(
-        'wid' => array(
-          'description' => 'the wallet ID',
-          'type' => 'int',
-          'size' => 'normal',
-          'not null' => TRUE,
-        ),
-        'exid' => array(
-          'description' => 'the exchange ID',
-          'type' => 'int',
-          'not null' => TRUE,
-          'default' => 0,
-        )
-      ),
-      'unique keys' => array(
-        'wid_exid' => array('wid', 'exid'),
-      )
-    );
-
     $schema['mcapi_wallet'] += array(
       'foreign keys' => array(
         'mcapi_transactions_payee' => array(
@@ -78,7 +56,29 @@ class WalletStorageSchema extends SqlContentEntityStorageSchema {
       'unique keys' => array(
         'walletUserPerm' => array('wid', 'operation', 'uid'),
       ),
-      //this table has no keys
+    );
+    
+    //this belongs with the wallet entity not the exchange entity because
+    //the read/write funcations are activated by wallet hooks, not exchange hooks
+    $schema['mcapi_wallet_exchanges_index'] = array(
+      'description' => "Index to look up wallets parents' exchanges",
+      'fields' => array(
+        'wid' => array(
+          'description' => 'the wallet ID',
+          'type' => 'int',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ),
+        'exid' => array(
+          'description' => 'the exchange ID',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0,
+        )
+      ),
+      'unique keys' => array(
+        'wid_exid' => array('wid', 'exid'),
+      )
     );
     return $schema;
   }

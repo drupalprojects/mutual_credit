@@ -1,0 +1,5 @@
+'transact via sms':
+  title: 'Transact via SMS'
+  description: 'Register new transactions over SMS'
+  'restrict access': FALSE
+

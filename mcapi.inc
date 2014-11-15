@@ -179,7 +179,7 @@ function mcapi_view_wallets_summaries(ContentEntityInterface $entity) {
   $renderable = array();
   $owned_wallet_ids = \Drupal::EntityManager()
     ->getStorage('mcapi_wallet')
-    ->getOwnedWalletIds($entity);
+    ->getOwnedIds($entity);
   foreach (Wallet::loadMultiple($owned_wallet_ids) as $wallet) {
     if ($wallet->access('view')) {
       $renderable['wallets']['#wallets'][] = show_wallet_summary($wallet);
@@ -423,12 +423,18 @@ function mcapi_transaction_process_vars(array &$vars, TransactionInterface $tran
   $v['state'] = State::load($transaction->type->entity->start_state)->label;
   $v['type'] = $transaction->type->entity->label;
   $v['serial'] = $transaction->serial->value;
-  $payer_wallet_owner = $transaction->payer->entity->getOwner();
-  $payee_wallet_owner = $transaction->payee->entity->getOwner();
-  $v['payer'] = \Drupal::l($payer_wallet_owner->label(), $payer_wallet_owner->url());
-  $v['payee'] = \Drupal::l($payee_wallet_owner->label(), $payee_wallet_owner->url());
-  $v['creator'] = $transaction->creator->entity->label();
-  //TODO we've avoided rendering the field with its 3 nested divs, but do we have a security issue now?
+  foreach (['payer', 'payee'] as $trader) {
+    $owner = $transaction->{$trader}->entity->getOwner();
+    if ($owner->hasLinkTemplate('canonical')) {
+      $v[$trader] = $owner->link();
+    }
+    //if there is no canonical link to this entity just link to the wallet itself
+    else {
+      $v[$trader] = $transaction->{$trader}->entity->link();
+    }
+  }
+  $v['creator'] = $transaction->creator->entity->link();
+  //TODO do we need to sanitise this or does the theme engine do it?
   $v['description'] = $transaction->description->getString();
 
   //NB the transaction certificate, which uses entity_view_display overwrites field with display options, i.e. this one!
@@ -436,8 +442,8 @@ function mcapi_transaction_process_vars(array &$vars, TransactionInterface $tran
   $v['worth'] = $transaction->worth->view();
 
   //TODO LEAVE THIS TILL AFTER alpha 11
-  //$v['created'] = format_date($transaction->created->value, 'medium', '', NULL, Language::LANGCODE_DEFAULT);
-  $v['created'] = 'T.B.D.';
+  $v['created'] = format_date($transaction->created->value, 'medium', '', NULL, Language::LANGCODE_DEFAULT);
+  //$v['created'] = 'T.B.D.';
 
   //the token service lets you pass url options, but this function doesn't
   $v['url'] = $transaction->url('canonical');
@@ -526,7 +532,7 @@ function mcapi_workflow_help() {
 }
 
 
-/*
+/**
  * helper function to get the token names for helptext token service and twig
  * get the entity properties from mcapi_token_info, then the fieldapi fields
  * this function would be handy for any entity_type, so something equivalent may exist already
@@ -562,6 +568,7 @@ function bundles_in_exchanges() {
   }
   return $bundles;
 }
+
 
 /**
  * Submit callback for ContentEntity Forms

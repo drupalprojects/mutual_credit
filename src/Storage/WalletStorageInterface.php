@@ -22,17 +22,8 @@ interface WalletStorageInterface extends EntityStorageInterface {
    *
    * @todo REPLACE this with $this->filter()
    */
-  public static function getOwnedWalletIds(ContentEntityInterface $entity);
+  public static function getOwnedIds(ContentEntityInterface $entity);
 
-  /**
-   * check if the max number of wallets has been reached for that entity
-   *
-   * @param ContentEntityInterface $owner
-   *
-   * @return boolean
-   *   TRUE if the limit has not been reached
-   */
-  public function spare(ContentEntityInterface $owner);
 
   /**
    * get a selection of wallets, according to $conditions

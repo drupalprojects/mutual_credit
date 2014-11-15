@@ -1,4 +1,3 @@
-
 #exchanges
 mcapi.admin_exchange_list:
   path: '/admin/accounting/exchanges'

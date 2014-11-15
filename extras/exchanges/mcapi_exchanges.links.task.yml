@@ -1,4 +1,8 @@
-#view/edit tabs on exchange entity
+mcapi.exchange.list.tab:
+  route_name: mcapi.admin_exchange_list
+  title: List
+  base_route: mcapi.admin_exchange_list
+  weight: 0
 mcapi.exchange.view.tab:
   route_name: mcapi.exchange.view
   title: View

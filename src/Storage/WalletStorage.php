@@ -14,11 +14,6 @@ use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\mcapi\Entity\Exchange;
 
-/**
- * This is an unfieldable content entity. But if we extend the EntityDatabaseStorage
- * instead of the ContentEntityDatabaseStorage then the $values passed to the create
- * method work very differently, putting NULL in all database fields
- */
 class WalletStorage extends SqlContentEntityStorage implements WalletStorageInterface {
 
   /**
@@ -27,9 +22,8 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
    * @see Drupal\user\UserStorage::mapFromStorageRecords
    */
   function mapFromStorageRecords(array $records) {
-    //if (!$records) return array();
     //add the access settings to each wallet
-    $q = db_select('mcapi_wallets_access', 'a')
+    $q = $this->database->select('mcapi_wallets_access', 'a')
       ->fields('a', array('wid', 'operation', 'uid'))
       ->condition('wid', array_keys($records));
 
@@ -53,10 +47,10 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
   }
 
   /**
-   * @see \Drupal\mcapi\Storage\WalletStorageInterface::getOwnedWalletIds()
-   * @todo probably useful to have a flag for excluding _intertrading wallets
+   * @see \Drupal\mcapi\Storage\WalletStorageInterface::getOwnedIds()
    */
-  static function getOwnedWalletIds(ContentEntityInterface $entity, $intertrading = FALSE) {
+  static function getOwnedIds(ContentEntityInterface $entity, $intertrading = FALSE) {
+    //This is functionality equivalent to, but faster than entity_load_multiple_by_properties()
     $q = db_select('mcapi_wallet', 'w')
       ->fields('w', array('wid'))
       ->condition('entity_type', $entity->getEntityTypeId())
@@ -66,27 +60,8 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
       $q->condition('w.name', '_intertrading', '<>');
     }
     return $q->execute()->fetchCol();
-    /*N.B. the above is functionality equivalent to, but faster than
-    return entity_load_multiple_by_properties('mcapi_wallet',
-      array(
-        'pid' => $entity->id(),
-        'entity_type' => $entity->getEntityTypeId(),
-        'orphaned' => FALSE
-      )
-    );*/
   }
 
-  /**
-   * @see \Drupal\mcapi\Storage\WalletStorageInterface::spare()
-   */
-  function spare(ContentEntityInterface $owner) {
-    //check the number of wallets already owned against the max for this entity type
-    $wids = $this->getOwnedWalletIds($owner);
-    $bundle = $owner->getEntityTypeId().':'.$owner->bundle();
-    $max = \Drupal::config('mcapi.wallets')->get('entity_types.'.$bundle);
-    if (count($wids) < $max) return TRUE;
-    return FALSE;
-  }
 
   /**
    * (non-PHPdoc)
@@ -106,7 +81,7 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
       //get all the wallets in all the exchanges mentioned
       //this is easier than trying to join with all the wallet owner base entity tables
       //static function means we have to call up this object again
-      $conditions['wids'] = mcapi_wallets_in_exchanges($conditions['exchanges']);
+      $conditions['wids'] = Self::inExchanges($conditions['exchanges']);
     }
     if (array_key_exists('wids', $conditions)) {
       $query->condition('w.wid', $conditions['wids']);
@@ -193,25 +168,7 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
    */
   function doSave($wid, EntityInterface $wallet) {
     parent::doSave($wid, $wallet);
-    $wid = $wallet->id();//in case it was new
-    $this->dropIndex(array($wid));
-
-    //update the access settings
-    //I couldn't get merge to work with multiple rows, so removed the table key and doing it manually
-    $q = db_insert('mcapi_wallets_access')->fields(array('wid', 'permission', 'value'));
-    foreach ($wallet->ops() as $op) {
-      if (is_array($wallet->{$op})) {
-        foreach ($wallet->$op as $value) {
-          $value = array(
-            'wid' => $wallet->wid->value,
-            'permission' => $op,
-            'value' => $value
-          );
-          $q->values();
-        }
-      }
-    }
-    if (isset($value))$q->execute();
+    $this->reIndex(array($wallet->id() => $wallet));
   }
 
   /**
@@ -220,12 +177,96 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
    */
   function doDelete($entities) {
     parent::doDelete($entities);
-    $this->dropIndex(array_keys($entities));
+    $this->dropIndex($entities);
+  }
+  
+  /**
+   * 
+   * @param array \Drupal\mcapi\Entity\Wallet[]
+   *   keyed by wallet id
+   */
+  public function reIndex(array $wallets) {
+    $this->dropIndex($wallets);
+    $access_query = $this->database->insert('mcapi_wallets_access')
+      ->fields(array('wid', 'permission', 'value'));
+    
+    $exchange_query = db_insert('mcapi_wallet_exchanges_index')
+    ->fields(array('wid', 'exid'));
+    
+    foreach ($wallets as $wid => $wallet) {
+      foreach (Wallet::ops() as $op) {
+        if (is_array($wallet->{$op})) {
+          foreach ($wallet->$op as $value) {
+            $access_values = array(
+              'wid' => $wid(),
+              'permission' => $op,
+              'value' => $value
+            );
+            debug($access_values);
+            $access_query->values($access_values);
+          }
+        }
+      }
+      
+      /**
+       * rewrite the wallet/exchange index. This must run:
+       * - after the wallet is saved,
+       * - when the owner has moved exchanges
+       * So might want this in its own function
+       */
+      foreach (array_keys(Exchange::referenced_exchanges($wallet->getOwner())) as $exid) {
+        $exchange_values = array(
+          'wid' => $wid,
+          'exid' => $exid
+        );
+        $exchange_query->values($exchange_values);
+      }
+    }
+    if (isset($access_values)) {
+      $access_query->execute();
+    }
+    if (isset($exchange_values)) {
+      $exchange_query->execute();
+    }
+  }
+  
+  /**
+   * 
+   * @param array $wids
+   */
+  private function dropIndex(array $wallets) {
+    if ($wids = array_keys($wallets)) {
+      $this->database->delete('mcapi_wallets_access')
+        ->condition('wid', $wids)
+        ->execute();
+      //NB this looks in the entity table to rewrite the index
+      $this->database->delete('mcapi_wallet_exchanges_index')
+      ->condition('wid', $wids)
+      ->execute();
+    }
   }
 
-  private function dropindex($wids) {
-    db_delete('mcapi_wallets_access')->condition('wid', $wids);
+  /**
+   * Get all the wallet ids in given exchanges.
+   * this can also be done with Wallet::filter() but is quicker.
+   * maybe not worth it if this is only used once, in any case the index table is needed for views.
+   * Each wallet owner has a required entity reference field pointing to exchanges.
+   * 
+   * @param array $exchange_ids
+   *
+   * @return array
+   *   the non-orphaned wallet ids from the given exchanges
+   *
+   * @todo refactor this so the table name is in the wallet storage controller
+   */
+  //function mcapi_wallets_in_exchanges(array $exchange_ids) {
+  public static function inExchanges(array $exchange_ids) {
+    $query = db_select('mcapi_wallet_exchanges_index', 'w')
+    ->fields('w', array('wid'));
+    if ($exchange_ids) {
+      $query->condition('exid', $exchange_ids);
+    }
+    return $query->execute()->fetchCol();
   }
-
 }
 

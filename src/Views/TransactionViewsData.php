@@ -10,7 +10,7 @@ namespace Drupal\mcapi\Views;
 
 use Drupal\views\EntityViewsDataInterface;
 
-if (!class_exists('TransactionViewsData')) {//TODO remove this I don't know how it is included twice
+//if (!class_exists('TransactionViewsData')) {//TODO remove this I don't know how it is included twice
 class TransactionViewsData implements EntityViewsDataInterface {
   /**
    * {@inheritdoc}
@@ -120,7 +120,9 @@ class TransactionViewsData implements EntityViewsDataInterface {
         'id' => 'mcapi_state',
       ),
       'filter' => array(
-        'id' => 'mcapi_state',
+        'id' => 'in_operator',
+        'options callback' => 'mcapi_entity_label_list',
+        'options arguments' => array('mcapi_state')
       ),
       'sort' => array(
         'id' => 'standard',
@@ -134,7 +136,9 @@ class TransactionViewsData implements EntityViewsDataInterface {
         'id' => 'standard',
       ),
       'filter' => array(
-        'id' => 'mcapi_type',
+        'id' => 'in_operator',
+        'options callback' => 'mcapi_entity_label_list',
+        'options arguments' => array('mcapi_type')
       ),
       'sort' => array(
         'id' => 'standard',
@@ -298,12 +302,13 @@ class TransactionViewsData implements EntityViewsDataInterface {
 
     $data['mcapi_transactions_index']['state'] = array(
       'title' => t('State'),
-      'help' => t('The name of the workflow state of the transaction'),
+      'help' => t('The name of the workflow state of the transaction.') .' '. t("'Counted' states only."),
       'field' => array(
         'id' => 'mcapi_state',
       ),
       'filter' => array(
-        'id' => 'mcapi_state',
+        'id' => 'in_operator',
+        'options callback' => 'mcapi_views_states',
       ),
       'sort' => array(
         'id' => 'standard',
@@ -312,12 +317,14 @@ class TransactionViewsData implements EntityViewsDataInterface {
 
     $data['mcapi_transactions_index']['type'] = array(
       'title' => t('Type'),
-      'help' => t('Which form or module which created the transaction'),
+      'help' => t('Which form or module which created the transaction.'),
       'field' => array(
         'id' => 'standard',
       ),
       'filter' => array(
-        'id' => 'mcapi_type',
+        'id' => 'in_operator',
+        'options callback' => 'mcapi_entity_label_list',
+        'options arguments' => array('mcapi_type')
       ),
       'sort' => array(
         'id' => 'standard',
@@ -460,4 +467,4 @@ class TransactionViewsData implements EntityViewsDataInterface {
     return $data;
   }
 }
-}
+//}

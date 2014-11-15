@@ -1,9 +1,9 @@
+uuid: 40926d09-f579-4cb0-bc01-1f8b1daa2275
 langcode: en
 status: true
 dependencies:
   module:
-    - field
-    - mcapi
+    - user
 id: exchange_members
 label: 'Exchange members'
 module: views
@@ -21,6 +21,8 @@ display:
     display_options:
       path: exchange/%/members
       display_comment: 'This is a very special view using 3 handlers not in Drupal Core. It support local exchange managers to see and edit blocked and active users while giving everyone else a normal looking list. Use this as a starting point for your own member-per-exchange view.'
+      field_langcode: '***LANGUAGE_language_content***'
+      field_langcode_add_to_query: null
   default:
     display_plugin: default
     id: default
@@ -41,7 +43,7 @@ display:
           disable_sql_rewrite: false
           distinct: false
           slave: false
-          query_comment: ''
+          query_comment: false
           query_tags: {  }
       exposed_form:
         type: basic
@@ -56,33 +58,33 @@ display:
       pager:
         type: full
         options:
-          items_per_page: '20'
-          offset: '0'
-          id: '0'
-          total_pages: ''
+          items_per_page: 20
+          offset: 0
+          id: 0
+          total_pages: null
           tags:
             previous: '‹ previous'
             next: 'next ›'
             first: '« first'
             last: 'last »'
           expose:
-            items_per_page: 0
+            items_per_page: false
             items_per_page_label: 'Items per page'
             items_per_page_options: '5, 10, 20, 40, 60'
-            items_per_page_options_all: 0
+            items_per_page_options_all: false
             items_per_page_options_all_label: '- All -'
-            offset: 0
+            offset: false
             offset_label: Offset
-          quantity: '9'
+          quantity: 9
       style:
         type: table
         options:
           grouping: {  }
           row_class: ''
-          default_row_class: 1
+          default_row_class: true
           row_class_special: 1
-          override: 1
-          sticky: 0
+          override: true
+          sticky: false
           caption: ''
           summary: ''
           description: ''
@@ -91,19 +93,19 @@ display:
             edit_node: edit_node
           info:
             name:
-              sortable: 0
+              sortable: false
               default_sort_order: asc
               align: ''
               separator: ''
-              empty_column: 0
+              empty_column: false
               responsive: ''
             edit_node:
               align: ''
               separator: ''
-              empty_column: 1
+              empty_column: true
               responsive: ''
           default: '-1'
-          empty_table: 0
+          empty_table: false
       row:
         type: 'entity:user'
         options:
@@ -112,27 +114,43 @@ display:
       fields:
         name:
           id: name
-          table: users
+          table: users_field_data
           field: name
-          provider: user
-          label: ''
-          alter:
-            alter_text: 0
-            make_link: 0
-            absolute: 0
-            trim: 0
-            word_boundary: 0
-            ellipsis: 0
-            strip_tags: 0
-            html: 0
-          hide_empty: 0
-          empty_zero: 0
-          link_to_user: 1
-          overwrite_anonymous: 0
           relationship: none
           group_type: group
           admin_label: ''
+          dependencies:
+            module:
+              - user
+          label: Name
           exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: ''
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
@@ -142,76 +160,32 @@ display:
           element_wrapper_class: ''
           element_default_classes: true
           empty: ''
+          hide_empty: false
+          empty_zero: false
           hide_alter_empty: true
+          link_to_user: true
+          overwrite_anonymous: false
           anonymous_text: ''
           format_username: true
-        edit_node:
-          id: edit_node
-          table: users
-          field: edit_node
-          relationship: none
-          group_type: group
-          admin_label: ''
-          label: 'Link to edit user'
-          exclude: 0
-          alter:
-            alter_text: 0
-            text: ''
-            make_link: 0
-            path: ''
-            absolute: 0
-            external: 0
-            replace_spaces: 0
-            path_case: none
-            trim_whitespace: 0
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: 0
-            max_length: ''
-            word_boundary: 1
-            ellipsis: 1
-            more_link: 0
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: 0
-            trim: 0
-            preserve_tags: ''
-            html: 0
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: 1
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: 1
-          empty: ''
-          hide_empty: 0
-          empty_zero: 0
-          hide_alter_empty: 1
-          text: 'blah edit'
-          permission: 'administer users'
-          plugin_id: admin_link_edit
-          provider: mcapi_tester
+          plugin_id: user_name
+          provider: user
       filters:
         status:
-          permission: 'manage own exchanges'
           id: status
-          table: users
+          table: users_field_data
           field: status
           relationship: none
           group_type: group
           admin_label: ''
+          dependencies:
+            module:
+              - views
           operator: '='
-          value: '1'
-          group: '1'
+          value: true
+          group: 1
           exposed: false
           expose:
-            operator_id: false
+            operator_id: ''
             label: ''
             description: ''
             use_operator: false
@@ -230,7 +204,7 @@ display:
             optional: true
             widget: select
             multiple: false
-            remember: 0
+            remember: false
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
@@ -252,32 +226,34 @@ display:
           default_action: default
           exception:
             value: all
-            title_enable: 0
+            title_enable: false
             title: All
-          title_enable: 1
+          title_enable: true
           title: 'Members of %1'
-          default_argument_type: exchange
           default_argument_options: {  }
-          default_argument_skip_url: 0
+          default_argument_skip_url: false
           summary_options:
             base_path: ''
-            count: '1'
-            items_per_page: '25'
-            override: 0
+            count: true
+            items_per_page: 25
+            override: false
           summary:
             sort_order: asc
-            number_of_records: '0'
+            number_of_records: 0
             format: default_summary
-          specify_validation: 0
+          specify_validation: false
           validate:
             type: none
             fail: 'not found'
           validate_options: {  }
-          break_phrase: 0
-          not: 0
+          break_phrase: false
+          not: false
           plugin_id: numeric
           provider: views
       filter_groups:
         operator: AND
         groups: {  }
       title: Members
+      field_langcode: '***LANGUAGE_language_content***'
+      field_langcode_add_to_query: null
+

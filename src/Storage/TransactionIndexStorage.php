@@ -10,7 +10,6 @@
  * All transaction storage works with individual Drupalish entities and the xid key
  * Only at a higher level do transactions have children and work with serial numbers
  *
- *
  */
 
 namespace Drupal\mcapi\Storage;
@@ -33,27 +32,32 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   public function postSave(EntityInterface $entity, $update = FALSE) {
     //alternatively how about a db_merge? would be quicker
     if ($update) {
-      db_delete('mcapi_transactions_index')->condition('serial', $entity->serial->value)->execute();
+      $this->database->delete('mcapi_transactions_index')
+        ->condition('serial', $entity->serial->value)
+        ->execute();
     }
+    
+    // we only index transactions in states which are 'counted'
+    if (!in_array($entity->state->target_id, mcapi_states_counted(TRUE))) return;
+    
     foreach ($entity->flatten() as $transaction) {
       $record = $this->mapToStorageRecord($transaction);//if this was an entity property it wouldn't need recalculating
-  
-      // we only index transactions in states which are 'counted'
-      if (!in_array($record->state, mcapi_states_counted(TRUE))) return;
-  
-      $query = db_insert('mcapi_transactions_index')
-        ->fields(array('xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'));
-  
-      $common = array(
+      
+      $common = [
         'xid' => $transaction->id(),
         'serial' => $record->serial,
         'state' => $record->state,
         'type' => $record->type,
         'created' => $record->created,
-        'child' => intval((bool)$record->parent)
-      );
+        'child' => intval((bool)$record->parent),
+        'exchange' => $record->exchange
+      ];
+      
+      $fields = ['xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child', 'exchange'];
+      $query = $this->database->insert('mcapi_transactions_index')->fields($fields);
+  
       foreach ($transaction->worth->getValue() as $worth) {
-        $query->values($common + array(
+        $query->values($common + [
           'wallet_id' => $record->payer,
           'partner_id' => $record->payee,
           'incoming' => 0,
@@ -61,8 +65,8 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
           'diff' => -$worth['value'],
           'curr_id' => $worth['curr_id'],
           'volume' => $worth['value']
-        ));
-        $query->values($common + array(
+        ]);
+        $query->values($common + [
           'wallet_id' => $record->payee,
           'partner_id' => $record->payer,
           'incoming' => $worth['value'],
@@ -70,7 +74,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
           'diff' => $worth['value'],
           'curr_id' => $worth['curr_id'],
           'volume' => $worth['value']
-        ));
+        ]);
       }
       $query->execute();
     }
@@ -113,7 +117,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   public function wipeslate($curr_id = NULL) {
     $serials = array();
     //get the serial numbers
-    $query = db_select("mcapi_transactions_index", 't')
+    $query = $this->database->select("mcapi_transactions_index", 't')
       ->fields('t', array('serial'));
 
     if ($curr_id) {
@@ -133,7 +137,8 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   public function indexRebuild() {
     $states = $this->counted_states();
     db_truncate('mcapi_transactions_index')->execute();
-    db_query("
+    //don't know how to do this with database API
+    $this->database->query("
       INSERT INTO {mcapi_transactions_index} (
         SELECT
           t.xid,
@@ -154,7 +159,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         WHERE state IN ($states)
       )"
     );
-    db_query(
+    $this->database->query(
       "INSERT INTO {mcapi_transactions_index} (
         SELECT
           t.xid,
@@ -180,10 +185,10 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::indexCheck()
    */
   public function indexCheck() {
-    if (db_query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
+    if ($this->database->query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
       $states = $this->counted_states();
-      $volume_index = db_query("SELECT sum(incoming) FROM {mcapi_transactions_index}")->fetchField();
-      $volume = db_query("SELECT sum(w.worth_value)
+      $volume_index = $this->database->query("SELECT sum(incoming) FROM {mcapi_transactions_index}")->fetchField();
+      $volume = $this->database->query("SELECT sum(w.worth_value)
         FROM {mcapi_transaction} t
         LEFT JOIN {mcapi_transaction__worth} w ON t.xid = w.entity_id AND t.state IN ($states)"
       )->fetchField();
@@ -195,20 +200,11 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::indexDrop()
    */
   public function indexDrop($serials) {
-    db_delete('mcapi_transactions_index')
+    $this->database->delete('mcapi_transactions_index')
       ->condition('serial', (array)$serials)
       ->execute();
   }
-
-  /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::nextSerial()
-   */
-  protected function nextSerial() {
-    //TODO: I think this needs some form of locking so that we can't get duplicate transactions.
-    return db_query("SELECT MAX(serial) FROM {mcapi_transactions_index}")->fetchField() + 1;
-  }
-
-
+  
   /**
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::filter()
    * Makes it unnecessary to query the entity table itself, unless you want payer/payee
@@ -281,7 +277,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   public function summaryData($wallet_id, array $conditions = array()) {
     //TODO We need to return 0 instead of null for empty columns
     //then get rid of the last line of this function
-    $query = db_select('mcapi_transactions_index', 'i')->fields('i', array('curr_id'));
+    $query = $this->database->select('mcapi_transactions_index', 'i')->fields('i', array('curr_id'));
     $query->addExpression('COUNT(DISTINCT i.serial)', 'trades');
     $query->addExpression('SUM(i.incoming)', 'gross_in');
     $query->addExpression('SUM(i.outgoing)', 'gross_out');
@@ -303,7 +299,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * @todo put this in the interface or delete it
    */
   public function balances ($curr_id, $wids = array(), array $conditions = array()) {
-    $query = db_select('mcapi_transactions_index', 'i')->fields('i', array('wallet_id'));
+    $query = $this->database->select('mcapi_transactions_index', 'i')->fields('i', array('wallet_id'));
     $query->addExpression('SUM(i.diff)', 'balance');
     if ($wids) {
       $query->condition('i.wallet_id', $wids);
@@ -321,7 +317,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   public function timesBalances($wallet_id, $curr_id, $since = 0) {
     //TODO cache this, and clear the cache whenever a transaction changes state or is deleted
     //this is a way to add up the results as we go along
-    db_query("SET @csum := 0");
+    $this->database->query("SET @csum := 0");//not sure which databases it works on
     //I wish there was a better way to do this.
     //It is cheaper to do stuff in mysql
     $all_balances = $this->database->query(
@@ -348,7 +344,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * feel free to implement this on the entity table
    */
   public function count($curr_id = '', $conditions = array(), $serial = FALSE) {
-    $query = db_select('mcapi_transactions_index', 't')
+    $query = $this->database->select('mcapi_transactions_index', 't')
       ->condition('t.incoming', 0);
     $query->addExpression('count(xid)');//how do we do this with countquery()
     if ($curr_id) {
@@ -363,7 +359,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * feel free to implement this on the entity table
    */
   function volume($curr_id, $conditions = array()) {
-    $query = db_select('mcapi_transactions_index', 't')
+    $query = $this->database->select('mcapi_transactions_index', 't')
       ->condition('incoming', 0);
     $query->addExpression('SUM(t.volume)');
     $query->condition('t.curr_id', $curr_id);
@@ -411,7 +407,8 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
  * @todo later we might want to provide a fuller interface for editing states
  * types, esp the name and description e.g. admin/accounting/workflow/states
  *
- * @todo cache this?
+ * @todo cache this to save loading all the state entities? static this? 
+ * @todo better still add this to the saved config on State::postSave
  *
  */
 function mcapi_states_counted($counted = TRUE) {

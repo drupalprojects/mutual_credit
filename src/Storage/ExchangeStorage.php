@@ -36,7 +36,7 @@ class ExchangeStorage extends SqlContentEntityStorage {
    * {@inheritdoc}
    */
   function using_currency(CurrencyInterface $currency) {
-    return db_select('mcapi_exchange__currencies', 'c')
+    return $this->database->select('mcapi_exchange__currencies', 'c')
       ->fields('c', array('entity_id'))
       ->condition('currencies_target_id', $currency->id())
       ->execute()->fetchCol();

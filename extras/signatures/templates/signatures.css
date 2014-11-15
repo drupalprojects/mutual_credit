@@ -1,6 +1,6 @@
 /* the watermark on the pending transaction certificate. NB this creates a big space at the top of the certificate */
 div.pending-bgstamp{
-  float: left,
+  float: left;
   margin: 0px 0 0 0px;
   position: relative;
   font-family:arial, helvetica;

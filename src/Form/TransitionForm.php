@@ -78,12 +78,12 @@ class TransitionForm extends EntityConfirmFormBase {
     $this->entity->noLinks = TRUE;
     //this provides the transaction_view part of the form as defined in the transition settings
     switch($this->transition->getConfiguration('format')) {
-    	case 'twig':
-    	  module_load_include('inc', 'mcapi');
-    	  return mcapi_render_twig_transaction($this->transition->getConfiguration('twig'), $this->entity);
-    	default://certificate or even sentence, but without the links
-    	  $renderable = entity_view($this->entity, $this->transition->getConfiguration('format'));
-    	  return drupal_render($renderable);
+      case 'twig':
+        module_load_include('inc', 'mcapi');
+        return mcapi_render_twig_transaction($this->transition->getConfiguration('twig'), $this->entity);
+      default://certificate or even sentence, but without the links
+        $renderable = entity_view($this->entity, $this->transition->getConfiguration('format'));
+        return drupal_render($renderable);
     }
   }
 
@@ -119,12 +119,12 @@ class TransitionForm extends EntityConfirmFormBase {
 
 
     //Left over from d7
-     //when the button is clicked replace the whole transaction div with the results.
-     $commands[] = ajax_command_replace('#transaction-'.$transaction->serial, drupal_render($form));
-     return array(
+    //when the button is clicked replace the whole transaction div with the results.
+    $commands[] = ajax_command_replace('#transaction-'.$transaction->serial, drupal_render($form));
+    return array(
       '#type' => 'ajax',
       '#commands' => $commands
-     );
+    );
 
     return $form;
   }
@@ -137,13 +137,12 @@ class TransitionForm extends EntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submit(array $form, FormStateInterface $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $transaction = $this->entity;
 
     //the op might have injected values into the form, so it needs to be able to access them
     $form_state->cleanValues();;
     $values = $form_state->getValues();
-
 
     unset($values['confirm'], $values['langcode']);
     try {

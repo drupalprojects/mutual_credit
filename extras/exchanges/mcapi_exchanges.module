@@ -8,33 +8,6 @@ use Drupal\mcapi\WalletInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\mcapi\McapiTransactionException;
 
-/**
- * implements hook_modules_uninstalled().
- * THIS ISN"T RUNNING move to mcapi_exchanges_uninstall
- *
- * @todo move to .install file, which in alpha14 isn't included
- */
-function mcapi_exchanges_uninstall() {
-//  if (in_array('mcapi_exchanges', $modules)) {
-    //delete all transactions
-    module_load_install('mcapi_tester');
-    mcapi_tester_delete_transactions();
-    //delete all the provided currencies
-    foreach (Currency::loadMultiple(array('pp', 'mm', 'ss', 'jj')) as $currency) {
-      $currency->delete();
-    }
-    //delete all exchanges except 1
-    foreach (Exchange::loadMultiple() as $exchange) {
-      if ($exchange->id() > 1) {
-        $exchange->delete();
-      }
-    }
-
-    put_users_in_exchanges();
-    echo 'Removed all testing currencies and exchanges.';
-    drupal_set_message('Removed all testing currencies and exchanges.');
-//  }
-}
 
 /**
  * implements hook_entity_info_alter().
@@ -62,6 +35,71 @@ function mcapi_exchanges_entity_type_alter(array &$entity_types) {
   $e->set('field_ui_base_route', "mcapi.admin_exchange_list");
 }
 
+/**
+ * implements hook_ENTITY_TYPE_load().
+ * add the 'exchange arguments to the transactions view
+ * @param type $entities
+ * @todo see if this works in mcapi"_exchanges.views.inc
+ */
+function mcapi_exchanges_view_load(&$entities) {
+  if (array_key_exists('mcapi_transactions', $entities)) {
+    $display = $entities['mcapi_transactions']->getDisplay('default');
+    $display['display_options']['arguments']['exchange'] = array (
+      'id' => 'exchange',
+      'table' => 'mcapi_transaction',
+      'field' => 'exchange',
+      'relationship' => 'none',
+      'group_type' => 'group',
+      'admin_label' => '',
+      'dependencies' => array(
+        'module' => array(
+          0 => 'mcapi',
+          1 => 'views',
+        ),
+      ),/*
+      'default_action' => 'ignore',
+      'exception' => array(
+        'value' => 'all',
+        'title_enable' => false,
+        'title' => 'All',
+      ),
+      'title_enable' => false,
+      'title' => '',
+      'default_argument_type' => 'fixed',
+      'default_argument_options' => array(
+        'argument' => '1',
+      ),
+      'default_argument_skip_url' => false,
+      'summary_options' => array(
+        'base_path' => '',
+        'count' => true,
+        'items_per_page' => 25,
+        'override' => false,
+      ),
+      'summary' => array(
+        'sort_order' => 'asc',
+        'number_of_records' => 0,
+        'format' => 'default_summary',
+      ),*/
+      'specify_validation' => true,
+      'validate' => array(
+        'type' => 'entity:mcapi_exchange',
+        'fail' => 'access denied',
+      ),
+      'validate_options' => array(
+        'access' => '1',
+        'operation' => 'view',
+        'multiple' => '1',
+        'bundles' => NULL,
+      ),
+      'break_phrase' => false,
+      'not' => 0,
+      'plugin_id' => 'transaction_exchange',
+      'provider' => 'mcapi',
+    );
+    debug($entities['mcapi_transactions']->getDisplay('default')['display_options']['arguments']['exchange']);
+  }
+}
 
 function mcapi_exchanges_menu_links_discovered_alter(&$definitions) {
   unset($definitions['mcapi.exchange.masspay']);
@@ -154,15 +192,18 @@ function mcapi_transaction_get_exchanges(Transaction $transaction) {
  * split the transaction into 2
  */
 function mcapi_exchanges_mcapi_transaction_alter(TransactionInterface $transaction) {
-
-  $common_exchanges = mcapi_wallet_common_exchanges($transaction->payer->entity, $transaction->payee->entity);
+  $common_exchanges = array_intersect_key(
+    $transaction->payer->entity->in_exchanges(),
+    $transaction->payee->entity->in_exchanges()
+  );
   if ($common_exchanges) {
     $transaction->set('exchange', reset($common_exchanges)->id());
     return;
   }
   $transaction_curr_ids = $transaction->worth->currencies();
   $my_exchanges = Exchange::referenced_exchanges();
-if (!is_array($my_exchanges)){print_r($my_exchanges);die();}
+//TODO delete this
+if (!is_array($my_exchanges)){print_r($my_exchanges);die('mcapi_exchanges_mcapi_transaction_alter');}
   $payer_exchanges = $transaction->payer->entity->in_exchanges(TRUE);
   foreach (array_intersect_key($payer_exchanges, $my_exchanges) as $exchange) {
     if (has_currencies($exchange, $transaction_curr_ids))  {
@@ -309,11 +350,29 @@ function mcapi_exchanges_mcapi_exchange_delete($exchange) {
 }
 
 /**
+ * implements hook_mcapi_transaction_validate().
+ * check that _intertrading wallet is being used correctly.
+ * @param array $clusters
+ */
+function mcapi_exchanges_mcapi_transaction_validate(array $clusters) {
+  foreach ($clusters as $transaction) {
+echo $transaction->payer->entity->name();
+    if ($transaction->payer->entity->name == '_intertrading' || $transaction->payee->entity->name == '_intertrading') {
+      //there MUST be a child transaction also with an intertrading wallet in a different exchange.
+      foreach ($transaction->children as $child) {
+        if ($child->payer->entity->name == '_intertrading' || $child->payee->entity->name == '_intertrading') continue 2;
+      }
+      throw new \Exception('Intertrading wallet error');
+    }
+  }
+}
+
+/**
  * Implements hook_mail_alter().
  * divert exchange contact mails to the right exchange
  */
 function mcapi_exchanges_mail_alter(&$message) {
-  print_r($message);die();
+  print_r($message);die('mcapi_exchanges_mail_alter');
   //if the recipient is mcapi_exchange@drupal then swop it for the owner of the current exchange
   //either that or don't use the contact module to contact exchanges
 }
@@ -329,3 +388,6 @@ function mcapi_exchanges_contact_category_load($entities) {
     }
   }
 }
+
+
+

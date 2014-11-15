@@ -175,7 +175,7 @@ display:
           provider: views
       relationships: {  }
       arguments: {  }
-      field_langcode: '***CURRENT_LANGUAGE***'
+      field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
       use_ajax: true
       link_url: ''
@@ -187,7 +187,7 @@ display:
     position: 1
     provider: views
     display_options:
-      field_langcode: '***CURRENT_LANGUAGE***'
+      field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
       path: wallet/%mcapi_wallet/inex
       arguments:
@@ -706,7 +706,7 @@ display:
     position: 3
     provider: views
     display_options:
-      field_langcode: '***CURRENT_LANGUAGE***'
+      field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
       display_description: ''
       fields:

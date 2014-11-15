@@ -38,10 +38,9 @@ function list_pending(Drupal\Core\Entity\ContentEntityInterface $entity) {
   if ($entity instanceOf WalletInterface) {
     $conditions['involving'] = array($entity->id());
   }
-  elseif ($wids = \Drupal::EntityManager()->getStorage('mcapi_wallet')->getOwnedWalletIds($entity)) {
+  elseif ($wids = \Drupal::EntityManager()->getStorage('mcapi_wallet')->getOwnedIds($entity)) {
     $conditions['involving'] = $wids;
   }
-  else debug('entity '.$entity->getEntityTypeId().' '. $entity->id() .' owns no wallets');
   $serials = \Drupal::EntityManager()
   ->getStorage('mcapi_transaction')
   ->filter($conditions);

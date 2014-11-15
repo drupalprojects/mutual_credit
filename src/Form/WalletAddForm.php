@@ -11,21 +11,43 @@ namespace Drupal\mcapi\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Routing\RouteMatch;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class WalletAddForm extends Formbase {
+  
+  private $owner;
+  private $pluginManager;
 
   public function getFormId() {
     return 'wallet_add_form';
   }
+  
+  public function __construct($route_match, $entity_manager) {
+    $this->owner = $entity_manager
+      ->getStorage($route_match->getParameters()->getIterator()->key())
+      ->load($route_match->getParameters()->getIterator()->current());
+  }
+  
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('current_route_match'),
+      $container->get('entity.manager')
+    );
+  }
 
+  public function title() {
+    return 
+      t("New wallet for @entity_type '!title'", 
+      array(
+       '@entity_type' => $this->owner->getEntityType()->getLabel(),
+       '!title' => $this->owner->label()
+      )
+    );
+  }
 
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $params = RouteMatch::createFromRequest($request)->getParameters()->all();
-    list($entity_type, $id) = each($params);
-    $owner = \Drupal::EntityManager()->getStorage($entity_type)->load($id);
-
-    drupal_set_title(t("New wallet for '!title'", array('!title' => $owner->label())));
-
+    
     $form['wid'] = array(
       '#type' => 'value',
       '#value' => NULL,
@@ -37,15 +59,14 @@ class WalletAddForm extends Formbase {
     );
     $form['entity_type'] = array(
     	'#type' => 'value',
-      '#value' => $owner->getEntityTypeId()
+      '#value' => $this->owner->getEntityTypeId()
     );
     $form['pid'] = array(
     	'#type' => 'value',
-      '#value' => $owner->id()
+      '#value' => $this->owner->id()
     );
-    $pluginManager = \Drupal::service('plugin.manager.mcapi.wallet_access');
-
-    foreach ($pluginManager->getDefinitions() as $def) {
+/*
+    foreach ($this->pluginManager->getDefinitions() as $def) {
       $plugins[$def['id']] = $def['label'];
     }
 
@@ -69,6 +90,7 @@ class WalletAddForm extends Formbase {
         '#options' => $plugins
       )
     );
+    */
     $form['submit'] = array(
     	'#type' => 'submit',
       '#value' => t('Create')
@@ -103,15 +125,7 @@ class WalletAddForm extends Formbase {
     $form_state->cleanValues();;
     $wallet = Wallet::create($form_state->getValues());
     $wallet->save();
-    $pid = $wallet->get('pid')->value;
-    $entity_type = $wallet->get('entity_type')->value;
-    $route_name = \Drupal::entityManager()
-      ->getStorage($entity_type)
-      ->load($pid)
-      ->getLinkTemplate('canonical');
-    debug("redirecting to route $route");
-
-    $form_state->setRedirect($route_name, array($entity_type => $pid));
+    $form_state->setRedirectUrl($wallet->getOwner()->urlInfo());
   }
 
 }

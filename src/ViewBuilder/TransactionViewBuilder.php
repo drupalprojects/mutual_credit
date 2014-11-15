@@ -16,6 +16,7 @@ use Drupal\Core\Template\Attribute;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Url;
 
 /**
  * Render controller for transactions.
@@ -49,23 +50,22 @@ class TransactionViewBuilder extends EntityViewBuilder {
       $view_config = \Drupal::config('mcapi.transition.view');
       $view_mode = $view_config->get('format');
     }
-
     $build = array();
     //most entity types would build the render array for theming here.
     //however the sentence and twig view modes don't need the theming flexibility
     //even the certificate is rarely used..
     switch($view_mode) {
-    	case 'certificate':
+      case 'certificate':
         $build['#theme'] = 'certificate';
         break;
-    	case 'sentence':
-    	  $build['#markup'] = \Drupal::Token()->replace(
-  	      \Drupal::config('mcapi.misc')->get('sentence_template'),
-  	      array('mcapi' => $entity),
-  	      array('sanitize' => TRUE)
-    	  );
+      case 'sentence':
+        $build['#markup'] = \Drupal::Token()->replace(
+          \Drupal::config('mcapi.misc')->get('sentence_template'),
+          array('mcapi' => $entity),
+          array('sanitize' => TRUE)
+        );
         break;
-    	default:
+      default:
         $build['#markup'] = mcapi_render_twig_transaction($view_config->get('twig'), $entity);
     }
 
@@ -82,8 +82,10 @@ class TransactionViewBuilder extends EntityViewBuilder {
       ),
     );
 
-    // Cache the rendered output if permitted by the view mode and global entity
-    // type configuration.
+    //TODO because the transition links are very contextual
+    //we can't cache the transactions without a new preview view_mode which shows no links
+    //Ideally we would cache the certificate but NOT the wrapped certificate
+    /*
     if ($this->isViewModeCacheable($view_mode) && !$entity->isNew() && $this->entityType->isRenderCacheable()) {
       $build['#cache'] += array(
         'keys' => array(
@@ -93,10 +95,13 @@ class TransactionViewBuilder extends EntityViewBuilder {
           $view_mode,
           'cache_context.theme',
           'cache_context.language',
+          'cache_context.user',
         ),
         'bin' => 'render',//hardcoded for speed,
       );
     }
+     * 
+     */
     return $build;
   }
 
@@ -114,19 +119,19 @@ class TransactionViewBuilder extends EntityViewBuilder {
     $renderable = array();
     //child transactions and unsaved transactions never show links
     if (!$transaction->parent->value && $transaction->serial->value) {
-
-      $exclude = array('create');
+      $exclude = ['create'];
+      //TODO this is inelegant. We need to remove view when the current url is NOT the canonical url
+      //OR we need to NOT render links when the transaction is being previewed
       if ($view_mode == 'certificate') $exclude[] = 'view';
-
       foreach ($this->transitionManager->active($exclude, $transaction->worth) as $transition => $plugin) {
         if ($transaction->access($transition)) {
+          $route_name = $transition == 'view' ? 'mcapi.transaction_view' : 'mcapi.transaction.op';
           $renderable['#links'][$transition] = array(
             'title' => $plugin->label,
-            'route_name' => $transition == 'view' ? 'mcapi.transaction_view' : 'mcapi.transaction.op',
-            'route_parameters' => array(
+            'url' => Url::fromRoute($route_name, array(
               'mcapi_transaction' => $transaction->serial->value,
               'transition' => $transition
-            )
+            ))
           );
           if ($dest_type == 'modal') {
             $renderable['#links'][$transition]['attributes'] = new Attribute(
@@ -139,18 +144,20 @@ class TransactionViewBuilder extends EntityViewBuilder {
             //$renderable['#links'][$op]['attributes'] = new Attribute(array('class' => array('use-ajax')));
           }
           elseif(!$plugin->getConfiguration('redirect')){
-            $renderable['#links'][$transition]['query'] = drupal_get_destination();
+            if ($transition != 'view') {
+              $renderable['#links'][$transition]['query'] = drupal_get_destination();
+            }
           }
         }
       }
       if (array_key_exists('#links', $renderable)) {
         $renderable += array(
           '#theme' => 'links',
-          //'#heading' => t('Transitions'),
           '#attached' => array(
-            'css' => array(drupal_get_path('module', 'mcapi') .'/mcapi.css')
+            'css' => array(drupal_get_path('module', 'mcapi') .'/css/transaction.css')
           ),
           '#attributes' => new Attribute(array('class' => array('transaction-transitions'))),
+          '#cache' => array()//TODO prevent this from being ever cached
         );
       }
     }
@@ -159,9 +166,4 @@ class TransactionViewBuilder extends EntityViewBuilder {
 
 }
 
-//shows the most common transitions
-//TODO this is used only once so could be incorporated
-function show_transaction_transitions($view = TRUE) {
-
-}
 

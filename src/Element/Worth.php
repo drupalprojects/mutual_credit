@@ -240,12 +240,8 @@ class Worth extends FormElement {
           if (count($element['#value']) > 1) {
             //remove zero values from multiple currency transactions
             unset($element['#value'][$delta]);
-            $setval = TRUE;
           }
-          elseif ($currency->zero) {
-            $element['#value'][$delta] = 0;
-          }
-          else {
+          elseif (empty($currency->zero)) {
             $form_state->setError($element[$worth['curr_id']], t('Zero value not allowed for this currency.'));
           }
         }
@@ -260,12 +256,10 @@ class Worth extends FormElement {
         }
       }
     }
-    //clean up the mess creating from extracting the values from the children of the widget.
-    if ($setval) {
-      echo 'setting'; print_r($element['#value']);
-      $form_state->setValue($element['#parents'], $element['#value']);
-      $vals = $form_state->getValues();
-    }
+    $element['#value'] = array_values($element['#value']);
+    //reset the element value because the sub-elements have been added to what valueCallback returned
+    $form_state->setValue($element['#parents'], $element['#value']);
+    $vals = $form_state->getValues();
   }
 
 }

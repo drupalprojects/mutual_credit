@@ -30,8 +30,8 @@ class RouteExchanges extends ArgumentDefaultPluginBase {
     //there's no validator in core either for ANY entity or for ANY contentEntity or ANY Owned Entity
     //only for ONE given specific entityType
     //so this function needs to decide whether to return an argument
-    foreach (\Drupal::service('current_route_match')->getParameters()->all() as $key => $val) {
-      if (mcapi_wallet_owning_entity($val)) {
+    foreach (\Drupal::service('current_route_match')->getParameters()->all() as $key => $entity) {
+      if (mcapi_wallet_owning_entitytype($entity->getEntityType(), $entity->bundle())) {
         $ids = Exchange::referenced_exchanges($val);
       }
     }

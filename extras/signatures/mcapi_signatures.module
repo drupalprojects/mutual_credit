@@ -33,9 +33,12 @@ function mcapi_signatures_mcapi_transaction_presave($transaction) {
       }
       //the exchange manager should also sign
       if($override['exman']) {
-        foreach ($transaction->flatten() as $t) {
-          $transaction->signatures[$t->exchange->entity->getOwnerId()] = 0;
-        }
+        //TODO move or remove this
+        //at this point the exchange hasn't been determined
+        //foreach ($transaction->flatten() as $t) {
+          //$exchange = reset($t->exchange->referencedEntities());
+          //$transaction->signatures[$exchange->getOwnerId()] = 0;
+        //}
       }
       //this autosign sets the transaction state so must happen before the transaction entity is written
       module_load_include('inc', 'mcapi_signatures');

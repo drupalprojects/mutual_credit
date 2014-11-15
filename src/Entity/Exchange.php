@@ -73,18 +73,22 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
 
     //create a new wallet for new exchanges
     if (!$update) {
-      $props = array(
-        'entity_type' => 'mcapi_exchange',
-        'pid' => $this->id(),
-        'name' => '_intertrading',
-        'details' => WALLET_ACCESS_AUTH,
-        'summary' => WALLET_ACCESS_AUTH,
-        'payin' => WALLET_ACCESS_AUTH,
-        'payout' => WALLET_ACCESS_AUTH
-      );
-      $wallet = Wallet::create($props);
-      $wallet->save();
+      $this->addIntertradingWallet();
     }
+  }
+  
+  public function addIntertradingWallet() {
+    $props = array(
+      'entity_type' => 'mcapi_exchange',
+      'pid' => $this->id(),
+      'name' => '_intertrading',
+      'details' => WALLET_ACCESS_AUTH,
+      'summary' => WALLET_ACCESS_AUTH,
+      'payin' => WALLET_ACCESS_AUTH,
+      'payout' => WALLET_ACCESS_AUTH
+    );
+    $wallet = Wallet::create($props);
+    $wallet->save();
   }
 
   /**
@@ -148,6 +152,13 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       ->setDescription(t('The official contact address'))
       ->setRequired(TRUE);
 
+    
+    //TODO in beta2, this field is required by views. Delete if pos
+    $fields['langcode'] = BaseFieldDefinition::create('language')
+    ->setLabel(t('Language code'))
+    ->setDescription(t('language code.'))
+    ->setSettings(array('default_value' => 'und'));
+    
     return $fields;
   }
 
@@ -175,7 +186,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    */
   function intertrading_wallet() {
     $props = array('name' => '_intertrading', 'pid' => $this->id());
-    $wallets = \Drupal::EntityManager()
+    $wallets = $this->EntityManager()
       ->getStorage('mcapi_wallet')
       ->loadByProperties($props);
     return reset($wallets);
@@ -252,12 +263,15 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    */
   public function transactions() {
     //get all the wallets in this exchange
-    $wids = mcapi_wallets_in_exchanges(array($this->id()));
+    $wids = $this->entityManager()->getStorage('mcapi_wallet')->inExchanges(array($this->id()));
     //get all the transactions involving these and only these wallets
-    $conditions = array('involving'=> $wids);
-    $serials = $this->entityManager()->getStorage('mcapi_transaction')->filter($conditions);
-    //serials are keyed by xid and there may be duplicates
-    return count(array_unique($serials));
+    if ($wids) {
+      $conditions = array('involving'=> $wids);
+      $serials = $this->entityManager()->getStorage('mcapi_transaction')->filter($conditions);
+      //serials are keyed by xid and there may be duplicates
+      return count(array_unique($serials));
+    }
+    return 0;
   }
 
   /**
@@ -332,7 +346,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     }
     //if the exchange has wallets, even orphaned wallets, it can't be deleted.
     $conditions = array('exchanges' => array($this->id()));
-    $wallet_ids = \Drupal::EntityManager()->getStorage('mcapi_wallet')->filter($conditions);
+    $wallet_ids = $this->EntityManager()->getStorage('mcapi_wallet')->filter($conditions);
     if (count($wallet_ids) > 1){
       $this->reason = t('The exchange still owns wallets: @nums', array('@nums' => implode(', ', $wallet_ids)));
       return FALSE;

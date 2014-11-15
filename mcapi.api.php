@@ -17,12 +17,6 @@
  */
 
 /**
- * @return array
- *   permission array as in hook_permission
- */
-function hook_mcapi_info_drupal_permissions(){}
-
-/**
  * Let your module validate the transaction. Don't throw errors, but add TransactionException objects to $transaction->exceptions
  *
  * $param TransactionInterface $transaction

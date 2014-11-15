@@ -42,7 +42,7 @@ class WalletLimitOverride extends FormBase {
     $owner = $wallet->getOwner();
     $exchanges = Exchange::referenced_exchanges($owner);
     if (empty($exchanges)) {
-      drupal_set_message(t("!name is not currently in any active exchange"), array('!name' => $owner->label()));
+      drupal_set_message(t("!name is not currently in any active exchange", array('!name' => $owner->label())));
       return $form;
     }
 

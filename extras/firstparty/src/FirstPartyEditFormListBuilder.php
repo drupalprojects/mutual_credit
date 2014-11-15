@@ -9,6 +9,7 @@ namespace Drupal\mcapi_1stparty;
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormInterface;
+use Drupal\Core\Url;
 use Drupal\mcapi\Entity\Exchange;
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
 
@@ -37,7 +38,7 @@ class FirstPartyEditFormListBuilder extends ConfigEntityListBuilder{
       //$class = array('style' => $entity->status ? 'enabled' : 'disabled');
       //TODO make a link out of this
       $row['title'] = $style + array(
-        'data' => $entity->link()
+        'data' => \Drupal::l($entity->label(), Url::fromRoute('mcapi.1stparty.'.$entity->id()))
       );
       $exchange = $entity->exchange ? Exchange::load($entity->exchange) : NULL;
       $row['exchange'] = $style + array(

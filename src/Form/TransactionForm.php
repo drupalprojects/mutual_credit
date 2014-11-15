@@ -115,9 +115,6 @@ class TransactionForm extends ContentEntityForm {
     );
     $form = parent::form($form, $form_state);
 
-    //overwrites EntityForm::actions
-    $form['actions']['submit']['#submit'] = array('::submitForm');
-
     return $form;
   }
 
@@ -125,7 +122,7 @@ class TransactionForm extends ContentEntityForm {
    * Returns the action form element for the current entity form.
    */
   protected function actionsElement(array $form, FormStateInterface $form_state) {
-    $actions = parent::actions($form, $form_state);
+    $actions = parent::actionsElement($form, $form_state);
     $actions['submit']['#submit'] = array('::submitForm');
     return $actions;
   }
@@ -139,6 +136,7 @@ class TransactionForm extends ContentEntityForm {
    */
   public function validate(array $form, FormStateInterface $form_state) {
     $form_state->cleanValues();;//without this, buildentity fails, but not so in nodeForm
+    debug($form_state->getValues());
     $transaction = $this->buildEntity($form, $form_state);
 
     // The date element contains the date object.
@@ -207,20 +205,15 @@ class TransactionForm extends ContentEntityForm {
    */
   public function buildEntity(array $form, FormStateInterface $form_state) {
     $entity = parent::buildEntity($form, $form_state);
+    $entity->creator->target_id = \Drupal::currentUser()->id();//MUST be a logged in user!
+    $entity->set('created', REQUEST_TIME);
+    
     $values = $form_state->getValues();
     if (array_key_exists('creator', $values) && $account = User::load($values['creator'])) {
       $entity->creator->target_id = $account->id();
     }
-    elseif($uid = \Drupal::currentUser()->id()) {
-      $entity->creator->target_id = $uid;
-    }
-    else throw new \Exception('transaction has no creator');
-
     if (!empty($values['created']) && $values['created'] instanceOf DrupalDateTime) {
       $entity->set('created', $values['created']->getTimestamp());
-    }
-    else {
-      $entity->set('created', REQUEST_TIME);
     }
     return $entity;
   }

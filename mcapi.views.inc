@@ -27,7 +27,6 @@ function mcapi_views_data_alter(&$data) {
       'id' => 'user_exchanges',
     )
   );
-
 }
 
 /**
@@ -38,5 +37,13 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
   $description = t('Comma separated usernames');
   $form['payee']['#description'] = $description;
   $form['payer']['#description'] = $description;
+}
+
+function mcapi_views_states() {
+  debug(\Drupal::config('mcapi.misc')->get('counted'));
+  foreach (\Drupal::config('mcapi.misc')->get('counted') as $key => $val) {
+    if ($val) $options['value']['default'][$key] = $key;
+  }
+  return $options;
 }
 

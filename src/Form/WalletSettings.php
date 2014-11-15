@@ -61,7 +61,7 @@ class WalletSettings extends ConfigFormBase {
         ? $entity_type->getLabel() .': '
         : '';
       foreach ($bundles as $bundle_name => $bundle_info) {
-        if (mcapi_wallet_owning_entity($entity_type, $bundle_name)) {
+        if (mcapi_wallet_owning_entitytype($entity_type, $bundle_name)) {
           $form['creation']['entity_types']["$entity_type_id:$bundle_name"] = array(
             '#title' => $entity_label.$bundle_info['label'],
             '#description' => t('The maximum number of wallets for a @type.', array('@type' => $bundle_info['label'])),
