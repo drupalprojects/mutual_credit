@@ -235,8 +235,11 @@ function mcapi_views_pre_render(&$view) {
     module_load_include('inc', 'mcapi');
     foreach($view->result as $rowid => $row) {
       if (!property_exists($row, 'field_worth')) return;
+      //TODO check the view mode more elegantly
       foreach ($row->field_worth as $delta => $item) {
-        worth_item_zero_adjustment($view->result[$rowid]->field_worth[$delta]['rendered']);
+        if (array_key_exists('#theme', $item) && $item['#theme'] == 'worth_item') {
+          worth_item_zero_adjustment($view->result[$rowid]->field_worth[$delta]['rendered']);
+        }
       }
     }
   }

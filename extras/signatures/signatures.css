@@ -16,3 +16,7 @@ div.pending-bgstamp{
    filter: progid:DXImageTransform.Microsoft.Alpha(opacity=8);
    top:1em;
 }
+
+#transaction-0 div.pending-bgstamp {
+  display: none !important;
+}

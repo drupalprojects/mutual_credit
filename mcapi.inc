@@ -387,18 +387,21 @@ function mcapi_dependent_transaction_action($transaction, $settings) {
     'type' => 'dependent',
     'state' => $transaction->state
   );
-
-  foreach ($settings['presets']['worth_items']['worths'] as $delta => $item) {
+  foreach ($settings['presets']['worth_items']['worths'] as $delta => $worth_formula) {
     //if this currency was in the prime transaction, pass it to the calculator
-    $calculated = _mcapi_calc($item['quantity'], @$transaction->worth[LANGUAGE_NONE][$delta]['quantity']);
+    $items = field_get_items('transaction', $transaction, 'worth');
+    //echo 'from transaction';print_r($items[$delta]);
+    //echo 'from settings'; print_r($worth_formula);
+    //die();//enables you to CTRL-R on the browser
+    $calculated = _mcapi_calc($worth_formula['main_quant'], @$items[$delta]['quantity']);
     if (!$calculated) continue;
-    $rounded = mcapi_round($calculated, $item['currcode'], $settings['presets']['worth_items']['round'] == 'up');
+    $rounded = mcapi_round($calculated, $worth_formula['currcode'], $settings['presets']['worth_items']['round'] == 'up');
     //don't save zero value auto transactions, even if the currency settings permit
     if ($rounded == 0) continue;
     //if a quant was returned (and there really should be, from at least one currency), add it to the $dependent
     $child['worth'][$delta] = array(
       'quantity' => $rounded,
-      'currcode' => $item['currcode']
+      'currcode' => $worth_formula['currcode']
     );
   }
   if (!isset($child['worth'])) return;

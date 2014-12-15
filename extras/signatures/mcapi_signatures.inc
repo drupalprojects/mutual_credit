@@ -366,9 +366,9 @@ function mcapi_sig_transaction_create($transaction, $really = 0) {
     foreach($config['countersignatories'] as $counter_uid) {
       $transaction->pending_signatures[$counter_uid] = $uid == $counter_uid ? 0 : 1;
     }
-    //save the signatures
-    mcapi_signatures_write($transaction);
     if ($really) {
+      //save the signatures
+      mcapi_signatures_write($transaction);
       signature_send_initial_notification($transaction, $config);
     }
   }

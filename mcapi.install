@@ -60,7 +60,16 @@ function mcapi_install() {
 
 /**
  * Implements hook_uninstall().
- * Remove any tables or variables that the module sets.
+
+//use this first to clear the worth field and uninstall the module
+$field = field_info_field('worth');
+field_delete_field('worth');
+field_purge_batch(1000000);
+module_disable(array('mcapi'));
+drupal_uninstall_modules(array('mcapi'));
+db_drop_table('field_deleted_data_' . $field['id']);
+db_drop_table('field_deleted_revision_' . $field['id']);
+
  */
 function mcapi_uninstall() {
   //delete all the views this module declared
@@ -75,12 +84,6 @@ function mcapi_uninstall() {
       ->execute();
     }
   }
-
-  //truncate the tables containing field_api data
-  //db_query('TRUNCATE table {field_data_worth}');
-  //db_query('TRUNCATE table {field_revision_worth}');
-
-  //need to detatch the worth field before the module will uninstall
 
   db_query("DELETE FROM {variable} WHERE name LIKE 'mcapi_%'");
   variable_del('currency_default');

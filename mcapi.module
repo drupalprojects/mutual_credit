@@ -82,9 +82,6 @@ function transaction_cluster_write(array $cluster, $really = TRUE) {
       $transaction->created = $created++;
       //this property is used for example in the intertrading module to save the remote participant's details.
       $transaction->data = (isset($transaction->extra)) ? $transaction->extra : array();
-      //$wrapper = entity_metadata_wrapper('transaction', $transaction);
-      //$wrapper->insert();
-      ///TEMP
       entity_get_controller('transaction')->insert($transaction, $really);
       //write the fields
       field_attach_insert('transaction', $transaction);
@@ -120,14 +117,6 @@ function transaction_update($transaction, $old_state = NULL) {
   //it is rare that field API fields will have changed, but we'll just save them here to be sure.
   field_attach_update('transaction', $transaction);
   module_invoke_all('transaction_update', $transaction, $old_state);
-
-  /*
-  //this is a bit of a shortcut past normal rules invocation - possibly bad practice
-  if (module_exists('rules') && $event = rules_get_cache('event_' . $hook)) {
-    //because the rules integration only understands the type entity:transaction
-    $event->executeByArgs(array($transaction, $arg1));
-  }
-  */
 }
 
 /**
@@ -828,7 +817,7 @@ function mcapi_mail($key, &$message, $params) {
     // We do not sanitize the token replacement, since the output of this
     // replacement is intended for an e-mail message, not a web browser.
     $options = array('language' => $message['language'], 'sanitize' => FALSE);
-    $message['subject'] = token_replace($params['subject'], $params, $options);
+    $message['subject'] = check_plain(token_replace($params['subject'], $params, $options));
     $message['body'][] = token_replace($params['body'], $params, $options);
   }
 }
@@ -1059,7 +1048,7 @@ function trigger_transaction_cluster_alter(&$cluster) {
     $volitional_transaction = reset($cluster);
     $result = actions_do($aid, $volitional_transaction, $info);
     if (is_object($result[$aid])) {
-      $cluster[$result[$aid]->xid] = $result[$aid];
+      $cluster[] = $result[$aid];
     }
   }
 }
@@ -1262,7 +1251,11 @@ function mcapi_field_info() {
 function mcapi_field_formatter_info() {
   return array(
     'worth_field' => array(
-      'label' => t('Worth'),
+      'label' => t('By currency'),
+      'field types' => array('worth_field'),
+    ),
+    'worth_numeric' => array(
+      'label' => t('Decimal to 2 places'),
       'field types' => array('worth_field'),
     )
   );
@@ -1272,14 +1265,19 @@ function mcapi_field_formatter_info() {
  * implements hook_field_formatter_view().
  * prepare a render array containing all (worth) $items
  */
-function mcapi_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items) {
+function mcapi_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
   $element = array();
   foreach($items as $delta => $item) {
-    $element[$delta] = array(
-      '#theme' => 'worth_item',
-      '#currcode' => $item['currcode'],
-      '#quantity' => $item['quantity'],
-    );
+    if ($display['type'] == 'worth_field') {
+      $element[$delta] = array(
+        '#theme' => 'worth_item',
+        '#currcode' => $item['currcode'],
+        '#quantity' => $item['quantity'],
+      );
+    }
+    else {
+      $element[$delta] = $item['quantity'];
+    }
   }
   return $element;
 }
@@ -1333,7 +1331,7 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
         if (currency_access('membership', $item['currcode'], $account)) continue;
         $errors[$field['field_name']][$langcode][$delta][] = array(
           'error' => 'currency_access_membership',
-          'message' => t('User @name cannot use @currency', array('@name' => user_load($entity->$uid)->name, '@currency' => $currency->human_name))
+          'message' => t('User @name cannot use @currency', array('@name' => user_load($entity->uid)->name, '@currency' => $currency->human_name))
         );
       }
     }

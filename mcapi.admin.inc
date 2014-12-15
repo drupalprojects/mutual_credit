@@ -989,9 +989,6 @@ function mcapi_transaction_entity_uid_submit($form, &$form_state) {
  */
 function mcapi_dependent_transaction_action_form($context) {
   drupal_set_message('This action adds a dependent transaction to the cluster. with the same serial number');
-
-debug($context['presets']['worth_items']['worths']);
-
   //set the defaults
   $context += array(
     'conditions' => array(
@@ -1072,7 +1069,6 @@ debug($context['presets']['worth_items']['worths']);
       )
     )
   );
-debug($form['presets']['worth_items']['worths']);
 
   if (variable_get('transaction_description_field')) {
     $form['presets']['description'] = array(
