@@ -1,5 +1,6 @@
-
 #this doesn't include per-plugin settings
+#TODO this isn't used, since it is all just thirdpary settings in the currency.
+#hopefully it can be used here for translating...
 mcapi.limits.*:
   type: mapping
   label: 'Limits settings'

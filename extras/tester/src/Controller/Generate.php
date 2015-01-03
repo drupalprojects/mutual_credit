@@ -10,7 +10,7 @@ namespace Drupal\mcapi_tester\Controller;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\user\Entity\User;
-use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Exchanges;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Currency;
@@ -84,8 +84,10 @@ class Generate extends ConfigFormBase {
     foreach (User::loadMultiple() as $account) {
       if ($account->id() > 1)$account->delete();
     }
-    foreach (Exchange::loadMultiple() as $exchange) {
-      if ($exchange->id() > 1)$exchange->delete();
+    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+      foreach (Exchange::loadMultiple() as $exchange) {
+        if ($exchange->id() > 1)$exchange->delete();
+      }
     }
 
     foreach (currency::loadMultiple() as $currency) {
@@ -109,22 +111,25 @@ class Generate extends ConfigFormBase {
     reset($currencies);
 
     $newexchanges = array();
-    for ($i = 2; $i < $values['exchanges'] + 2; $i++) {
-      $props = array(
-        'name' => 'exchange_'.$i,
-        'uid' => 1,
-        'visibility' => 'restricted',
-        'open' => 1,
-        'active' => 1,
-        'langcode' => 'und',
-        'currencies' => array(
-          array('target_id' => $currencies ? array_shift($currencies) : 1)
-        )
-      );
-      $exchange = Exchange::create($props);
-      $exchange->save();
-      $newexchanges[$exchange->id()] = $exchange;
+    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+      for ($i = 2; $i < $values['exchanges'] + 2; $i++) {
+        $props = array(
+          'name' => 'exchange_'.$i,
+          'uid' => 1,
+          'visibility' => 'restricted',
+          'open' => 1,
+          'active' => 1,
+          'langcode' => 'und',
+          'currencies' => array(
+            array('target_id' => $currencies ? array_shift($currencies) : 1)
+          )
+        );
+        $exchange = Exchange::create($props);
+        $exchange->save();
+        $newexchanges[$exchange->id()] = $exchange;
+      }
     }
+      
     if ($values['users']) {
       \Drupal::config('mcapi.wallets')->set('autoadd', 1);
       $first = array('Adam', 'Barry', 'Carry', 'Dave', 'Elizabeth', 'Fanny', 'Garry', 'Harry', 'Isa', 'Josephine', 'Kerry', 'Larry', 'Mathieu', 'Nancy', 'Oliver', 'Perry', 'Quentin', 'Rosy', 'Sly', 'Trudy', 'Ursula', 'Veronica', 'William', 'Xanadu', 'Yuri', 'Zoe');

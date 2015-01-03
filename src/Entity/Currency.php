@@ -12,9 +12,11 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\mcapi\Plugin\Field\FieldType\Worth;
 use Drupal\mcapi\CurrencyInterface;
+use Drupal\mcapi\Exchanges;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\user\UserInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Config\Entity\ThirdPartySettingsTrait;
 
 /**
  * Defines the Currency entity.
@@ -52,7 +54,8 @@ use Drupal\Core\Session\AccountInterface;
 
 class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwnerInterface {
 
-  //configEntity ids are usually strings, but this must be numeric because it is used as a fieldListItems key
+  use ThirdPartySettingsTrait;
+
   public $id;
   public $uuid;
   public $name;
@@ -63,7 +66,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   public $color;
   public $weight;
   public $deletion;
-  public $ticks; //exchange rate, expressed in ticks.
+  public $ticks; //exchange rate, expressed in ticks. maybe only needed in exchange module
 
   function __construct($values) {
     parent::__construct($values, 'mcapi_currency');
@@ -279,21 +282,29 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
 
   /**
    * get the exchange entity ids which reference this currency
-   * @return array
+   * 
+   * @return integer[]
    *   the ids of the exchanges
+   * 
+   * @todo find somewhere better to put this storage method
    */
   function used_in() {
-    //this is a reverse lookup on another entityType.
-    //so I wrote a special function just this once.
-    return $this->EntityManager()->getStorage('mcapi_exchange')->using_currency($this);
+    if (\Drupal::moduleHandler()->moduleExists('mcpai_exchanges')) {
+      return db_select('mcapi_exchange__currencies', 'c')
+        ->fields('c', array('entity_id'))
+        ->condition('currencies_target_id', $currency->id())
+        ->execute()->fetchCol();
+    }
+    //TODO ensure exchange id 0 is reserved
+    return array(0);
   }
 
   /**
    * {@inheritdoc}
    */
   public static function user(AccountInterface $account = NULL) {
-    $exchanges = Exchange::referenced_exchanges($account, TRUE);
-    return exchange_currencies($exchanges, $ticks);
+    $exchange_ids = Exchanges::in($account, TRUE);
+    return Mcapi::currencies($exchange_ids, $ticks);
   }
 
   /**

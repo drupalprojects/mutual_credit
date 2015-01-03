@@ -78,7 +78,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
 
   /**
    * Load currencies for a given wallet
-   * A list of all the currencies in active exchanges of which the user is a member.
+   * A list of all the currencies available to the current user
    *
    * @param AccountInterface $account
    *

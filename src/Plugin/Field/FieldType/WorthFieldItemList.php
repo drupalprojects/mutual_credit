@@ -128,6 +128,6 @@ class WorthFieldItemList extends FieldItemList {
         $c[] = $item->curr_id;
       }
     }
-    return $c;
+    return (array)$c;
   }
 }

@@ -5,6 +5,9 @@ namespace Drupal\mcapi\Form;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+use Drupal\mcapi\Mcapi;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\field\Entity\FieldConfig;
 
 class WalletSettings extends ConfigFormBase {
 
@@ -42,6 +45,7 @@ class WalletSettings extends ConfigFormBase {
       '#title' => t('Max number of wallets'),
       '#description' => t(
         "Wallets can be owned by any entity type which implements !interface and has an entity_references field to 'exchange' entities.", 
+        //TODO surely there's a better way of writing this
         array(
           '!interface' => \Drupal::l(
             'EntityOwnerInterface',
@@ -53,18 +57,18 @@ class WalletSettings extends ConfigFormBase {
       '#weight' => 2,
       '#tree' => TRUE
     );
-    module_load_include('inc', 'mcapi');
-    $entityManager = \Drupal::entityManager();
-    foreach (bundles_in_exchanges() as $entity_type_id => $bundles) {
-      $entity_type = $entityManager->getDefinition($entity_type_id, TRUE);
-      $entity_label = (count($bundles) > 1)
-        ? $entity_type->getLabel() .': '
-        : '';
-      foreach ($bundles as $bundle_name => $bundle_info) {
-        if (mcapi_wallet_owning_entitytype($entity_type, $bundle_name)) {
+    
+    
+    foreach (\Drupal::EntityManager()->getDefinitions() as $entity_type_id => $entity_type) {
+      //tricky to know which entities to show here.
+      if ($entity_type->isSubclassOf('\Drupal\Core\Entity\FieldableEntityInterface') && ($entity_type->isSubclassOf('\Drupal\User\EntityOwnerInterface') || in_array($entity_type_id, array('user')))) {
+        $bundles = \Drupal::EntityManager()->getBundleInfo($entity_type_id);
+        $entity_label = (count($bundles) > 1)
+          ? $entity_type->getLabel() .': '
+          : '';
+        foreach ($bundles as $bundle_name => $bundle_info) {
           $form['creation']['entity_types']["$entity_type_id:$bundle_name"] = array(
             '#title' => $entity_label.$bundle_info['label'],
-            '#description' => t('The maximum number of wallets for a @type.', array('@type' => $bundle_info['label'])),
             '#type' => 'number',
             '#min' => 0,
             '#default_value' => $config->get("entity_types.$entity_type_id:$bundle_name"),
@@ -163,6 +167,9 @@ class WalletSettings extends ConfigFormBase {
 
     $form_state->setRedirect('mcapi.admin');
   }
+  
+  
 }
+
 
 

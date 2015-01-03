@@ -1,9 +1,6 @@
-uuid: ad237eb0-e622-46ff-be06-06a301033867
 langcode: en
 status: true
 dependencies:
-  entity:
-    - field.storage.mcapi_transaction.worth
   module:
     - field
     - mcapi
@@ -380,7 +377,7 @@ display:
           group_type: group
           admin_label: ''
           dependencies:
-            entity:
+            config:
               - field.storage.mcapi_transaction.worth
             module:
               - field
@@ -1031,7 +1028,9 @@ display:
               - views
           empty: true
           tokenize: false
-          content: 'There are no transactions'
+          content:
+            value: 'There are no transactions'
+            format: plain_text
           format: plain_text
           plugin_id: text
           provider: views
@@ -1464,7 +1463,7 @@ display:
           group_type: group
           admin_label: ''
           dependencies:
-            entity:
+            config:
               - field.storage.mcapi_transaction.worth
             module:
               - field

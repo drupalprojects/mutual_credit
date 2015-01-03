@@ -1,8 +1,7 @@
-uuid: 42a2fb87-40be-4066-a757-873432120366
 langcode: en
 status: true
 dependencies:
-  entity:
+  config:
     - field.instance.user.user.exchanges
   module:
     - entity_reference

@@ -8,10 +8,12 @@
  balance
  balanceformatted
 #}
-<strong>{{ currency.human_name }}</strong><br />
-Balance: {{ balanceformatted }}
-<br />
-Min {{ minformatted }}
-<br />
-Max {{ maxformatted }}
-<br />
+
+<div class = "wallet-limits">
+  <strong>{{ currency.human_name }}</strong><br />
+  Balance: {{ balanceformatted }}
+  <br />
+  Min {{ minformatted }}
+  <br />
+  Max {{ maxformatted }}
+</div>

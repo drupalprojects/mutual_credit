@@ -10,72 +10,71 @@ namespace Drupal\mcapi\ViewBuilder;
 use Drupal\Core\Entity\EntityViewBuilder;
 use Drupal\Core\Language\Language;
 use Drupal\views\Views;
+use Drupal\mcapi\CurrencyInterface;
+use Drupal\Core\Url;
 
 /**
  * Render controller for wallets.
  */
 class WalletViewBuilder extends EntityViewBuilder {
 
-
   /**
    * {@inheritdoc}
-   * @todo this function is only to accommodate the views embed, so is temp, I think
-   */
-  public function viewMultiple(array $entities = array(), $view_mode = 'full', $langcode = NULL) {
-    //we might want to remove the views header
-    //or better, do this with views access
-    if ($view_mode == 'log' && $this->moduleHandler()->moduleExists('views')) {
-      foreach ($entities as $wallet) {;
-        //there is also a problem with views_embed_view
-        $build_list[] = Views::getView('wallet_statement')->preview('embed_1', array($wallet->id()));
-        $build_list[0]['#langcode'] = 'und';
-        $build_list[] = views_embed_view('wallet_statement', 'embed_1', $wallet->id());
-        //NB wallets are not translatable
-//          + array('#langcode' => $this->languageManager->getCurrentLanguage(Language::TYPE_CONTENT)->id);
-      }
-    }
-    else {
-      $build_list = parent::viewMultiple($entities, $view_mode, $langcode);
-    }
-
-    return $build_list;
-
-    // Cache the rendered output if permitted by the view mode and global entity
-    // type configuration.
-    if ($this->isViewModeCacheable($view_mode) && !$entity->isNew() && $this->entityType->isRenderCacheable()) {
-      $build_list['#cache'] = array(
-        'tags' =>  NestedArray::mergeDeep($this->getCacheTag(), $entity->getCacheTag()),
-        'keys' => array(
-          'entity_view',
-          'mcapi_wallet',
-          $entity->id(),
-          $view_mode,
-          'cache_context.theme',
-          'cache_context.language',
-        ),
-        'bin' => 'render',//hardcoded for speed,
-      );
-    }
-
-  }
-
-  /**
-   * {@inheritdoc}
+   * For multiple nice wallets see theme callback 'mcapi_wallets'
    */
   public function buildComponents(array &$build, array $entities, array $displays, $view_mode, $langcode = NULL) {
-    module_load_include('inc', 'mcapi');
-    $display = $displays['mcapi_wallet'];
-    foreach ($entities as $wid => $wallet) {
-      $extra_fields = array('owner', 'stats', 'summary', 'histories', 'balance_bars', 'links');
-      foreach ($extra_fields as $exfield) {
-        if ($display->getComponent($exfield)) {
-          $function = 'show_wallet_'.$exfield;
-          //fortunately all of these functions take the same one argument
-          $build[$wid][$exfield] = $function($wallet);
-        }
+    module_load_include('inc', 'mcapi', 'src/ViewBuilder/wallet');
+    //add the field api fields and properties
+    parent::buildComponents($build, $entities, $displays, $view_mode, $langcode);
+    //add the extraFields
+    $extra = $this->extraFields();
+    foreach ($entities as $id => $wallet) {
+      foreach ($displays['mcapi_wallet']->getComponents() as $exfield =>$props) {
+        //fortunately all of these functions take the same one argument
+        $function = 'mcapi_'.$exfield;
+        if ($exfield == 'summaries') debug('summaries is still here');
+        if (function_exists($function))//this is TEMP for the 'summaries' which should be gone next install
+        $build[$id][$exfield] = $function($wallet);
+        $build[$id][$exfield]['#weight'] = $props['weight'];
+      }
+      if ($view_mode != 'default') {
+        //this puts the wallet name above and the wallet links below
+        $build[$id]['#theme_wrappers'] = ['wallet_wrapper'];
       }
     }
+    $build['#attached'] = array(
+      'library' => array(
+        'mcapi/mcapi.wallets',
+        'mcapi/mcapi.gchart'
+      )
+    );
+    $build['#sorted'] = FALSE;
   }
+  
+  /**
+   * Populate hook_extra_fields in a way that is consistent with this objects ability to render them
+   * @return []
+   */
+  public static function extraFields() {
+    return array(
+      'stats' => array(
+        'label' => t('Trading stats'), 
+        'description' => t('Grid showing trading stats for all currencies'),
+      ),
+      'balances' => array(
+        'label' => t('Balance(s)'),
+        'description' => t('Small thingy showing balances of all currencies'),
+      ),
+      'histories' => array(
+        'label' => t('History chart(s)'),
+        'description' => t('One line chart per currency showing balance over time.'),
+      ), 
+      'balance_bars' => array(
+        'label' => t('Balance bar charts'),
+        'description' => t('One barchart per currency showing incoming and outgoing volumes'),
+      )
+    );
+  }
+
+ 
 }
-
-

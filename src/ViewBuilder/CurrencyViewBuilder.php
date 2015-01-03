@@ -26,7 +26,7 @@ class CurrencyViewBuilder extends EntityViewBuilder {
       //TEMP!!!
       $currency->content['placeholder_text'] = array(
         '#weight' => -1,
-      	'#markup' => "View mode: <strong>$view_mode</strong> <br />We need a nice statistical display of all the transactions done in a currency, which exchanges use the currency, what categories it is used in, proportion of intertrading transactions, greco index, trades/volume per week, average satisfaction ratings, etc whatever"
+      	'#markup' => "View mode: <strong>$view_mode</strong> <br />We need a nice statistical display of all the transactions done in a currency, what categories it is used in, proportion of intertrading transactions, greco index, trades/volume per week, average satisfaction ratings, etc whatever, it might be overriden in exchanges module with more info still"
       );
     }
   }

@@ -23,7 +23,27 @@ class WalletLimits {//couldn't be bothered to make an interface for this
 
   public function __construct(WalletInterface $wallet){
     $this->wallet = $wallet;
-    $this->calc();
+    
+    $needed_currencies = $this->wallet->currencies_available();
+    $this->limits = array();
+    //get the default limits
+    foreach ($needed_currencies as $curr_id => $currency) {
+      $this->limits[$curr_id] = $this->default_limits($currency);
+    }
+
+    //get the per-wallet overridden values
+    foreach ($this->saved_overrides() as $curr_id => $minmax) {
+      if (isset($minmax['min'])) {
+        $this->limits[$curr_id]['min'] = $minmax['min'];
+      }
+      if (isset($minmax['max'])) {
+        $this->limits[$curr_id]['max'] = $minmax['max'];
+      }
+    }
+    //then add in the currencies with no limits
+    foreach (array_diff_key($needed_currencies, $this->limits) as $curr_id => $currency) {
+      $this->limits[$curr_id] = array('min' => NULL, 'max' => NULL);
+    }
   }
 
   //not all of these will be needed
@@ -52,42 +72,6 @@ class WalletLimits {//couldn't be bothered to make an interface for this
       $mins[$curr_id] = $this->min($curr_id, $formatted);
     }
     return $mins;
-  }
-
-  /**
-   * calculate limits of all currencies
-   *
-   * @param array $currencies
-   *   one or many objects implement ConfigEntityInterface
-   *
-   * @param boolean $overridden
-   *   if TRUE returns the personal override values where flag is enabled and overrides exist
-   *
-   * @return array
-   *   keys are available currencies values are arrays of max and min
-   *   (Overridden values also show an editor user id and unixtime)
-   */
-  private function calc(){
-    $needed_currencies = $this->wallet->currencies_available();
-    $this->limits = array();
-    //get the default limits
-    foreach ($needed_currencies as $curr_id => $currency) {
-      $this->limits[$curr_id] = $this->default_limits($currency);
-    }
-
-    //first get the overridden values
-    foreach ($this->saved_overrides() as $curr_id => $minmax) {
-      if (!is_null($minmax['min'])) {
-        $this->limits[$curr_id]['min'] = $minmax['min'];
-      }
-      if (!is_null($minmax['max'])) {
-        $this->limits[$curr_id]['max'] = $minmax['max'];
-      }
-    }
-    //then add in the currencies with no limits
-    foreach (array_diff_key($needed_currencies, $this->limits) as $curr_id => $currency) {
-      $this->limits[$curr_id] = array('min' => NULL, 'max' => NULL);
-    }
   }
 
   /**
@@ -133,21 +117,29 @@ class WalletLimits {//couldn't be bothered to make an interface for this
    *
    * @return array
    * saved limit overrides, keyed by curr_id. Each override is an array with
-   * curr_id, min, max, editor, & date(unixtime)
+   * min, max, editor, & date(unixtime)
    */
   public function saved_overrides() {
+    $result = [];
     foreach ($this->wallet->currencies_available() as $currency) {
-      $config = mcapi_limits_saved_plugin($currency)->getConfiguration();
+      $config = $currency->getThirdPartySettings('mcapi_limits');
       if (!empty($config['override'])) {
         $overridable_curr_ids[] = $currency->id();
       }
     }
     if (empty($overridable_curr_ids))return array();
     //if there is no override value saved, nothing will be returned
-    return db_select('mcapi_wallets_limits', 'l')
-      ->fields('l', array('curr_id', 'min', 'max', 'editor', 'date'))
+    $limits = db_select('mcapi_wallets_limits', 'l')
+      ->fields('l', array('curr_id', 'max', 'value', 'editor', 'date'))
       ->condition('wid', $this->wallet->id())
       ->condition('curr_id', $overridable_curr_ids)
-      ->execute()->fetchAllAssoc('curr_id', \PDO::FETCH_ASSOC);
+      ->execute();
+    while ($limit = $limits->fetch()) {
+      $key = $limit->max ? 'max' : 'min';
+      $result[$limit->curr_id][$key] = $limit->value;
+      $result[$limit->curr_id]['editor'] = $limit->editor;
+      $result[$limit->curr_id]['date'] = $limit->date;
+    }
+    return $result;
   }
 }

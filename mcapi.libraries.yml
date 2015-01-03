@@ -1,0 +1,25 @@
+mcapi.toolbar:
+  version: VERSION
+  css:
+    component:
+      css/mcapi.icons.css: {}
+mcapi.transaction:
+  version: VERSION
+  css:
+    component:
+      css/transaction.css: {}
+mcapi.wallets:
+  version: VERSION
+  css:
+    component:
+      css/wallets.css: {}
+mcapi.worth.element:
+  version: VERSION
+  css:
+    component:
+      css/worth-element.css: {}
+mcapi.gchart:
+  js:
+    js/gchartstart.js: {}
+    #this isn't working because it needs to load first
+    #http://www.google.com/jsapi: { type: external }

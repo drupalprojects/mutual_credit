@@ -92,7 +92,6 @@ class TransactionStorage extends TransactionIndexStorage {
     }
     // Allow code to run after saving.
     $this->postSave($entity, $return == SAVED_UPDATED);
-    $this->invokeHook($is_new ? 'insert' : 'update', $entity);
     $entity->setOriginalId($entity->id());
     unset($entity->original);
 
@@ -144,9 +143,9 @@ class TransactionStorage extends TransactionIndexStorage {
     $conditions += array(
       'state' => mcapi_states_counted()
     );
-
     foreach($conditions as $field => $value) {
       switch($field) {
+      	case 'xid':
       	case 'state':
       	case 'serial':
       	case 'payer':
@@ -155,7 +154,9 @@ class TransactionStorage extends TransactionIndexStorage {
       	case 'type':
       	case 'w.worth_value':
       	case 'w.worth_curr_id':
-      	  $query->condition($field, (array)$value);
+          if ($value) {
+            $query->condition($field, (array)$value);
+          }
       	  break;
       	case 'involving':
       	  $value = (array)$value;
@@ -171,7 +172,9 @@ class TransactionStorage extends TransactionIndexStorage {
       	case 'to':
           $query->condition('created', $value, '<');
           break;
-      	default: mtrace();
+      	default: 
+          echo $field;
+          mtrace();
       }
       unset($conditions[$field]);
     }

@@ -8,7 +8,7 @@
 namespace Drupal\mcapi_exchanges\Controller;
 
 use Drupal\contact\Controller\ContactController;
-use Drupal\mcapi\ExchangeInterface;
+use Drupal\mcapi_exchanges\ExchangeInterface;
 
 /**
  * Controller routines for contact routes.

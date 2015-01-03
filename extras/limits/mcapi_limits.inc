@@ -95,11 +95,13 @@ function _mcapi_limits_mcapi_transaction_validate($clusters) {
 function template_preprocess_mcapi_limits_absolute(&$vars) {
   $currency = $vars['currency'];
   $summary = $vars['wallet']->getStats($currency->id());
-  $vars['balance'] = $summary['balance'];
-  $vars['balanceformatted'] = $currency->faux_format($vars['balance']);
-  $vars += mcapi_limits($vars['wallet'])->limits($currency->id());
-  $vars['minformatted'] = $currency->faux_format($vars['min']);
-  $vars['maxformatted'] = $currency->faux_format($vars['max']);
+  $limits = mcapi_limits($vars['wallet'])->limits($currency->id());
+  $vars['balanceformatted'] = $currency->format($summary['balance']);
+  $vars['minformatted'] = $currency->format($limits['min']);
+  $vars['maxformatted'] = $currency->format($limits['max']);
+  $vars['balance'] = $currency->faux_format($summary['balance']);
+  $vars['min'] = $currency->faux_format($limits['min']);
+  $vars['max'] = $currency->faux_format($limits['max']);
 }
 
 /**
@@ -132,8 +134,7 @@ function template_preprocess_mcapi_limits_balanced(&$vars) {
   $vars['balance'] = $vars['currency']->faux_format($stats['balance']);
   $vars['min'] = $vars['currency']->faux_format($vars['min']);
   $vars['max'] = $vars['currency']->faux_format($vars['max']);
-  module_load_include('inc', 'mcapi', 'extras/wallet_preprocess');
-  mcapi_add_gchart_js('gauge');
+  echo 'is the library included in template_preprocess_mcapi_limits_balanced?';
 }
 
 /**
@@ -165,15 +166,14 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) 
     $options[$name] = $plugin['label'];
   }
   $currency = $form_state->getFormObject()->getEntity();
-  if ($values = $form_state->getValues()) {
-    //get the plugin from the last form submission
-    $plugin_id = $values['plugin'];
-    $form_state->set('limits_plugin', mcapi_limits_saved_plugin($currency, $plugin_id));
+  if ($plugin_id = $form_state->getValue('plugin')) {
+    $plugin = mcapi_limits_saved_plugin($currency, $plugin_id);
   }
   else {
-    $form_state->set('limits_plugin', mcapi_limits_saved_plugin($currency));
-    $plugin_id = $form_state->get('limits_plugin')->id;//bit awkward
+    $plugin = mcapi_limits_saved_plugin($currency);
   }
+  $form_state->set('limits_plugin', $plugin);
+  
   //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
   $warning[] = t("With great power comes great responsibility!");
   $warning[] = t("The first rule of accounting is: no account should issue more credit than it can redeem.");
@@ -194,7 +194,7 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) 
       '#type' => 'select',
       '#options' => $options,
       //'none' is the default plugin name
-      '#default_value' => $plugin_id,
+      '#default_value' => $plugin->id,
       '#weight' => -1,
       '#ajax' => array(
         'callback' => 'limits_settings_subform',
@@ -204,8 +204,8 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) 
     ),
   );
 
-  //depending on which plugin is selected, show the options form
-  $form['limits']['limits_settings'] = $form_state->get('limits_plugin')->buildConfigurationForm($form, $form_state, $currency);
+  //show the options form for the selected plugin
+  $form['limits']['limits_settings'] = $plugin->buildConfigurationForm($form, $form_state, $currency);
 
   //this is the ajax wrapper
   $form['limits']['limits_settings']['#prefix'] = '<div id="limits-settings">';
@@ -228,18 +228,17 @@ function mcapi_limits_validate(&$form, $form_state) {
  * save the plugin settings as config.
  */
 function mcapi_limits_submit(&$form, $form_state) {
-  $form_state->get('limits_plugin')->submitConfigurationForm($form, $form_state);
+  $plugin = $form_state->get('limits_plugin');
+  $plugin->submitConfigurationForm($form, $form_state);
 
   //load the plugin settings AS CONFIG
   $currency = $form_state->getFormObject()->getEntity();
-  $config = \Drupal::config('mcapi.limits.'. $currency->id());
-  foreach ($form_state->get('limits_plugin')->getConfiguration() as $key => $val) {
-    $config->set($key, $val);
+  foreach ($plugin->getConfiguration() as $key => $val) {
+    $currency->setThirdPartySetting('mcapi_limits', $key, $val);
   }
-  $values = $form_state->getValues();
   //this has to go after the plugin has set the values
-  $config->set('plugin', $values['plugin']);
-  $config->save();
+  $currency->setThirdPartySetting('mcapi_limits', 'plugin', $plugin->id);
+  $currency->save();
 }
 
 /**

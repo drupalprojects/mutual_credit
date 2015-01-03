@@ -1,5 +1,5 @@
-name: Community Accounting
-description: An exchange network with the echanges, currencies, and wallets
+name: Accounting core
+description: Wallets, Currencies, and Transactions
 package: Community Accounting
 configure: mcapi.admin
 core: 8.x

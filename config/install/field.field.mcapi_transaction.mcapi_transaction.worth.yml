@@ -1,19 +1,18 @@
-id: mcapi_transaction.mcapi_transaction.worth
-uuid: b7645a37-2c96-462e-a507-7bb5dab22400
-status: true
 langcode: en
-field_uuid: 19bca018-8fd0-4242-9b38-56b19d36e985
+status: true
+dependencies:
+  config:
+    - field.storage.mcapi_transaction.worth
+id: mcapi_transaction.mcapi_transaction.worth
 field_name: worth
 entity_type: mcapi_transaction
 bundle: mcapi_transaction
 label: Value(s)
 description: ''
 required: true
+translatable: false
 default_value: {  }
 default_value_function: ''
 settings: {  }
-dependencies:
-  entity:
-    - field.storage.mcapi_transaction.worth
 field_type: worth
 

@@ -13,14 +13,6 @@ use Drupal\Core\Entity\EntityInterface;
 interface ExchangeStorageInterface extends EntityStorageInterface {
 
   /**
-   * check if an exchange can be deactivated, which means that it is not the only active exchange
-   *
-   * @param EntityInterface $exchange
-   * @return Boolean
-   */
-  function deactivatable($exchange);
-
-  /**
    * identify the exchanges using the given currency
    * @param CurrencyInterface $currency
    * @return array

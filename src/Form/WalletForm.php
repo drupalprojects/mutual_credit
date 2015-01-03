@@ -79,7 +79,7 @@ class WalletForm extends ContentEntityForm {
     /* I don't know how to later retrieve the entity from the label for an unknown entity type
     $autocomplete_routes = array(
     	'user' => 'user.autocomplete',
-      'mcapi_exchange' => 'mcapi.exchange.autocomplete'
+      //'mcapi_exchange' => 'mcapi.exchange.autocomplete'
     );
     foreach ($types as $type => $label) {
       $id = $type .'_entity_id';

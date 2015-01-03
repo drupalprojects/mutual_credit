@@ -2,24 +2,24 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Entity\Exchange.
+ * Contains \Drupal\mcapi_exchanges\Exchange.
+ * @todo make this work with OG and OG roles
  */
 
-namespace Drupal\mcapi\Entity;
+namespace Drupal\mcapi_exchanges\Entity;
 
+use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\Core\Field\BaseFieldDefinition;
-use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Session\AccountInterface;
-use Drupal\user\UserInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\user\Entity\User;
+use Drupal\user\UserInterface;
+use Drupal\user\EntityOwnerInterface;
 use Drupal\mcapi\Entity\Wallet;
-use Drupal\mcapi\ExchangeInterface;
-use Drupal\field\Entity\FieldStorageConfig;
-use Drupal\Core\Cache\CacheBackendInterface;
+use Drupal\mcapi\ExchangesInterface;
+use Drupal\mcapi_exchanges\ExchangeInterface;
 
 define('EXCHANGE_VISIBILITY_PRIVATE', 0);
 define('EXCHANGE_VISIBILITY_RESTRICTED', 1);
@@ -94,16 +94,6 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   /**
    * {@inheritdoc}
    */
-  function users() {
-    return count(db_select("user__exchanges", 'e')
-      ->fields('e', array('entity_id'))
-      ->condition('exchanges_target_id', $this->id())
-      ->execute()->fetchCol());
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields['id'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Exchange ID'))
@@ -161,25 +151,6 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     
     return $fields;
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function is_member(ContententityInterface $entity) {
-    if ($entity->getEntityTypeId() == 'mcapi_wallet') {
-      $entity = $entity->getOwner();
-    }
-    $id = $entity->id();
-    $fieldnames = $this->getEntityFieldnames();
-    $fieldname = $fieldnames[$entity->getEntityTypeId()];
-    $members = $this->{$fieldname}->referencedEntities();
-
-    foreach ($members as $account) {
-      if ($account->id() == $id) return TRUE;
-    }
-    return FALSE;
-  }
-
 
   /**
    * {@inheritdoc}
@@ -243,94 +214,23 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   /**
    * {@inheritdoc}
    */
-  public function hello(ContentEntityInterface $entity) {
-    $moduleHandler = \Drupal::moduleHandler();
-    drupal_set_message('User !name joined exchange !exchange,');
-    $moduleHandler->invokeAll('exchange_join', array($entity));//TODO
+  public function transactions($children = FALSE) {
+    //TODO use the og API for this
+    $xids = db_select('og_membership', 'm')
+      ->fields('m', array('etid'))
+      ->condition('entity_type', 'mcapi_transaction')
+      ->condition('group_type', 'mcapi_exchange')
+      ->condition('gid', $this->id())
+      ->execute()->fetchCol();
+      
+    if ($xids && !$children) {
+      $filtered = $this->entityManager()
+        ->getStorage('mcapi_transaction')
+        ->filter(array('xid' => $xids));
+      $xids = array_unique($filtered);
+    }
+    return count($xids);
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function goodbye(ContentEntityInterface $entity) {
-    $moduleHandler = \Drupal::moduleHandler();
-    drupal_set_message('User !name left exchange !exchange.');
-    $moduleHandler->invokeAll('exchange_leave', array($entity));//TODO
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function transactions() {
-    //get all the wallets in this exchange
-    $wids = $this->entityManager()->getStorage('mcapi_wallet')->inExchanges(array($this->id()));
-    //get all the transactions involving these and only these wallets
-    if ($wids) {
-      $conditions = array('involving'=> $wids);
-      $serials = $this->entityManager()->getStorage('mcapi_transaction')->filter($conditions);
-      //serials are keyed by xid and there may be duplicates
-      return count(array_unique($serials));
-    }
-    return 0;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  static function referenced_exchanges(ContentEntityInterface $entity = NULL, $enabled = TRUE, $open = FALSE) {
-    $exchanges = array();
-    if (is_null($entity)) {
-      $entity = User::load(\Drupal::currentUser()->id());
-    }
-    $entity_type = $entity->getEntityTypeId();
-    if ($entity_type == 'mcapi_exchange') {
-      //an exchange references itself only
-      $exchanges[$entity->id()] = $entity;
-    }
-    else{
-      $fieldnames = Exchange::getEntityFieldnames();
-      if ($fieldname = @$fieldnames[$entity_type]) {
-        foreach($entity->{$fieldname}->referencedEntities() as $entity) {
-          //exclude disabled exchanges
-          if (($enabled && !$entity->status->value) || ($open && !$entity->open->value)) {
-            continue;
-          }
-          $exchanges[$entity->id()] = $entity;
-        }
-      }
-    }
-    return $exchanges;
-  }
-
-
-  /**
-   * {@inheritdoc}
-   */
-  static function getEntityFieldnames() {
-    if ($cache = \Drupal::cache()->get('exchange_references')) {
-      $types = $cache->data;
-    }
-    else{  //get all the instances of these entity_reference fields
-      $field_defs = \Drupal::EntityManager()
-        ->getStorage('field_storage_config')
-        ->loadByProperties(array('type' => 'entity_reference'));
-      unset($field_defs['mcapi_transaction.exchange']);//because we don't need it
-      //now find only the once which refer to exchanges
-      foreach ($field_defs as $field) {
-        if ($field->settings['target_type'] == 'mcapi_exchange') {
-          $types[$field->entity_type] = $field->field_name;
-        }
-      }
-      \Drupal::cache()->set(
-        'exchange_references',
-        $types,
-        CacheBackendInterface::CACHE_PERMANENT,
-        array()//TODO cache tags
-      );
-    }
-    return $types;
-  }
-
 
   /**
    * {@inheritdoc}
@@ -354,6 +254,67 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     return TRUE;
   }
 
+    /**
+   * {@inheritdoc}
+   */
+  function deactivatable() {
+    static $active_exchange_ids = array();
+    if (!$active_exchange_ids) {
+      //get the names of all the open exchanges
+      foreach (Self::loadMultiple() as $entity) {
+        if ($entity->get('status')->value) {
+          $active_exchange_ids[] = $entity->id();
+        }
+      }
+    }
+    if ($this->get('status')->value && count($active_exchange_ids) > 1)return TRUE;
+    return FALSE;
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function ___isMember($exchange, ContententityInterface $entity) {
+    if ($this->multiple) {
+      return _og_is_member(
+        'mcapi_exchange', 
+        $this->id(), 
+        $entity->getEntityType(), 
+        $entity, 
+        array(OG_STATE_ACTIVE)
+      );
+
+      //TODO remove all this
+      if ($entity->getEntityTypeId() == 'mcapi_wallet') {
+        $entity = $entity->getOwner();
+      }
+      $id = $entity->id();
+      $members = $this->{EXCHANGE_OG_REF}->referencedEntities();
+
+      foreach ($members as $account) {
+        if ($account->id() == $id) return TRUE;
+      }
+      return FALSE;
+    }
+    return TRUE;
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function users() {
+  
+    //TODO use the og API for this
+    return db_select('og_membership', 'm')
+      ->fields('m', array('etid'))
+      ->condition('entity_type', 'user')
+      ->condition('group_type', 'mcapi_exchange')
+      ->condition('gid', $this->id())
+      ->execute()->fetchCol();
+  }
+  
+  
 }
+
 
 

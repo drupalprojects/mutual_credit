@@ -6,7 +6,7 @@
  */
 
 use Drupal\user\Entity\User;
-use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Exchanges;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Url;
 
@@ -18,30 +18,12 @@ function mcapi_install() {
   //see field_ui_local_tasks_alter() where
   //$local_task->alterLocalTasks($local_tasks); replaces some tasks already passed
 
-  //default exchange
-  //according to the default settings this will have autocreated a wallet for the exchange !
-  $props = array(
-    'name' => t(
-      'First !sitename exchange',
-      array('!sitename' => \Drupal::config('system.site')->get('name'))
-    ),
-    'uid' => 1,
-    'mail' => \Drupal::config('system.site')->get('mail'),
-    'currencies' => array('cc')
-  );
-  $ex = Exchange::create($props);
-  $ex->save();
-  drupal_set_message(t('First exchange created.'));
-
   //we need to deal with existing users, especially user 1
   //in accordance with the default wallet settings
   //-put every user in the default exchange
   $users = User::loadMultiple();
   foreach ($users as $account) {
     if ($account->id() == 0) continue;
-    $account->set('exchanges', array($ex->id()));
-    $account->save();
-
     //give every existing user a wallet
     $values = array('entity_type' => $account->getEntityTypeId(), 'pid' => $account->id());
     $w = Wallet::create($values);
@@ -55,38 +37,34 @@ function mcapi_install() {
     'User 1 was added to the exchange',
     'All @count members were added to the exchange.'
   ));
-}
-
-/**
- * implements hook_modules_installed().
- * continue setting up the module, but after the config has been enabled
- * @todo move this into hook_install
- */
-function mcapi_modules_installed($modules) {
-  if (!in_array('mcapi', $modules)) return;
-
+  
   //for the rest of this we need the config files
+  //
   //set the path of the zero image in currency 1
   $config = \Drupal::config('mcapi.misc');
   $zero_icon = 'base://'. drupal_get_path('module', 'mcapi') . '/templates/present.png';
   $path = Url::fromUri($zero_icon)->getUri();
   $config->set('zero_snippet', '<img src = "'. $path .'" width = "31" />');
   $config->save();
-
+  drupal_set_message($config->get('zero_snippet'));//remove hook_installed
+  
+  //enable max wallets
 }
+
+
 
 /**
  * Implements hook_uninstall().
  * need to do this in devel/php before uninstalling:
  *
-  \Drupal::moduleHandler()->uninstall(array('mcapi_tester'));
+ //doesn't work
+  \Drupal::moduleInstaller()->uninstall(array('mcapi_tester'));
   use Drupal\field\Entity\FieldStorageConfig;
   FieldStorageConfig::load('mcapi_transaction.worth')->delete();
-  FieldStorageConfig::load('mcapi_exchange.currencies')->delete();
-  FieldStorageConfig::load('user.exchanges')->delete();
-  field_purge_batch(10000);
+  FieldStorageConfig::load('user.og_group_ref')->delete();
+  FieldStorageConfig::load('mcapi_transaction.og_group_ref')->delete();
+  field_purge_batch(10000);//rows at a time
 
-$extension_config = \Drupal::config('core.extension');
 db_drop_table('mcapi_transaction');
 db_drop_table('mcapi_exchange');
 db_drop_table('mcapi_transactions_index');

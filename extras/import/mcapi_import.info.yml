@@ -1,10 +1,10 @@
-name: Import transactions
-description: Paste a csv to import initial user balances or a whole transaction history.
+name: Migrate transactions
+description: Not yet upgraded
 package: Community Accounting
 core: 7.x
 type: module
 
-# configure: admin/accounting/import
+configure: mcapi.migrate.settings
 
 dependencies:
   - mcapi

@@ -6,6 +6,7 @@
  */
 namespace Drupal\mcapi\Plugin;
 
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\Core\Url;
@@ -36,7 +37,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     //gives array keyed page_title, twig, format, button, cancel_button
     module_load_include ('inc', 'mcapi');
-    $tokens = implode(', ', mcapi_transaction_list_tokens (FALSE));
+    $tokens = implode(', ', Mcapi::transactionTokens(FALSE));
     //TODO currently there is NO WAY to put html in descriptions because twig autoescapes it
     //see cached classes extending TwigTemplate->doDisplay twig_drupal_escape_filter last argument
     $this->help = t('Use the following twig tokens: @tokens.', array('@tokens' => $tokens)) .' '.

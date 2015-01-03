@@ -316,8 +316,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   //should this be in the interface??
   private static function clearWalletCache($transaction) {
     foreach ($transaction->flatten() as $t) {
-      $tags1 = $t->payer->entity->getCacheTag();
-      $tags2 = $t->payee->entity->getCacheTag();
+      $tags1 = $t->payer->entity->getCacheTags();
+      $tags2 = $t->payee->entity->getCacheTags();
     }
     \Drupal\Core\Cache\Cache::invalidateTags(array_merge_recursive($tags1, $tags2));//this isn't tested
   }
@@ -425,26 +425,30 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $fields['created'] = BaseFieldDefinition::create('created')
     ->setLabel(t('Created'))
     ->setDescription(t('The time that the transaction was created.'))
-    ->setTranslatable(TRUE);
+    ->setTranslatable(TRUE)
+    ->setDisplayOptions('view', array(
+      'label' => 'hidden',
+      'type' => 'timestamp',
+      'weight' => 0,
+    ))
+    ->setDisplayOptions('form', array(
+      'type' => 'datetime_timestamp',
+      'weight' => 10,
+    ))
+    ->setDisplayConfigurable('form', TRUE);;
 
     $fields['changed'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))
       ->setDescription(t('The time that the transaction was last saved.'))
       ->setTranslatable(TRUE);
 
-    $fields['exchange'] = BaseFieldDefinition::create('entity_reference')
-      ->setLabel(t('Exchange'))
-      ->setDescription(t('Exchange governing this transaction'))
-      ->setSetting('target_type', 'mcapi_exchange')
-      ->setReadOnly(TRUE)
-      ->setRequired(TRUE);
-
     //TODO in beta2, this field is required by views. Delete if pos
+    /*
     $fields['langcode'] = BaseFieldDefinition::create('language')
     ->setLabel(t('Language code'))
     ->setDescription(t('language code.'))
     ->setSettings(array('default_value' => 'und'));
-    
+    */
     return $fields;
   }
 

@@ -20,11 +20,12 @@
 {% set minsafe = min + zonesize %}{% set maxsafe = max - zonesize %}
 
 <script>
+google.load('visualization', '1.0', {'packages':['corechart']});
 google.setOnLoadCallback({{ functionname }});
 function {{ functionname }}() {
-  var data = google.visualization.arrayToDataTable([
+  var data = new google.visualization.arrayToDataTable([
     ['Label', 'Value'],
-    ['{{ currency.label }}', {{ balance }}]
+    ['{{ currency.label }}', '{{ balance }}']
   ]);
   var options = {
     min: {{ min }},

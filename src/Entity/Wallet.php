@@ -12,12 +12,13 @@ use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Field\BaseFieldDefinition;
-use Drupal\mcapi\Entity\Exchange;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Exchanges;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\WalletInterface;
-use Drupal\Core\Cache\Cache;
 
 /**
  * Defines the wallet entity.
@@ -59,6 +60,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
   private $stats = array();
   //access settings
   private $access;
+  private $currencies_available;
   
   static function ___create(array $values = array()) {
     //trying to inject storage or even entityManager
@@ -181,10 +183,9 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
       ->setLabel(t('Name'))
       ->setDescription(t("The owner's name for this wallet"))
       ->addConstraint('max_length', 64)
-      ->setDisplayOptions(
-        'view',
-        array('label' => 'hidden', 'type' => 'string', 'weight' => -5))
       ->setSetting('default_value', array(0 => ''));//if we leave the default to be NULL it is difficult to filter with mysql
+      //->setDisplayConfigurable('view', TRUE)
+      //->setDisplayConfigurable('form', TRUE);
 
     $fields['entity_type'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Owner entity type'))
@@ -225,20 +226,6 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     return $fields;
   }
 
-  /**
-   * get the exchanges which this wallet can be used in.
-   *
-   * @param boolean $open
-   *   filter for open exchanges only
-   *
-   * @return \Drupal\mcapi\Entity\Exchange[]
-   *   keyed by entity id
-   */
-  function in_exchanges($open = FALSE) {
-    return $this->entity_type == 'mcapi_exchange' ?
-      array($this->pid => $this->getOwner()) :
-      Exchange::referenced_exchanges($this->getOwner(), TRUE, $open);
-  }
 
   /**
    * get a list of all the currencies used and available to the wallet.
@@ -250,6 +237,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
 
   /**
    * get a list of the currencies held in the wallet
+   * @todo consider moving to static class Mcapi
    */
   function currencies_used() {
     if (!$this->currencies_used) {
@@ -263,12 +251,14 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
   }
 
   /**
-   * get a list of all the currencies in this wallet's scope
+   * get a list of all the currencies in in all the exchanges this wallets owner is in
+   * @todo consider moving to static class Mcapi
    */
   function currencies_available() {
     if (!isset($this->currencies_available)) {
       $this->currencies_available = array();
-      foreach (exchange_currencies($this->in_exchanges()) as $currency) {
+      $exchanges = Exchanges::walletInExchanges($this);
+      foreach (Mcapi::currencies($exchanges) as $currency) {
         $this->currencies_available[$currency->id()] = $currency;
       }
     }
@@ -363,8 +353,8 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    * @see \Drupal\mcapi\WalletInterface::orphan()
    */
   static function orphan(ContentEntityInterface $owner) {
-    if($exchanges = Exchange::referenced_exchanges($owner, FALSE)) {
-      $exchange = current($exchanges);//if the parent entity was in more than one exchange, this will pick a random one to take ownership
+    if($exchange_ids = Exchanges::in($owner, FALSE)) {
+      $exchange = Exchange::load(reset($exchanges));//if the parent entity was in more than one exchange, this will pick a random one to take ownership
       if ($wids = \Drupal\mcapi\Storage\WalletStorage::getOwnedIds($owner, TRUE)) {
         foreach (Wallet::loadMultiple($wids) as $wallet) {
           //if there are transactions change parent, otherwise delete
@@ -410,7 +400,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     $tags = Cache::mergeTags($tags, array($this->entity_type->value.':'.$this->pid->value));
     if ($update) {
       // An existing entity was updated, also invalidate its unique cache tag.
-      $tags = Cache::mergeTags($tags, $this->getCacheTag());
+      $tags = Cache::mergeTags($tags, $this->getCacheTags());
     }
     Cache::invalidateTags($tags);
   }

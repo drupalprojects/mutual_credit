@@ -40,7 +40,7 @@ class ExchangeListBuilder extends EntityListBuilder {
       'data' => array(
         'title' => $entity->link(),
         'access' => $entity->get('status')->value ? t('Open') : t('Closed'),
-        'members' => $entity->users(),
+        'members' => count($entity->users()),
         'transactions' => $entity->transactions(),
         'administrator' => array(
            'data' => array(
@@ -64,7 +64,7 @@ class ExchangeListBuilder extends EntityListBuilder {
       $operations['edit']['query'] = drupal_get_destination();
     }
 
-    if ($this->storage->deactivatable($entity)) {
+    if ($entity->deactivatable()) {
       $operations['disable'] = array(
         'title' => t('Deactivate'),
         'weight' => 40,
@@ -118,7 +118,9 @@ class ExchangeListBuilder extends EntityListBuilder {
         $list['table']['#rows'][$entity->id()] = $this->buildRow($entity);
       }
     }
-    _drupal_add_css('table.exchanges-listing-table tr.disabled{color:#999;}', array('type' => 'inline'));
+    //TODO look in common.inc drupal_process_attached() to see how to add arbitrary bits of css
+    debug('need to add arbitrary css');
+//    _drupal_add_css('table.exchanges-listing-table tr.disabled{color:#999;}', array('type' => 'inline'));
     return $list;
   }
 }

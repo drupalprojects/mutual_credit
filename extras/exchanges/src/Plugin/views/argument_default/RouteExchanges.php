@@ -9,6 +9,8 @@ namespace Drupal\mcapi_exchanges\Plugin\views\argument_default;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Plugin\views\argument_default\ArgumentDefaultPluginBase;
+use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Exchanges;
 
 /**
  * return as a views argument, the exchanges the viewed entity is in
@@ -31,8 +33,8 @@ class RouteExchanges extends ArgumentDefaultPluginBase {
     //only for ONE given specific entityType
     //so this function needs to decide whether to return an argument
     foreach (\Drupal::service('current_route_match')->getParameters()->all() as $key => $entity) {
-      if (mcapi_wallet_owning_entitytype($entity->getEntityType(), $entity->bundle())) {
-        $ids = Exchange::referenced_exchanges($val);
+      if (Mcapi::walletable($entity)) {
+        $ids = Exchanges::in($val);
       }
     }
     return implode('+', $ids);

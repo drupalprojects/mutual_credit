@@ -17,7 +17,7 @@ use Drupal\user\Entity\User;
 use Drupal\mcapi\ViewBuilder\TransactionViewBuilder;
 use Drupal\mcapi\McapiTransactionException;
 use Drupal\mcapi\Entity\Transaction;
-use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Exchanges;
 
 class TransactionForm extends ContentEntityForm {
 
@@ -32,7 +32,7 @@ class TransactionForm extends ContentEntityForm {
       : Transaction::Create();
 
     //TODO do this with access control, including the dsm
-    if (count(Exchange::referenced_exchanges(NULL, TRUE)) < 1) {
+    if (!Exchanges::in(NULL, TRUE)) {
       drupal_set_message(t('You are not a member of any exchanges, so you cannot trade with anyone'));
       $form['#disabled'] = TRUE;
     }
@@ -99,7 +99,7 @@ class TransactionForm extends ContentEntityForm {
           )
         ),
       '#default_value' => !empty($transaction->date) ? $transaction->date : '',
-      '#access' => \Drupal::currentUser()->hasPermission('manage own exchanges'),
+      '#access' => $this->currentUser()->hasPermission('manage mcapi'),
     );
     if (\Drupal::moduleHandler()->moduleExists('datetime')) {
       //improve the date widget, which by a startling coincidence is called 'created' in the node form as well.

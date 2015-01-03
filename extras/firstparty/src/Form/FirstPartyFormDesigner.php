@@ -14,11 +14,18 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
 
 class FirstPartyFormDesigner extends EntityForm {
+  
+  function getFormId() {
+    return 'first_party_editform';
+  }
 
   /**
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
   public function form(array $form, FormStateInterface $form_state) {
+    
+    
+    
     $form = parent::form($form, $form_state);
     //widgetBase::Form expects this
     $form['#parents'] = array();
@@ -53,10 +60,7 @@ class FirstPartyFormDesigner extends EntityForm {
     $exchange = $configEntity->exchange ?
       entity_load('mcapi_exchange', $configEntity->exchange) :
       NULL;
-    /* this could be enabled, but then the rest of the form would have to be ajax-reloaded */
-    foreach (entity_load_multiple('mcapi_exchange') as $id => $entity) {
-      $options[$id] = $entity->label();
-    }
+      
     $form['path'] = array(
       '#title' => t('Path'),
       '#description' => t('The url path at which this form will appear. Must be unique. E.g. myexchange/payme'),
@@ -67,16 +71,6 @@ class FirstPartyFormDesigner extends EntityForm {
       ),
       '#default_value' => $configEntity->path,
       '#required' => TRUE
-    );
-    $form['exchange'] = array(
-      '#title' => t('Restricted to exchange:'),
-      '#type' => 'select',
-      '#empty_option' => t('- All -'),
-      '#empty_value' => '',
-      '#options' => $options,
-      '#default_value' => $exchange ? $exchange->id() : '',
-      '#disabled' => TRUE,
-      '#weight' => $w++,
     );
 
     $form['menu'] = array(
@@ -102,17 +96,19 @@ class FirstPartyFormDesigner extends EntityForm {
         )
       )
     );
-    if (\Drupal::moduleHandler()->moduleExists('menu_ui')) {
-      $form['menu']['menu_name'] = array(
-        '#title' => t('Menu'),
-        '#type' => 'select',
-        '#options' => menu_ui_get_menus(),
-        '#required' => FALSE,
-        '#empty_value' => '',
-        '#default_value' => $configEntity->menu['menu_name'],
-        '#weight' => 2
-      );
+    
+    foreach (\Drupal\system\Entity\Menu::loadMultiple() as $menu_name => $menu) {
+      $custom_menus[$menu_name] = $menu->label();
     }
+    $form['menu']['menu_name'] = array(
+      '#title' => t('Menu'),
+      '#type' => 'select',
+      '#options' =>  $custom_menus,
+      '#required' => FALSE,
+      '#empty_value' => '',
+      '#default_value' => $configEntity->menu['menu_name'],
+      '#weight' => 2
+    );
 
     $form['type'] =  array(
       '#title' => t('Transaction type'),
@@ -257,7 +253,6 @@ class FirstPartyFormDesigner extends EntityForm {
       ),
       '#weight' => $w++
     );
-
     //iterate through the field api fields adding a vertical tab for each
     foreach (mcapi_1stparty_fieldAPI() as $field_name => $data) {//need the fieldname & label & widget
       //this element will contain the default value ONLY for the fieldAPI element
@@ -265,7 +260,7 @@ class FirstPartyFormDesigner extends EntityForm {
       $element = array();
       $element['#required'] = FALSE;
       $form['fieldapi_presets'][$field_name] = array(
-        '#title' => $this->t('@fieldname preset', array('@fieldname' => $data['definition']->label())),
+        '#title' => $this->t('@fieldname preset', array('@fieldname' => $data['definition']->getLabel())),
         '#description' => $this->t(
           'For more field configuration options, see !link',
           array('!link' => $this->l(

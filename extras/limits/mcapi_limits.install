@@ -23,14 +23,14 @@ function mcapi_limits_schema() {
           'type' => 'varchar',
           'length' => '32',
         ),
-        'min' => array(
-          'description' => 'The minimum, in native units',
+        'max' => array(
+          'description' => 'true if this limit is max, false for min',
           'type' => 'int',
           'size' => 'normal',
-          'not null' => FALSE,
-          'default' => NULL
+          'not null' => TRUE,
+          'default' => 0
         ),
-        'max' => array(
+        'value' => array(
           'description' => 'The maximum, in native units',
           'type' => 'int',
           'size' => 'normal',
@@ -51,7 +51,7 @@ function mcapi_limits_schema() {
         )
       ),
       'unique_keys' => array(
-        'wid_cur' => array('wid', 'curr_id')
+        'wid_cur' => array('wid', 'curr_id', 'max')
       )
       //phpmyadmin says 'no index defined' - is an index so necessary?
     )

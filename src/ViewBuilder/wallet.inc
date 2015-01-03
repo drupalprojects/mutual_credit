@@ -1,6 +1,132 @@
-<?php
+<?php 
 
-_drupal_add_css(drupal_get_path('module', 'mcapi').'/css/wallets.css');
+use Drupal\mcapi\WalletInterface;
+use Drupal\mcapi\CurrencyInterface;
+use Drupal\Core\Url;
+
+//delete this
+function mcapi_links() {
+ return [];
+}
+//delete this
+function mcapi_name() {
+ return [];
+}
+//delete this
+function mcapi_mcapi_limits_absolute() {
+ return [];
+}
+
+/*
+ * get a renderable array of all the currency balances in one wallet
+ * 
+ * @param WalletInterface $wallet
+ * 
+ * @return []
+ *   a render array
+ */
+function mcapi_balances(WalletInterface $wallet) {
+  $renderable = array(
+    '#theme' => 'wallet_balances',
+    '#wallet' => $wallet,
+    '#attached' => array(
+      'library' => array('mcapi/mcapi.wallets', 'mcapi/mcapi.gchart'),
+    )
+  );
+  foreach ($wallet->currencies_used() as $curr_id => $currency) {
+    $renderable['#currencies'][$curr_id] = mcapi_balance_currency($wallet, $currency);
+  }
+  return $renderable;
+}
+
+/*
+ * get a renderable array of one set of currency balances in one wallet
+ *
+ * @param WalletInterface $wallet
+ * 
+ * @param CurrencyInterface $currency
+ * 
+ * @return []
+ *   a render array
+ */
+function mcapi_balance_currency(WalletInterface $wallet, CurrencyInterface $currency) {
+  return array(
+    '#theme' => 'wallet_summary_currency',
+    '#wallet' => $wallet,
+    '#currency' => $currency,
+  );
+}
+
+/**
+ * get a renderable array of all the trading histories in one wallet
+ *
+ * @param WalletInterface $wallet
+ *
+ * @return []
+ *   a render array
+ */
+function mcapi_histories(WalletInterface $wallet) {
+  $renderable = array(
+    '#prefix' => '<div class = "wallet-histories">',
+    '#suffix' => '</div>',
+  );
+  foreach ($wallet->currencies_used() as $curr_id => $currency) {
+    $renderable[$curr_id] = array(
+      '#theme' => 'wallet_history',
+      '#wallet' => $wallet,
+      '#currency' => $currency,
+      '#width' => 250,
+      '#attached' => array(
+        'library' => array('mcapi/mcapi.wallets', 'mcapi/mcapi.gchart'),
+      )
+    );
+  }
+  return $renderable;
+}
+
+/**
+ * get a renderable array of all the balance bar charts in one wallet
+ *
+ * @param WalletInterface $wallet
+ *
+ * @return []
+ *   a render array
+*/
+function mcapi_balance_bars(WalletInterface $wallet) {
+  $renderable = array(
+    '#prefix' => '<div class = "balance-bars">',
+    '#suffix' => '</div>',
+  );
+  foreach ($wallet->getSummaries() as $curr_id => $data) {
+    $renderable[$curr_id] = array(
+      '#theme' => 'wallet_balance_bars',
+      '#wallet' => $wallet,
+      '#currency' => mcapi_currency_load($curr_id),
+      '#data' => $data,
+      '#attached' => array(
+        'library' => array('mcapi/mcapi.wallets', 'mcapi/mcapi.gchart'),
+      )
+    );
+  }
+  return $renderable;
+}
+
+/**
+ * @param WalletInterface $wallet
+ *
+ * @return []
+ *   a render array
+ */
+function mcapi_stats(WalletInterface $wallet) {
+  return array(
+    '#theme' => 'wallet_stats',//this renders as css block (table) so doesn't sit well with the histories
+    '#wallet' => $wallet,
+    '#weight' => 5,
+    '#attached' => array(
+      'library' => array('mcapi/mcapi.wallets', 'mcapi/mcapi.gchart'),
+    )
+  );
+}
 
 /**
  * implements template_preprocess_THEME
@@ -43,7 +169,6 @@ function template_preprocess_wallet_history(&$vars) {
   }
   $vars['history'] = $history;
 
-//  $vars += _mcapi_links_to_wallet($vars['wallet']);
 }
 
 /**
@@ -52,7 +177,6 @@ function template_preprocess_wallet_history(&$vars) {
  * TODO cache this and clear the cache
  */
 function mcapi_preprocess_wallet_history(&$vars) {
-  mcapi_add_gchart_js('corechart');
   $currency = $vars['currency'];
   $vars['height'] = $vars['width']*3/4;
   $vars['functionname'] = 'drawHistory'.$currency->id();
@@ -71,9 +195,6 @@ function mcapi_preprocess_wallet_history(&$vars) {
     array('value' => $middle, 'label' => $currency->format($middle, TRUE)),
     array('value' => $max, 'label' => $currency->format($max, TRUE))
   );
-
-  //set up the javascript data object
-  $vars['data'] = "\nvar data = new google.visualization.DataTable();";
   $vars['columns'] = array(
     'date' => t('Date'),
     'number' => $currency->label()
@@ -105,64 +226,73 @@ function template_preprocess_wallet_stats(&$vars) {
     $vars['currdata'][$curr_id]['partners'] = $data['partners'];
     $vars['currdata'][$curr_id]['trades'] = $data['trades'];
   }
-  $vars += _mcapi_links_to_wallet($vars['wallet']);
 }
 
 /**
- * @param $wallet
- * @return mixed
- * @todo static this?
- */
-function _mcapi_links_to_wallet($wallet) {
-  $links['label'] = $wallet->label();
-  $links['wallet_link'] = $wallet->link(
-    $links['label'],
-    'canonical',
-    array(
-      'title' => t('Show stats'),
-      'classes' => array('wallet-title')
-    )
-  );
-  $links['wallet_log_link'] = $wallet->link(
-    $links['label'],
-    'log',
-    array(
-      'title' => t('Show transactions'),
-      'classes' => array('wallet-title')
-    )
-  );
-  return $links;
-}
-
-/**
- * theme preprocessor for 'wallet_summary'
+ * theme preprocessor for 'wallet_balances'
  * show the most basic stats for one currency
  * @todo this theme callback is cached - when to clear the cache and what cache is it?
  */
-function template_preprocess_wallet_summary(&$vars) {
-  $vars += _mcapi_links_to_wallet($vars['wallet']);
+function template_preprocess_wallet_balances(&$vars) {
   //TODO would be nice to sort the $vars['currencies'] in order of the number of trades
   //however can't do that because the currencies haven't been preprocessed yet
   //would need a quite different approach
 }
 
-//<a class = "wallet-title" href="{{ href }}" title="Show stats">{{ name }}</a><br />
+/**
+ * 
+ * @param type $vars
+ */
+function template_preprocess_wallet_wrapper(&$vars) {
+  $vars['label'] = $vars['element']['#mcapi_wallet']->label();
+  $links = mcapi_wallet_links($vars['element']['#mcapi_wallet']);
+  $vars['links'] = drupal_render($links);
+}
 
+
+/**
+ * show links to the wallet's local tasks
+ *
+ * @param WalletInterface $wallet
+ *
+ * @return []
+ *   a render array
+ */
+function mcapi_wallet_links(WalletInterface $wallet) {
+  $links= [];
+  $tree = \Drupal::service('plugin.manager.menu.local_task')->getLocalTasksForRoute('mcapi.wallet_view');
+  $access_manager = \Drupal::service('access_manager');
+  //which is all very well but getTasksBuild assumes we are on the current route
+  foreach($tree[0] as $child){
+    $route_name = $child->getRouteName();
+    $route_parameters = [
+      //TODO arg_0 can be removed when views args are working with the symfony router
+      //'arg_0' => $wallet->id(),//this is for view.wallet_statement.page_1
+      'mcapi_wallet' => $wallet->id()
+    ];
+    if ($access_manager->checkNamedRoute($route_name, $route_parameters, \Drupal::currentUser())) {
+      $links[$route_name] = array(
+        'title' => $child->getTitle(),
+        'url' => Url::fromRoute($route_name, $route_parameters)
+      );
+    }
+  }
+  return array(
+    '#theme' => 'links',
+    '#links' => $links,
+  );
+}
+
+
+/**
+ *
+ */
 function template_preprocess_wallet_summary_currency(&$vars) {
   $vars['href'] = 'wallet/'.$vars['wallet']->id().'/inex/'.$vars['currency']->id();//TODO use \Drupal::url()
   $vars += $vars['wallet']->getStats($vars['currency']->id());
   $vars['balance'] = $vars['currency']->format($vars['balance'], TRUE);
 }
 
-/**
- * theme implementation function for wallet_summaries
- */
-function template_preprocess_wallets(&$vars) {
-  //are the wallets aready themed?
-  foreach ($vars['wallets'] as $wid =>  $wallet) {
-    $vars['wallets'][$wid] = drupal_render($wallet);
-  }
-}
 
 /**
  * theme preprocessor for wallet_balance_bars
@@ -186,28 +316,9 @@ function template_preprocess_wallet_balance_bars(&$vars) {
     array('value' => $max/2, 'label' => $currency->format($max/2, TRUE)),
     array('value' => $max, 'label' => $currency->format($max), TRUE)
   );
-  mcapi_add_gchart_js('corechart');
 
-  //$vars += _mcapi_links_to_wallet($vars['wallet']);
 }
 
-
-/**
- * add the gchart libs, but only once
- * @param string $lib
- */
-function mcapi_add_gchart_js($lib) {
-  static $done = array();
-  if (!count($done)) {
-    //this breaks things really badly if localhost is offline
-    //TODO what's the best way to check before adding?
-    _drupal_add_js('http://www.google.com/jsapi', 'external');
-  }
-  if (!array_search($lib, $done)) {
-    _drupal_add_js("google.load('visualization', '1', {packages: ['$lib']});", 'inline');
-    $done[] = $lib;
-  }
-}
 
 function _mcapi_history_axes($vals) {
   $max = max($vals);
@@ -232,3 +343,6 @@ function _mcapi_get_axis_max($val) {
   sort($scale);
   return $scale[array_search($val, $scale)+1];
 }
+
+
+

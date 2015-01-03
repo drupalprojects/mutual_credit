@@ -10,6 +10,7 @@ namespace Drupal\mcapi_limits\Plugin;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Component\Plugin\ConfigurablePluginInterface;
 
 /**
  * Base class for Transitions for default methods.
@@ -23,7 +24,8 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
   public function __construct(array $settings, $plugin_name, $definition) {
     $this->currency = $settings['currency'];
     $this->id = $plugin_name;
-    $this->setConfiguration(\Drupal::config('mcapi.limits.'.$this->currency->id())->getRawData());
+    $config = $this->currency->getThirdPartySettings('mcapi_limits') + $this->defaultConfiguration();
+    $this->setConfiguration($config);
   }
 
   /**
@@ -108,10 +110,17 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     if ($values['plugin'] != 'none') {
-      foreach (@$values['limits_settings'] as $key => $value) {
-        $this->configuration[$key] = $value;
+    
+      if (array_key_exists('limits_settings', $values)) {
+        if (array_key_exists('minmax', $values['limits_settings'])) {
+          //unset($values['limits_settings']['minmax']['limits']);//tidy up residue from getting the value from a nested field
+        }
+        foreach ($values['limits_settings'] as $key => $value) {
+          $config[$key] = $value;
+        }
       }
     }
+    $this->setConfiguration($config);
   }
 
   public function calculateDependencies() {

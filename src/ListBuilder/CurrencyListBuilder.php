@@ -8,7 +8,7 @@ namespace Drupal\mcapi\ListBuilder;
 
 use Drupal\Core\Config\Entity\DraggableListBuilder;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi_exchanges\Entity\Exchange;//if the module is enabled!
 
 /**
  * Provides a listing of currencies
@@ -28,9 +28,6 @@ class CurrencyListBuilder extends DraggableListBuilder {
     $header['transactions'] = t('Uses');
     $header['volume'] = t('Volume');
     $header['issuance'] = t('Issuance');
-    if ($this->moduleHandler->moduleExists('mcapi_exchange')) {
-      $header['exchanges'] = t('Used in');
-    }
     return $header + parent::buildHeader();
   }
 
@@ -40,8 +37,9 @@ class CurrencyListBuilder extends DraggableListBuilder {
    */
   public function buildRow(EntityInterface $entity) {
     $actions = parent::buildRow($entity);
-    if (empty($actions)) continue;
-
+    if (empty($actions)) {
+      return;
+    } 
     $row['title'] = array(
       '#markup' => $this->getLabel($entity),
     );
@@ -65,26 +63,10 @@ class CurrencyListBuilder extends DraggableListBuilder {
     $row['issuance'] = array(
       '#markup' => $type_names[$type],
     );
-    $names = array();
-    $used_in = $entity->used_in();
-    if ($this->moduleHandler->moduleExists('mcapi_exchange')) {
-      if (count($used_in) > 1) {
-        $row['exchanges']['#markup'] = $this->t('@count exchanges', array('@count' => count($used_in)));
-      }
-      else {
-        foreach (Exchange::loadMultiple($used_in) as $e) {
-          debug($e->link());
-          $names[] = \Drupal::l($e->label(), $e->link());
-        }
-        $row['exchanges']['#markup'] = implode(', ', $names);
-      }
-    }
-
     //make sure that a currency with transactions in the database can't be deleted.
     if ($count) {
       unset($actions['operations']['data']['#links']['delete']);
     }
-
     return $row + $actions;
   }
 

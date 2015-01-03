@@ -279,7 +279,9 @@ display:
               - views
           empty: true
           tokenize: false
-          content: 'No pending transactions'
+          content: 
+            value: 'No pending transactions'
+            format: plain_text
           format: plain_text
           plugin_id: text
           provider: views

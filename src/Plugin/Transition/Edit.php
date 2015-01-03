@@ -69,6 +69,7 @@ class Edit extends Transition2Step {
       $additional_fields[$fieldname] = $transaction_form[$fieldname];
     }
     //payer and payee wallets MUST be limited to the same exchange as the transaction
+    //TODO move this to mcapi_exchanges module
     foreach (array('payer', 'payee') as $wallet) {
       if (array_key_exists($wallet, $additional_fields)) {
         $additional_fields[$wallet]['#exchanges'] = array($transaction->exchange->target_id);
@@ -84,7 +85,7 @@ class Edit extends Transition2Step {
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildConfigurationForm($form, $form_state);
     module_load_include('inc', 'mcapi');
-//    $fields = array_diff(mcapi_transaction_list_tokens(), array('serial', 'state', 'type', 'creator', 'exchange'));
+//    $fields = array_diff(Mcapi::transactionTokens(), array('serial', 'state', 'type', 'creator', 'exchange'));
     //TODO these fields will work, but the fieldAPI fields won't
     $fields = array('payer', 'payee', 'created', 'description');
     drupal_set_message("More work needs to be done to make the field API fields, including 'worth', editable");

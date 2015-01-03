@@ -30,14 +30,6 @@ interface WalletInterface extends ContentEntityInterface {
   public function user_id();
 
   /**
-   * get the exchanges which this wallet can be used in.
-   * @return array
-   *   exchange entities, keyed by id
-   */
-  public function in_exchanges();
-
-
-  /**
    * get a list of the currencies held in the wallet
    *
    * @return CurrencyInterface[]

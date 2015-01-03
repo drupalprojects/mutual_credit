@@ -18,7 +18,7 @@ class CurrencyController extends ControllerBase {
 
   /**
    * This isn't actually called by the router at the moment
-   * @param EntityInterface $mcapi_exchange
+   * @param EntityInterface $mcapi_currency
    *
    * @return array
    *  An array suitable for drupal_render().
@@ -31,7 +31,7 @@ class CurrencyController extends ControllerBase {
   /**
    * The _title_callback for the mcapi.exchange.view route.
    *
-   * @param EntityInterface $mcapi_exchange
+   * @param EntityInterface $mcapi_currency
    *
    * @return string
    *   The page title.
@@ -43,7 +43,7 @@ class CurrencyController extends ControllerBase {
   /**
    * Builds an exchange page render array.
    *
-   * @param EntityInterface $mcapi_exchange
+   * @param EntityInterface $mcapi_currency
    *
    * @return array
    *   An array suitable for drupal_render().

@@ -3,15 +3,15 @@
 /**
  * @file
  * Contains \Drupal\mcapi_tester\Controller\DashboardController.
+ * Assumes that mcapi_exchanges module is enabled
  */
 
 namespace Drupal\mcapi_tester\Controller;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\mcapi\ExchangeInterface;
 use Drupal\mcapi\Storage\WalletStorage;
-use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Exchanges;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
@@ -78,7 +78,7 @@ class DashboardController extends ControllerBase {
         $currnames[] = \Drupal::l($entity->label(), 'admin/accounting/currencies/'.$entity->id());
       }
       $page[$id]['currencies']['#markup'] = 'Currencies: '.implode(', ', $currnames);
-      $wids = $this->entityManager()->getStorage('mcapi_wallet')->inExchanges(array($id));
+      $wids = get_mcapi_wallets_in_exchanges(array($id));
       $tbody = array();
       foreach (Wallet::loadMultiple($wids) as $wallet) {
         $limits = mcapi_limits($wallet);

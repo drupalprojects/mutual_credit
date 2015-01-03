@@ -1,11 +1,10 @@
-id: mcapi_transaction.worth
-uuid: 19bca018-8fd0-4242-9b38-56b19d36e985
+langcode: en
 status: true
 dependencies:
   module:
     - entity_reference
     - mcapi
-langcode: en
+id: mcapi_transaction.worth
 field_name: worth
 entity_type: mcapi_transaction
 type: worth
@@ -15,3 +14,4 @@ locked: false
 cardinality: -1
 translatable: false
 indexes: {  }
+persist_with_no_fields: false

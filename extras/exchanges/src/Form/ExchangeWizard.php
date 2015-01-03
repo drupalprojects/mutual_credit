@@ -17,7 +17,7 @@ use Drupal\Core\Template\Attribute;
 class ExchangeWizard extends ExchangeForm {
 
   /**
-   * Overrides Drupal\Core\Entity\ExchangeForm::form().
+   * Overrides Drupal\Core\Entity\EntityForm::form().
    */
   public function form(array $form, FormStateInterface $form_state) {
     //this is a default exchange object

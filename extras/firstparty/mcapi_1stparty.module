@@ -1,11 +1,11 @@
 <?php
 
-use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\field\Entity\FieldConfig;
-use Drupal\mcapi\Entity\Exchange;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
+use Drupal\field\Entity\FieldConfig;
 
 /**
  * implements hook_help().
@@ -126,9 +126,7 @@ function mcapi_editform_load($id) {
  *   the token names, without the 'type:'
  */
 function mcapi_1stparty_transaction_tokens() {
-  module_load_include ('inc', 'mcapi');
-  $tokens = array();
-  $tokens += mcapi_transaction_list_tokens(FALSE);
+  $tokens = Mcapi::transactionTokens(FALSE);
 
   unset($tokens[array_search('state', $tokens)]);
   unset($tokens[array_search('serial', $tokens)]);
@@ -139,7 +137,9 @@ function mcapi_1stparty_transaction_tokens() {
   $tokens[array_search('payer', $tokens)] = 'partner';
   $tokens[array_search('payee', $tokens)] = 'mywallet';
   $tokens[] = 'direction';
-  $tokens[] = 'intertrade';
+  if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+    $tokens[] = 'intertrade';
+  }
   return $tokens;
 }
 
@@ -198,8 +198,8 @@ function mcapi_1stparty_fieldAPI() {
   //and filter out the entity properties
   //the entity_form_display does this more elegantly but function is protected
   foreach(\Drupal::entityManager()->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction') as $field_name => $definition) {
-    if ($definition instanceOf FieldConfig) {
-      if ($widget = $entity_display->getRenderer($field_name)) {
+    if ($widget = $entity_display->getRenderer($field_name)) {
+      if ($definition instanceOf FieldConfig) {
         $fieldAPI[$field_name] = array(
           'definition' => $definition,
           'widget' => $widget

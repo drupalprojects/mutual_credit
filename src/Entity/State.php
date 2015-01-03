@@ -7,10 +7,6 @@
 
 namespace Drupal\mcapi\Entity;
 
-use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\user\RoleInterface;
-
 /**
  * Defines the transaction state entity class.
  *
@@ -27,7 +23,7 @@ use Drupal\user\RoleInterface;
  *   }
  * )
  */
-class State extends ConfigEntityBase {
+class State extends \Drupal\Core\Config\Entity\ConfigEntityBase {
 
   /**
    * Identifier for the current State

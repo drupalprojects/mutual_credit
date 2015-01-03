@@ -11,9 +11,9 @@ use Drupal\Core\Entity\EntityAccessControlHandler;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Language\Language;
-use Drupal\mcapi\ExchangeInterface;
-use Drupal\user\Entity\User;
 use Drupal\Core\Access\AccessResult;
+use Drupal\mcapi\Exchanges;
+use Drupal\user\Entity\User;
 
 
 /**
@@ -40,7 +40,7 @@ class ExchangeAccessControlHandler extends EntityAccessControlHandler  {
       if (
         $visib == 'public' ||
         ($visib == 'restricted' && $account->id()) ||
-        ($visib == 'private' && $exchange->is_member(User::load($account->id())))
+        ($visib == 'private' && $exchange->isMember(User::load($account->id())))
         ) {
         $result = AccessResult::allowed();
       }

@@ -74,13 +74,12 @@ class TransactionViewBuilder extends EntityViewBuilder {
       '#theme_wrappers' => array('mcapi_transaction'),
       '#langcode' => $langcode,
       '#mcapi_transaction' => $entity,
-      '#attached' => array(
-    	  'css' => array(drupal_get_path('module', 'mcapi') .'/css/transaction.css')
-      ),
+      '#attached' => array('library' => array('mcapi/mcapi.transaction')),
       '#cache' => array(
-        'tags' =>  NestedArray::mergeDeep($this->getCacheTag(), $entity->getCacheTag()),
+        'tags' =>  NestedArray::mergeDeep($this->getCacheTags(), $entity->getCacheTags()),
       ),
     );
+    debug('mcapi.transaction', 'library');
 
     //TODO because the transition links are very contextual
     //we can't cache the transactions without a new preview view_mode which shows no links
@@ -139,8 +138,8 @@ class TransactionViewBuilder extends EntityViewBuilder {
             );
           }
           elseif($dest_type == 'ajax') {
-            //I think we need a new router path for this...
-            $renderable['#attached']['js'][] = 'core/misc/ajax.js';
+            debug('ajax mode needs work...');
+            $renderable['#attached']['library'][] = 'drupal.ajax';
             //$renderable['#links'][$op]['attributes'] = new Attribute(array('class' => array('use-ajax')));
           }
           elseif(!$plugin->getConfiguration('redirect')){
@@ -153,13 +152,12 @@ class TransactionViewBuilder extends EntityViewBuilder {
       if (array_key_exists('#links', $renderable)) {
         $renderable += array(
           '#theme' => 'links',
-          '#attached' => array(
-            'css' => array(drupal_get_path('module', 'mcapi') .'/css/transaction.css')
-          ),
+          '#attached' => array('library' => array('mcapi/mcapi.transaction')),
           '#attributes' => new Attribute(array('class' => array('transaction-transitions'))),
           '#cache' => array()//TODO prevent this from being ever cached
         );
       }
+      debug('mcapi.transaction', 'library');
     }
     return $renderable;
   }

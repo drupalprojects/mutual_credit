@@ -31,7 +31,7 @@ function mcapi_limits_mcapi_transaction_validate(array $clusters) {
  *
  * @return \Drupal\mcapi_limits\WalletLimitsDecorator
  *
- * @todo consider putting this in the inc file
+ * @todo there must be a better way...
  */
 function mcapi_limits($wallet) {
   return new WalletLimits($wallet);
@@ -50,11 +50,14 @@ function mcapi_limits_saved_plugin(CurrencyInterface $currency, $name = '') {
   $plugins = &drupal_static(__FUNCTION__, array());
   $curr_id = $currency->id();
   if (!array_key_exists($curr_id, $plugins)) {
-    $config = \Drupal::config('mcapi.limits.'.$currency->id());
-    $name = ($name ? : $config->get('plugin'));
-    $settings = array('currency' => $currency);
-    $plugins[$curr_id] = \Drupal::service('plugin.manager.mcapi_limits')
-      ->createInstance($name ? : 'none', $settings);
+    $plugin_id = $name ? : @$currency->getThirdpartySettings('mcapi_limits')['plugin'];
+    $plugin= \Drupal::service('plugin.manager.mcapi_limits')
+      ->createInstance(
+        $plugin_id ? : 'none', 
+        ['currency' => $currency]
+      );
+    if ($name) return $plugin;
+    else $plugins[$curr_id] = $plugin;
   }
   return $plugins[$curr_id];
 }
@@ -106,6 +109,7 @@ function mcapi_limits_theme($existing, $type, $theme, $path){
 
 /**
  * implements hook_entity_extra_field_info().
+ * @deprecated
 */
 function mcapi_limits_entity_extra_field_info() {
   return array(
@@ -120,16 +124,11 @@ function mcapi_limits_entity_extra_field_info() {
         ),
         'display' => array(
           //may show themes absolute or balanced depending on whether min and max are equal
-          'mcapi_limits_absolute' => array(
-            'label' => t('Absolute balance limits'),
+          'balance_limits' => array(
+            'label' => t('Balance limits'),
             'description' => t('Trading limits per currency'),
             'weight' => 0,
-          ),
-          'mcapi_limits_relative' => array(
-            'label' => t('Balance limits relative to the balance'),
-            'description' => t('Trading limits per currency'),
-            'weight' => 0,
-          ),
+          )
         )
       )
     )
@@ -142,12 +141,8 @@ function mcapi_limits_entity_extra_field_info() {
 */
 function mcapi_limits_mcapi_wallet_view(&$build, WalletInterface $wallet, EntityViewDisplayInterface $display, $view_mode, $langcode) {
   //module_load_include('inc', 'mcapi') is already included
-  if ($display->getComponent('mcapi_limits_absolute')) {
-    $build += mcapi_view_limits($wallet, TRUE);
-  }
-  //showing both would be confusing
-  elseif ($display->getComponent('mcapi_limits_absolute')) {
-    $build += mcapi_view_limits($wallet, FALSE);
+  if ($display->getComponent('balance_limits')) {
+    $build += mcapi_view_limits($wallet);
   }
 }
 
@@ -162,12 +157,8 @@ function mcapi_limits_mcapi_wallet_view(&$build, WalletInterface $wallet, Entity
 function mcapi_view_limits(WalletInterface $wallet) {
   $renderable = array();
   foreach ($wallet->currencies_all() as $currency) {
-    $curr_id = $currency->id();
-    $limits_config = mcapi_limits_saved_plugin($currency);
-    if ($limits_config->id == 'none') continue;
-    //TODO check later if \Drupal\Component\Plugin\ConfigurablePluginInterface has been expanded to allow getting just one config key
-    $config = $limits_config->getConfiguration();
-    if ($config['display_relative'] == 'relative') {
+    if ($currency->getThirdPartySetting('mcapi_limits', 'plugin', 'none') == 'none') continue;
+    if ( $currency->getThirdPartySetting('mcapi_limits', 'display_relative', 'absolute') == 'relative') {
       $theme = 'mcapi_limits_relative';
     }
     else {
@@ -180,10 +171,13 @@ function mcapi_view_limits(WalletInterface $wallet) {
         $theme = 'mcapi_limits_absolute';
       }
     }
-    $renderable[$curr_id]['mcapi_limits'] = array(
+    $renderable[$currency->id()]['mcapi_limits'] = array(
       '#theme' => $theme,
       '#wallet' => $wallet,
       '#currency' => $currency,
+      '#attached' => array(
+        'library' => array('mcapi/mcapi.wallets', 'mcapi/mcapi.gchart'),
+      )
     );
   }
   return $renderable;

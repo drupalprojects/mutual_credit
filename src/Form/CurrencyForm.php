@@ -49,22 +49,16 @@ class CurrencyForm extends EntityForm {
       );
     }
 
-    //get all users in the exchanges that this currency is in.
-    //which exchanges reference this currency?
-    $exchange_ids = db_select('mcapi_exchange__currencies', 'c')
-      ->fields('c', array('entity_id'))
-      ->condition('currencies_target_id', $this->entity->id())
-      ->execute()->fetchCol();
-    //now get all the members of those exchanges who have manage permission
+    //select Comptroller from all users with manage permission
     //would be great if we could somehow just feed into a entity_reference widget here
-    $roles = user_roles(TRUE, 'manage own exchanges');
     $options = array(1 => User::load(1)->label());
-    if ($roles) {
+    if ($roles = user_roles(TRUE, 'manage mcapi')) {
+      //TODO how to get all the users with a given role?
+      //is there an entity reference reverse lookup method?
       $query = db_select('users', 'u')->fields('u', array('uid'));
-      $query->join('users_roles', 'ur', 'ur.uid = u.uid');
-      $query->join('user__exchanges', 'e', 'e.entity_id = u.uid');
-      $uids = $query->condition('ur.rid', array_keys($roles))
-        ->execute()->fetchCol();
+      $query->join('user__roles', 'ur', 'ur.entity_id = u.uid');
+      $query->condition('ur.roles_target_id', array_keys($roles));
+      $uids = $query->execute()->fetchCol();
       //wow this is getting long-winded
       foreach (User::loadMultiple($uids) as $account) {
         $options[$account->id()] = $account->label();

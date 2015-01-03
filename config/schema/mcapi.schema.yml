@@ -102,7 +102,7 @@ mcapi.wallets:
       label: 'Create payments out of this wallet'
 
 mcapi.currency.*:
-  type: mapping
+  type: config_entity
   label: 'Currency configuration'
   mapping:
     id:
@@ -139,9 +139,13 @@ mcapi.currency.*:
     deletion:
       type: integer
       label: Delete options
+    third_party_settings:
+      type: sequence
+      label: Third party settings
+      sequence: { }
         
 mcapi.state.*:
-  type: mapping
+  type: config_entity
   label: Transaction workflow state
   mapping:
     id:
@@ -158,7 +162,7 @@ mcapi.state.*:
       label: Counted
 
 mcapi.type.*:
-  type: mapping
+  type: config_entity
   label: Transaction workflow
   mapping:
     id:
@@ -175,7 +179,7 @@ mcapi.type.*:
       label: Initial workflow state
 
 mcapi.transition.*:
-  type: mapping
+  type: config_entity
   label: Transition settings
   mapping: 
     title:

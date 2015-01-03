@@ -13,8 +13,8 @@ use Symfony\Component\Routing\Route;
 use Drupal\Core\Access\AccessResult;
 use Drupal\user\Entity\User;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\mcapi\Entity\Exchange;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Exchanges;
 
 
 /**
@@ -58,29 +58,12 @@ class WalletAddAccessCheck implements AccessInterface {
       return AccessResult::allowed()->cachePerRole();
     }
     //for exchange managers to add wallets to any entity of that exchange
-    elseif ($account->hasPermission('manage own exchanges')) {
-      //is there a better way to
-      if(!is_a($account, 'Drupal\user\Entity\User')) {
-        //that means we've been passed a userSession object, which has no field API
-        $user = User::load($account->id());
-      }
-      else ($user = $account);
-      $my_exchanges = Exchange::referenced_exchanges($user, TRUE);
-      if ($entity_type == 'mcapi_exchange') {
-        $exchanges = array($owner);
-      }
-      else {
-        $exchanges = Exchange::referenced_exchanges($owner, TRUE);
-      }
-      foreach($exchanges as $exchange) {
-        foreach ($my_exchanges as $my_exchange) {
-          if ($owner->id() == $my_exchange->id()) {
-            //the current manager-user is in the same exchange as the current entity
-            //TODO inject the entityManager
-            if (Wallet::spare($owner)) {
-              return AccessResult::allowed()->cachePerUser();
-            }
-          }
+    elseif ($account->hasPermission('manage mcapi')) {
+      if (Wallet::spare($owner)) {
+        $user = is_a($account, 'Drupal\user\Entity\User') ? $account : User::load($account->id());
+        if (array_intersect(array_keys(Exchanges::in($user, TRUE)), Exchanges::in($owner, TRUE))) {
+          //the current manager-user is in the same exchange as the current entity
+          return AccessResult::allowed()->cachePerUser();
         }
       }
     }

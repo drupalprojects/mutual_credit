@@ -40,7 +40,7 @@ class MinMax extends FormElement {
    */
   public static function process_minmax($element) {
     $currency = Currency::load($element['#curr_id']);
-    $element['limits'] = array(
+    $element += array(
       '#title' => t('!currencyname allowed balances', array('!currencyname' => $currency->label())),
       '#description' => array_key_exists('#description', $element) ? $element['#description'] : '',
       '#description_display' => 'before',
@@ -50,6 +50,7 @@ class MinMax extends FormElement {
         '#title' => t('Minimum'),
         '#description' => t('Must be less than or equal to zero'),
         '#type' => 'worth',
+        '#config' => TRUE,
         '#default_value' => array(
           array(
             'curr_id' => $element['#curr_id'],
@@ -64,6 +65,7 @@ class MinMax extends FormElement {
         '#title' => t('Maximum'),
         '#description' => t('Must be greater than 1.'),
         '#type' => 'worth',
+        '#config' => TRUE,
         //we key the default value with the curr_id to make the saved settings easier to read
         '#default_value' => array(
           array(
@@ -85,11 +87,10 @@ class MinMax extends FormElement {
    */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
     if (is_null($input))return;
-//    debug($input['limits']);
-    return array(
-      'min' => Worth::valueCallback($element['limits']['min'], $input['limits']['min'], $form_state),
-      'max' => Worth::valueCallback($element['limits']['max'], $input['limits']['max'], $form_state),
-    );
+    foreach (array('min', 'max') as $limit) {
+      $result[$limit] = is_numeric($input[$limit]) ? Worth::valueCallback($element[$limit], $input[$limit], $form_state) : NULL;
+    }
+    return $result;
   }
 
 }

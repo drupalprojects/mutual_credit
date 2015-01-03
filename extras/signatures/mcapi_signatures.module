@@ -20,7 +20,7 @@ function mcapi_signatures_mcapi_type_load($entities) {
 
 /**
  * implements hook_ENTITY_TYPE_presave().
- * add the signatures to a new transaction
+ * add the signatures to a new transaction object and sign for the current user
  */
 function mcapi_signatures_mcapi_transaction_presave($transaction) {
   //the start state has already been set in transaction::validate
@@ -80,7 +80,7 @@ function mcapi_signatures_mcapi_transaction_delete($transaction) {
  */
 function mcapi_signatures_mcapi_transaction_insert($transaction) {
   if (!isset($transaction->signatures)) return;
-
+  if (empty($transaction->parent)) return;
   $uid = \Drupal::currentUser()->id();
   $q = db_insert('mcapi_signatures')
     ->fields(array('serial', 'uid', 'signed'));
@@ -96,16 +96,17 @@ function mcapi_signatures_mcapi_transaction_insert($transaction) {
  * rewrites the signatures after the transaction is updated
  */
 function mcapi_signatures_mcapi_transaction_update($transaction) {
-  if (isset($transaction->signatures)) {
-    foreach ($transaction->signatures as $uid => $signed) {
-      $q = db_merge('mcapi_signatures')
-        ->keys(array(
-          'serial' => $transaction->serial->value,
-          'uid' => $uid
-        ))->fields(array(
-          'signed' => $signed
-        ))->execute();
-    }
+  if (!isset($transaction->signatures)) return;
+  if (empty($transaction->parent)) return;
+  debug($transaction->signatures);
+  foreach ($transaction->signatures as $uid => $signed) {
+    $q = db_merge('mcapi_signatures')
+      ->keys(array(
+        'serial' => $transaction->serial->value,
+        'uid' => $uid
+      ))->fields(array(
+        'signed' => $signed
+      ))->execute();
   }
 }
 
@@ -134,6 +135,7 @@ function mcapi_signatures_mcapi_transaction_view(array &$build, $transaction, $d
       '#transaction' => $build['#mcapi_transaction'],
       '#attached' => array('css' => array(drupal_get_path('module', 'mcapi_signatures') .'/templates/signatures.css'))
     );
+    debug('did the attached css work without making a library?');
   }
 }
 

@@ -9,7 +9,7 @@ namespace Drupal\mcapi_exchanges\Controller;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\mcapi\ExchangeInterface;
+use Drupal\mcapi_exchanges\ExchangeInterface;
 
 /**
  * Returns responses for Exchange routes.
@@ -45,13 +45,26 @@ class ExchangeController extends ControllerBase {
    * @param EntityInterface $mcapi_exchange
    *
    * @return array
-   *   An array suitable for drupal_render().
+   *   a renderable array
    */
-  protected function buildPage(ExchangeInterface $mcapi_exchange) {
+  public function buildPage(ExchangeInterface $mcapi_exchange) {
     return array(
       'exchanges' => $this->entityManager()
         ->getViewBuilder('mcapi_exchange')
         ->view($mcapi_exchange)
     );
+  }
+  /**
+   * show a list of transactions between this exchange and others
+   * 
+   * @param ExchangeInterface $mcapi_exchange
+   * 
+   * @return array
+   *   a renderable array
+   */
+  public function intertrading_wallet(ExchangeInterface $mcapi_exchange) {
+    //TODO show the view of the intertrading wallet.
+    $wallet = $mcapi_exchange->intertrading_wallet();
+    return views_embed_view('wallet_statement', 'embed_1', $wallet->id());
   }
 }

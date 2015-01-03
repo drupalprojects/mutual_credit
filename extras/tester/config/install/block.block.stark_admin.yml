@@ -2,7 +2,7 @@ uuid: 151a8a90-8202-48a7-895f-956495430911
 langcode: en
 status: true
 dependencies:
-  entity:
+  config:
     - system.menu.admin
   module:
     - system

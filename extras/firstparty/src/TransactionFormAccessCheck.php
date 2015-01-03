@@ -16,6 +16,7 @@ use Drupal\Core\Entity\EntityAccessCheck;
 use Drupal\Core\Entity\EntityType;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi_exchanges\Entity\Exchange;//only if enabled!
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
 
 
@@ -32,6 +33,7 @@ class TransactionFormAccessCheck extends EntityAccessCheck {
    *
    */
   public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
+  
     $result = AccessResult::forbidden();//TODO when to invalidate this?
     $user = User::load($account->id());
     if ($wids = \Drupal::entityManager()->getStorage('mcapi_wallet')->getOwnedIds($user)) {
@@ -40,15 +42,18 @@ class TransactionFormAccessCheck extends EntityAccessCheck {
       if ($account->hasPermission('configure mcapi')) {
         $result = AccessResult::allowed();
       }
-      //TODO how do we get $editform? //do we need a 'custom' access controller?
-      elseif ($exchange_id = $editform->get('exchange')) {
+      
+//      TODO move this
+      
+      //this is only possible if mcapi_exchanges module is installed.
+      elseif (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges') && $exchange_id = $editform->get('exchange')) {
         $exchange = Exchange::load($exchange_id);
-        if (is_object($exchange) && $exchange->is_member($account)) {
+        if (is_object($exchange) && $exchange->isMember($account)) {
           $result = AccessResult::allowed();
         }
       }
       //user can access the form if they are in at least one exchange
-      elseif (count(Exchange::referenced_exchanges($account, TRUE)) != 0) {
+      elseif (count(Exchanges::in($account, TRUE)) != 0) {
         $result = AccessResult::allowed();
       }
     }

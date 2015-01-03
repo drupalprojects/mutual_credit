@@ -9,7 +9,7 @@
 namespace Drupal\mcapi_1stparty;
 
 use Drupal\mcapi\Form\TransactionForm;
-use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Exchanges;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -68,12 +68,14 @@ class FirstPartyTransactionForm extends TransactionForm {
     }
     $form['payer']['#access'] = FALSE;
     $form['payee']['#access'] = FALSE;
-    $account = User::load(\Drupal::currentuser()->id());
 
     $form['mywallet'] = array(
       '#title' => t('My wallet')
     );
-    $my_wallets = mcapi_entity_label_list('mcapi_wallet', Wallet::ownedBy($account));
+    $my_wallets = mcapi_entity_label_list(
+      'mcapi_wallet',
+      Wallet::ownedBy(User::load(\Drupal::currentUser()->id()))
+    );
     //if I only have one wallet, we'll put a bogus disabled chooser
     //however disabled widgets don't return a value, so we'll store the value we need in a helper element
     if (\Drupal::config('mcapi.wallets')->get('entity_types.user:user') > 1) {//show a widget
@@ -81,7 +83,6 @@ class FirstPartyTransactionForm extends TransactionForm {
       $form['mywallet']['#options'] = $my_wallets;
       $form['mywallet']['#weight'] = -1;//ensure this is processed before the direction
     }
-    debug($form['mywallet']);
     if (count($my_wallets) < 2) {
       $form['mywallet']['#disabled'] = TRUE;
       $form['mywallet']['#default_value'] = reset($my_wallets);
@@ -92,8 +93,7 @@ class FirstPartyTransactionForm extends TransactionForm {
       );
     }
     $form['partner'] = array(
-      '#element_validate' => array('local_wallet_validate_id'),
-      '#exchanges' => array_keys(Exchange::referenced_exchanges()),
+      '#exchanges' => array_keys(Exchanges::in()),
       '#default_value' => $config->partner['preset']
     ) + $form['partner'];
 
@@ -133,27 +133,6 @@ class FirstPartyTransactionForm extends TransactionForm {
       $form['worth']['widget']['#allowed_curr_ids'] = $curr_ids;
     }
 
-    //TODO put this in the base transaction form,
-    //where the one checkbox can enable both payer and payee to be selected from any exchange
-    if (strpos($config->experience['twig'], '{{ intertrade }}') && Exchange::referenced_exchanges($account, TRUE, TRUE)) {
-      //this checkbox flips between partner_choosers
-      $form['intertrade'] = array(
-        '#title' => t('Intertrade'),
-        '#description' => t('Trade with someone outside your exchange'),
-        '#type' => 'checkbox',
-        '#default_value' => 0,
-      );
-      //make a second partner widget and switch between them
-      $form['partner']['#states'] = array(
-        'visible' => array(
-          ':input[name="intertrade"]' => array('checked' => FALSE)
-        )
-      );
-      $form['partner_all'] = $form['partner'];
-      $form['partner_all']['#exchanges'] = array();
-      $form['partner_all']['#states']['visible'][':input[name="intertrade"]']['checked'] = TRUE;
-    }
-
     //hide the state & type
     $form['state']['#type'] = 'value';
     //TODO get the first state of this workflow
@@ -189,7 +168,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     $values = $form_state->getValues();
     $form = $form_state->getCompleteForm();
     $my_wallet = isset($values['mywallet_value']) ? $values['mywallet_value'] : $values['mywallet'];
-    debug($my_wallet);
+    drupal_set_message("My wallet is $my_wallet [in firstparty_convert_direction]");
     if ($values['direction'] == 'outgoing') {
       $form_state->setValueForElement($form['payer'], $values['partner']);
       $form_state->setValueForElement($form['payee'], $my_wallet);

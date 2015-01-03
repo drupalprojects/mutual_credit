@@ -1,5 +1,7 @@
 <?php
 
+use Drupal\mcapi\Mcapi;
+
 /*
  * implements hook_tokens().
  */
@@ -10,8 +12,7 @@ function mcapi_tokens($type, $tokens, array $data = array(), array $options = ar
 
   $replacements = $replaced = array();
   $transaction = $data['mcapi'];
-  module_load_include('inc', 'mcapi');
-  mcapi_transaction_process_vars($replaced, $transaction);
+  Mcapi::processTransactionVars($replaced, $transaction);
   foreach ($tokens as $name => $original) {
     $replacements[$original] = $replaced[$name];
   }
@@ -74,7 +75,7 @@ function mcapi_token_info() {
   //this really should be more automated in core
   foreach ($definitions as $key => $def) {
     $info['tokens']['mcapi'][$key] = array(
-      'name' => $def->label(),
+      'name' => $def->getLabel(),
       'description' => $def->getDescription()
     );
   }

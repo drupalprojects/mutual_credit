@@ -1,7 +1,7 @@
 mcapi.admin:
   path: '/admin/accounting'
   defaults:
-    _content: 'Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _controller: 'Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
     _title: 'Accounting'
   requirements:
     _permission: 'access administration pages'
@@ -70,7 +70,7 @@ mcapi.admin_currency_delete:
 mcapi.admin.transactions:
   path: '/admin/accounting/transactions'
   defaults:
-    _content: 'Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _controller: 'Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
     _title: 'Transactions'
   requirements:
     _permission: 'access administration pages'
@@ -112,7 +112,7 @@ mcapi.transaction.op:
 mcapi.admin.workflow:
   path: '/admin/accounting/workflow'
   defaults:
-    _content: 'Drupal\mcapi\ListBuilder\WorkflowListBuilder::render'
+    _controller: 'Drupal\mcapi\ListBuilder\WorkflowListBuilder::render'
     _title: 'Workflow transitions'
   requirements:
     _permission: 'access administration pages'
@@ -143,7 +143,7 @@ mcapi.workflow_settings:
 mcapi.wallet_view:
   path: '/wallet/{mcapi_wallet}'
   defaults:
-    _entity_view: 'mcapi_wallet.summary'
+    _entity_view: 'mcapi_wallet.default'
     _title_callback: 'Drupal\mcapi\Controller\WalletController::pageTitle'
   requirements:
     _entity_access: 'mcapi_wallet.summary'
@@ -151,7 +151,7 @@ mcapi.wallet_view:
 mcapi.wallet_log:
   path: '/wallet/{mcapi_wallet}/log'
   defaults:
-    _entity_view: 'mcapi_wallet.log'
+    _controller: 'Drupal\mcapi\Controller\WalletController::Templog'
     _title_callback: 'Drupal\mcapi\Controller\WalletController::pageTitle'
   requirements:
     _entity_access: 'mcapi_wallet.details'
@@ -188,12 +188,4 @@ mcapi.masspay:
   requirements:
     _permission: 'manage mcapi'
 
-mcapi.exchange.delete_confirm:
-  path: '/exchange/{mcapi_exchange}/delete'
-  defaults:
-    _entity_form: 'mcapi_exchange.delete'
-  requirements:
-    _permission: 'manage mcapi'
-  options:
-    _admin_route: TRUE
 

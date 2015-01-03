@@ -95,13 +95,6 @@ class TransactionStorageSchema extends SqlContentEntityStorageSchema {
           'default' => 0,
           'description' => 'The Unix timestamp when the transaction was changed.'
         ),
-        'exchange' => array(
-          'description' => 'The exchange ID.',
-          'type' => 'int',
-          'unsigned' => TRUE,
-          'not null' => TRUE,
-          'default' => 0,
-        ),
         'incoming' => array(
           'type' => 'int',
           'not null' => TRUE,

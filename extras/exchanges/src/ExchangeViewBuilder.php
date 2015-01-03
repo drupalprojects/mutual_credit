@@ -33,7 +33,7 @@ class ExchangeViewBuilder extends EntityViewBuilder {
       'members' => array(
         '#prefix' => '<br />',
         '#markup' =>  \Drupal::l(
-          t('@count members', array('@count' => $entity->users())),
+          t('@count members', array('@count' => count($entity->users()))),
           Url::fromUri('base://exchange/'.$entity->id().'/members')//this is a view
         )
       ),

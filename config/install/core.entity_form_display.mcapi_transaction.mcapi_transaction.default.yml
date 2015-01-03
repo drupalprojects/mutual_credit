@@ -1,8 +1,7 @@
-uuid: a6a6634c-0ee2-4778-823e-62e1398cab63
 langcode: en
 status: true
 dependencies:
-  entity:
+  config:
     - field.instance.mcapi_transaction.mcapi_transaction.worth
   module:
     - mcapi

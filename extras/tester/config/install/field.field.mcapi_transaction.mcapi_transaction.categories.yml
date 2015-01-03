@@ -14,7 +14,7 @@ default_value_function: ''
 settings:
   handler: default
 dependencies:
-  entity:
+  config:
     - field.storage.mcapi_transaction.categories
 field_type: taxonomy_term_reference
 

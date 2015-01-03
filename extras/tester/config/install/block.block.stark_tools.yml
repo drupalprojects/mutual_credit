@@ -2,7 +2,7 @@ uuid: c501141a-ad73-4494-af05-0525e3ce5e8f
 langcode: en
 status: true
 dependencies:
-  entity:
+  config:
     - system.menu.tools
   module:
     - system

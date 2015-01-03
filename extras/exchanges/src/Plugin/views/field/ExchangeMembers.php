@@ -24,15 +24,9 @@ class ExchangeMembers extends FieldPluginBase {
   /**
    * {@inheritdoc}
    */
-  public function query() {
-    //$this->addAdditionalFields();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function render(ResultRow $values) {
-    return $this->getEntity($values)->users();
+    $ids = $this->getEntity($values)->users();
+    return count($ids);
   }
 
 }

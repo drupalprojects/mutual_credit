@@ -35,15 +35,12 @@ class Worth extends FormElement {
         array($class, 'validate')
       ),
       '#theme_wrappers' => array('form_element'),
-      '#attached' => array(
-        'css' => array(
-          drupal_get_path('module', 'mcapi') . '/css/worth-element.css',
-        )
-      ),
+      '#attached' => array('library' => array('mcapi/mcapi.worth.element')),
       '#minus' => FALSE,
       '#config' => FALSE,
       '#allowed_curr_ids' => array()
     );
+    debug('mcapi.worth.element', 'library');
   }
 
   /**
@@ -86,7 +83,6 @@ class Worth extends FormElement {
    * takes the raw #default_values and makes child widgets according to the currency format.
    */
   public static function process($element, FormStateInterface $form_state, $form) {
-    
     //we might need to filter #default_value not in config mode
     $worth_cardinality = count($element['#default_value']) > 1 ? 'multiple' : 'single';
 
@@ -101,7 +97,6 @@ class Worth extends FormElement {
       $element[$curr_id]['#type'] = 'container';
       $element[$curr_id]['#prefix'] = "<div class = \"$worth_cardinality\">";
       $element[$curr_id]['#suffix'] = '</div>';
-
       foreach ($currency->format as $i => $component) {
         if ($i % 2) { //an odd number so render a field
           $step = 1;
@@ -157,6 +152,7 @@ class Worth extends FormElement {
               $element[$curr_id][$i]['#placeholder'] = $i == 2 ? '' : str_pad('', $size, '0');
             }
           }
+          unset($options);
         }
         else {//an even number so render it as markup
           $element[$curr_id][$i] = array(

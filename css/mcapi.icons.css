@@ -1,14 +1,14 @@
-.toolbar-icon-accounting:before {
+.toolbar-icon-mcapi-admin:before {
   background-image: url("balance.787878.svg");
 }
-.no-svg .toolbar-icon-accounting:before {
+.no-svg .toolbar-icon-mcapi-admin:before {
   background-image: url("balance.787878.png");
 }
-.toolbar-icon-accounting:active:before,
-.toolbar-icon-accounting.active:before {
+.toolbar-icon-mcapi-admin:active:before,
+.toolbar-icon-mcapi-admin.active:before {
   background-image: url("balance.000000.svg");
 }
-.no-svg .toolbar-icon-accounting:active:before,
-.no-svg .toolbar-icon-accounting.active:before {
+.no-svg .toolbar-icon-mcapi-admin:active:before,
+.no-svg .toolbar-icon-mcapi-admin.active:before {
   background-image: url("balance.000000.png");
 }

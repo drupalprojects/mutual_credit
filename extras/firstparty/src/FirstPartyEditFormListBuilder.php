@@ -10,7 +10,7 @@ use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormInterface;
 use Drupal\Core\Url;
-use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi_exchanges\Entity\Exchange;//only if enabled!
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
 
 /**
@@ -23,7 +23,6 @@ class FirstPartyEditFormListBuilder extends ConfigEntityListBuilder{
    */
   public function buildHeader() {
     $header['title'] = t('Title');
-    $header['exchange'] = t('Exchange');
     $header['transaction_type'] = t('Workflow');
     return $header + parent::buildHeader();
   }
@@ -32,21 +31,12 @@ class FirstPartyEditFormListBuilder extends ConfigEntityListBuilder{
    * Overrides Drupal\Core\Entity\EntityListBuilder::buildRow().
    */
   public function buildRow(EntityInterface $entity) {
-    if (\Drupal::currentUser()->hasPermission('configure mcapi') ||
-      Exchange::load($entity->exchange)->is_member() ) {
       $style = array('style' => $entity->status ? '' : 'color:#999');
       //$class = array('style' => $entity->status ? 'enabled' : 'disabled');
       //TODO make a link out of this
       $row['title'] = $style + array(
         'data' => \Drupal::l($entity->label(), Url::fromRoute('mcapi.1stparty.'.$entity->id()))
       );
-      $exchange = $entity->exchange ? Exchange::load($entity->exchange) : NULL;
-      $row['exchange'] = $style + array(
-        'data' => array(
-          '#markup' => $exchange ? $exchange->label() : t('- All -')
-        )
-      );
-
       $row['transaction_type'] = $style + array(
         'data' => array('#markup' => $entity->type)
       );
@@ -54,36 +44,15 @@ class FirstPartyEditFormListBuilder extends ConfigEntityListBuilder{
       //TODO load mcapi.css somehow to show the disabled forms in gray using ths class above.
       //Also see the McapiForm listBuilder.
       return $row + parent::buildRow($entity);
-    }
+    
   }
 
-
-  /**
-   * {@inheritdoc}
-   */
-  public function __render() {
-    // @todo make this list filter by exchange, like on admin/structure/views
-    // views has its own javascript though, so maybe not so simple
-    $build['list'] = array(
-      '#theme' => 'table',
-      '#header' => $this->buildHeader(),
-      '#title' => $this->getTitle(),
-      '#rows' => array(),
-      '#empty' => $this->t('There is no @label yet.', array('@label' => $this->entityInfo['label'])),
-    );
-    foreach ($this->load() as $entity) {
-      if ($row = $this->buildRow($entity)) {
-        $build['list']['#rows'][$entity->id()] = $row;
-      }
-    }
-    return $build;
-  }
 
   /**
    * {@inheritdoc}
    */
   public function getFormID() {
-    return 'exchanges_list';
+    return 'firstparty_form_list';
   }
 
   /**

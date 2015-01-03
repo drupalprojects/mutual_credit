@@ -1,5 +1,5 @@
 mcapi_1stparty.editform.*:
-  type: mapping
+  type: config_entity
   label: 'Designed transaction form'
   mapping:
     id:

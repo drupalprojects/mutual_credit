@@ -83,7 +83,7 @@ class McapiBlockBase extends BlockBase {
 
   public function build() {
     $curr_ids = array_filter($this->configuration['curr_ids']);
-    //current user can only see the currencies which are in the same exchanges as him
+    //might want to move this to mcapi_exchanges
     if (empty($curr_ids)) {
       $otheruser = ($this->configuration['user_source'] == MCAPIBLOCK_USER_MODE_PROFILE) ? NULL : $this->account;
       //show only the currency which can be seen by the current user AND the profiled user

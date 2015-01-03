@@ -1,29 +1,28 @@
 <?php
 
 /**
- * @file
+ * @filee
  * mcapi.module
  */
 
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Utility\Token;
+use Drupal\Core\Url;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
+use Drupal\user\EntityOwnerInterface;
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Plugin\TransitionInterface;
 use Drupal\mcapi\TransactionInterface;
-use Drupal\mcapi\ExchangeInterface;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\State;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Type;
-use Drupal\mcapi\Entity\Exchange;
-use Drupal\Component\Utility\NestedArray;
-use Drupal\user\EntityOwnerInterface;
-use Drupal\Core\Url;
 
 //states are mutually exclusive //is it appropriate to use constants for plugin names?
 const TRANSACTION_STATE_FINISHED = 'done';
@@ -118,37 +117,47 @@ function mcapi_theme($existing, $type, $theme, $path) {
 function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode, $langcode) {
   if ($display->getComponent('wallets_summaries')) {
     //check the entity is of a type which can own a wallet.
-    if ($quants = \Drupal::config('mcapi.wallets')->get('entity_types')) {
-      $key = $entity->getEntityTypeId() .':'. $entity->bundle();
-      if (array_key_exists($key, $quants) && $quants[$key]) {
-        module_load_include('inc', 'mcapi');
-        $build['wallets_summaries'] = mcapi_view_wallets_summaries($entity);
+    $key = 'entity_types.' . $entity->getEntityTypeId() .':'. $entity->bundle();
+    if (\Drupal::config('mcapi.wallets')->get($key)) {
+      //get the wallets belonging to this entity
+      $wids = \Drupal::EntityManager()
+        ->getStorage('mcapi_wallet')
+        ->getOwnedIds($entity);
+      $build['wallets_summaries']['#theme'] = 'mcapi_wallets';
+      $viewbuilder =\Drupal::entityManager()->getViewBuilder('mcapi_wallet');
+      foreach (Wallet::loadMultiple($wids) as $wid => $wallet) {
+        if ($wallet->access('view')) {
+          $build['wallets_summaries']['#wallets'][$wid] = $viewbuilder->view($wallet, 'summary');
+        }
       }
     }
-    else drupal_set_message('config mcapi.wallets is empty');
-  }
-}
 
-/**
- * Implements hook_form_alter();
- * Add a submit callback to ContentEntityForms for contentTypes which reference exchanges
- * to check for entities joining and leaving exchanges
- * Form_alter is rather a blunt instrument but it is the best available.
- * Would be better to use hook_entity_presave or postsave but the old values aren't available there
- */
-function mcapi_form_alter(&$form, FormStateInterface $form_state, $form_id) {
-  if (array_key_exists('controller', $form_state) && $form_state->get('controller') instanceof \Drupal\Core\Entity\ContentEntityForm) {
-    $entity = $form_state->get('controller')->getEntity();
-    $form_state->loadInclude('mcapi', 'inc');
-    $lookup = bundles_in_exchanges();
-    $entity_type = $entity->getEntityTypeId();
-    if (array_key_exists($entity_type, $lookup)) {
-      if (array_key_exists($entity->bundle(), $lookup[$entity_type])) {
-        array_unshift($form['actions']['submit']['#submit'], 'mcapi_exchanges_changed_submit');
+    //show the add new wallet link
+    if (\Drupal::config('mcapi.wallets')->get('add_link_location') != 'local_action') {
+      $route_name = 'mcapi.wallet.add.'.$entity->getEntityTypeId();
+      $route_params = array('user' => $entity->id());
+      $access_manager = \Drupal::getContainer()->get('access_manager');
+      if ($access_manager->checkNamedRoute($route_name, $route_params, \Drupal::currentUser())) {
+        $build['wallets_summaries']['add_wallet_link'] = array(
+          '#type' => 'link',
+          '#title' => t('Add wallet'),
+          '#route_name' => $route_name,
+          '#route_parameters' => $route_params,
+          '#weight' => 2,
+          '#options' => array(
+            'attributes' => new Attribute(array(
+              'class' => array('add-wallet-link')
+            )),
+            '#attributes' => array('class' => array('add-wallet-link'))
+          ),
+          //this gets around the default css inline-block with which css 'clear' doesn't seem to work
+          '#prefix' => '<br />'
+        );
       }
     }
   }
-}
+  return $build;
+} 
 
 /**
  * implements hook_mail().
@@ -168,7 +177,6 @@ function mcapi_mail($key, &$message, $params) {
 }
 
 
-
 /**
  * implements hook_entity_extra_field_info().
  */
@@ -176,8 +184,6 @@ function mcapi_entity_extra_field_info() {
   module_load_include('inc', 'mcapi');
   return _mcapi_entity_extra_field_info();
 }
-
-
 
 /**
  * Machine name callback
@@ -187,14 +193,13 @@ function mcapi_entity_extra_field_info() {
  *
  * @returns CurrencyInterface
  *
- * @todo is this still needed?
  */
 function mcapi_currency_load($id) {
   return Currency::load($id);
 }
 
 /**
- * Helper function to populate a form widget's options with entity names
+ * Utility function to populate a form widget's options with entity names
  *
  * @param string $entity_type_id
  *
@@ -262,96 +267,14 @@ function mcapi_mcapi_transition(TransactionInterface $transaction, TransitionInt
   }
 }
 
-
-/**
- * element_validate callback for select_wallet
- * ensure the passed value is a wallet id, not of an intertrading wallet
- */
-function local_wallet_validate_id(&$element, FormStateInterface $form_state) {
-  $message = '';
-  if (is_numeric($element['#value'])) {
-    $wallet = Wallet::load($element['#value']);
-    if (!$wallet) {
-      $message = t('Invalid wallet id: @value', array('@value' => $element['#value']));
-    }
-  }
-  if ($message) {
-    $form_state->setError($element, $message);
-  }
-}
-
 /**
  * implements hook_element_info_alter().
  * adds the 'balances' icon via css
  */
 function mcapi_element_info_alter(&$items) {
-  $items['toolbar']['#attached']['css'][] = drupal_get_path('module', 'mcapi') . '/css/mcapi.icons.css';
+  $items['toolbar']['#attached']['library'][] = 'mcapi/mcapi.toolbar';
 }
 
-/**
- * field api default value callback
- * when creating a new user, populate the exchanges field
- * with the currentuser's values.
- * N.B. in FieldItemList::setValue
- * @param ContentEntityInterface $entity,
- * @param array $field_definition,
- *
- * @return array
- *   The uuids of the exchanges of which the passed Entity is a member
- *
- * //TODO an array of uuids whose keys I haven't understood yet
- */
-function mcapi_default_exchange_id(ContentEntityInterface $entity, $field_definition) {
-  if ($entity->getEntityTypeId == 'user' && $entity->id() == 0)drupal_set_message('putting user 0 in default exchange. Prevent this!');
-  $output = array();
-  foreach (Exchange::referenced_exchanges(NULL, TRUE) as $exchange) {
-    $output[]['target_uuid'] = $exchange->get('uuid')->value;
-  }
-  return $output;
-}
-
-/**
- * field api default value callback
- * TEMP...
- * when creating a new exchange, populate the currencies field
- * with the currentuser's values.
- * N.B. in FieldItemList::setValue
- *
- * @param ExchangeInterface $entity,
- * @param array $field_definition,
- * @param string $langcode
- *
- * @return array
- *   uuids whose keys I haven't understood yet
- */
-function mcapi_default_currency_id(ExchangeInterface $exchange, $field_definition) {
-  $output = array();
-  //default currencies are the currencies of the exchanges of which the current user is a member
-  foreach (exchange_currencies(Exchange::referenced_exchanges(NULL, TRUE)) as $currency) {
-    $output[]['target_uuid'] = $currency->uuid;
-  }
-  return $output;
-}
-
-/**
- * Determine whether the system architecture allows an entity to hold wallets.
- * which is to say, whether it is a contentEntity with an entityReference field for mcapi_exchanges
- * @param unknown $entity_type
- *   an entity OR entityType object
- *
- * @param string $bundle
- *   bundlename, if the first arg is an entityType
- *
- * @return NULL  | string
- *   TRUE means the entity is an exchange, string is the fieldname
- */
-function mcapi_wallet_owning_entitytype($entity_type, $bundle = '') {
-  $type_id = $entity_type->id();
-  if ($type_id == 'user') return 'exchanges';//made explicit to improve performance
-  elseif ($type_id == 'mcapi_exchange') return TRUE;
-  $fieldnames = Exchange::getEntityFieldnames();
-  return @$fieldnames[$type_id];
-}
 
 /**
  * implements hook_entity_insert()
@@ -362,48 +285,34 @@ function mcapi_wallet_owning_entitytype($entity_type, $bundle = '') {
 function mcapi_entity_insert($entity) {
   //note that intertrading wallets are created not here but in Exchange::postSave
   if (\Drupal::config('mcapi.wallets')->get('autoadd')) {
-    if (mcapi_wallet_owning_entitytype($entity->getEntityType(), $entity->bundle())) {
-      $type = $entity->getEntityTypeId();
-      //NB autoadd applies to ALL entity types or to none
-      $maxes = \Drupal::config('mcapi.wallets')->get('entity_types');
-      if ($max = @$maxes[$type .':'. $entity->bundle()]) {
-        //no need to check what the max is, since this is the first wallet created for this entity
-        $wallet = Wallet::create(array(
-          'entity_type' => $type,
-          'pid' => $entity->id(),
-          //default access controls are set automatically
-        ));
-        $wallet->save();
-      }
+    $type = $entity->getEntityTypeId();
+    //NB autoadd applies to ALL entity types or to none
+    $maxes = \Drupal::config('mcapi.wallets')->get('entity_types');
+    if ($max = @$maxes[$type .':'. $entity->bundle()]) {
+      //no need to check what the max is, since this is the first wallet created for this entity
+      $wallet = Wallet::create(array(
+        'entity_type' => $type,
+        'pid' => $entity->id(),
+        //default access controls are set automatically
+      ));
+      $wallet->save();
     }
   }
 }
 
 /**
  * implements hook_entity_update().
- * if an entity is a wallet owner, then refresh the wallet indices
+ * if the changed entity is a wallet owner, then refresh the wallet indices
  * especially in case the owner has moved to a different exchange
  */
 function mcapi_entity_update($entity) {
-  if (mcapi_wallet_owning_entitytype($entity->getEntityType(), $entity->bundle())) {
-    $storage = \Drupal::EntityManager()->getStorage('mcapi_wallet');
-    if ($wids = $storage->getOwnedIds($entity)) {
+  if (Mcapi::walletable($entity)) {
+    if ($wids = \Drupal::EntityManager()->getStorage('mcapi_wallet')->getOwnedIds($entity)) {
       $storage->reIndex(Wallet::loadMultiple($wids));
     }
   }
 }
 
-/**
- * implements hook_user_insert().
- * if there is only one exchange, put each user in it.
- */
-function mcapi_user_presave(&$edit, $account, $category) {
-  if (!$account->id() && !\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-    //there is only one exchange, but best not presume it has an id of 1
-    $exchanges = Exchange::loadMultiple();
-    $account->set('exchanges', reset($exchanges)->id());
-  }
-}
 
 /**
  * implements hook_entity_delete()
@@ -411,78 +320,11 @@ function mcapi_user_presave(&$edit, $account, $category) {
  * @todo this should be pre-deletion
  */
 function mcapi_entity_delete($entity) {
-  //see Exchange::preDelete();
-  if (mcapi_wallet_owning_entitytype($entity->getEntityType(), $entity->bundle())) {
+  if (Mcapi::walletable($entity)) {
     Wallet::orphan($entity);
   }
 }
 
-/**
- * implements hook_ENTITY_TYPE_delete().
- * updates the wallet exchanges index table when a wallet is deleted
- * @todo refactor this so the table name is in the wallet storage controller
- */
-function mcapi_mcapi_wallet_delete($entity) {
-  db_delete('mcapi_wallet_exchanges_index')->condition('wid', $entity->id())->execute();
-}
-
-
-/**
- * get all the currencies from (common to) the given exchanges, sorted
- * @param array $exchanges
- *
- * @param boolean $ticks
- *   filter out currencies with no exchange rate
- *
- * @param boolean $status
- *   filter out disabled currencies
- *
- * @return array
- *   the filtered currencies
- */
-function exchange_currencies(array $exchanges, $ticks = FALSE) {
-  $currencies = array();
-  foreach ($exchanges as $exchange) {
-    foreach ($exchange->get('currencies')->referencedEntities() as $currency) {
-      if (!$ticks || $currency->ticks) {
-        $currencies[$currency->id()] = $currency;
-      }
-    }
-  }
-  uasort($currencies, array('\Drupal\Component\Utility\SortArray', 'sortByWeightProperty'));
-  return $currencies;
-}
-
-/**
- * implements hook_block_view_BLOCK_BASE_ID_alter
- * Add a links to the menu block, one for each exchange the current user is in.
- * The alternative, to create many links and give them all access control would be
- * rather expensive, I think
- *
- * @todo second opinion?
- */
-function _mcapi_block_view_system_menu_block_alter(&$build, $block) {
-  if($block->getPluginId() == 'system_menu_block:tools') {
-    if (!array_key_exists('content', $build)) {
-      $build['content'] = array();
-    }
-    foreach (Exchange::referenced_exchanges() as $exchange) {
-      //does a menu link really require all of these properties
-      $renderable = array(
-      	'#theme' => 'menu_link',
-        '#title' => $exchange->label(),
-        '#href' => $exchange->url(),
-        '#weight' => -100,
-        '#localized_options' => array(),
-        '#below' => array(),
-        '#attributes' => new Attribute(),
-        '#original_link' => array('menu_name' => 'tools'),//required by menu_block_view_system_menu_block_alter
-      );
-      array_unshift($build['content'], $renderable);
-    }
-    //TODO exchange admins links to their currency(s) OR a link to admin/accounting/currencies
-  }
-}
 
 /**
  * implements hook_local_tasks_alter().
@@ -507,19 +349,6 @@ function mcapi_entity_operation_alter(&$operations, $entity) {
     'mcapi_transaction.sentence'
   );
   if (in_array($entity->id(), $ids)) $operations = array();
-}
-
-/**
- * Delete all transaction entities
- * For development only!
- * @todo move this to be a drush command
- */
-function mcapi_wipeslate() {
-  $conf = \Drupal::config('mcapi.misc');
-  $storage = \Drupal::entityManager()->getStorage('mcapi_transaction');
-  $entities = $storage->loadMultiple();
-  $storage->delete($entities);
-  echo 'all transactions deleted';
 }
 
 /**

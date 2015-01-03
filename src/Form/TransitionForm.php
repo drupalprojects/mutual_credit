@@ -113,9 +113,8 @@ class TransitionForm extends EntityConfirmFormBase {
     //this form will submit and expect ajax
     //TODO this doesn't work in D8
     $form['actions']['submit']['#attributes'] = new Attribute(array('class' => array('use-ajax-submit')));
-    //TODO I don't know if those are needed
-    $form['#attached']['js'][] = 'core/misc/jquery.form.js';
-    $form['#attached']['js'][] = 'core/misc/ajax.js';
+    debug('Try it without the attached libraries');
+    $form['#attached']['library'] = ['jquery.form', 'drupal.ajax'];
 
 
     //Left over from d7

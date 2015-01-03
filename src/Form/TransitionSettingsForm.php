@@ -35,7 +35,7 @@ class TransitionSettingsForm extends ConfigFormBase {
 
     	//TODO this will be replaced by rules
       $defaults = $this->config('mcapi.transition.'.$this->plugin->getPluginId());
-    	$tokens = mcapi_transaction_list_tokens(TRUE);
+    	$tokens = Mcapi::transactionTokens(TRUE);
     	unset($tokens[array_search('links', $tokens)]);
     	$form['notify'] = array(
   	    '#type' => 'fieldset',

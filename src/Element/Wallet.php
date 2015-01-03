@@ -10,7 +10,7 @@ namespace Drupal\mcapi\Element;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\Textfield;
 use Drupal\Core\Template\Attribute;
-use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Exchanges;
 
 /**
  * Provides a widget to select wallets, using autocomplete
@@ -30,6 +30,7 @@ class Wallet extends Textfield {
     $element['#autocomplete_route_name'] = 'mcapi.wallets.autocomplete';
     array_unshift($element['#process'], array($class, 'process_select_wallet'));
     $element['#prerender'][] = array($class, 'prerender_wallet_field');
+    $element['#element_validate'][] = array($class, 'local_wallet_validate_id');
     $element['#required'] = TRUE;
     $element['#multiple'] = FALSE;
     //TODO this causes an error in alpha 15 which isn't all expecting attribute objects yet
@@ -41,8 +42,6 @@ class Wallet extends Textfield {
    * process callback
    */
   static function process_select_wallet($element, FormStateInterface $form_state) {
-    $exchanges = $element['#exchanges'] ? : array_keys(Exchange::referenced_exchanges());
-    $element['#autocomplete_route_parameters'] = array('exchanges' => implode(',', $exchanges));
     $element['#placeholder'] = t('Wallet name or #number');
     return $element;
   }
@@ -67,7 +66,7 @@ class Wallet extends Textfield {
   static function local_wallet_validate_id(&$element, FormStateInterface $form_state) {
     $message = '';
     if (is_numeric($element['#value'])) {
-      $wallet = Wallet::load($element['#value']);
+      $wallet = \Drupal\mcapi\Entity\Wallet::load($element['#value']);
       if (!$wallet) {
         $message = t('Invalid wallet id: @value', array('@value' => $element['#value']));
       }

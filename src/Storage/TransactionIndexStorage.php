@@ -50,10 +50,9 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         'type' => $record->type,
         'created' => $record->created,
         'child' => intval((bool)$record->parent),
-        'exchange' => $record->exchange
       ];
       
-      $fields = ['xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child', 'exchange'];
+      $fields = ['xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'];
       $query = $this->database->insert('mcapi_transactions_index')->fields($fields);
   
       foreach ($transaction->worth->getValue() as $worth) {
@@ -388,6 +387,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    *   a comma separated list of state ids, in quote marks
    */
   private function counted_states() {
+    $counted_states = [];
     foreach (mcapi_states_counted(TRUE) as $state_id) {
       $counted_states[] = "'".$state_id."'";
     }
@@ -413,6 +413,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
  */
 function mcapi_states_counted($counted = TRUE) {
   $counted_states = \Drupal::config('mcapi.misc')->get('counted');
+  $result = [];
   foreach (State::loadMultiple() as $state) {
     if (array_key_exists($state->id, $counted_states)) {
       if ($counted_states[$state->id] == $counted) {

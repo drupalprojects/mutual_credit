@@ -5,6 +5,7 @@ namespace Drupal\mcapi\Form;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\mcapi\Mcapi;
 
 class MiscForm extends ConfigFormBase {
 
@@ -21,7 +22,7 @@ class MiscForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->configFactory->get('mcapi.misc');
     module_load_include('inc', 'mcapi');
-    foreach (mcapi_transaction_list_tokens(TRUE) as $token) {
+    foreach (Mcapi::transactionTokens(TRUE) as $token) {
       $tokens[] = "[mcapi:$token]";
     }
     $form['sentence_template'] = array(

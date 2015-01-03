@@ -81,10 +81,10 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
    * @param unknown $element
    * @param unknown $form_state
    */
-  public function validate_formula($element, $form_state) {
+  public static function validate_formula($element, $form_state) {
     if (!strlen($element['#value'])) return;
     $test_values = array('gross_in' => 110, 'gross_out' => 90, 'trades' => 10, 'partners' => 5);
-    $value = $this->parse($element['#value'], $test_values);
+    $value = Self::parse($element['#value'], $test_values);
 
     if (!is_numeric($value)) {
       //TODO display this error properly
@@ -97,7 +97,7 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
    * @param unknown $string
    * @param unknown $values
    */
-  private function parse($string, $values) {
+  private static function parse($string, $values) {
     $tokens = array('@in', '@out', '@num', '@ptn');
     if (empty($values)) return '';
     $replacements = array(

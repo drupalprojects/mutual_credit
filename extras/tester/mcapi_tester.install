@@ -3,14 +3,14 @@
 
 use Drupal\user\Entity\User;
 use Drupal\user\Entity\Role;
-use Drupal\mcapi\Entity\Exchange;
+use Drupal\mcapi\Exchanges;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi_exchanges\Entity\Exchange;
 use Drupal\taxonomy\Entity\Term;
 
 function mcapi_tester_install() {
-  drupal_set_message('blah');
   if (\Drupal::CurrentUser()->id() == 0) {//drush runs as user 0 but that buggers things up
     \Drupal::CurrentUser()->setAccount(User::load(1));
   }
@@ -23,6 +23,7 @@ function mcapi_tester_install() {
     ))->save();
   }
   echo "Created taxonomy terms";
+
 
   //now
   $uids = mcapi_tester_make_users(26);//should make wallets as well
@@ -47,7 +48,11 @@ function mcapi_tester_modules_installed($modules) {
 
 
 function multiple_exchanges() {
+
+
   $exchange_ids = mcapi_tester_make_exchanges();
+  
+return;
   put_users_in_exchanges();
   //make some intertrading transactions
   mcapi_tester_make_transactions(25, TRUE);
@@ -64,7 +69,11 @@ function multiple_exchanges() {
  * 
   FieldStorageConfig::load('mcapi_transaction.categories')->delete();
  */
-function mcapi_tester_uninstall() {
+function mcapi_tester_uninstall() {  return;
+
+
+
+
   //in case drush is running
   \Drupal::CurrentUser()->setAccount(User::load(1));
 
@@ -87,12 +96,15 @@ function mcapi_tester_uninstall() {
     if ($user->id() < 2) continue;
     $user->delete();//all users' wallets are now 'unused' so will be deleted also
   }
-  //delete all exchanges except the first
-  foreach (Exchange::loadMultiple() as $exchange) {
-    if ($exchange->id() == 1)continue;
-    $exchange->status->setValue(FALSE);//necessary?
-    $exchange->save();
-    $exchange->delete();//their intertrading wallets should go automatically
+  
+  if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+    //delete all exchanges except the first
+    foreach (Exchange::loadMultiple() as $exchange) {
+      if ($exchange->id() == 1)continue;
+      $exchange->status->setValue(FALSE);//necessary?
+      $exchange->save();
+      $exchange->delete();//their intertrading wallets should go automatically
+    }
   }
 
   foreach (Currency::loadMultiple() as $currency) {
@@ -114,9 +126,12 @@ function mcapi_exchanges_uninstall() {
     $currency->delete();
   }
   //delete all exchanges except 1
-  foreach (Exchange::loadMultiple() as $exchange) {
-    if ($exchange->id() > 1) {
-      $exchange->delete();
+  
+  if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+    foreach (Exchange::loadMultiple() as $exchange) {
+      if ($exchange->id() > 1) {
+        $exchange->delete();
+      }
     }
   }
   put_users_in_exchanges();
@@ -144,23 +159,27 @@ function mcapi_tester_make_exchanges() {
     'Saturn' => 'Saturnine Schillings',
     'Jupiter' => 'Jovial Jewels'
   );
+  $user1 = User::load(1);
   $w = 4;//because 3 currencies are already provided
   //this is less code and less maintainance than providing config files
   foreach ($names as $exchange_name => $currname) {
-
     $first = substr($currname, 0, 1);
-    $props = array(
-      'id' => strtoLower($first.$first),
-      'name' => $currname,
-      'zero' => rand(0, 1),
-      'issuance' => CURRENCY_TYPE_EXCHANGE,
-      'deletion' => 1,
-      'format' => array($first.$first, '000', ':', '99'),
-      'weight' => $w,
-      'ticks' => 10*rand(1, 6)
-    );
-    $c = Currency::create($props);
-    $c->save();
+    $id = strtoLower($first.$first);
+    $c = Currency::load($id);
+    if (!$c) {
+      $props = array(
+        'id' => $id,
+        'name' => $currname,
+        'zero' => rand(0, 1),
+        'issuance' => CURRENCY_TYPE_EXCHANGE,
+        'deletion' => 1,
+        'format' => array($first.$first, '000', ':', '99'),
+        'weight' => $w,
+        'ticks' => 10*rand(1, 6)
+      );
+      $c = Currency::create($props);
+      $c->save();
+    }
     $w++;
 
     $props = array(
@@ -170,13 +189,8 @@ function mcapi_tester_make_exchanges() {
     );
     $e = Exchange::create($props);
     $e->save();
-
     //for the purposes of testing we put user 1 in every exchange
-    $account = User::load(1);
-    $vals = $account->exchanges->getValue(FALSE);
-    $vals = array_merge($vals, array(array('target_id' => $e->id())));
-    $account->set('exchanges', $vals);
-    $account->save();
+    mcapi_exchange_join($e->id(), array($user1));
     $ids[] = $e->id();
   }
   echo "\nCreated exchanges";
@@ -222,25 +236,21 @@ function put_users_in_exchanges() {
   $accounts = User::loadMultiple();
   unset($accounts[0], $accounts[1]);
   $usersperexchange = floor(count($accounts)/count($all_exchange_ids));
+  debug($usersperexchange.' users per exchange');
   foreach ($accounts as $account) {
-    if (count($all_exchange_ids) == 1) {
-      $account->exchanges->setValue(array(1));
+    //give the first user in each exchange the manager role and the second the helper
+    $memnum = ($account->id() + 1) % $usersperexchange;
+    if ($memnum == 0) $account->addRole($manager_role->id());
+    elseif ($memnum == 1) $account->addRole($helper_role->id());
+    //we'll put the users sequentially into the exchanges so that its easy to guess where they are
+    $exchange_id = $all_exchange_ids[$account->id() % $usersperexchange];
+    debug('putting user '.$account->id(). ' in exchange '.$exchange_id);
+    mcapi_exchange_join($exchange_id, array($account));//saves the account
+    if ($memnum == 1) {//tell the exchange that it is owned by the manager
+      $exchange = Exchange::load($exchange_id);
+      $exchange->uid->value = $account->id();
+      $exchange->save();
     }
-    else {
-      //give the first user in each exchange the manager role and the second the helper
-      $memnum = ($account->id() + 1) % $usersperexchange;
-      if ($memnum == 0) $account->addRole($manager_role->id());
-      elseif ($memnum == 1) $account->addRole($helper_role->id());
-      //we'll put the users sequentially into the exchanges so that its easy to guess where they are
-      $exchange_id = $all_exchange_ids[$account->id() % $usersperexchange];
-      $account->exchanges->setValue(array($exchange_id));
-      if ($memnum == 1) {//tell the exchange that it is owned by the manager
-        $exchange = Exchange::load($exchange_id);
-        $exchange->uid->value = $account->id();
-        $exchange->save();
-      }
-    }
-    $account->save();
     $uids[] = $account->id();
   }
 
