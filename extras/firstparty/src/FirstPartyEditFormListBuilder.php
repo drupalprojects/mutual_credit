@@ -34,8 +34,11 @@ class FirstPartyEditFormListBuilder extends ConfigEntityListBuilder{
       $style = array('style' => $entity->status ? '' : 'color:#999');
       //$class = array('style' => $entity->status ? 'enabled' : 'disabled');
       //TODO make a link out of this
+      $name = $entity->access('blah') ? 
+        \Drupal::l($entity->label(), Url::fromRoute('mcapi.1stparty.'.$entity->id())) : 
+        $entity->label();
       $row['title'] = $style + array(
-        'data' => \Drupal::l($entity->label(), Url::fromRoute('mcapi.1stparty.'.$entity->id()))
+        'data' => $name
       );
       $row['transaction_type'] = $style + array(
         'data' => array('#markup' => $entity->type)

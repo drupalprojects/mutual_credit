@@ -11,6 +11,8 @@
 namespace Drupal\mcapi\Plugin\Action;
 
 use Drupal\Core\Action\ConfigurableActionBase;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\rules\Engine\RulesActionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Transaction;
 
@@ -20,17 +22,36 @@ use Drupal\mcapi\Entity\Transaction;
  * @Action(
  *   id = "levy",
  *   label = @Translation("Add a levy to a new transaction"),
- *   type = "mcapi"
+ *   context = {
+ *     "mcapi_transaction" = @ContextDefinition("entity",
+ *       label = @Translation("Transaction"),
+ *       description = @Translation("The transaction to which the levy will be added")
+ *     ),
+ *     "rate" = @ContextDefinition("field",
+ *       label = @Translation("Worth config"),
+ *       description = @Translation("Amount to be levied.")
+ *     ),
+ *     "target" = @ContextDefinition("mcapi_wallet",
+ *       label = @Translation("Partner"),
+ *       description = @Translation("The wallet which give's/receives the extra payment")
+ *     )
+ *   }
  * )
  */
-class Levy extends ConfigurableActionBase {
+class Levy extends RulesActionBase {//implements ContainerFactoryPluginInterface {
 
   /**
    * {@inheritdoc}
    */
   public function execute($transaction = NULL) {
+    $transaction = $this->getContextValue('mcapi_transaction');
+    $worth = $this->getContextValue('worth');
+    $target = $this->getContextValue('target');
+    $round = $this->getContextValue('round');
+    //TODO what should this output?
+    //old code follows
     $values = array();
-    foreach ($this->configuration['worth'] as $delta => $item) {
+    foreach ($worth as $delta => $item) {
       //if this currency was in the prime transaction, pass it to the calculator
       $calculated = Transaction::calc($item['value'], $transaction->worth->val($item['curr_id']));
       //don't save zero value auto transactions, even if the currency settings permit

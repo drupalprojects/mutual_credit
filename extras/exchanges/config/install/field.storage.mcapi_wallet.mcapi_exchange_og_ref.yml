@@ -1,17 +1,18 @@
-id: user.exchanges
+langcode: en
 status: true
 dependencies:
   module:
     - entity_reference
     - mcapi
-langcode: en
-field_name: exchanges
-entity_type: user
+id: mcapi_wallet.mcapi_exchange_og_ref
+field_name: mcapi_exchange_og_ref
+entity_type: mcapi_wallet
 type: entity_reference
 settings:
   target_type: mcapi_exchange
 module: entity_reference
-locked: false
-cardinality: '-1'
-translatable: false
+locked: true
+cardinality: -1
+translatable: true
 indexes: {  }
+

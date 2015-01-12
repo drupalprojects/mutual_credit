@@ -16,6 +16,6 @@ settings:
   handler_settings:
     target_bundles: {  }
 dependencies:
-  entity:
+  config:
     - field.storage.mcapi_exchange.currencies
 field_type: entity_reference

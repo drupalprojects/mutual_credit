@@ -32,7 +32,7 @@ class RouteWallets extends ArgumentDefaultPluginBase {
     //only for ONE given specific entityType
     //so this function needs to decide whether to return an argument
     foreach (\Drupal::service('current_route_match')->getParameters()->all() as $key => $entity) {
-      if (Mcapi::walletable($entity) {
+      if (Mcapi::walletable($entity)) {
         $ids = Wallet::ownedBy($entity);
       }
     }

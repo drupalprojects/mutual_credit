@@ -173,7 +173,7 @@ mcapi.admin_wallets:
     _permission: 'configure mcapi'
 
 mcapi.wallets.autocomplete:
-  path: '/mcapi/walletcomplete/{exchanges}'
+  path: '/mcapi/walletcomplete'
   defaults:
     _controller: 'Drupal\mcapi\Controller\WalletAutocompleteController::autocomplete'
   requirements:

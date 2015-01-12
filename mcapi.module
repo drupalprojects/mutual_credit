@@ -307,7 +307,8 @@ function mcapi_entity_insert($entity) {
  */
 function mcapi_entity_update($entity) {
   if (Mcapi::walletable($entity)) {
-    if ($wids = \Drupal::EntityManager()->getStorage('mcapi_wallet')->getOwnedIds($entity)) {
+    $storage = \Drupal::EntityManager()->getStorage('mcapi_wallet');
+    if ($wids = $storage->getOwnedIds($entity)) {
       $storage->reIndex(Wallet::loadMultiple($wids));
     }
   }

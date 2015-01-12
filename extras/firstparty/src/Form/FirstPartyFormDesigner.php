@@ -399,7 +399,7 @@ class FirstPartyFormDesigner extends EntityForm {
   /**
    * Overrides Drupal\Core\Entity\EntityForm::save().
    */
-  public function save(array $form, FormStateInterface $form_state) {
+  public function submitForm(array $form, FormStateInterface $form_state) {
     $form_state->cleanValues();
     $values = $form_state->getValues();
     //we need to alter the structure a bit for the fieldAPI fields
@@ -413,7 +413,6 @@ class FirstPartyFormDesigner extends EntityForm {
         $this->entity->set($name, $value);
       }
     }
-    $status = $this->entity->save();
 
     \Drupal::service('router.builder')->rebuild();
 

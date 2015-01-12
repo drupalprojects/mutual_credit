@@ -7,7 +7,9 @@
 
 namespace Drupal\mcapi\Plugin\Action;
 
-use Drupal\Core\Action\ConfigurableActionBase;
+
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\rules\Engine\RulesActionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Currency;
 
@@ -17,15 +19,31 @@ use Drupal\mcapi\Entity\Currency;
  * @Action(
  *   id = "one_off_payment",
  *   label = @Translation("One off payment"),
- *   type = "mcapi"
+ *   context = {
+ *     "description" = @ContextDefinition("field",
+ *       label = @Translation("Description"),
+ *       description = @Translation("What the payment is for")
+ *     ),
+ *     "type" = @ContextDefinition("field",
+ *       label = @Translation("Type"),
+ *       description = @Translation("The transaction type, or workflow path")
+ *     ),
+ *     "otherwallet" = @ContextDefinition("mcapi_wallet",
+ *       label = @Translation("Other walet"),
+ *       description = @Translation("The wallet to trade with")
+ *     )
+ *   }
  * )
  */
-class OneOffPayment extends ConfigurableActionBase {
+class OneOffPayment extends RulesActionBase {//implements ContainerFactoryPluginInterface {
 
   /**
    * {@inheritdoc}
    */
   public function execute($wallet = NULL) {
+    $description = $this->getContextValue('description');
+    $type = $this->getContextValue('type');
+    $otherwallet = $this->getContextValue('otherwallet');
 
     $values = array(
       //allow a price to be fixed on the entity using the worth field.

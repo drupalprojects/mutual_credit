@@ -2,11 +2,13 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Controller\WalletAutocompleteController.
+ * Contains \Drupal\mcapi_exchanges\Controller\ExchangesWalletAutocompleteController.
+ * Mostly copied from \Drupal\mcapi\Controller\WalletAutocompleteController
  */
 
-namespace Drupal\mcapi\Controller;
+namespace Drupal\mcapi_exchanges\Controller;
 
+use Drupal\mcapi\Controller\WalletAutocompleteController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\mcapi\Entity\Wallet;
@@ -15,18 +17,10 @@ use Drupal\mcapi\Entity\Wallet;
  * Returns responses for Transaction routes.
  * @todo Make this better
  */
-class WalletAutocompleteController {
-
-  function __construct($arg1) {
-    mdump($arg1);die('WalletAutocompleteController');
-  }
-  
-  function create($container) {
-    mtrace();
-  }
+class ExchangesWalletAutocompleteController extends WalletAutocompleteController{
 
   /*
-   * get a list of all wallets.
+   * get a list of all wallets in exchanges of which the the current user is a member.
    *
    */
   function autocomplete(Request $request) {
@@ -35,6 +29,11 @@ class WalletAutocompleteController {
     $results = array();
 
     $conditions = array();
+
+    $param = explode(',', \Drupal::routeMatch()->getParameter('exchanges'));
+    if ($exchanges = array_filter($param)) {
+      $conditions['exchanges'] = $exchanges;
+    }
 
     $string = $request->query->get('q');
 
@@ -50,30 +49,9 @@ class WalletAutocompleteController {
     else {
       $conditions['fragment'] = $string;
     }
+
     //TODO inject this
     return $this->returnWallets(\Drupal\mcapi\Storage\WalletStorage::filter($conditions));
-
-  }
-  
-  protected function returnWallets($wids) {
-    if (empty($wids)) {
-      $json = array(
-        array(
-          'value' => '',
-          'label' => '--'.t('No matches').'--'
-        )
-      );
-    }
-    else {
-      foreach (Wallet::loadMultiple($wids) as $wallet) {
-        $json[] = array(
-          'value' => $wallet->label(NULL, FALSE),//maybe shorter
-          'label' => $wallet->label(NULL, TRUE)
-          //both values should end in the hash which is needed for parsing later
-        );
-      }
-    }
-    return new JsonResponse($json);
   }
 
 }

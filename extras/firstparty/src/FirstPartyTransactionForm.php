@@ -15,29 +15,36 @@ use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
 use Drupal\Core\Template\Attribute;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
 class FirstPartyTransactionForm extends TransactionForm {
 
-  var $config;//the settings as a configuration object
+  public $config;//the settings as a configuration object
 
-  function __construct(EntityManagerInterface $entity_manager, $form_name = NULL) {
+  function __construct(EntityManagerInterface $entity_manager, $route_match, $form_name = NULL) {
     parent::__construct($entity_manager);
-    //in alpha12 this protected $moduleHandler is declared in Drupal\Core\Form\FormBuilder but never populated
-    $this->moduleHandler = \Drupal::moduleHandler();
 
     if (!$form_name) {
       //TODO is there a more elegant way to get the route options parameters
-      //or to pass this property somewhere easier to access?
       //see \Drupal\mcapi_1stparty\FirstPartyRoutes
-      $options = \Drupal::request()->attributes->get('_route_object')->getOptions();
-      //this is the only way I know how to get the args. Could it be more elegant?
-      $form_name = $options['parameters']['1stparty_editform'];
+      $form_name = $route_match->getRouteObject()->getOptions()['parameters']['1stparty_editform'];
     }
     $this->config = entity_load('1stparty_editform', $form_name);
     //makes $this->entity;
     $this->prepareTransaction();
   }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('entity.manager'),
+      $container->get('current_route_match')
+    );
+  }
+
 
   /**
    * Symfony routing callback

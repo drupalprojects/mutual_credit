@@ -435,7 +435,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'type' => 'datetime_timestamp',
       'weight' => 10,
     ))
-    ->setDisplayConfigurable('form', TRUE);;
+    ->setDisplayConfigurable('form', TRUE);
 
     $fields['changed'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))

@@ -32,7 +32,7 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  *   id = "mcapi_exchange",
  *   label = @Translation("Exchange"),
  *   handlers = {
- *     "storage" = "Drupal\mcapi\Storage\ExchangeStorage",
+ *     "storage" = "Drupal\mcapi_exchanges\ExchangeStorage",
  *   },
  *   admin_permission = "configure mcapi",
  *   translatable = FALSE,
@@ -139,8 +139,17 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
 
     $fields['mail'] = BaseFieldDefinition::create('email')
       ->setLabel(t('Email'))
-      ->setDescription(t('The official contact address'))
-      ->setRequired(TRUE);
+      ->setDescription(t('The official contact address'));
+      
+    $fields['created'] = BaseFieldDefinition::create('created')
+    ->setLabel(t('Created'))
+    ->setDescription(t('The time that the transaction was created.'))
+    ->setTranslatable(TRUE)
+    ->setDisplayOptions('view', array(
+      'label' => 'hidden',
+      'type' => 'timestamp',
+    ))
+    ->setDisplayConfigurable('form', TRUE);;
 
     
     //TODO in beta2, this field is required by views. Delete if pos

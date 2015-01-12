@@ -86,3 +86,7 @@ mcapi_1stparty.editform.*:
         preview:
           type: text
           label: Preview mode
+    third_party_settings:
+      type: sequence
+      label: Third party settings
+      sequence: { }

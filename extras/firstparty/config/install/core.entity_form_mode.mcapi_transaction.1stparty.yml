@@ -1,4 +1,3 @@
-uuid: 12384c3b-ccbf-49d8-aa4d-77451e8974b1
 langcode: en
 status: true
 dependencies:
@@ -8,4 +7,4 @@ id: mcapi_transaction.1stparty
 label: '1st Party'
 targetEntityType: mcapi_transaction
 cache: true
-
+third_party_settings: { }

@@ -28,7 +28,7 @@ class Exchanges {
    * If an exchange is passed, it returns itself
    *
    * @param ContentEntityInterface $entity
-   *   Any Content Entity which has a reference field pointing towards mcapi_exchange entities
+   *   Any Content Entity which is a member of an exchange
    *
    * @return integer[]
    *   Exchange entity ids
@@ -37,6 +37,9 @@ class Exchanges {
    */
   static function in(ContentEntityInterface $entity = NULL, $enabled = TRUE, $open = FALSE) {
     if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+      if (!is_object($entity)) {
+        $entity = User::load(\Drupal::currentUser()->id());
+      }
       if ($entity->getEntityTypeId() == 'user') drupal_set_message('Exchanges::in not suitable for finding out what group a user is in');
 
   //    $groups = og_get_entity_groups($entity_type = 'mcapi_exchange', $entity, array(OG_STATE_ACTIVE), EXCHANGE_OG_REF);

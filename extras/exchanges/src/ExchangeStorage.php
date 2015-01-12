@@ -6,7 +6,7 @@
  * @todo make an interface for this
  */
 
-namespace Drupal\mcapi\Storage;
+namespace Drupal\mcapi_exchanges;
 
 use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 

@@ -10,6 +10,7 @@ namespace Drupal\mcapi_1stparty\Entity;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\Annotation\EntityType;
+use Drupal\Core\Config\Entity\ThirdPartySettingsTrait;
 
 /**
  * Defines the 1stparty_editform entity.
@@ -47,6 +48,8 @@ use Drupal\Core\Entity\Annotation\EntityType;
  */
 
 class FirstPartyFormDesign extends ConfigEntityBase {
+
+  use ThirdPartySettingsTrait;
 
   public $id;
   public $exchange;
@@ -118,20 +121,6 @@ Direction: [mcapiform:direction]
       'cache' => NULL
     );
 
-  }
-  
-  //TODO remove this once we've sorted out whether $values is required
-  //see \Drupal\Core\DependencyInjection\ClassResolver::getInstanceFromDefinition()
-  //see Drupal\Core\Config\Entity\ConfigEntityBase::__construct()
-  public function __construct($values = array(), $entity_type) {    
-    parent::__construct($values, $entity_type);
-  }
-
-  //this is expected by EntityManager
-  //TODO
-  function setStringTranslation($translationManager) {
-    //TODO make this work?
-    return $this;
   }
 
 }

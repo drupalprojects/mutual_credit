@@ -25,7 +25,7 @@ content:
       link: false
     third_party_settings: {  }
     label: above
-  transactions_link:
+  wallets:
     weight: 3
 hidden:
   logo: true

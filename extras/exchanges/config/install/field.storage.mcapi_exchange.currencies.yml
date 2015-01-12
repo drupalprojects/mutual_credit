@@ -1,5 +1,4 @@
 id: mcapi_exchange.currencies
-uuid: 537ffa88-ea0c-41d9-ac00-cfe5e23b7dd3
 status: true
 dependencies:
   module:

@@ -4,10 +4,3 @@ mcapi.admin_exchange_list:
   route_name: mcapi.admin_exchange_list
   parent: mcapi.admin
   weight: 0
-
-#default tab if field API tasks are showing on the exchanges page
-mcapi.admin_exchanges_tab:
-  route_name: mcapi.admin_exchange_list
-  title: 'List'
-  weight: 0
-

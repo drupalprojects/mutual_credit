@@ -1,18 +1,8 @@
 id: user.user.default
-uuid: 86998418-f95e-4763-b500-b0ea5d546639
 targetEntityType: user
 bundle: user
 mode: default
 content:
-  exchanges:
-    type: entity_reference_autocomplete
-    weight: 15
-    settings:
-      match_operator: CONTAINS
-      size: 60
-      autocomplete_type: tags
-      placeholder: 'Name of exchange'
-    third_party_settings: {  }
   account:
     weight: 0
 hidden:
@@ -20,9 +10,6 @@ hidden:
   timezone: true
 status: true
 dependencies:
-  entity:
-    - field.instance.user.user.exchanges
   module:
     - entity_reference
-    - user
  

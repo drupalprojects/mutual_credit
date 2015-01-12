@@ -1,0 +1,19 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.mcapi_exchange.group_group
+id: mcapi_exchange.mcapi_exchange.group_group
+field_name: group_group
+entity_type: mcapi_exchange
+bundle: mcapi_exchange
+label: 'Is a group'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+third_party_settings: {  }
+field_type: boolean
+

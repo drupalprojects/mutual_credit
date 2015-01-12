@@ -23,11 +23,17 @@ mcapi.exchange.contact.tab:
   title: Contact
   base_route: mcapi.exchange.view
   weight: 5
-mcapi.exchange.join.tab:
-  route_name: mcapi.exchange.join
-  title: Join
+#mcapi.exchange.join.tab:
+#  route_name: mcapi.exchange.join
+#  title: Join
+#  base_route: mcapi.exchange.view
+#  weight: -1
+mcapi.exchange.intertrading.tab:
+  route_name: mcapi.exchange.intertrading
+  title: Trade
+  description: Imports and exports
   base_route: mcapi.exchange.view
-  weight: -1
+  weight: 5
 
 #TODO sort this out when views path arguments work
 #mcapi.exchange.edit.tab:
@@ -35,4 +41,3 @@ mcapi.exchange.join.tab:
 #  title: Edit
 #  base_route: mcapi.exchange.view
 #  weight: 1
-

@@ -11,6 +11,7 @@ use Drupal\user\Entity\User;
 use Drupal\mcapi\Exchanges;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\State;
+use Drupal\mcapi_exchanges\Entity\Exchange;
 
 /**
  * 

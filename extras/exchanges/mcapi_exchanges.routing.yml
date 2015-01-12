@@ -12,7 +12,7 @@ mcapi.admin_exchange_list:
 mcapi.exchange.view:
   path: '/exchange/{mcapi_exchange}'
   defaults:
-    _content: '\Drupal\mcapi_exchanges\Controller\ExchangeController::page'
+    _controller: '\Drupal\mcapi_exchanges\Controller\ExchangeController::page'
     _title_callback: '\Drupal\mcapi_exchanges\Controller\ExchangeController::pageTitle'
   requirements:
   #this MUST be public if joining is to be allowed.
@@ -45,22 +45,11 @@ mcapi.exchange.masspay:
   requirements:
     _entity_access: 'mcapi_exchange.manage'
 
-mcapi.exchange.join:
-  path: '/exchange/{mcapi_exchange}/join'
-  defaults:
-    _content: '\Drupal\mcapi_exchanges\Controller\ExchangeJoin::page'
-    _title: '\Drupal\mcapi_exchanges\Controller\ExchangeJoin::title'
-  requirements:
-    _exchange_join_access: 'TRUE'
-  options:
-    parameters:
-      exid: mcapi_exchange
-
 mcapi.contact.exchange:
   path: '/exchange/{mcapi_exchange}/contact'
   defaults:
     _title: 'Contact'
-    _content: '\Drupal\mcapi_exchanges\Controller\ExchangeContactController::page'
+    _controller: '\Drupal\mcapi_exchanges\Controller\ExchangeContactController::page'
   requirements:
     _access: 'TRUE'
 
@@ -91,12 +80,17 @@ mcapi.exchange.delete_confirm:
   options:
     _admin_route: TRUE
 
-
-#TODO not sure the best way to make a tab on the exchanges page which shows the wallet log for its _intertrading wallet
-#mcapi.exchange.wallet:
-#  path: '/exchange/{mcapi_exchange}/intertrading'
-#  defaults:
- #   _content: \Drupal\mcapi\Controller\WalletController::page
- #   _title_callback: \Drupal\mcapi\Controller\WalletController::pageTitle'
-#  requirements:
- #   _entity_access: 'mcapi_exchange.update'
+mcapi.exchange.intertrading:
+  path: '/exchange/{mcapi_exchange}/balance'
+  defaults:
+    _controller: \Drupal\mcapi_exchanges\Controller\ExchangeController::intertrading_wallet
+    _title_callback: \Drupal\mcapi_exchanges\Controller\ExchangeController::pageTitle
+  requirements:
+    _entity_access: 'mcapi_exchange.view'
+    
+mcapi.wallets.autocomplete.exchanges:
+  path: '/mcapi/walletcomplete/{exchanges}'
+  defaults:
+    _controller: 'Drupal\mcapi_exchanges\Controller\ExchangesWalletAutocompleteController::autocomplete'
+  requirements:
+    _permission: 'access content'

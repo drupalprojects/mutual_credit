@@ -35,15 +35,16 @@ class FirstPartyEditFormListBuilderExchanges extends FirstPartyEditFormListBuild
    */
   public function buildRow(EntityInterface $entity) {
     $admin = \Drupal::currentUser()->hasPermission('configure mcapi');
-    $exchange = Exchange::load($entity->exchange)
+    $exchange = Exchange::load($entity->exchange);    
+    $style = array('style' => $entity->status ? '' : 'color:#999');
     //only show forms in exchanges that the current user is a member of
     if ($admin || $exchange->isMember()) {
       $row['exchange'] = $style + array(
         'data' => array(
           '#markup' => $exchange ? $exchange->label() : t('- All -')
         )
-      ) + parent::buildRow($entity);
-      return $row;
+      );
+      return $row + parent::buildRow($entity); 
     }
   }
 

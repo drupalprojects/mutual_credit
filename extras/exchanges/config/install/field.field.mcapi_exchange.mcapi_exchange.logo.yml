@@ -2,7 +2,7 @@ uuid: aae16d97-639a-43c9-8f24-363ef42efa4b
 langcode: en
 status: true
 dependencies:
-  entity:
+  config:
     - field.storage.mcapi_exchange.logo
 id: mcapi_exchange.mcapi_exchange.logo
 label: Logo

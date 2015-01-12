@@ -29,6 +29,7 @@ function mcapi_install() {
     $w = Wallet::create($values);
     $w->set('name', t("@name's default wallet", array('@name' => $account->label())));
     $w->save();
+    debug('wallet created for user '.$account->id());
   }
   $count = count($users)-1;
 
