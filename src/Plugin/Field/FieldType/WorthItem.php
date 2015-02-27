@@ -69,7 +69,7 @@ class WorthItem extends FieldItemBase {
       $this->parent->onChange($this->name);
     }
   }
-
+  
   /**
    * {@inheritdoc}
    */
@@ -93,5 +93,6 @@ class WorthItem extends FieldItemBase {
     }
     return array('#markup' => $markup);
   }
-
+  
+  
 }

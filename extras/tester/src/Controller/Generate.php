@@ -6,8 +6,6 @@
 
 namespace Drupal\mcapi_tester\Controller;
 
-
-use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Exchanges;
@@ -32,7 +30,8 @@ class Generate extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
-    $this->autoadd = \Drupal::config('mcapi.wallets')->get('autoadd');
+    debug('inject the settings here. Implement config() method');
+    $this->autoadd = \Drupal::config('mcapi.wallets')->getEditable('autoadd');
 
     $form['#prefix'] = 'Warning: all previous items will be deleted. Any items created together will be associated. To get a thoroughly random mix of exchanges, wallets, currencies, create them one at a time.';
 

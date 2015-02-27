@@ -39,10 +39,10 @@ use Drupal\Core\Config\Entity\ThirdPartySettingsTrait;
  *   },
  *   field_ui_base_route = "mcapi.admin_1stparty_editform_list",
  *   links = {
- *     "edit-form" = "mcapi.admin_1stparty_editform.edit",
+ *     "edit-form" = "entity.1stparty_editform.edit_form",
+ *     "delete-form" = "entity.1stparty_editform.delete_form",
  *     "enable" = "mcapi.admin.1stparty_editform.enable_confirm",
  *     "disable" = "mcapi.admin.1stparty_editform.disable_confirm",
- *     "delete-form" = "mcapi.admin.1stparty_editform.delete_confirm",
  *   }
  * )
  */

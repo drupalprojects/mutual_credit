@@ -37,7 +37,7 @@ mcapi.admin_currency_list:
   options:
     _admin_route: TRUE
 
-mcapi.admin_currency_edit:
+entity.mcapi_currency.edit_form:
   path: '/admin/accounting/currencies/{mcapi_currency}'
   defaults:
     _entity_form: 'mcapi_currency.edit'
@@ -57,7 +57,7 @@ mcapi.admin_currency_add:
   options:
     _admin_route: TRUE
 
-mcapi.admin_currency_delete:
+entity.mcapi_currency.delete_form:
   path: '/admin/accounting/currencies/{mcapi_currency}/delete'
   defaults:
     _entity_form: 'mcapi_currency.delete'
@@ -66,21 +66,13 @@ mcapi.admin_currency_delete:
   options:
     _admin_route: TRUE
 
-#transactions
-mcapi.admin.transactions:
-  path: '/admin/accounting/transactions'
-  defaults:
-    _controller: 'Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
-    _title: 'Transactions'
-  requirements:
-    _permission: 'access administration pages'
-
 mcapi.transaction_admin:
-  path: '/admin/accounting/transaction/add'
+  path: '/admin/accounting/add'
   defaults:
     _entity_form: 'mcapi_transaction.admin'
     _title: 'Log transaction'
   requirements:
+    _custom_access: 'enough_wallets'
     _permission: 'manage mcapi'
   options:
     _admin_route: TRUE
@@ -97,6 +89,37 @@ mcapi.transaction_view:
       mcapi_transaction:
         serial: true
 
+
+mcapi.admin.transactions:
+  path: '/admin/accounting/transactions'
+  defaults:
+    _controller: 'Drupal\mcapi\ListBuilder\WorkflowListBuilder::render'
+    _title: 'Transactions'
+  requirements:
+    _permission: 'access administration pages'
+  options:
+    _admin_route: TRUE
+
+mcapi.admin.workflow.toggle:
+  path: '/admin/accounting/transactions/{transition}/toggle'
+  defaults:
+    _form: 'Drupal\mcapi\Form\TransitionToggle'
+    _title_callback: 'Drupal\mcapi\Form\TransitionToggle::title'
+  requirements:
+    _permission: 'configure mcapi'
+  options:
+    _admin_route: TRUE
+
+mcapi.workflow_settings:
+  path: '/admin/accounting/transactions/{transition}'
+  defaults:
+    _form: 'Drupal\mcapi\Form\TransitionSettingsForm'
+    _title: 'Transition settings'
+  requirements:
+    _permission: 'configure mcapi'
+  options:
+    _admin_route: TRUE
+
 #transitions
 mcapi.transaction.op:
   path: '/transaction/{mcapi_transaction}/{transition}'
@@ -109,35 +132,6 @@ mcapi.transaction.op:
       mcapi_transaction:
         serial: true
 
-mcapi.admin.workflow:
-  path: '/admin/accounting/workflow'
-  defaults:
-    _controller: 'Drupal\mcapi\ListBuilder\WorkflowListBuilder::render'
-    _title: 'Workflow transitions'
-  requirements:
-    _permission: 'access administration pages'
-  options:
-    _admin_route: TRUE
-
-mcapi.admin.workflow.flip:
-  path: '/admin/accounting/workflow/{transition}/flip'
-  defaults:
-    _form: 'Drupal\mcapi\Form\TransitionFlip'
-    _title_callback: 'Drupal\mcapi\Form\TransitionFlip::title'
-  requirements:
-    _permission: 'configure mcapi'
-  options:
-    _admin_route: TRUE
-
-mcapi.workflow_settings:
-  path: '/admin/accounting/workflow/{transition}'
-  defaults:
-    _form: 'Drupal\mcapi\Form\TransitionSettingsForm'
-    _title: 'Transition settings'
-  requirements:
-    _permission: 'configure mcapi'
-  options:
-    _admin_route: TRUE
 
 #wallets
 mcapi.wallet_view:

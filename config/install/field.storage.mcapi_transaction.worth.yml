@@ -10,7 +10,7 @@ entity_type: mcapi_transaction
 type: worth
 settings: {  }
 module: mcapi
-locked: false
+locked: true
 cardinality: -1
 translatable: false
 indexes: {  }

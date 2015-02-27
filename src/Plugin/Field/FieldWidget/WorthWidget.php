@@ -39,7 +39,7 @@ class WorthWidget extends WidgetBase {
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     //element may already contain #allowed_curr_ids
     $exchange_ids = Exchanges::in(NULL, TRUE);
-    return $element + array(
+    $element += array(
       '#title' => String::checkPlain($this->fieldDefinition->label()),
       '#title_display' => 'attribute',
       '#type' => 'worth',
@@ -47,6 +47,7 @@ class WorthWidget extends WidgetBase {
       '#allowed_curr_ids' => array_keys(Mcapi::currencies($exchange_ids)),
       //'#theme_wrappers' => array('form_element'),
     );
+    return $element;
   }
 
   /**

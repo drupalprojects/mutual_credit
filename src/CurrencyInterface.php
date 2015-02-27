@@ -70,9 +70,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    *
    * @return string
    *   plaintext #markup containing the formatted value. Hopefully 90 mins, normally formatted
-   *   say as '1 1/2 hours' would come out of this function '1.30'. This is good for display, but
-   *   will produce unexpected results if used in client side calculations. Try to avoid
-   *   calculating with formatted strings in base 60 on the client side.
+   *   say as '1 1/2 hours' would come out of this function '1.30'.
    */
   public function faux_format($raw_num, $format = array());
 

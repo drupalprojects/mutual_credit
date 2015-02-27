@@ -18,7 +18,7 @@ mcapi.admin_1stparty_editform.add:
   options:
     _admin_route: TRUE
 
-mcapi.admin_1stparty_editform.edit:
+entity.1stparty_editform.edit_form:
   path: '/admin/accounting/transactions/forms/{1stparty_editform}'
   defaults:
     _entity_form: '1stparty_editform.edit'
@@ -28,7 +28,7 @@ mcapi.admin_1stparty_editform.edit:
   options:
     _admin_route: TRUE
 
-mcapi.admin.1stparty_editform.delete_confirm:
+entity.1stparty_editform.delete_form:
   path: '/admin/accounting/transactions/forms/{1stparty_editform}/delete'
   defaults:
     _entity_form: '1stparty_editform.delete'

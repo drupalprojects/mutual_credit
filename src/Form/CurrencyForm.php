@@ -72,7 +72,9 @@ class CurrencyForm extends EntityForm {
       '#default_value' => $currency->getOwnerId()
     );
     $form['css'] = array(
-    	'#markup' => '<style>#edit-acknowledgement, #edit-exchange, #edit-commodity{float:right;width:50%;margin-left:1em;}</style>'
+    	'#markup' => '<style>#edit-acknowledgement, #edit-exchange, #edit-commodity{float:right;width:50%;margin-left:1em;}'
+        //this is because the classy theme puts radio buttons display:table cell, which goes under the float
+        . 'form#mcapi-currency-edit-form #edit-issuance--wrapper{display:inherit;}</style>'
     );
     $form['acknowledgement'] = array(
       '#type' => 'container',

@@ -80,7 +80,7 @@ class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface
           'route_name' => "mcapi.wallet.add.$bundle",//taken from the routesubscriber
           'title' => t('Add Wallet'),
           'appears_on' => array(
-            \Drupal::entityManager()->getDefinition($entity_type, TRUE)->getLinkTemplate('canonical')
+            $this->entityManager->getDefinition($entity_type, TRUE)->getLinkTemplate('canonical')
           ),
         );
       }

@@ -113,6 +113,9 @@ class TransactionForm extends ContentEntityForm {
       '#required' => TRUE,
       '#weight' => 18,
     );
+    
+    echo "\n<br />building transaction form:";print_r($transaction->get('worth')->getValue());
+    
     $form = parent::form($form, $form_state);
 
     return $form;
@@ -135,17 +138,20 @@ class TransactionForm extends ContentEntityForm {
    * this is unusual because normally build a temp object
    */
   public function validate(array $form, FormStateInterface $form_state) {
-    $form_state->cleanValues();;//without this, buildentity fails, but not so in nodeForm
-    debug($form_state->getValues());
+    //$form_state->cleanValues();;//without this, buildentity fails, but not so in nodeForm
+
     $transaction = $this->buildEntity($form, $form_state);
+    echo "\n<br /><strong>builtEntity worth:"; print_r($transaction->get('worth')->getValue());echo '</strong>';
 
     // The date element contains the date object.
     $date = $transaction->created instanceof DrupalDateTime
       ? $transaction->created->value
       : new DrupalDateTime($transaction->created->value);
+    
     //there is a problem creating the date in alpha14
     if ($date->hasErrors()) {
-      //$form_state->setErrorByName('created', $this->t('You have to specify a valid date.'));
+      $message = $this->t('You have to specify a valid date.');
+      $form_state->setErrorByName('created', $message);
     }
     if (!$transaction->creator->target_id) {
       $transaction->set('creator', \Drupal::currentUser()->id());
@@ -155,7 +161,8 @@ class TransactionForm extends ContentEntityForm {
     //however we do it here IN the transaction entity validation which is less form-dependent
 
     //validate the fieldAPI widgets
-    $this->getFormDisplay($form_state)->validateFormValues($transaction, $form, $form_state);
+    $this->getFormDisplay($form_state)
+      ->validateFormValues($transaction, $form, $form_state);
 
     //if there are errors at the form level don't bother validating the entity object
     if ($form_state->getErrors()) {

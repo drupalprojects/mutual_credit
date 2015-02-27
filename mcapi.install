@@ -31,25 +31,14 @@ function mcapi_install() {
     $w->save();
     debug('wallet created for user '.$account->id());
   }
-  $count = count($users)-1;
-
-  drupal_set_message(format_plural(
-    count($users)-1,
-    'User 1 was added to the exchange',
-    'All @count members were added to the exchange.'
-  ));
   
-  //for the rest of this we need the config files
-  //
-  //set the path of the zero image in currency 1
   $config = \Drupal::config('mcapi.misc');
   $zero_icon = 'base://'. drupal_get_path('module', 'mcapi') . '/templates/present.png';
   $path = Url::fromUri($zero_icon)->getUri();
-  $config->set('zero_snippet', '<img src = "'. $path .'" width = "31" />');
-  $config->save();
-  drupal_set_message($config->get('zero_snippet'));//remove hook_installed
-  
-  //enable max wallets
+  $config->getConfigurable('zero_snippet')
+    ->set('zero_snippet', '<img src = "'. $path .'" width = "31" />')
+    ->save();
+  drupal_set_message($config->get('zero_snippet'));
 }
 
 

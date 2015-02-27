@@ -7,7 +7,7 @@ deletion: 0
 format: 
   0: €
   1: '000'
-  2: :
+  2: ':'
   3: 99
 zero: 0
 color: '#0000ff'

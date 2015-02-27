@@ -34,7 +34,7 @@ mcapi.wallet.log.tab:
 
 #a default tab for editing a currency, lest more should be needed
 mcapi.currency.edit.tab:
-  route_name: mcapi.admin_currency_edit
+  route_name: entity.mcapi_currency.edit_form
   title: Properties
-  base_route: mcapi.admin_currency_edit
+  base_route: entity.mcapi_currency.edit_form
   weight: 0

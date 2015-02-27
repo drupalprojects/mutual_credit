@@ -10,81 +10,45 @@ namespace Drupal\mcapi\Plugin\Field\FieldType;
 use Drupal\Core\Field\FieldItemList;
 use Drupal\Core\TypedData\DataDefinitionInterface;
 use Drupal\Core\TypedData\TypedDataInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Represents a configurable entity worth field.
  */
 class WorthFieldItemList extends FieldItemList {
 
+  /*
   public function __construct(DataDefinitionInterface $definition, $name = NULL, TypedDataInterface $parent = NULL) {
-    //instead of
-    //parent::__construct($definition, $name, $parent);
-    //which creates an empty first list item, which would mean we have to them unset it thus
-    //unset($this->list[0]);
-    //lets just copy the the lines from the __construct which would have been inherited
+    parent::__construct($definition, $name, $parent);//which creates an empty first list item
     $this->definition = $definition;
     $this->parent = $parent;
     $this->name = $name;
-    $this->list = array();
   }
-
-
-  /**
-   * {@inheritdoc}
+   * 
    */
-  public function getValue($include_computed = FALSE) {
-    $values = array();
-    foreach ($this->list as $delta => $item) {
-      $values[$delta] = $item->getValue($include_computed);
-    }
-    return $values;
-
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function applyDefaultValue($notify = TRUE) {
-    return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function first() {
-    die("WorthFieldItemList:first should never be called.");
-  }
-
-  /**
-   * We have to override this because the default behaviour is to create
-   * the list with an empty item keyed 0, then to set the value of that default item
-   * Because we are using the currency id as the list key, we can't create a worth item without it
-   */
-  public function set($property_name, $value) {
-    $key = 0;
-    foreach ($this->list as $key => $item) {
-      if ($item->curr_id == $value['curr_id']) {
-        $this->list[$key]->setValue($value, FALSE);
-        return;
-      }
-      $key++;
-    }
-    //if we didn't override anything then create a new item
-    $this->list[$key] = $this->createItem($key, $value);//or $item???
-  }
-
+  
   /**
    * {@inheritdoc}
    */
   public function filterEmptyItems() {
-    //do nothing because the items are filtered as they are set
+    foreach ($this->list as $key => $item) {
+      if (!$item->getValue()['value']) {
+        unset($this->list[$key]);
+      }
+    }
+    $this->list = array_values($this->list);
   }
 
   /**
    * {@inheritdoc}
    */
   public function isEmpty() {
-    return !array_filter($this->list);
+    foreach ($this->list as $item) {
+      if ($item->getValue()['value']) {
+        return FALSE;
+      }
+    }
+    return TRUE;
   }
 
   public function __toString() {
@@ -120,6 +84,7 @@ class WorthFieldItemList extends FieldItemList {
   }
 
   public function currencies($full = FALSE) {
+    $c = [];
     foreach ($this->list as $item) {
       if ($full) {
         $c[$item->curr_id] = mcapi_currency_load($item->curr_id);
@@ -128,6 +93,9 @@ class WorthFieldItemList extends FieldItemList {
         $c[] = $item->curr_id;
       }
     }
-    return (array)$c;
+    return $c;
   }
+  
+
+  
 }

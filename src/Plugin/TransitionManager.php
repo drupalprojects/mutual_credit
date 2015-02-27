@@ -30,9 +30,9 @@ class TransitionManager extends DefaultPluginManager {
    *
    * @param CacheBackendInterface $cache_backend
    *
-   * @param LanguageManager $language_manager
+   * @param ModuleHandlerInterface $module_handler
    *
-   * @param ModuleHandlerInterface $module_Handler
+   * @param ConfigFactory $config_factory
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler, ConfigFactory $config_factory) {
     parent::__construct('Plugin/Transition', $namespaces, $module_handler, '\Drupal\mcapi\Plugin\TransitionInterface', '\Drupal\mcapi\Annotation\Transition');
@@ -43,9 +43,9 @@ class TransitionManager extends DefaultPluginManager {
   }
 
   //TODO pluginbags would be better
-  public function all() {
+  public function all($editable = FALSE) {
     foreach ($this->getDefinitions() as $id => $def) {
-      $this->getPlugin($id);
+      $this->getPlugin($id, $editable);
     }
     return $this->plugins;
   }
@@ -55,19 +55,17 @@ class TransitionManager extends DefaultPluginManager {
       $exclude = array_merge($exclude, $this->deletemodes($worth->currencies(TRUE)));
     }
     //static shouldn't be needed
-    foreach ($this->all() as $id => $plugin) {
-      if (!in_array($id, $exclude)) {
-        if ($plugin->getConfiguration('status')) {
-          $output[$plugin->getConfiguration('id')] = $plugin;
-        }
+    foreach ($this->all(FALSE) as $id => $plugin) {
+      if (!in_array($id, $exclude) and $plugin->getConfiguration('status')) {
+        $output[$plugin->getConfiguration('id')] = $plugin;
       }
     }
     return $output;
   }
 
-  public function getPlugin($id) {
+  public function getPlugin($id, $editable = FALSE) {
     if (!array_key_exists($id, $this->plugins)) {
-      $config = \Drupal::config('mcapi.transition.'. $id)->getRawData();
+      $config = $this->config_factory->get('mcapi.transition.'. $id)->getRawData();
       $this->plugins[$id] = $this->createInstance($id, $config);
     }
     return $this->plugins[$id];
@@ -83,7 +81,15 @@ class TransitionManager extends DefaultPluginManager {
     }
     $deletemode = min($deletemodes);
     //return everything larger than the min to be excluded
-    return array_slice($modes, min($deletemodes));
+    return array_slice($modes, $deletemode);
+  }
+  
+  //return the names of the config items
+  public function getNames() {
+    foreach ($this->getDefinitions() as $name => $info) {
+      $names[] = 'mcapi.transition.'.$name;
+    }
+    return $names;
   }
 
 }

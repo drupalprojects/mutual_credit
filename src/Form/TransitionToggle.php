@@ -2,32 +2,42 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Form\TransitionFlip.
+ * Contains \Drupal\mcapi\Form\TransitionToggle.
  */
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Url;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Builds the form to delete a currency
  */
-class TransitionFlip extends ConfirmFormBase {
+class TransitionToggle extends ConfirmFormBase {
 
+  
   private $transition;
 
-  public function __construct() {
-    if ($id = \Drupal::routeMatch()->getParameter('transition')) {
-      $this->transition = \Drupal::service('mcapi.transitions')
-      ->getPlugin($id);
+  public function __construct($configFactory, $transition_manager, $route_match) {
+    $this->setConfigFactory($configFactory);
+    $id = $route_match->getParameter('transition');
+    if ($id) {
+      $this->transition = $transition_manager->getPlugin($id);
     }
   }
-
+    
+  static public function create(ContainerInterface $container) {
+    return new static(
+      $container->get('config.factory'),
+      $container->get('mcapi.transitions'),
+      $container->get('current_route_match')
+    );
+  }
+  
   public function getFormId() {
-    return 'transition_flip';
+    return 'transition_toggle';
   }
 
   /**
@@ -46,16 +56,15 @@ class TransitionFlip extends ConfirmFormBase {
    */
   public function getCancelUrl() {
     //want to go back to the list builder but its not normal to put the list in the entity->links property
-    return new Url('mcapi.admin.workflow');
+    return new Url('mcapi.admin.transactions');
   }
 
   /**
    * {@inheritdoc}
    */
   public function getDescription() {
-    return '';
+    return $this->t('This will affect your transaction workflows.');
   }
-
   /**
    * {@inheritdoc}
    */
@@ -65,10 +74,11 @@ class TransitionFlip extends ConfirmFormBase {
 
   /**
    * {@inheritdoc}
+   * @todo might want to clear the rules cache or something
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    //print_r($this->transition->getConfiguration());die();
-    $config = \Drupal::config('mcapi.transition.' .$this->transition->getConfiguration('id'));
+    $name = 'mcapi.transition.' .$this->transition->getConfiguration('id');
+    $config = $this->configFactory->getEditable($name);
     $config->set('status', !$config->get('status'));
     $config->save();
     if ($config->get('status')) {
@@ -77,14 +87,11 @@ class TransitionFlip extends ConfirmFormBase {
     else {
       drupal_set_message($this->t('Transition %label has been disabled.', array('%label' => $this->transition->label)));
     }
-    $form_state->setRedirect('mcapi.admin.workflow');
+    $form_state->setRedirect('mcapi.admin.transactions');
   }
 
   public function title() {
-    $id = \Drupal::routeMatch()->getParameter('transition');
-    $plugin = \Drupal::service('mcapi.transitions')
-    ->getPlugin($id);
-    $args = array('@name' => $plugin->label);
+    $args = array('@name' => $this->transition->label);
     return $plugin->getConfiguration('status') ?
       $this->t('Disable transition @name', $args) :
       $this->t('Enable transition @name', $args);

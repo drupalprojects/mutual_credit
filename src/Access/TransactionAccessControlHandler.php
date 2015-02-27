@@ -29,7 +29,6 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
     if (empty($account)) {
       $account = \Drupal::currentUser();
     }
-
     if ($plugin = \Drupal::service('mcapi.transitions')->getPlugin($transition)) {
       if ($plugin->opAccess($transaction, $account)) {
         return AccessResult::allowed()->cachePerUser();
@@ -37,4 +36,5 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
     }
     return AccessResult::forbidden()->cachePerUser();
   }
+  
 }

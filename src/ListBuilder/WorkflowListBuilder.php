@@ -25,7 +25,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     return array(
       'name' => t('Transition'),
       'description' => t('Description'),
-      'operations' => t('Link'),
+      'operations' => '',
       'flip' => '',
       'weight' => t('Weight'),
     );
@@ -56,7 +56,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
         '#markup' => $this->l($this->t('Settings'), Url::fromRoute('mcapi.workflow_settings', array('transition' => $id)))
       ),
       'flip' => array(
-        '#markup' => $this->l(t('Disable'), Url::fromRoute('mcapi.admin.workflow.flip', array('transition' => $id))),
+        '#markup' => $id == 'view' ? '' : $this->l(t('Disable'), Url::fromRoute('mcapi.admin.workflow.toggle', array('transition' => $id))),
       ),
       'weight' => array(
         '#type' => 'weight',
@@ -76,6 +76,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     return array(
       '#weight' => 100,
       '#attributes' => new Attribute(array('class' => array('draggable'))),
+      '#attributes' => array('class' => array('draggable')),//TODO sort this out. see \Drupal\Core\Config\Entity\DraggableListBuilder
       'name' => array(
         '#markup' => $config['title']
       ),
@@ -86,7 +87,10 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
         '#markup' => $this->t('Disabled'),
       ),
       'flip' => array(
-        '#markup' => \Drupal::l(t('Enable'), 'admin/accounting/workflow/'. $id .'/flip')
+        '#markup' => \Drupal::l(
+          t('Enable'), 
+          Url::fromRoute('mcapi.admin.workflow.toggle', ['transition' => $id])
+        )
       ),
       'weight' => array(
         '#type' => 'weight',
@@ -94,6 +98,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
         '#title_display' => 'invisible',
         '#default_value' => 100,
         '#attributes' => new Attribute(array('class' => array('weight'))),
+        '#attributes' => array('class' => array('weight'))
       ),
     );
   }
@@ -153,18 +158,32 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
   }
 
   private function visualise() {
-    $output = "\n<h4>".t('States')."</h4>\n";
+    foreach (Type::loadMultiple() as $type => $info) {
+      $types[] = '<dt>'.$info->label.'</dt><dd>'.$info->description.'</dd>';
+    }    
+    $renderable['types'] = [
+      '#type' => 'container',
+      '#attributes' => ['style' => 'display:inline-block; vertical-align:top;'],
+      'title' => array(
+        '#markup' => "<h4>".t('Transaction types')."</h4>"
+      ),
+      'states' => array(
+        '#markup' => "<dl>".implode("\n\t", $types) . '</dl>'
+      )
+    ];
     foreach (State::loadMultiple() as $id => $info) {
       $states[] = '<dt>'.$info->label.'</dt><dd>'.$info->description.'</dd>';
     }
-    $output .= "\n<dl>".implode("\n", $states) . "</dl>\n";
-
-    $output .= "\n<h4>".t('Types')."</h4>\n";
-    foreach (Type::loadMultiple() as $type => $info) {
-      $types[] = '<dt>'.$info->label.'</dt><dd>'.$info->description.'</dd>';
-    }
-    $output .= "\n<dl>".implode("\n", $types) . "</dl>\n";
-
-    return array('#markup' => $output);
+    $renderable['states'] = [
+      '#type' => 'container',
+      '#attributes' => ['style' => 'display:inline-block; margin-left:5em; vertical-align:top;'],
+      'title' => array(
+        '#markup' => "<h4>".t('Workflow states')."</h4>"
+      ),
+      'states' => array(
+        '#markup' => "<dl>".implode("\n\t", $states) . '</dl>'
+      )
+    ];
+    return $renderable;
   }
 }

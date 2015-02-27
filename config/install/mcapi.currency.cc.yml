@@ -8,7 +8,7 @@ format:
   0: CC
   1: '0000'
 zero: 1
-color: '#00ff00'
+color: '#ff00ff'
 weight: '1'
 limits_plugin: none
 limits_settings: 

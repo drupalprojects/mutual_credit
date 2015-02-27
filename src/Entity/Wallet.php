@@ -215,7 +215,8 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     }
 
     $fields['orphaned'] = BaseFieldDefinition::create('boolean')
-      ->setLabel(t('Orphaned'));
+      ->setLabel(t('Orphaned'))
+      ->setSetting('default_value', array(0 => ''));
     
     //TODO in beta2, this field is required by views. Delete if pos
     $fields['langcode'] = BaseFieldDefinition::create('language')

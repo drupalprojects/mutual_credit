@@ -15,12 +15,11 @@ use Drupal\mcapi\Entity\Type;
 class Settings extends ConfigFormBase {
 
 
-  private $settings;
+  //private $settings;
 
-  function __construct(ConfigFactoryInterface $config_factory) {
-    parent::__construct($config_factory);
-    $this->settings = $config_factory->get('mcapi.signatures');
-  }
+  //function __construct(ConfigFactoryInterface $config_factory) {
+  //  parent::__construct($config_factory);
+  //}
 
   /**
    * {@inheritdoc}
@@ -55,6 +54,7 @@ class Settings extends ConfigFormBase {
         '#value' => array_filter(_mcapi_signature_overrides($id)),
       );
     }
+    debug('Need to improve how these settings are stored and retrieved');
     $form['signatures']['both']['#disabled'] = TRUE;
     $form['signatures']['both']['#value'] = TRUE;
     return parent::buildForm($form, $form_state);
@@ -68,7 +68,8 @@ class Settings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $form_state->cleanValues();;
+    $form_state->cleanValues();
+    $settings = $this->config_factory->getEditable('mcapi.signatures');
     foreach ($form_state->getValues() as $type_name => $vals) {
       //go to some extra effort to save booleans in the config
       $this->settings->set($type_name.'.both', !empty($vals['both']));

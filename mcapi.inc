@@ -125,6 +125,7 @@ function _mcapi_theme() {
  */
 function template_preprocess_mcapi_wallets(&$vars) {
   //are the wallets aready themed?
+  if (!is_null($vars['wallets']))mtrace();
   foreach ($vars['wallets'] as $wid =>  $wallet) {
     $vars['wallets'][$wid] = drupal_render($wallet);
   }

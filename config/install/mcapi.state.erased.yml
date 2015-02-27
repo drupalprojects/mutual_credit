@@ -1,5 +1,5 @@
 id: erased
 label: Erased
-description: ''
+description: 'Marked deleted, but still in the ledger'
 module: mcapi
 counted: false

@@ -52,9 +52,12 @@ class Worth extends FormElement {
     //change the all_available array to a worths value array populated by zeros
     if ($allowed_curr_ids = $element['#allowed_curr_ids']) {
       $existing_curr_ids = array();
+      
       foreach ((array)$element['#default_value'] as $item) {
+        if (!$item['curr_id']) continue; //means the widget was unpopulated
         $existing_curr_ids[] = $item['curr_id'];
       }
+      unset($element['#default_value']);
       //restrict the defaults according to the allowed currencies
       if ($not_allowed = array_diff($existing_curr_ids, $allowed_curr_ids)) {
         //message only shows the FIRST not allowed currency
@@ -67,7 +70,7 @@ class Worth extends FormElement {
         );
       }
       //ensure each allowed currencies has a default value, which is used for building the widget
-      foreach ($add = array_diff($allowed_curr_ids, $existing_curr_ids) as $curr_id) {
+      foreach (array_diff($allowed_curr_ids, $existing_curr_ids) as $curr_id) {
         $element['#default_value'][] = array('curr_id' => $curr_id, 'value' => $blank);
       }
     }
@@ -85,7 +88,6 @@ class Worth extends FormElement {
   public static function process($element, FormStateInterface $form_state, $form) {
     //we might need to filter #default_value not in config mode
     $worth_cardinality = count($element['#default_value']) > 1 ? 'multiple' : 'single';
-
     foreach ($element['#default_value'] as $delta => $item) {
       //i want a div around each currency widget
       extract($item);//creates $curr_id and $value
@@ -93,10 +95,11 @@ class Worth extends FormElement {
       $currency = \Drupal\mcapi\Entity\Currency::load($curr_id);
       if ($element['#config'] && !is_numeric($value)) $parts = array();
       else $parts = $currency->formatted_parts(abs(intval($value)));
+      $element[$delta]['curr_id'] = ['#type' => 'hidden', '#value' => $curr_id];
 
-      $element[$curr_id]['#type'] = 'container';
-      $element[$curr_id]['#prefix'] = "<div class = \"$worth_cardinality\">";
-      $element[$curr_id]['#suffix'] = '</div>';
+      $element[$delta]['#type'] = 'container';
+      $element[$delta]['#prefix'] = "<div class = \"$worth_cardinality\">";
+      $element[$delta]['#suffix'] = '</div>';
       foreach ($currency->format as $i => $component) {
         if ($i % 2) { //an odd number so render a field
           $step = 1;
@@ -109,7 +112,7 @@ class Worth extends FormElement {
               $options[intval($v)] = $v;
             }
           }
-          $element[$curr_id][$i] = array(
+          $element[$delta][$i] = array(
             '#weight' => $i,
             '#value' => @$parts[$i],//in config mode $parts is empty
             '#theme_wrappers' => array()
@@ -118,52 +121,47 @@ class Worth extends FormElement {
           //then we ignore the options and use the numeric sub-widget
           if (isset($options) && array_key_exists(@$parts[$i], $options)) {
             //TODO how about using another number field instead of select?
-            $element[$curr_id][$i] += array(
+            $element[$delta][$i] += array(
               '#type' => 'select',
-              '#options' => $options
+              '#options' => $options,
             );
           }
           else {
             $size = strlen($component);
-            $element[$curr_id][$i] += array(
+            $element[$delta][$i] += array(
               '#type' => $element['#config'] ? 'textfield' : 'number',
               '#type' => 'textfield',//number was behaving very strangely in alpha 15,
               '#max' => $i == 1 ? pow(10, strlen($component))-1 : $component,//first component matters only for the num of digits
               '#min' => 0,
               '#step' => $step,
               '#size' => $size,//no effect in opera
-              '#max_length' => $size,
-              //the size needs to be larger because the widget spinners take up space
-              //TODO find out what's going on with the browsers. We want the number field for its validation but the spinners are really bad
-              '#attributes' => new Attribute(array('style' => 'width:'. ($size) .'em;')),
-              //TODO
-              '#attributes' => array('style' => 'width:'. ($size) .'em;'),
+              '#maxlength' => $size,
             );
             if ($element['#config']) {
               if (array_key_exists('#placeholder', $element)) {
                 //debug($element['#placeholder'], $delta);
                 $placeholder_val = @$element['#placeholder'][$delta];
                 $p_parts = $currency->formatted_parts(abs(intval($placeholder_val)));
-                $element[$curr_id][$i]['#placeholder'] = $p_parts[$i];
+                $element[$delta][$i]['#placeholder'] = $p_parts[$i];
               }
             }
             else {
               //leave the main value field empty, and put zero placeholders in other fields
-              $element[$curr_id][$i]['#placeholder'] = $i == 2 ? '' : str_pad('', $size, '0');
+              $element[$delta][$i]['#placeholder'] = $i == 2 ? '' : str_pad('', $size, '0');
             }
           }
           unset($options);
         }
         else {//an even number so render it as markup
-          $element[$curr_id][$i] = array(
+          $element[$delta][$i] = array(
             '#weight' => $i,
             '#markup' => $component
           );
         }
       }
       if ($element['#minus']) {
-        $element[$curr_id][0]['#markup'] = '-'.$element[$curr_id][0]['#markup'];
-        $element[$curr_id][$i]['#suffix'] = '('.t('minus').')';
+        $element[$delta][0]['#markup'] = '-'.$element[$delta][0]['#markup'];
+        $element[$delta][$i]['#suffix'] = '('.t('minus').')';
       }
 
       if ($element['#config']) {
@@ -172,41 +170,46 @@ class Worth extends FormElement {
         $i++;
         foreach (element_children($element) as $delta) {
           //this field will accept a formula, not just a number
-          $element[$curr_id][1]['#size'] = 10;
-          $element[$curr_id][1]['#maxlength'] = 10;
+          $element[$delta][1]['#size'] = 10;
+          $element[$delta][1]['#maxlength'] = 10;
         }
       }
     }
     //single values can inherit max and min from the top level of the element
     if (count($element['#default_value']) == 1) {
-      if (array_key_exists('#max', $element)) $element[$curr_id][1]['#max'] = $element['#max'];
-      if (array_key_exists('#min', $element)) $element[$curr_id][1]['#min'] = $element['#min'];
+      if (array_key_exists('#max', $element)) $element[$delta][1]['#max'] = $element['#max'];
+      if (array_key_exists('#min', $element)) $element[$delta][1]['#min'] = $element['#min'];
     }
     return $element;
   }
 
   /**
    * {@inheritdoc}
-   * the copy of the $element passed here is before processing
-   * so it doesn't have the children added by the processing.
-   * How do we stop the values of the children polluting the value output here?
+   * How do we stop the values of the child elements overwriting the $output here?
    */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
-    //TODO check what normally happens at the start of a valuecallback
-    if ($input === FALSE|| $input == NULL) return;
-    $output = array();
-    foreach ($input as $curr_id => $parts) {
-      $quant = \Drupal\mcapi\Entity\Currency::load($curr_id)->unformat($parts);
-      if ($element['#config']) {
-        //leaving the main value component blank in config mode means ignore the currency
-        if (empty($quant)) continue;
+    $output = [];
+    if ($input !== FALSE) {
+      foreach ($input as $delta => $parts) {
+        $curr_id = $parts['curr_id'];
+        $quant = \Drupal\mcapi\Entity\Currency::load($curr_id)->unformat($parts);
+        if ($element['#config']) {
+          //leaving the main value component blank in config mode means ignore the currency
+          if (empty($quant)) continue;
+        }
+        else {
+          if (!empty($element['#minus'])) $quant = -$quant;
+        }
+        //this lets blank items through, to be cleared up during validation, after checking whether $currency->zero permits zero values
+        $output[$curr_id] = ['curr_id' => $curr_id, 'value' => $quant];
       }
-      else {
-        if (!empty($element['#minus'])) $quant = -$quant;
+    }
+    else {
+      //return the 'default' value - guess that's what is set 
+      debug($element['#default_value'], 'check this working');
+      foreach ($element['#default_value'] as $delta => $worth) {
+        $output[] = ['curr_id' => $worth['curr_id'], 'value' => $worth['value']];
       }
-      //this lets blank items through, to be cleared up during validation, after checking whether $currency->zero permits zero values
-      $output[] = array('curr_id' => $curr_id, 'value' => $quant);
-      //remove the #input from the child elements so they don't pollute the value returned here
     }
     return $output;
   }

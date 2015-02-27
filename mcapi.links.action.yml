@@ -8,7 +8,7 @@ mcapi.admin.transaction:
   route_name: mcapi.transaction_admin
   title: 'Log Transaction'
   appears_on:
-    - mcapi.admin.transactions
+    - mcapi.admin
 
 mcapi.admin.currency.add:
   route_name: mcapi.admin_currency_add

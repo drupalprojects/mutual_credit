@@ -26,10 +26,10 @@ mcapi.admin_wallets:
   parent: mcapi.admin
   weight: 12
 
-mcapi.admin.workflow:
+mcapi.admin.transactions:
   title: Workflow
   description: Configure workflow and user experience for each transaction transition
-  route_name: mcapi.admin.workflow
+  route_name: mcapi.admin.transactions
   parent: mcapi.admin
   weight: 15
 

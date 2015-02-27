@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @filee
+ * @file
  * mcapi.module
  */
 
@@ -33,12 +33,12 @@ const CURRENCY_TYPE_ACKNOWLEDGEMENT = 'acknowledgement';
 const CURRENCY_TYPE_EXCHANGE = 'exchange';
 const CURRENCY_TYPE_COMMODITY = 'commodity';
 
-//negative numbers are used here, and positive numbers represetn uids in the db
+//
 const WALLET_ACCESS_OWNER =  'o';//this is replaced with a named user
-const WALLET_ACCESS_EXCHANGE = 'e';
-const WALLET_ACCESS_AUTH = '2';
-const WALLET_ACCESS_ANY = '1';
-const WALLET_ACCESS_USERS = 'u';
+const WALLET_ACCESS_EXCHANGE = 'e';//this could be moved the exchange module
+const WALLET_ACCESS_AUTH = '2';//this is the role id
+const WALLET_ACCESS_ANY = '1';//this is the role id
+const WALLET_ACCESS_USERS = 'u';//user id is in the wallet access table
 
 /**
  * implements hook_requirements().
@@ -71,21 +71,28 @@ function mcapi_requirements($phase) {
 function mcapi_help($route_name, $route_match) {
   switch ($route_name) {
     case 'mcapi.admin':
-      return t('The intention of this package is to put the money creation power in the hands of the producers and users of money and to reduce dependence of ordinary people on rapacious global financial capital.');
+      if (enough_wallets()->isForbidden()) {
+        $m[] = t("There aren't enough wallets for you to create a transaction.");
+        $m[] = Drupal::l(t("Give yourself a(nother) wallet"), Url::fromRoute('mcapi.wallet.add.user', ['user' => \Drupal::currentUser()->id()]));
+        //todo make this work with the link
+        debug($m);
+        drupal_set_message(implode(' ', $m), 'warning');
+      }
     case 'mcapi.admin_currency_list':
       return implode(' ', array(
         t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.'),
         t('Retired currencies can no longer be used, but transactions are still visible.'),
         t('Only unused currencies can be deleted.'),
       ));
-    case 'mcapi.admin.workflow':
+    case 'mcapi.admin.transactions':
       return implode(' ', array(
-        t('Workflow transitions move transactions between states.'),
+        t('Workflow transitions move transactions of various types between states.'),
+        t('Modules can add more states and types'),
         t('Each transition presents the user with confirmation form, which is configured on this page.')
       ));
     case 'field_ui.overview_mcapi_transaction':
       $settings_url = Url::fromRoute('mcapi.admin_misc');
-      $transitions_url = Url::fromRoute('mcapi.admin.workflow');
+      $transitions_url = Url::fromRoute('mcapi.admin.transactions');
       return implode(' ', array(
         t('These transaction display settings should always be overridden.'), 
         t('To configure the certificate, override certificate.html.twig in your theme'),
@@ -115,6 +122,7 @@ function mcapi_theme($existing, $type, $theme, $path) {
  * add a wallet summary view to wallet-enabled entities
  */
 function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode, $langcode) {
+
   if ($display->getComponent('wallets_summaries')) {
     //check the entity is of a type which can own a wallet.
     $key = 'entity_types.' . $entity->getEntityTypeId() .':'. $entity->bundle();
@@ -123,15 +131,16 @@ function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDis
       $wids = \Drupal::EntityManager()
         ->getStorage('mcapi_wallet')
         ->getOwnedIds($entity);
-      $build['wallets_summaries']['#theme'] = 'mcapi_wallets';
+print_r($wids);
       $viewbuilder =\Drupal::entityManager()->getViewBuilder('mcapi_wallet');
       foreach (Wallet::loadMultiple($wids) as $wid => $wallet) {
         if ($wallet->access('view')) {
+          //this line might run multiple times, but most likely once or not at all
+          $build['wallets_summaries']['#theme'] = 'mcapi_wallets';
           $build['wallets_summaries']['#wallets'][$wid] = $viewbuilder->view($wallet, 'summary');
         }
       }
     }
-
     //show the add new wallet link
     if (\Drupal::config('mcapi.wallets')->get('add_link_location') != 'local_action') {
       $route_name = 'mcapi.wallet.add.'.$entity->getEntityTypeId();
@@ -296,6 +305,7 @@ function mcapi_entity_insert($entity) {
         //default access controls are set automatically
       ));
       $wallet->save();
+      debug('created wallet for '.$type.' '.$entity->id());
     }
   }
 }
@@ -314,7 +324,6 @@ function mcapi_entity_update($entity) {
   }
 }
 
-
 /**
  * implements hook_entity_delete()
  * ensure any wallets belonging to the entity are moved to their parent's exchange
@@ -326,11 +335,13 @@ function mcapi_entity_delete($entity) {
   }
 }
 
-
 /**
  * implements hook_local_tasks_alter().
  * prevent the three fixed transaction display modes from being edited
  * this function will fail if mcapi is not heavier than field_ui module
+ * 
+ * @todo rather than changing the weight of the field_ui in mcapi_install, 
+ * tidier to use module_implements_alter for this hook only
  */
 function mcapi_local_tasks_alter(&$tasks) {
   $names = array('certificate_mcapi_transaction', 'twig_mcapi_transaction', 'sentence_mcapi_transaction');
@@ -349,7 +360,9 @@ function mcapi_entity_operation_alter(&$operations, $entity) {
     'mcapi_transaction.twig',
     'mcapi_transaction.sentence'
   );
-  if (in_array($entity->id(), $ids)) $operations = array();
+  if (in_array($entity->id(), $ids)) {
+    $operations = array();
+  }
 }
 
 /**
@@ -370,3 +383,36 @@ function mcapi_hook_info() {
   );
   return array('group' => 'mcapi') + array_combine($hooks, $hooks);
 }
+
+/*
+ * implements hook_form_alter
+ * automate and hide the 'required' checkbox for the worth field on Transactions
+ */
+function mcapi_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
+  if ($form['#entity']->getEntityTypeId() != 'mcapi_transaction') return;
+  $required = TRUE;
+  $currs = $form['field']['default_value']['widget']['#allowed_curr_ids'];
+  foreach (Currency::loadMultiple($currs) as $currency) {
+    if ($currency->zero) {
+      $required = FALSE;
+      break;
+    }
+  }
+  $form['field']['required']['#type'] = 'value';
+  $form['field']['required']['#value'] = $required;
+}
+
+
+  /**
+   * router access callback
+   * Find out if the user has access to enough wallets to be able to transact
+   * i.e. 2
+   * @todo find out how many wallets any given user can pay from and to
+   */
+  function enough_wallets() {
+    $count = db_select('mcapi_wallet', 'w')->fields('w', array('wid'))->countQuery()->execute()->fetchfield();
+    return $count > 1 ? 
+      Drupal\Core\Access\AccessResult::allowed()->cachePerUser() :
+      Drupal\Core\Access\AccessResult::forbidden()->cachePerUser();
+  }
+  

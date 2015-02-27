@@ -46,8 +46,8 @@ use Drupal\Core\Config\Entity\ThirdPartySettingsTrait;
  *   },
  *   links = {
  *     "canonical" = "mcapi.currency",
- *     "edit-form" = "mcapi.admin_currency_edit",
- *     "delete-form" = "mcapi.admin_currency_delete",
+ *     "edit-form" = "entity.mcapi_currency.edit_form",
+ *     "delete-form" = "entity.mcapi_currency.delete_form",
  *   }
  * )
  */
@@ -57,17 +57,74 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   use ThirdPartySettingsTrait;
 
   public $id;
+  
   public $uuid;
+  
+  /**
+   * The name of the currency
+   * Plain text, probabliy with the first char capitalised
+   * @var string
+   */
   public $name;
+  
+  /**
+   * The owner user id
+   * @var integer 
+   */
   public $uid;
+  
+  /*&
+   * one of 'acknowledgement', 'commodity', 'exchange'
+   * @var string
+   */
   public $issuance;
-  public $format;
+  
+  /**
+   * The html string to be rendered of the transaction value is zero
+   * An empty value means that zero transactions are not allowed
+   * @var string 
+   */
   public $zero;
+  
+  /**
+   * The color hex code to be used in rendering the currency in visualisations
+   * 
+   * @var string 
+   */
   public $color;
+  
+  /**
+   *  The weight of the currency compared to other currencies
+   * 
+   * @var integer
+   */
   public $weight;
+  
+  /**
+   * The delete mode of transactions using this currency.
+   * Note that transactions with multiple currencies will be deleted in the 
+   * least destructive way
+   * 
+   * @var type 
+   */
   public $deletion;
-  public $ticks; //exchange rate, expressed in ticks. maybe only needed in exchange module
+  
+  /**
+   * exchange rate, expressed in ticks
+   * @var integer
+   * @todo move this to the mcapi_exchanges module
+   */
+  public $ticks;
 
+  /*
+   * the $format is an intricately formatted expression which tells the system 
+   * how to transform an integer value into a rendered currency value, or form
+   * widget and back again.
+   *
+   * @var string
+   */
+  public $format;
+  
   function __construct($values) {
     parent::__construct($values, 'mcapi_currency');
     $this->preformat();
@@ -90,22 +147,11 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
-   * {@inheritdoc}
-   * make a numerical currency id for new currencies
-   */
-  public function save() {
-    if (empty($this->id())) {
-      $this->set('id', max(array_keys($this->loadMultiple())) + 1);
-    }
-    return parent::save();
-  }
-
-  /**
    * @see \Drupal\mcapi\CurrencyInterface::label()
    */
   public function label($langcode = NULL) {
     //TODO how to we translate this?
-  	return $this->name;
+    return $this->name;
   }
 
 
@@ -130,7 +176,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     //get the transaction storage controller
     return $this->entityManager()
       ->getStorage('mcapi_transaction')
-      ->volume($this->id());
+      ->volume($this->id(), $conditions);
   }
 
   /**
@@ -162,16 +208,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     $this->set('uid', $account->id());
     return $this;
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  //in parent, configEntityBase, $rel is set to edit-form by default - why would that be?
-  //Is is assumed that every entity has an edit-form link? Any case this overrides it
-  public function urlInfo($rel = 'canonical', array $options = array()) {
-    return parent::urlInfo($rel);
-  }
-
 
   /**
    * @see \Drupal\mcapi\CurrencyInterface::format()
@@ -250,11 +286,12 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * not very elegant way to get the odd-keyed values from an arbitrary length array
    */
   private function preformat($reset = FALSE) {
-    if (property_exists($this, 'format_nums') && !$reset)return;
-    $this->format_nums = array();
-    foreach ($this->format as $i => $val) {
-      if ($i % 2 == 1) {
-        $this->format_nums[$i] = $val;
+    if (!property_exists($this, 'format_nums') || $reset) {
+      $this->format_nums = array();
+      foreach ($this->format as $i => $val) {
+        if ($i % 2 == 1) {
+          $this->format_nums[$i] = $val;
+        }
       }
     }
   }
@@ -292,7 +329,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     if (\Drupal::moduleHandler()->moduleExists('mcpai_exchanges')) {
       return db_select('mcapi_exchange__currencies', 'c')
         ->fields('c', array('entity_id'))
-        ->condition('currencies_target_id', $currency->id())
+        ->condition('currencies_target_id', $this->id())
         ->execute()->fetchCol();
     }
     //TODO ensure exchange id 0 is reserved
@@ -301,10 +338,11 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
 
   /**
    * {@inheritdoc}
+   * @todo
    */
   public static function user(AccountInterface $account = NULL) {
     $exchange_ids = Exchanges::in($account, TRUE);
-    return Mcapi::currencies($exchange_ids, $ticks);
+    return Mcapi::currencies($exchange_ids, 0);
   }
 
   /**
