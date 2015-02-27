@@ -32,7 +32,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    *
    * @return integer.
    */
-  public function transactions(array $conditions = array(), $serial = FALSE);
+  public function transactions(array $conditions = [], $serial = FALSE);
 
   /**
    * return the sum of all transactions, in all states
@@ -43,7 +43,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    * @return integer
    *   raw quantity which should be formatted using currency->format($value);
    */
-  public function volume(array $conditions = array());
+  public function volume(array $conditions = []);
 
   /**
    * check that a currency has no transactions and if so, call the parent delete method
@@ -72,7 +72,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    *   plaintext #markup containing the formatted value. Hopefully 90 mins, normally formatted
    *   say as '1 1/2 hours' would come out of this function '1.30'.
    */
-  public function faux_format($raw_num, $format = array());
+  public function faux_format($raw_num, $format = []);
 
   /**
    * Load currencies for a given wallet

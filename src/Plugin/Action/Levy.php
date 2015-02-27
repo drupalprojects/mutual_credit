@@ -50,7 +50,7 @@ class Levy extends RulesActionBase {//implements ContainerFactoryPluginInterface
     $round = $this->getContextValue('round');
     //TODO what should this output?
     //old code follows
-    $values = array();
+    $values = [];
     foreach ($worth as $delta => $item) {
       //if this currency was in the prime transaction, pass it to the calculator
       $calculated = Transaction::calc($item['value'], $transaction->worth->val($item['curr_id']));

@@ -28,7 +28,7 @@ class WorthFormatter extends FormatterBase {
    * {@inheritdoc}
    */
   public function viewElements(FieldItemListInterface $items) {
-    $elements = array();
+    $elements = [];
 
     foreach ($items as $delta => $item) {
       $elements[$delta] = array('#markup' => $item->view());

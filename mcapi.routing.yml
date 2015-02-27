@@ -19,10 +19,11 @@ mcapi.admin_misc:
     _admin_route: TRUE
 
 #currencies
-mcapi.currency:
+entity.mcapi_currency.canonical:
   path: '/currency/{mcapi_currency}'
   defaults:
-    _entity_view: 'mcapi_currency.activity'
+  #TODO I've got a nasty feeling config entities can't do this Bcoz they have no view modes
+    _entity_view: 'mcapi_currency.default'
     _title_callback: 'Drupal\mcapi\Controller\CurrencyController::pageTitle'
   requirements:
     _permission: 'access content'
@@ -77,7 +78,7 @@ mcapi.transaction_admin:
   options:
     _admin_route: TRUE
 
-mcapi.transaction_view:
+entity.mcapi_transaction.canonical:
   path: '/transaction/{mcapi_transaction}'
   defaults:
     _entity_view: 'mcapi_transaction.full' #full means defer to the view transition settings

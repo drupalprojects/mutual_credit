@@ -125,7 +125,7 @@ function _mcapi_theme() {
  */
 function template_preprocess_mcapi_wallets(&$vars) {
   //are the wallets aready themed?
-  if (!is_null($vars['wallets']))mtrace();
+//  if (!is_null($vars['wallets']))mtrace();
   foreach ($vars['wallets'] as $wid =>  $wallet) {
     $vars['wallets'][$wid] = drupal_render($wallet);
   }
@@ -172,7 +172,7 @@ function template_preprocess_certificate(&$vars) {
     $vars[$sub] = $element[$sub];
   }
 
-  $vars['children'] = array();
+  $vars['children'] = [];
   if (isset($transaction->children)) {
     foreach($transaction->children as $child) {
       $vars['children'][$child->id()] = entity_view($child, 'sentence');
@@ -215,7 +215,7 @@ function theme_sentence(&$vars) {
  * New in D8 alpha12
  */
 function mcapi_render_twig_transaction($template, TransactionInterface $transaction) {
-  $vars = array();
+  $vars = [];
   $xid = $transaction->id();
   //Here we have to get all the fieldAPI fields rendered and in $vars
   $entities = array($xid => $transaction);

@@ -57,14 +57,14 @@ class Edit extends Transition2Step {
     $object->setModuleHandler(\Drupal::moduleHandler());
 
     //oops! this changes the form_id and breaks form submission
-    $form = array();
+    $form = [];
     $form_state = new FormState();
     $display = entity_get_form_display('mcapi_transaction', 'mcapi_transaction', 'default');
     $object->setFormDisplay($display, $form_state);
     $transaction_form = $object->form($form, $form_state);
 
 
-    $additional_fields = array();
+    $additional_fields = [];
     foreach (array_filter($this->configuration['fields']) as $fieldname) {
       $additional_fields[$fieldname] = $transaction_form[$fieldname];
     }

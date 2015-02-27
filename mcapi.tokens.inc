@@ -5,12 +5,12 @@ use Drupal\mcapi\Mcapi;
 /*
  * implements hook_tokens().
  */
-function mcapi_tokens($type, $tokens, array $data = array(), array $options = array()) {
+function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
   if ($type != 'mcapi' || !array_key_exists('mcapi', $data) || !is_object($data['mcapi'])) {
-    return array();
+    return [];
   }
 
-  $replacements = $replaced = array();
+  $replacements = $replaced = [];
   $transaction = $data['mcapi'];
   Mcapi::processTransactionVars($replaced, $transaction);
   foreach ($tokens as $name => $original) {

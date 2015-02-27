@@ -53,20 +53,20 @@ use Drupal\mcapi\Entity\State;
  *   field_ui_base_route = "mcapi.admin.transactions",
  *   translatable = FALSE,
  *   links = {
- *     "canonical" = "mcapi.transaction_view"
+ *     "canonical" = "entity.mcapi_transaction.canonical"
  *   }
  * )
  */
 class Transaction extends ContentEntityBase implements TransactionInterface {
 
-  public $warnings = array();
-  public $child = array();
+  public $warnings = [];
+  public $child = [];
 
   /**
    * {@inheritdoc}
    */
   public static function loadBySerials($serials) {
-    $transactions = array();
+    $transactions = [];
     if ($serials) {
       //not sure which is faster, this or coding it using $this->filter()
       $results = \Drupal::entityManager()
@@ -150,7 +150,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * @return Violation[]
    */
   function validate() {
-    $violations = array();
+    $violations = [];
 
     if ($this->validated) return $violations;
     try{
@@ -178,7 +178,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     }
     $transactions = $this->flatten();//NB $transactions contains clones of the $this
     $violations = self::validateTransaction(array_shift($transactions));
-    $child_warnings = array();
+    $child_warnings = [];
     foreach ($transactions as $transaction) {
       $child_warnings += self::validateTransaction($transaction);
     }
@@ -214,7 +214,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       }
     }
     //$violations = parent::validate();//doesn't exist
-    $violation_messages = array();
+    $violation_messages = [];
     foreach ($violations as $violation) {
       //print_r($violation);print_r($this->created->getValue());die();
       /* methods
@@ -247,7 +247,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * @todo Decide whether this should be static or not
    */
   private static function validateTransaction($transaction) {
-    $violations = array();
+    $violations = [];
     //check the payer and payee aren't the same
     if ($transaction->payer->target_id == $transaction->payee->target_id) {
       $violations['payee'] = t('Wallet @num cannot pay itself.', array('@num' => $transaction->payer->target_id));
@@ -285,7 +285,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'parent' => 0,
       'payer' => 1,//chances are that these exist
       'payee' => 2,
-      'children' => array(),
+      'children' => [],
       'exchange' => 1
     );
   }
@@ -328,7 +328,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   public static function postLoad(EntityStorageInterface $storage_controller, array &$entities) {
     foreach ($entities as $transaction) {
       if ($transaction->parent->value == 0) {
-        $transaction->children = array();
+        $transaction->children = [];
       }
     }
   }

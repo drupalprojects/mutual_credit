@@ -49,7 +49,7 @@ class WorthWidget extends WidgetBase {
     );
     return $element;
   }
-
+  
   /**
    * {@inheritdoc}
    * @todo

@@ -39,7 +39,7 @@ class TransitionManager extends DefaultPluginManager {
     //TODO Do we need to do anything to take advantage of the cache backend?
     $this->setCacheBackend($cache_backend, 'transaction_transitions');
     $this->config_factory = $config_factory;
-    $this->plugins = array();
+    $this->plugins = [];
   }
 
   //TODO pluginbags would be better
@@ -50,7 +50,7 @@ class TransitionManager extends DefaultPluginManager {
     return $this->plugins;
   }
 
-  public function active(array $exclude = array(), $worth) {
+  public function active(array $exclude = [], $worth) {
     if ($worth) {
       $exclude = array_merge($exclude, $this->deletemodes($worth->currencies(TRUE)));
     }

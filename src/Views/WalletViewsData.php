@@ -18,7 +18,7 @@ class WalletViewsData implements EntityViewsDataInterface {
    * {@inheritdoc}
    */
   public function getViewsData() {
-    $data = array();
+    $data = [];
 
     $data['mcapi_wallet']['table'] = array(
       'group'  => t('Wallets'),

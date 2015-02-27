@@ -58,7 +58,7 @@ class WorthFieldItemList extends FieldItemList {
   /**
    * {@inheritdoc}
    */
-  public function view($display_options = array()) {
+  public function view($display_options = []) {
     foreach ($this->list as $item) {
       $renderable = $item->view($display_options);
       $values[] = drupal_render($renderable);

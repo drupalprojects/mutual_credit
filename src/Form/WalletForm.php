@@ -95,7 +95,7 @@ class WalletForm extends ContentEntityForm {
       );
       if (array_key_exists($type, $autocomplete_routes)) {
         $form['transfer'][$id]['#autocomplete_route_name'] = $autocomplete_routes[$type];
-        //$form['transfer'][$id]['#autocomplete_route_parameters'] = array();
+        //$form['transfer'][$id]['#autocomplete_route_parameters'] = [];
       }
     }
     */
@@ -193,7 +193,7 @@ class WalletForm extends ContentEntityForm {
    *   comma separated usernames
    */
   private function getUsernames($uids) {
-    $names = array();
+    $names = [];
     foreach (User::loadMultiple($uids) as $account) {
       $names[] = $account->getUsername();
     }

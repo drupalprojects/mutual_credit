@@ -132,7 +132,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    * @see \Drupal\mcapi\TransitionInterface::form($transaction)
    */
   public function form(TransactionInterface $transaction) {
-    return array();
+    return [];
   }
 
   /**

@@ -82,7 +82,7 @@ class Mcapi {
           'walletableBundles',
           $types,
           \Drupal\Core\Cache\CacheBackendInterface::CACHE_PERMANENT,
-          array()//TODO what cache tags to use if the cache is permanent?
+          []//TODO what cache tags to use if the cache is permanent?
         );
       }
     }
@@ -168,7 +168,7 @@ class Mcapi {
   */
   public static function currencies(array $exchange_ids, $ticks = FALSE) {
     if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-      $currencies = array();
+      $currencies = [];
       foreach (Exchange::loadmultiple($exchange_ids) as $exchange) {
         foreach ($exchange->get('currencies')->referencedEntities() as $currency) {
           if (!$ticks || $currency->ticks) {

@@ -28,7 +28,7 @@ class PseudoFormatter extends FormatterBase {
    * {@inheritdoc}
    */
   public function viewElements(FieldItemListInterface $items) {
-    $elements = array();
+    $elements = [];
     
     foreach ($items as $delta => $item) {
       extract($this->getvalue());

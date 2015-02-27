@@ -20,7 +20,7 @@ class McapiBlockBase extends BlockBase {
    */
   public function defaultConfiguration() {
     return array(
-      'curr_ids' => array(),
+      'curr_ids' => [],
       'user_source' => 0,
     );
   }

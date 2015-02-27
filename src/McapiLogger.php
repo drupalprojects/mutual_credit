@@ -25,7 +25,7 @@ class McapiLogger implements LoggerInterface {
    * copied from DbLog
    * I don't see any need to change it.
    */
-  public function log($level, $message, array $context = array()) {
+  public function log($level, $message, array $context = []) {
     // Remove any backtraces since they may contain an unserializable variable.
     unset($context['backtrace']);
 

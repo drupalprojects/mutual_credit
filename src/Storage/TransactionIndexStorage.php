@@ -114,7 +114,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    *   the serial numbers of all transactions with the given currency
    */
   public function wipeslate($curr_id = NULL) {
-    $serials = array();
+    $serials = [];
     //get the serial numbers
     $query = $this->database->select("mcapi_transactions_index", 't')
       ->fields('t', array('serial'));
@@ -210,7 +210,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::filter()
    * Makes it unnecessary to query the entity table itself, unless you want payer/payee
    */
-  public static function filter(array $conditions = array(), $offset = 0, $limit = 0) {
+  public static function filter(array $conditions = [], $offset = 0, $limit = 0) {
     if (!empty($conditions['payer']) && !empty($conditions['payee'])) {
       throw new Exception('TransactionIndexStorage cannot filter by both payer and payee');
     }
@@ -275,7 +275,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   /**
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::summaryData()
    */
-  public function summaryData($wallet_id, array $conditions = array()) {
+  public function summaryData($wallet_id, array $conditions = []) {
     //TODO We need to return 0 instead of null for empty columns
     //then get rid of the last line of this function
     $query = $this->database->select('mcapi_transactions_index', 'i')->fields('i', array('curr_id'));
@@ -299,7 +299,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * feel free to implement this on the entity table
    * @todo put this in the interface or delete it
    */
-  public function balances ($curr_id, $wids = array(), array $conditions = array()) {
+  public function balances ($curr_id, $wids = [], array $conditions = []) {
     $query = $this->database->select('mcapi_transactions_index', 'i')->fields('i', array('wallet_id'));
     $query->addExpression('SUM(i.diff)', 'balance');
     if ($wids) {
@@ -327,7 +327,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         WHERE wallet_id = $wallet_id AND curr_id = '$curr_id'
         ORDER BY created"
     )->fetchAll();
-    $history = array();
+    $history = [];
     //having done the addition, we can chop the beginning off the array
     //if two transactions happen on the same second, the latter running balance will be shown only
     foreach ($all_balances as $point) {
@@ -344,7 +344,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::count()
    * feel free to implement this on the entity table
    */
-  public function count($curr_id = '', $conditions = array(), $serial = FALSE) {
+  public function count($curr_id = '', $conditions = [], $serial = FALSE) {
     $query = $this->database->select('mcapi_transactions_index', 't')
       ->condition('t.incoming', 0);
     $query->addExpression('count(xid)');//how do we do this with countquery()
@@ -359,7 +359,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::volume()
    * feel free to implement this on the entity table
    */
-  function volume($curr_id, $conditions = array()) {
+  function volume($curr_id, $conditions = []) {
     $query = $this->database->select('mcapi_transactions_index', 't')
       ->condition('incoming', 0);
     $query->addExpression('SUM(t.volume)');

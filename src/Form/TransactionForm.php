@@ -58,13 +58,13 @@ class TransactionForm extends ContentEntityForm {
       '#attributes' => new Attribute(
         array(
           'style' => "width:100%",
-          'class' => array()
+          'class' => []
         )
       ),
       //TODO TEMP
       '#attributes' => array(
         'style' => "width:100%",
-        'class' => array()
+        'class' => []
       )
     );
 
@@ -114,8 +114,6 @@ class TransactionForm extends ContentEntityForm {
       '#weight' => 18,
     );
     
-    echo "\n<br />building transaction form:";print_r($transaction->get('worth')->getValue());
-    
     $form = parent::form($form, $form_state);
 
     return $form;
@@ -141,28 +139,30 @@ class TransactionForm extends ContentEntityForm {
     //$form_state->cleanValues();;//without this, buildentity fails, but not so in nodeForm
 
     $transaction = $this->buildEntity($form, $form_state);
-    echo "\n<br /><strong>builtEntity worth:"; print_r($transaction->get('worth')->getValue());echo '</strong>';
-
+    
     // The date element contains the date object.
     $date = $transaction->created instanceof DrupalDateTime
       ? $transaction->created->value
       : new DrupalDateTime($transaction->created->value);
     
-    //there is a problem creating the date in alpha14
+    //TODO there was a problem creating the date in alpha14
     if ($date->hasErrors()) {
       $message = $this->t('You have to specify a valid date.');
-      $form_state->setErrorByName('created', $message);
+      //$form_state->setErrorByName('created', 'MCAPI:'.$message);
     }
     if (!$transaction->creator->target_id) {
       $transaction->set('creator', \Drupal::currentUser()->id());
     }
 
+    
+    parent::validate($form, $form_state);
+    
     //node_form controller runs a hook for validating the node
     //however we do it here IN the transaction entity validation which is less form-dependent
 
     //validate the fieldAPI widgets
-    $this->getFormDisplay($form_state)
-      ->validateFormValues($transaction, $form, $form_state);
+    //$this->getFormDisplay($form_state)
+      //->validateFormValues($transaction, $form, $form_state);
 
     //if there are errors at the form level don't bother validating the entity object
     if ($form_state->getErrors()) {
@@ -170,11 +170,11 @@ class TransactionForm extends ContentEntityForm {
     }
 
     //curiously, I can't find an instance of the entity->validate() being called. I think it might be new in alpha 11
-    if ($violations = $transaction->validate()) {
-      foreach ($violations as $field => $message) {
-        $form_state->setErrorByName($field, $message);
-      }
-    }
+    //if ($violations = $transaction->validate()) {
+    //  foreach ($violations as $field => $message) {
+    //    $form_state->setErrorByName($field, $message);
+    //  }
+    //}
     //show the warnings
     $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
     foreach ($transaction->warnings as $message) {
@@ -182,7 +182,7 @@ class TransactionForm extends ContentEntityForm {
         drupal_set_message($e->getMessage, 'warning');
       }
     }
-    //now validated, this is what we will put in the tempstore
+    //now validated, this is what will go in the tempstore
     $this->entity = $transaction;
     $form_state->set('mcapi_validated', TRUE);
 

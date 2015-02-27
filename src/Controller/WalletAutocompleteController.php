@@ -10,20 +10,11 @@ namespace Drupal\mcapi\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\mcapi\Entity\Wallet;
-
 /**
  * Returns responses for Transaction routes.
  * @todo Make this better
  */
 class WalletAutocompleteController {
-
-  function __construct($arg1) {
-    mdump($arg1);die('WalletAutocompleteController');
-  }
-  
-  function create($container) {
-    mtrace();
-  }
 
   /*
    * get a list of all wallets.
@@ -32,9 +23,9 @@ class WalletAutocompleteController {
   function autocomplete(Request $request) {
     //there are three different ways offered here, none of which is perfect
     //because of the different ways that wallet names can be construed
-    $results = array();
+    $results = [];
 
-    $conditions = array();
+    $conditions = [];
 
     $string = $request->query->get('q');
 

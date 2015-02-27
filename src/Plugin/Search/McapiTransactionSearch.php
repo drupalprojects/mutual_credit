@@ -110,7 +110,7 @@ class McapiTransactionSearch extends SearchPluginBase implements AccessibleInter
    * {@inheritdoc}
    */
   public function execute() {
-    $results = array();
+    $results = [];
     if (!$this->isSearchExecutable()) {
       return $results;
     }

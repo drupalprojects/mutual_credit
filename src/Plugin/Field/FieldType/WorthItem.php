@@ -56,6 +56,8 @@ class WorthItem extends FieldItemBase {
       ),
     );
   }
+  
+  
 
   /**
    * {@inheritdoc}
@@ -81,7 +83,7 @@ class WorthItem extends FieldItemBase {
   /**
    * {@inheritdoc}
    */
-  public function view($display_mode = array()) {
+  public function view($display_mode = []) {
     extract($this->getValue(FALSE));
     $currency = Currency::load($curr_id);
     if ($value) {

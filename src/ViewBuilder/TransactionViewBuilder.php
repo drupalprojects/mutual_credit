@@ -50,7 +50,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
       $view_config = \Drupal::config('mcapi.transition.view');
       $view_mode = $view_config->get('format');
     }
-    $build = array();
+    $build = [];
     //most entity types would build the render array for theming here.
     //however the sentence and twig view modes don't need the theming flexibility
     //even the certificate is rarely used..
@@ -61,8 +61,8 @@ class TransactionViewBuilder extends EntityViewBuilder {
       case 'sentence':
         $build['#markup'] = \Drupal::Token()->replace(
           \Drupal::config('mcapi.misc')->get('sentence_template'),
-          array('mcapi' => $entity),
-          array('sanitize' => TRUE)
+          ['mcapi' => $entity],
+          ['sanitize' => TRUE]
         );
         break;
       default:
@@ -71,16 +71,18 @@ class TransactionViewBuilder extends EntityViewBuilder {
 
     $build += array(
       '#view_mode' => $view_mode,
-      '#theme_wrappers' => array('mcapi_transaction'),
+      '#theme_wrappers' => ['mcapi_transaction'],
       '#langcode' => $langcode,
       '#mcapi_transaction' => $entity,
-      '#attached' => array('library' => array('mcapi/mcapi.transaction')),
-      '#cache' => array(
-        'tags' =>  NestedArray::mergeDeep($this->getCacheTags(), $entity->getCacheTags()),
-      ),
+      '#attached' => ['library' => ['mcapi/mcapi.transaction']],
+      '#cache' => [
+        'tags' =>  NestedArray::mergeDeep(
+          $this->getCacheTags(), //['mcapi_transaction_view']
+          $entity->getCacheTags()//['mcapi_transaction:']
+        ),
+      ],
     );
-    debug('mcapi.transaction', 'library');
-
+    drupal_set_message("The #attached libary mcapi/mcapi.transaction isn't being added in TransactionViewBuilder::getBuildDefaults()", 'warning');
     //TODO because the transition links are very contextual
     //we can't cache the transactions without a new preview view_mode which shows no links
     //Ideally we would cache the certificate but NOT the wrapped certificate
@@ -115,7 +117,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
    *   An array that can be processed by drupal_pre_render_links().
    */
   function renderLinks(TransactionInterface $transaction, $view_mode = 'certificate', $dest_type = NULL) {
-    $renderable = array();
+    $renderable = [];
     //child transactions and unsaved transactions never show links
     if (!$transaction->parent->value && $transaction->serial->value) {
       $exclude = ['create'];
@@ -124,7 +126,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
       if ($view_mode == 'certificate') $exclude[] = 'view';
       foreach ($this->transitionManager->active($exclude, $transaction->worth) as $transition => $plugin) {
         if ($transaction->access($transition)) {
-          $route_name = $transition == 'view' ? 'mcapi.transaction_view' : 'mcapi.transaction.op';
+          $route_name = $transition == 'view' ? 'entity.mcapi_transaction.canonical' : 'mcapi.transaction.op';
           $renderable['#links'][$transition] = array(
             'title' => $plugin->label,
             'url' => Url::fromRoute($route_name, array(
@@ -154,10 +156,10 @@ class TransactionViewBuilder extends EntityViewBuilder {
           '#theme' => 'links',
           '#attached' => array('library' => array('mcapi/mcapi.transaction')),
           '#attributes' => new Attribute(array('class' => array('transaction-transitions'))),
-          '#cache' => array()//TODO prevent this from being ever cached
+          '#cache' => []//TODO prevent this from being ever cached
         );
       }
-      debug('mcapi.transaction', 'library');
+      drupal_set_message("The #attached libary mcapi/mcapi.transaction isn't being added in TransactionViewBuilder::getBuildDefaults()", 'warning');
     }
     return $renderable;
   }

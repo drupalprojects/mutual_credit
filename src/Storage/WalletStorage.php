@@ -31,7 +31,7 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
       foreach ($records as $key => $record) {
         //the zero values will be replaced by an array of user ids from the access table.
         //if all goes according to plan...
-        $accesses[$key][$op] = $record->{$op} ? : array();
+        $accesses[$key][$op] = $record->{$op} ? : [];
       }
     }
     $entities = parent::mapFromStorageRecords($records);

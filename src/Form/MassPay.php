@@ -40,7 +40,7 @@ class MassPay extends TransactionForm {
       //But how to get the submitted values from $form_state?
       //$form_state['input'] means before processing and
       //$form_state['values'] hasn't been calculated yet
-      $this->entity = Transaction::create(array());
+      $this->entity = Transaction::create([]);
 
       $form_display = EntityFormDisplay::collectRenderDisplay($this->entity, 'mass');
       $this->setFormDisplay($form_display, $form_state);
@@ -205,7 +205,7 @@ class MassPay extends TransactionForm {
 
       //go to the transaction certificate
       $form_state->setRedirect(
-        'mcapi.transaction_view',
+        'entity.mcapi_transaction.canonical',
         array(
           'mcapi_transaction' => $main_transaction->serial->value
         )

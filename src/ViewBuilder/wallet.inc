@@ -141,7 +141,7 @@ function template_preprocess_wallet_history(&$vars) {
   //apply smoothing, or even roughing.
   $point_count = count($history);
   if ($point_count < $vars['width'] / 3) {//step method, for a small number of points
-    $times = $values = array();
+    $times = $values = [];
     //make two values for each one in the keys and values
     foreach ($history as $time => $bal) {
       $times[] = $time;

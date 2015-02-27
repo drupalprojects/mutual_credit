@@ -16,7 +16,7 @@ class TransactionViewsData implements EntityViewsDataInterface {
    * {@inheritdoc}
    */
   public function getViewsData() {
-    $data = array();
+    $data = [];
 
     $data['mcapi_transaction']['table'] = array(
       'group'  => t('Transaction'),

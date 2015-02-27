@@ -49,7 +49,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * @return array
    *   an array keyed by xid with serial numbers as values
    */
-  public static function filter(array $conditions = array(), $offset = 0, $limit = 25);
+  public static function filter(array $conditions = [], $offset = 0, $limit = 25);
 
   /**
    * Get some gerneral purpose stats by adding up the transactions for a given wallet
@@ -82,7 +82,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    *
    * return integer
    */
-  public function count($curr_id = '', $conditions = array(), $serial = FALSE);
+  public function count($curr_id = '', $conditions = [], $serial = FALSE);
 
   /**
    * get the total transaction volume of a currency
@@ -95,7 +95,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * @return integerstring
    *   ready for formatting with $currency->format
    */
-  public function volume($curr_id, $conditions = array());
+  public function volume($curr_id, $conditions = []);
 
   /**
    * Retrieve the full balance history

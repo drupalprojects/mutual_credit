@@ -45,7 +45,7 @@ class Exchanges {
   //    $groups = og_get_entity_groups($entity_type = 'mcapi_exchange', $entity, array(OG_STATE_ACTIVE), EXCHANGE_OG_REF);
   //    return $groups['mcapi_exchange'];
     
-      $exchanges = array();
+      $exchanges = [];
       if (is_null($entity)) {
         $entity = User::load(\Drupal::currentUser()->id());
       }

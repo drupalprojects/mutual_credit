@@ -161,7 +161,7 @@ class TransitionForm extends EntityConfirmFormBase {
     else {
       //if it's not set, go to the transaction's own page
       $form_state->setRedirect(
-        'mcapi.transaction_view',
+        'entity.mcapi_transaction.canonical',
         array('mcapi_transaction' => $transaction->serial->value)
       );
     }

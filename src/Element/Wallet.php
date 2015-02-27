@@ -26,7 +26,7 @@ class Wallet extends Textfield {
     $element = parent::getInfo();
     $class = get_class($this);
 
-    $element['#exchanges'] = array();
+    $element['#exchanges'] = [];
     $element['#autocomplete_route_name'] = 'mcapi.wallets.autocomplete';
     array_unshift($element['#process'], array($class, 'process_select_wallet'));
     $element['#prerender'][] = array($class, 'prerender_wallet_field');

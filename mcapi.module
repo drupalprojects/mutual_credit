@@ -218,7 +218,7 @@ function mcapi_currency_load($id) {
  * @return array
  *   The entity names, keyed by entity id
  */
-function mcapi_entity_label_list($entity_type_id, array $data = array()) {
+function mcapi_entity_label_list($entity_type_id, array $data = []) {
   if (empty($data)) {
     $entities = \Drupal::entityManager()->getStorage($entity_type_id)->loadMultiple();
   }
@@ -229,7 +229,7 @@ function mcapi_entity_label_list($entity_type_id, array $data = array()) {
     $entities = \Drupal::entityManager()->getStorage($entity_type_id)->loadMultiple($data);
   }
   else $entities = $data;
-  $list = array();
+  $list = [];
   foreach ($entities as $entity) {
     $list[$entity->id()] = $entity->label();
   }
@@ -252,7 +252,7 @@ function mcapi_mcapi_transition(TransactionInterface $transaction, TransitionInt
   if (\Drupal::currentUser()->id() == 1) debug($context, 'Ran hook_mcapi_transition');
   //example code
   if (@$context['config']['send']) {
-    $recipients = array();
+    $recipients = [];
     //mail is sent to the user owners of wallets, and to cc'd people
     foreach (array('payer', 'payee') as $participant) {
       $recipients[] = User::load($transaction->{$participant}->entity->user_id())->mail->value;
@@ -361,7 +361,7 @@ function mcapi_entity_operation_alter(&$operations, $entity) {
     'mcapi_transaction.sentence'
   );
   if (in_array($entity->id(), $ids)) {
-    $operations = array();
+    $operations = [];
   }
 }
 

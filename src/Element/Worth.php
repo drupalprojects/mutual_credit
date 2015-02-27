@@ -38,7 +38,7 @@ class Worth extends FormElement {
       '#attached' => array('library' => array('mcapi/mcapi.worth.element')),
       '#minus' => FALSE,
       '#config' => FALSE,
-      '#allowed_curr_ids' => array()
+      '#allowed_curr_ids' => []
     );
     debug('mcapi.worth.element', 'library');
   }
@@ -49,34 +49,40 @@ class Worth extends FormElement {
    */
   public static function process_defaults($element, FormStateInterface $form_state, $form) {
     $blank = $element['#config'] ? '' : 0;
-    //change the all_available array to a worths value array populated by zeros
-    if ($allowed_curr_ids = $element['#allowed_curr_ids']) {
-      $existing_curr_ids = array();
-      
-      foreach ((array)$element['#default_value'] as $item) {
-        if (!$item['curr_id']) continue; //means the widget was unpopulated
-        $existing_curr_ids[] = $item['curr_id'];
+    if ($element['#value']) {
+      $element['#default_value'] = $element['#value'];
+    }
+    else {
+      //change the all_available array to a worths value array populated by zeros
+      if ($allowed_curr_ids = $element['#allowed_curr_ids']) {
+        $existing_curr_ids = [];
+
+        foreach ((array)$element['#default_value'] as $item) {
+          if (!$item['curr_id']) continue; //means the widget was unpopulated
+          $existing_curr_ids[] = $item['curr_id'];
+        }
+        unset($element['#default_value']);
+        //restrict the defaults according to the allowed currencies
+        if ($not_allowed = array_diff($existing_curr_ids, $allowed_curr_ids)) {
+          //message only shows the FIRST not allowed currency
+          drupal_set_message(
+            t(
+              'Passed default @currency is not one of the allowed currencies',
+              array('@currency' => \Drupal\mcapi\Entity\Currency::load(reset($not_allowed))->label())
+            ),
+            'warning'
+          );
+        }
+        //ensure each allowed currencies has a default value, which is used for building the widget
+        foreach (array_diff($allowed_curr_ids, $existing_curr_ids) as $curr_id) {
+          //$element['#default_value'][] = array('curr_id' => $curr_id, 'value' => $blank);
+        }
       }
-      unset($element['#default_value']);
-      //restrict the defaults according to the allowed currencies
-      if ($not_allowed = array_diff($existing_curr_ids, $allowed_curr_ids)) {
-        //message only shows the FIRST not allowed currency
-        drupal_set_message(
-          t(
-            'Passed default @currency is not one of the allowed currencies',
-            array('@currency' => \Drupal\mcapi\Entity\Currency::load(reset($not_allowed))->label())
-          ),
-          'warning'
-        );
-      }
-      //ensure each allowed currencies has a default value, which is used for building the widget
-      foreach (array_diff($allowed_curr_ids, $existing_curr_ids) as $curr_id) {
-        $element['#default_value'][] = array('curr_id' => $curr_id, 'value' => $blank);
+      if (empty($element['#default_value'])) {
+        drupal_set_message('No currencies have been specified in the worth field.', 'error');
       }
     }
-    if (empty($element['#default_value'])) {
-      drupal_set_message('No currencies have been specified in the worth field.', 'error');
-    }
+    
     //sort the currencies by weight.
     return $element;
   }
@@ -93,7 +99,7 @@ class Worth extends FormElement {
       extract($item);//creates $curr_id and $value
 
       $currency = \Drupal\mcapi\Entity\Currency::load($curr_id);
-      if ($element['#config'] && !is_numeric($value)) $parts = array();
+      if ($element['#config'] && !is_numeric($value)) $parts = [];
       else $parts = $currency->formatted_parts(abs(intval($value)));
       $element[$delta]['curr_id'] = ['#type' => 'hidden', '#value' => $curr_id];
 
@@ -115,7 +121,7 @@ class Worth extends FormElement {
           $element[$delta][$i] = array(
             '#weight' => $i,
             '#value' => @$parts[$i],//in config mode $parts is empty
-            '#theme_wrappers' => array()
+            '#theme_wrappers' => []
           );
           //if a preset value isn't in the $options
           //then we ignore the options and use the numeric sub-widget

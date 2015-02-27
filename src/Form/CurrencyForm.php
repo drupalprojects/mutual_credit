@@ -126,9 +126,9 @@ class CurrencyForm extends EntityForm {
       '#description' => t('Currently only affects visualisation.'),
       '#type' => 'radios',
       '#options' => array(
-        CURRENCY_TYPE_ACKNOWLEDGEMENT => t('Acknowledgement', array(), array('context' => 'currency-type')),
-        CURRENCY_TYPE_EXCHANGE => t('Exchange', array(), array('context' => 'currency-type')),
-        CURRENCY_TYPE_COMMODITY => t('Backed by a commodity', array(), array('context' => 'currency-type')),
+        CURRENCY_TYPE_ACKNOWLEDGEMENT => t('Acknowledgement', [], array('context' => 'currency-type')),
+        CURRENCY_TYPE_EXCHANGE => t('Exchange', [], array('context' => 'currency-type')),
+        CURRENCY_TYPE_COMMODITY => t('Backed by a commodity', [], array('context' => 'currency-type')),
       ),
       '#default_value' => property_exists($currency, 'issuance') ? $currency->issuance : 'acknowledgement',
       //this should have an API function to work with other transaction controllers

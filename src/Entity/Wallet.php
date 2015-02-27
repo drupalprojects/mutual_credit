@@ -57,17 +57,17 @@ use Drupal\mcapi\WalletInterface;
 class Wallet extends ContentEntityBase  implements WalletInterface{
 
   private $owner;
-  private $stats = array();
+  private $stats = [];
   //access settings
   private $access;
   private $currencies_available;
   
-  static function ___create(array $values = array()) {
+  static function ___create(array $values = []) {
     //trying to inject storage or even entityManager
     echo ('wallet::create');mdump($values);
     return $values;
   }
-  static function createInstance(array $values = array()) {
+  static function createInstance(array $values = []) {
     //trying to inject storage or even entityManager
     die('Wallet::createInstance');
   }
@@ -242,7 +242,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    */
   function currencies_used() {
     if (!$this->currencies_used) {
-      $this->currencies_used = array();
+      $this->currencies_used = [];
       foreach (Currency::loadMultiple(array_keys($this->getSummaries())) as $currency) {
         $this->currencies_used[$currency->id()] = $currency;
       }
@@ -257,7 +257,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    */
   function currencies_available() {
     if (!isset($this->currencies_available)) {
-      $this->currencies_available = array();
+      $this->currencies_available = [];
       $exchanges = Exchanges::walletInExchanges($this);
       foreach (Mcapi::currencies($exchanges) as $currency) {
         $this->currencies_available[$currency->id()] = $currency;
@@ -316,7 +316,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    */
   //in parent, configEntityBase, $rel is set to edit-form by default - why would that be?
   //Is is assumed that every entity has an edit-form link? Any case this overrides it
-  public function urlInfo($rel = 'canonical', array $options = array()) {
+  public function urlInfo($rel = 'canonical', array $options = []) {
     return parent::urlInfo($rel);
   }
 

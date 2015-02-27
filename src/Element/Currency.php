@@ -28,7 +28,7 @@ class Currency extends FormElement {
       ),
       '#theme_wrappers' => array('form_element'),
       '#multiple' => FALSE,
-      '#options' => array(),//array of curr_ids and currency names
+      '#options' => [],//array of curr_ids and currency names
       '#status' => TRUE //filter only for active currences
     );
   }
@@ -37,7 +37,7 @@ class Currency extends FormElement {
    * process callback
    */
   static function process_currcodes($element) {
-    $conditions = array();
+    $conditions = [];
     if ($element['#status']) {
       $conditions['status'] = TRUE;
     }
@@ -58,7 +58,7 @@ class Currency extends FormElement {
     if (count($element['#options']) == 1) {
       //$element['#type'] = 'value';
       $element['#type'] = 'value';
-      $element['#theme_wrappers'] = array();
+      $element['#theme_wrappers'] = [];
       $element['#default_value'] = key($element['#options']);
     }
     elseif ($element['#multiple']) {

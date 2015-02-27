@@ -104,7 +104,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
   }
 
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $form = array();
+    $form = [];
     $form['plugins'] = array(
       '#type' => 'table',
       '#header' => $this->buildHeader(),

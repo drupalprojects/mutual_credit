@@ -58,7 +58,7 @@ class TransactionStorage extends TransactionIndexStorage {
           ->execute();
         $cache_ids = array($transaction->id());
         $this->resetCache($cache_ids);
-        $this->indexDrop($serial);
+        $this->indexDrop($entity->serial->value);
         $this->invokeFieldMethod('update', $transaction);
         $this->invokeHook('update', $entity);
       }
@@ -86,7 +86,7 @@ class TransactionStorage extends TransactionIndexStorage {
         $transaction->setOriginalId($entity->id());
         $this->invokeHook('insert', $entity);
         // Reset general caches, but keep caches specific to certain entities.
-        $cache_ids = array();
+        $cache_ids = [];
       }
       $this->saveFieldItems($transaction, $return == SAVED_UPDATED);
     }
@@ -123,7 +123,7 @@ class TransactionStorage extends TransactionIndexStorage {
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::filter()
    * @note the parent function is very similar but works on the index table and doesn't know payer and payee conditions.
    */
-  public static function filter(array $conditions = array(), $offset = 0, $limit = 0) {
+  public static function filter(array $conditions = [], $offset = 0, $limit = 0) {
     $query = db_select('mcapi_transaction', 'x')
       ->fields('x', array('xid', 'serial'))
       ->orderby('created', 'DESC');

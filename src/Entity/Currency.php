@@ -45,7 +45,7 @@ use Drupal\Core\Config\Entity\ThirdPartySettingsTrait;
  *     "weight" = "weight",
  *   },
  *   links = {
- *     "canonical" = "mcapi.currency",
+ *     "canonical" = "entity.mcapi_currency.canonical",
  *     "edit-form" = "entity.mcapi_currency.edit_form",
  *     "delete-form" = "entity.mcapi_currency.delete_form",
  *   }
@@ -158,7 +158,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * @see \Drupal\mcapi\CurrencyInterface::transactions()
    */
-  public function transactions(array $conditions = array(), $serial = FALSE) {
+  public function transactions(array $conditions = [], $serial = FALSE) {
     $conditions += array('curr_id' => $this->id());
     $serials = $this->entityManager()
       ->getStorage('mcapi_transaction')
@@ -172,7 +172,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * @see \Drupal\mcapi\CurrencyInterface::volume()
    */
-  public function volume(array $conditions = array()) {
+  public function volume(array $conditions = []) {
     //get the transaction storage controller
     return $this->entityManager()
       ->getStorage('mcapi_transaction')
@@ -254,7 +254,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * @see \Drupal\mcapi\CurrencyInterface::faux_format()
    */
-  public function faux_format($raw_num, $format = array()) {
+  public function faux_format($raw_num, $format = []) {
     //this is a wrapper around $this->format which temporarily changes the configured
     //by default it removes
     $temp = $this->format;
@@ -287,7 +287,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    */
   private function preformat($reset = FALSE) {
     if (!property_exists($this, 'format_nums') || $reset) {
-      $this->format_nums = array();
+      $this->format_nums = [];
       foreach ($this->format as $i => $val) {
         if ($i % 2 == 1) {
           $this->format_nums[$i] = $val;
@@ -352,6 +352,12 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     $all_transactions = $this->transactions(array('state' => 0));
     $deleted_transactions = $this->transactions(array('state' => 0));
     return $all_transactions == $deleted_transactions;
+  }
+  
+  //I think this needed to render the canonical view, which is usually assumed 
+  //to be a contentEntity
+  function isDefaultRevision() {
+    return TRUE;
   }
 
 }

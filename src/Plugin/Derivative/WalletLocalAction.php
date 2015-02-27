@@ -68,7 +68,7 @@ class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface
    * {@inheritdoc}
    */
   public function getDerivativeDefinitions($base_plugin_definition) {
-    $this->derivatives = array();
+    $this->derivatives = [];
     $config = \Drupal::config('mcapi.wallets');
     if ($config->get('add_link_location') != 'summaries') {
       $types = $config->get('entity_types');
