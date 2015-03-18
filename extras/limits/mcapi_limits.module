@@ -94,7 +94,7 @@ function mcapi_limits_accounting_validate(array $cluster) {
       //check to see if any of the skip settings apply.
       //these check, or at least these reports should possiblly be done after the check, and only if the check failed
       $currency = currency_load($currcode);
-      if ($currency->issuance == 'acknowledgement') continue;
+//      if ($currency->issuance == 'acknowledgement') continue;//all currencies now respect balance limits
       //upgraded sites need to check for the presence of the skip property
       $skips = isset($currency->limits['skip']) ? $currency->limits['skip'] : array('user1' => 0, 'owner' => 0, 'auto' => 0, 'reservoir' => 0 );
       if ($skips['user1'] && $GLOBALS['user']->uid == 1) {

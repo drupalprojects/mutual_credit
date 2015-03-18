@@ -60,16 +60,7 @@ function mcapi_install() {
 
 /**
  * Implements hook_uninstall().
-
-//use this first to clear the worth field and uninstall the module
-$field = field_info_field('worth');
-field_delete_field('worth');
-field_purge_batch(1000000);
-module_disable(array('mcapi'));
-drupal_uninstall_modules(array('mcapi'));
-db_drop_table('field_deleted_data_' . $field['id']);
-db_drop_table('field_deleted_revision_' . $field['id']);
-
+ * Remove any tables or variables that the module sets.
  */
 function mcapi_uninstall() {
   //delete all the views this module declared
@@ -84,6 +75,12 @@ function mcapi_uninstall() {
       ->execute();
     }
   }
+
+  //truncate the tables containing field_api data
+  //db_query('TRUNCATE table {field_data_worth}');
+  //db_query('TRUNCATE table {field_revision_worth}');
+
+  //need to detatch the worth field before the module will uninstall
 
   db_query("DELETE FROM {variable} WHERE name LIKE 'mcapi_%'");
   variable_del('currency_default');
@@ -389,7 +386,6 @@ function mcapi_update_dependencies() {
  * import po files BEFORE running mcapi updates
  */
 function mcapi_update_6999() {
-  module_enable(array('ctools'));
   $languages = language_list('enabled');
   unset($languages[1]['en']);
   if (!count($languages[1])) return;
@@ -406,6 +402,7 @@ function mcapi_update_6999() {
     );
     drupal_set_message('Imported strings from '.$po_file->uri);
   }
+  module_enable(array('ctools'));
 }
 
 /**
@@ -422,18 +419,6 @@ function mcapi_update_7000() {
   module_enable(array('mcapi_limits', 'accountant_ui', 'mcapi_forms', 'user_chooser'), TRUE);
   drupal_set_message('Installed Community Accounting extra modules');
   drupal_static_reset('system_rebuild_module_data');
-
-  //replace the old module with the new, so as to retain the version number, and keeping it installed
-  db_delete('system')->condition('name', 'mcapi_signatures')->execute();
-  db_update('system')
-    ->fields(array(
-        'name' => 'mcapi_signatures',
-        'filename' => drupal_get_path('module', 'mcapi_signatures').'/mcapi_signatures.info',
-        'schema_version' => 6999
-    ))
-    ->condition('name', 'mc_signatures')
-    ->execute();  //rename and update the table
-  //however I think the module doesn't update itself until the dependency tree is rebuilt
 }
 
 /**
@@ -472,8 +457,18 @@ function mcapi_update_7001() {
     $currency->limits[$callback]['min'] = $old_currency->min;
     $currency->limits[$callback]['max'] = $old_currency->max;
     $currency->limits['personal'] = TRUE;
-    $currency->transaction_view_access[-1] = drupal_map_assoc(array( //-1 defined as TRANSACTION_STATE_PENDING
+
+    $currency->access = array(
+      'membership' => 'user_chooser_segment_perms:transact',
+      'trader_data' => 'user_chooser_segment_perms:transact',
+      'system_data' => 'user_chooser_segment_perms:transact',
+    );
+    $currency->view_transaction_states[-1] = drupal_map_assoc(array( //-1 defined as TRANSACTION_STATE_PENDING
       'transaction_access_callback_signatory',
+      'transaction_access_callback_perm_manage_all'
+    ));
+    $currency->view_transaction_states[TRANSACTION_STATE_FINISHED] = drupal_map_assoc(array(
+      'transaction_access_callback_perm_transact',
       'transaction_access_callback_perm_manage_all'
     ));
     //update the users' balance limits
@@ -634,7 +629,7 @@ function mcapi_update_7003(&$sandbox) {
     mcapi_upgrade_transactions_finished();
     db_drop_table('mc_currencies');
     db_drop_table('mc_cache');
-    //db_drop_table('mc_exchanges');
+    db_drop_table('mc_exchanges');    
   }
 }
 
@@ -729,6 +724,21 @@ function mcapi_user_presave(&$edit, $account, $category) {
  * attempts to make blocks equivalent between d6 and d7
  */
 function mcapi_update_7004() {
+  module_enable(array('mcapi_signatures'));
+  mcapi_signatures_update_7000();
+  drupal_set_message('completed mcapi_signatures_update_7000');
+  mcapi_signatures_update_7001();
+  drupal_set_message('completed mcapi_signatures_update_7001');
+  mcapi_signatures_update_7005();
+  drupal_set_message('completed mcapi_signatures_update_7005');
+  mcapi_signatures_update_7009();
+  drupal_set_message('completed mcapi_signatures_update_7009');
+  mcapi_signatures_update_7010();
+  drupal_set_message('completed mcapi_signatures_update_7010');
+  mcapi_signatures_update_7011();
+  drupal_set_message('completed mcapi_signatures_update_7011');
+  //mcapi_signatures_update_7012();
+
   db_query("DELETE FROM {menu_links} WHERE link_path like 'exchange%'");
   db_query("UPDATE {block} SET pages = REPLACE(pages, 'exchange', 'transaction')");
   db_query("UPDATE {block} SET module = 'mcapi_forms' WHERE module = 'mcapi_webforms'");
@@ -858,35 +868,11 @@ function mcapi_update_7000_tokens($string) {
 }
 
 /**
- * Convert a transaction access callback which was superfluous
- */
-function mcapi_update_7010() {
-  module_enable(array('entity'));
-  currencies_load();
-  $currencies = currencies_load();
-  foreach ($currencies as $currcode => $currency) {
-    if (!isset($currency->transaction_access)) continue;
-    foreach ($currency->transaction_access as $state => $callbacks) {
-      if (@$callbacks['transaction_view_access_participants']) {
-        $callbacks['transaction_access_callback_payer'] = 'transaction_access_callback_payer';
-        $callbacks['transaction_access_callback_payee'] = 'transaction_access_callback_payee';
-      }
-      unset ($callbacks['transaction_view_access_participants']);
-      $currency->transaction_view_access[$state] = array_filter($callbacks);
-    }
-    db_update('mcapi_currencies')
-      ->fields(array('data' => serialize($currency)))
-      ->condition('currcode', $currcode)
-      ->execute();
-  }
-  cache_clear_all('currencies', 'cache');
-}
-
-/**
  * clear up a relic which was putting the 'Transactions fieldAPI' link at the top of the management menu
  * + other variables from v2s and v1
  */
 function mcapi_update_7013() {
+  module_enable(array('entity'));
   db_query("DELETE FROM {variable} WHERE name LIKE '%c_signatures_signoff%'");
   variable_del('cc_balancing_account_num');
   variable_del('cc_default_currency');
@@ -939,12 +925,6 @@ function mcapi_update_7015() {
     $currency = unserialize($data);
     if (!property_exists($currency, 'transaction_operation_access') || empty($currency->transaction_operation_access)) {
       $currency->transaction_operation_access = array('transaction_access_callback_perm_transact');
-    }
-    if (property_exists($currency, 'transaction_access')) {
-      foreach ((array)$currency->transaction_access as $state => $callbacks) {
-        $currency->transaction_view_access[$state] = array_filter($currency->transaction_access[$state]);
-      }
-      drupal_set_message("transaction_view_access settings are lost for each currency", 'warning');
     }
     db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
   }
@@ -1032,24 +1012,6 @@ function mcapi_update_7019() {
   $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
   foreach ($datas as $currcode => $data) {
     $currency = unserialize($data);
-    if (!property_exists($currency, 'access')) {
-      if (property_exists($currency, 'currency_access')) {
-        $currency->access['membership'] = 'user_chooser_segment_perms:'. $currency->currency_access['user_aggregated_view'];
-        $currency->access['trader_data'] = 'user_chooser_segment_perms:'. $currency->currency_access['user_aggregated_view'];
-        $currency->access['system_data'] = 'user_chooser_segment_perms:'. $currency->currency_access['currency_aggregated_view'];
-      }
-      else {
-        $currency->access['membership'] = 'user_chooser_segment_perms:transact' ;
-        $currency->access['trader_data'] = 'user_chooser_segment_perms:transact';
-        $currency->access['system_data'] = 'user_chooser_segment_perms:transact';
-      }
-    }
-    if (property_exists($currency, 'transaction_view_access')) {
-      $currency->view_transaction_states = $currency->transaction_view_access;
-    }
-    if (property_exists($currency, 'transaction_operation_access')) {
-      $currency->access_operations = $currency->transaction_operation_access;
-    }
     $currency->display['delimiter'] = strpos($currency->display['format'], '.') ? '.' : ':';
     str_replace($currency->display['delimiter'], '', $currency->display['format']);
     $replacements = array('@integer' => '[quantity]', '@subdivision' => '', '@minus' => '');
@@ -1076,6 +1038,7 @@ function mcapi_update_7020() {
     db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
   }
   cache_clear_all('currencies', 'cache');
+  drupal_set_message("CHECK YOUR CURRENCY SETTINGS THOROUGHLY");
 }
 
 /**

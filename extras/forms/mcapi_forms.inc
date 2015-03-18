@@ -117,8 +117,11 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
     if (strpos($settings['experience']['template'], 'created]')) {
       if (module_exists('date_popup')) {
         $form['created'] = array(
-          '#type' => 'date_popup',//this doens't work
-          '#date_type' => DATE_UNIX
+          //this widget seems unable to submit the unixtime that the transaction form expects.
+          //probably need to rework the transaction form and maybe the transaction object and theme preprocessor.
+          '#type' => 'date_popup',
+          '#date_type' => DATE_UNIX,
+          '#date_format' => 'm/d/Y'//replaces the 'short' date format so as to exclude hours, mins & seconds
         );
       }
       //else {
@@ -279,6 +282,10 @@ function mcapi_forms_validate_secondperson($form, &$form_state) {
 function mcapi_forms_validate($form, &$form_state) {
   if (!empty($form_state['clicked_button']['#submit']) && in_array('mcapi_transaction_undo_confirm_form', $form_state['clicked_button']['#submit'])) {
     return;
+  }
+  //this is because the popup widget returns a date string while the created field expects a unixtime
+  if (!empty($form_state['values']['created']) && !is_integer($form_state['values']['created'])) {
+//    form_set_value($form['created'], strtotime($form_state['values']['created']), $form_state);
   }
 
   $form_state['rebuild'] = FALSE;

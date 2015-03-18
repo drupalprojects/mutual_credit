@@ -51,6 +51,7 @@ function mcapi_signatures_uninstall() {
   //TODO implement hook_variable
   db_delete('variable')->condition('name', 'mcapi_signatures%', 'LIKE')->execute();
 }
+
 /**
  * Implementation of hook_schema)().
  * creates a table for storing signatures needed on pending transactions
@@ -96,44 +97,50 @@ function mcapi_signatures_update_dependencies() {
  * update the signatures table
  */
 function mcapi_signatures_update_7000() {
-  if (db_query("SHOW TABLES LIKE '{mc_unsigned}'")->fetch()) {
-    if ($q = db_drop_table('mcapi_signatures'))$q->execute();
-    db_rename_table('mc_unsigned', 'mcapi_signatures');
+  //copy the data over to the signtures table...
+  $saved = db_select('mc_unsigned', 'u')->fields('u')->condition('uid', 0, '<>')->execute()->fetchAll();
+  $insert = db_insert('mcapi_signatures')->fields(array('serial', 'uid', 'pending'));
+  foreach ($saved as $sig) {
+    if (isset($before[$sig->nid][$sig->uid])) continue;
+    $before[$sig->nid][$sig->uid] = 1;
+    $insert->values(array('serial' => $sig->nid, 'uid' => $sig->uid, 'pending' => 1));  
   }
-  $tables = mcapi_signatures_schema();
-  db_change_field('mcapi_signatures', 'nid', 'serial', $tables['mcapi_signatures']['fields']['serial']);
-  db_add_field('mcapi_signatures', 'pending', $tables['mcapi_signatures']['fields']['pending']);
-  db_query('UPDATE {mcapi_signatures} SET pending = 0 WHERE pending IS NULL');
+  $insert->execute();
+  drupal_set_message('copied signatures to new table');
+  db_drop_table('mc_unsigned');
 }
 
 /**
  * update the signature data
  */
 function mcapi_signatures_update_7001() {
+  //rewrite the serial numbers in the upgraded signatures module from what was the nids
   $pending = db_query("SELECT xid, payer, payee, s.uid, s.serial
     FROM {mcapi_signatures} s
     JOIN {mcapi_transactions} t
     ON t.xid = s.serial
-    WHERE t.state = :state
+    WHERE t.state = :state AND t.payer > 0 AND t.payee > 0
     ORDER BY s.serial DESC", array(':state' => TRANSACTION_STATE_PENDING))->fetchAll();
-  db_truncate('mcapi_signatures')->execute();
-
+  $values = array();
   foreach ($pending as $transaction) {
-    $values = array(
+    $values[] = array(
       'serial' => $transaction->serial,
       'uid' => $transaction->payer == $transaction->uid ? $transaction->payer : $transaction->payee,
       'pending' => 1
     );
-    db_insert('mcapi_signatures')->fields($values)->execute();
     //make a new row for the user who already signed, to be consistent with future data
-    $values = array(
+    $values[] = array(
       'serial' => $transaction->serial,
       'uid' => $transaction->payer == $transaction->uid ? $transaction->payee : $transaction->payer,
       'pending' => 0
     );
-    db_insert('mcapi_signatures')->fields($values)->execute();
   }
-  signature_integrity_check();
+  db_truncate('mcapi_signatures')->execute();
+  if ($values) {
+    db_insert('mcapi_signatures')->fields(array('serial', 'uid', 'pending'))->values($values)->execute();
+    signature_integrity_check();
+    drupal_set_message('updated and checked integrity of signatures');
+  }
 }
 
 /**
@@ -161,7 +168,7 @@ function mcapi_signatures_update_7009() {
     $varname = 'mcapi_signatures_'.$type;
     $var = variable_get('mcapi_signatures_'.$type, array());
     if (empty($var)) continue;
-    $var['notify'] = @$var['complete'];
+    $var['notify'] = $var['complete'];
     unset($var['complete']);
     variable_set($varname, $var);
   }
@@ -194,18 +201,6 @@ function mcapi_signatures_update_7011() {
   );
 }
 
-/**
- * remove an deprecated access callback
- * TODO but what was the name of the operation
- */
-function ____mcapi_update_7012() {
-  $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
-  foreach ($datas as $currcode => $data) {
-    //LOGIC HERE
-    db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
-  }
-}
-
 function signature_integrity_check() {
   //set all pending transactions to completed
   db_update('mcapi_transactions')->fields(array('state' => 1))->condition('state', TRANSACTION_STATE_PENDING)->execute();
@@ -223,4 +218,3 @@ function signature_integrity_check() {
   $serials = db_query("SELECT serial FROM {mcapi_transactions} WHERE state != 0")->fetchCol();
   db_delete('mcapi_signatures')->condition('serial', $serials, 'NOT IN')->execute();
 }
-

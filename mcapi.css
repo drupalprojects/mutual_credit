@@ -51,6 +51,7 @@ div.block input#edit-transaction-description-und-0-value {
 }
 ul.transaction-operations{
   display:inline;
+  padding-left: 0;
 }
 div.transaction.certificate ul.transaction-operations{
   display: block;

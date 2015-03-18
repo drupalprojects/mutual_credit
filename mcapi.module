@@ -1450,7 +1450,10 @@ function _worthitems_to_worths(array $worthitems) {
  */
 function mcapi_user_delete($account) {
   foreach (currencies_load($account) as $currency) {
-    entity_get_controller('transaction')->mergeAccounts($currency->reservoir, $account->uid);
+    //there is a small chance that for some reason $currency->reservoir isn't set.
+    $res = isset($currency->reservoir) ? $currency->reservoir : 1;
+    entity_get_controller('transaction')->mergeAccounts($res, $account->uid);
+    drupal_set_message(t("All transactions belonging to user @name have been moved to the reservoir account"), 'warning');
   }
 }
 

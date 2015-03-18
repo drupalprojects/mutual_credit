@@ -11,12 +11,11 @@
 class views_handler_field_transaction_operations extends views_handler_field_transaction {
 
   function render($values) {
-    $transaction = transaction_load($values->{$this->aliases['serial']});
-    $links = array();
-    foreach (transaction_get_links($transaction, '', TRUE) as $link) {
-      $links[] = drupal_render($link);
-    }
-    $renderable = transaction_get_links($transaction, FALSE, TRUE);
+    $renderable = transaction_get_links(
+      transaction_load($values->{$this->aliases['serial']}),
+      FALSE, 
+      TRUE
+    );
     return drupal_render($renderable);
   }
 
