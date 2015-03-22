@@ -19,10 +19,11 @@ function mcapi_forms_menu() {
   foreach($mcapi_forms as $ctools_id => $form) {
     if (!empty($form->disabled)) continue;
     $settings = &$form->data;
+    $path = $settings['architecture']['path'];
     $menu_link = &$settings['architecture']['menu_link'];
     $uchoo_callback = strtok($settings['architecture']['access'], ':');
     $uchoo_arg = strtok(':');
-    $items[$settings['architecture']['path']] = array(
+    $items[$path] = array(
       'title' => 'Designed form',
       'title callback' => 'mcapi_form_title',
       'title arguments' => array($ctools_id),
@@ -30,10 +31,10 @@ function mcapi_forms_menu() {
       'page arguments' => array($ctools_id),
       'access callback' => 'in_user_chooser_segment',
       'access arguments' => array($uchoo_callback, array($uchoo_arg)),
-      'type' =>is_numeric($menu_link) ? $menu_link : MENU_NORMAL_ITEM,
+      'type' => is_numeric($menu_link) ? $menu_link : MENU_NORMAL_ITEM,
     );
-    if (!is_numeric($menu_link) || $menu_link != 'navigation') {
-      $items[$settings['architecture']['path']]['menu_name'] = $menu_link;
+    if (!is_numeric($menu_link) && $menu_link != 'navigation') {
+      $items[$path]['menu_name'] = $menu_link;
     }
   }
   return $items;
