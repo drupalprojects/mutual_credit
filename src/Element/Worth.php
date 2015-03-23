@@ -79,7 +79,7 @@ class Worth extends FormElement {
         }
       }
       if (empty($element['#default_value'])) {
-        drupal_set_message('No currencies have been specified in the worth field.', 'error');
+        debug($element, 'No currencies have been specified in the worth field.', 1);
       }
     }
     
@@ -211,10 +211,9 @@ class Worth extends FormElement {
       }
     }
     else {
-      //return the 'default' value - guess that's what is set 
-      debug($element['#default_value'], 'check this working');
-      foreach ($element['#default_value'] as $delta => $worth) {
-        $output[] = ['curr_id' => $worth['curr_id'], 'value' => $worth['value']];
+      //TODO see how this works when #default_value is already set
+      foreach ($element['#allowed_curr_ids'] as $curr_id) {
+        $output[] = ['curr_id' => $curr_id, 'value' => 0];
       }
     }
     return $output;

@@ -94,7 +94,7 @@ class TransactionStorage extends TransactionIndexStorage {
     $this->postSave($entity, $return == SAVED_UPDATED);
     $entity->setOriginalId($entity->id());
     unset($entity->original);
-
+    $this->clearCache([$entity]);
     return $return;
   }
 
@@ -105,8 +105,22 @@ class TransactionStorage extends TransactionIndexStorage {
     foreach ($transactions as $transaction) {
       //its only necessary to set the state of the parent
       $transaction->set('state', TRANSACTION_STATE_ERASED);
-      $transaction->save($transaction);
+      $transaction->save();
     }
+    $this->clearCache($transactions);
+    
+  }
+  
+  public function clearCache($transactions = []) {
+    $ids = [];
+    foreach ($transactions AS $transaction) {
+      foreach ($transaction->flatten() as $t) {
+        $ids[] = $transaction->id();
+        $t->payer->entity->invalidateTagsOnSave(TRUE);
+        $t->payee->entity->invalidateTagsOnSave(TRUE);
+      }
+    }
+    $this->resetCache($ids);
   }
 
   /**
@@ -117,6 +131,7 @@ class TransactionStorage extends TransactionIndexStorage {
     $this->delete($serials, TRUE);
     //reset the entity table
     $this->database->truncate('mcapi_transaction')->execute();
+    $this->clearCache();
   }
 
   /**
@@ -155,15 +170,15 @@ class TransactionStorage extends TransactionIndexStorage {
       	case 'w.worth_value':
       	case 'w.worth_curr_id':
           if ($value) {
-            $query->condition($field, (array)$value);
+            $query->condition($field, (array)$value, 'IN');
           }
       	  break;
       	case 'involving':
       	  $value = (array)$value;
       	  $cond_group = count($value) == 1 ? db_or() : db_and();
       	  $query->condition($cond_group
-    	      ->condition('payer', $value)
-    	      ->condition('payee',$value)
+    	      ->condition('payer', $value, 'IN')
+    	      ->condition('payee', $value, 'IN')
       	  );
           break;
       	case 'from':

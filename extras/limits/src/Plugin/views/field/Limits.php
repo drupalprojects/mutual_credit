@@ -23,7 +23,7 @@ class Limits extends FieldPluginBase {
 
   protected function defineOptions() {
     $options = parent::defineOptions();
-    $options['currencies'] = array('default' => array());
+    $options['currencies'] = array('default' => []);
     $options['absolute'] = array('default' => 'absolute');
     return $options;
   }

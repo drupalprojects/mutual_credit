@@ -1,4 +1,13 @@
 #exchanges
+
+mcapi.exchange.intertrading:
+  path: '/admin/accounting/exchanges'
+  defaults:
+    _controller: \Drupal\mcapi_exchanges\Form\Config::Form
+    _title_callback: Configure Exchanges
+  requirements:
+    _permission: 'configure mcapi'
+    
 mcapi.admin_exchange_list:
   path: '/admin/accounting/exchanges'
   defaults:

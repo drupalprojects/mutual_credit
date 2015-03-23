@@ -105,37 +105,19 @@ class WalletSettings extends ConfigFormBase {
       '#type' => 'details',
       '#weight' => 5
     ];
-    $form['wallet_access']['details'] = [
-      '#title' => t('View transaction details'),
-      '#description' => t('View individual transactions this wallet was involved in'),
-      '#type' => 'checkboxes',
-      '#options' => $permissions,
-      '#default_value' => $config->get('details'),
-      '#weight' => 1,
-    ];
-    $form['wallet_access']['summary'] = [
-      '#title' => t('View summary'),
-      '#description' => t('The balance, number of transactions etc.'),
-      '#type' => 'checkboxes',
-      '#options' => $permissions,
-      '#default_value' => $config->get('summary'),
-      '#weight' => 2,
-    ];
-    unset($permissions[WALLET_ACCESS_ANY]);
-    $form['wallet_access']['payin'] = [
-      '#title' => t('Create payments into this wallet'),
-      '#type' => 'checkboxes',
-      '#options' => $permissions,
-      '#default_value' => $config->get('payin'),
-      '#weight' => 3,
-    ];
-    $form['wallet_access']['payout'] = [
-      '#title' => t('Create payments out of this wallet'),
-      '#type' => 'checkboxes',
-      '#options' => $permissions,
-      '#default_value' => $config->get('payout'),
-      '#weight' => 5
-    ];
+    $w = 0;
+    foreach (Wallet::ops() as $key => $description) {
+      $form['wallet_access'][$key] = [
+        '#title' => $description,
+        '#type' => 'checkboxes',
+        '#options' => $permissions,
+        '#default_value' => $config->get($key),
+        '#weight' => $w++,
+      ];
+    }
+    unset($form['wallet_access']['payin']['#options'][WALLET_ACCESS_ANY]);
+    unset($form['wallet_access']['payout']['#options'][WALLET_ACCESS_ANY]);
+    unset($form['wallet_access']['edit']['#options'][WALLET_ACCESS_ANY]);
     return parent::buildForm($form, $form_state);
   }
 

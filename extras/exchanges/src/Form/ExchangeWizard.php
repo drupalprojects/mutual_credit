@@ -72,7 +72,7 @@ class ExchangeWizard extends ExchangeForm {
         'roles' => array(
           '#type' => 'checkboxes',
           '#title' => $this->t('Roles'),
-          '#default_value' => array(),
+          '#default_value' => [],
           '#options' => array_map('check_plain', user_role_names(TRUE)),
           '#weight' => 4,
         ),
@@ -151,7 +151,7 @@ class ExchangeWizard extends ExchangeForm {
         'mail' => $user_values['mail'],
         'pass' => $user_values['pass'],
 //TODO we need a role configured to be the exchange manager
-        'roles' => array()
+        'roles' => []
       );
       $this->manager = User::Create($defaults);
 

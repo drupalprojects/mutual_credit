@@ -7,9 +7,8 @@ add_link_location: local_action
 payout:
   o: 'o'
 details:
-  e: 'e'
+  e: '2'
 summary:
   2: '2'
 payin:
-  e: 'e'
   2: '2'

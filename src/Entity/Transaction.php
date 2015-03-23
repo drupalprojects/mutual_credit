@@ -26,7 +26,7 @@ use Drupal\mcapi\Entity\State;
  * Defines the Transaction entity.
  * Transactions are grouped and handled by serial number
  * but the unique database key is the xid.
- *alter
+ * 
  * @ContentEntityType(
  *   id = "mcapi_transaction",
  *   label = @Translation("Transaction"),
@@ -60,7 +60,7 @@ use Drupal\mcapi\Entity\State;
 class Transaction extends ContentEntityBase implements TransactionInterface {
 
   public $warnings = [];
-  public $child = [];
+  private $children = [];
 
   /**
    * {@inheritdoc}
@@ -69,8 +69,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $transactions = [];
     if ($serials) {
       //not sure which is faster, this or coding it using $this->filter()
-      $results = \Drupal::entityManager()
-        ->getStorage('mcapi_transaction')
+      $results = \Drupal::entityManager()->getStorage('mcapi_transaction')
         ->loadByProperties(array('serial' => (array)$serials));
       //put all the transaction children under the parents
       foreach ($results as $xid => $transaction) {
@@ -121,7 +120,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         throw new McapiTransactionException(key($violations), current($violations) );
       }
     }
-    return $this->entityManager()->getStorage($this->entityTypeId)->save($this);
+    return $this->entityManager()->getStorage('mcapi_transaction')->save($this);
   }
 
   /**
@@ -136,8 +135,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   public function prevalidate() {
     $this->moduleHandler = \Drupal::moduleHandler();
     $this->moduleHandler->alter('mcapi_transaction', $this);
+    
+    //ensure the transaction is in the right starting state
+    if($this->isNew()) {
+      $start_state_id = $this->type->entity->start_state;
+      $this->state->setValue($start_state_id);
+    }    
     $clone = clone($this);
-
     $this->children = array_merge(
       $this->moduleHandler->invokeAll('mcapi_transaction_children', array($clone)),
       $this->children
@@ -146,98 +150,103 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
   /**
    * Validate a transaction cluster i.e. a transaction with children
-   *
+   * @todo there seens to be no precedent for whole-entity validation in drupal
+   * so there's no format for handling errors outside $form and typedata violations
+   * 
    * @return Violation[]
    */
   function validate() {
-    $violations = [];
-
-    if ($this->validated) return $violations;
+    //if this is coming from transactionForm then all the entiry fields are validated
+    $child_exceptions = $exceptions = $violations = [];
+    if ($this->validated) {
+      return [];
+    }
     try{
       $this->preValidate();
     }
     catch(\Exception $e) {
-      $violations[] = $e->getMessage();
+      $exceptions[] = $e;
     }
-    //all this does is check the field values against the field definitions.
-    //Don't know how to include the worth field in that
-    if ($this->isNew()) {
-      //check that the uuid doesn't already exist. i.e. that we are not resubmitting the same transactions
-      $properties = array('uuid' => $this->get('uuid')->value);
-      if (entity_load_multiple_by_properties('mcapi_transaction', $properties)) {
-        $violations['uuid'] = t('Transaction has already been inserted: @uuid', array('@uuid' => $this->uuid->value));
-      }
-      //ensure the transaction is in the right starting state
-      $start_state_id = $this->type->entity->start_state;
-      $this->state->setValue($start_state_id);
-      foreach ($this->children as $transaction) {
-        //child transactions inherit the state from the parent, regardless of the child type
-        $transaction->state->setValue($start_state_id);
-        $transaction->parent->value = -1;//this will be set after the parent is saved
-      }
-    }
-    $transactions = $this->flatten();//NB $transactions contains clones of the $this
-    $violations = self::validateTransaction(array_shift($transactions));
-    $child_warnings = [];
-    foreach ($transactions as $transaction) {
-      $child_warnings += self::validateTransaction($transaction);
-    }
+    $cloned = $this->flatten();
+    
     //note that this validation cannot change the original transaction because a clone of it is passed
-    $violations += \Drupal::moduleHandler()->invokeAll('mcapi_transaction_validate', array(array(clone($this))));
+    $exceptions = array_merge(
+      $exceptions, 
+      \Drupal::moduleHandler()->invokeAll('mcapi_transaction_validate', array($cloned))
+    );
+    
+    if (!$this->typedDataValidated) {
+      $violations = $this->validateTypedData();
+    }
+    
+    //validate the parent and children separately in case the errors are handled differently
+    $exceptions = array_merge(
+      $exceptions, 
+      self::validateTransaction(array_shift($cloned))//top level
+    );
+    foreach ($cloned as $child_transaction) {
+      $violations = array_merge($violations, parent::validate($child_transaction));
+      $child_exceptions = array_merge($child_exceptions, self::validateTransaction($child_transaction));
+    }
+    if ($child_exceptions) {
+      $settings = \Drupal::config('mcapi.misc')->get('child_errors');
 
-    if ($child_warnings) {
-      $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
-
-      foreach ($child_warnings as $e) {
-        if (!$child_errors['allow']) {
-          //actually these should be handled as violations or warnings
-          $violations[] = $e->getMessage();
-        }
-        else {
-          $this->warnings[] = $e->getMessage();
-        }
-
-        if ($child_errors['log']){
-          //TODO will there be an mcapi logger?
-          \Drupal::logger('mcapi')->error(
-            t("transaction failed validation with the following messages: !messages", array('!messages' => implode(' ', $warnings)))
-          );
-        }
-        if ($child_errors['mail_user1']){
-          //should this be done using the drupal mail system? my life is too short for such a rigmarole
-          mail(
-            User::load(1)->mail,
-            t('Child transaction error on !site', array('!site' => \Drupal::config('system.site')->get('name'))),
-            implode('\n', $warnings)
-          );
-        }
+      if ($settings['allow']) {
+        $this->warnings = $child_exceptions;
+      }
+      else {
+        $exceptions = array_merge($exceptions, $child_exceptions);
+      }
+      if ($settings['log']){
+        //TODO will there be an mcapi logger?
+        \Drupal::logger('mcapi')->error(
+          t(
+            "transaction failed validation with the following messages: !messages", 
+            ['!messages' => implode(' ', $this->warnings)]
+          )
+        );
+      }
+      if ($settings['mail_user1']){
+        $message[] = $child_errors['allow'] ? 
+          t('Transaction was allowed.') : 
+          t('Transaction was blocked');
+        foreach ($this->warnings as $line) $message[] = $line;
+        $message[] = print_r($this, 1);
+        //should this be done using the drupal mail system? my life is too short for such a rigmarole
+        mail(
+          User::load(1)->mail,
+          t(
+            'Child transaction error on !site', 
+            ['!site' => \Drupal::config('system.site')->get('name')]
+          ),
+          implode('\n', $message)//text of the message
+        );
       }
     }
-    //$violations = parent::validate();//doesn't exist
-    $violation_messages = [];
-    foreach ($violations as $violation) {
-      //print_r($violation);print_r($this->created->getValue());die();
-      /* methods
-      [1] => __toString
-      [2] => getMessageTemplate
-      [3] => getMessageParameters
-      [4] => getMessagePluralization
-      [5] => getMessage
-      [6] => getRoot
-      [7] => getPropertyPath
-      [8] => getInvalidValue
-      [9] => getCode
-      (*/
-      //TEMP violations are just strings for now.
-      $violation_messages[] = $violation;//TODO this is temp really we want (string)$violation
+    
+    //we're actually supposed only to return violations, 
+    //but the Exceptions also have the same getMessage method
+    return array_merge($violations, $exceptions);
+  }
+  
+  /**
+   * TEMP
+   * Validate the typedData but outside of the form handler
+   * @see EntityFormDisplay::validateFormValues
+   */
+  private function validateTypedData() {
+    $violations = [];
+    foreach ($this as $field_name => $items) {
+      foreach ($items->validate() as $violation) {
+        $violations[] = $violation;
+      }
     }
-    $this->validated = TRUE;
-    //TODO check that transaction limit violations highlight the right currency field
-    return $violation_messages; //temp need to tidy this up
+    $this->typedDataValidated = TRUE;//temp flag
+    return $violations;
   }
 
   /**
-   * validate a transaction entity i.e. 1 ledger entry
+   * validate a transaction entity i.e. 1 ledger entry level
    * There should be no children!
    *
    * @param Transaction $transaction
@@ -246,30 +255,47 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    *
    * @todo Decide whether this should be static or not
    */
-  private static function validateTransaction($transaction) {
-    $violations = [];
+  private static function validateTransaction($entity) {
+    $exceptions = [];
+    if ($entity->isNew()) {
+      //check that the uuid doesn't already exist. i.e. that we are not resubmitting the same transactions
+      if (entity_load_multiple_by_properties('mcapi_transaction', ['uuid' => $entity->uuid->value])) {
+        $exceptions[] = new McapiTransactionException(
+          'uuid',
+          t('Transaction has already been inserted: @uuid', ['@uuid' => $entity->uuid->value])
+        );
+      }
+    }
     //check the payer and payee aren't the same
-    if ($transaction->payer->target_id == $transaction->payee->target_id) {
-      $violations['payee'] = t('Wallet @num cannot pay itself.', array('@num' => $transaction->payer->target_id));
+    if ($entity->payer->target_id == $entity->payee->target_id) {
+      $exceptions[] = new McapiTransactionException(
+        'payee',
+        t('Wallet @num cannot pay itself.', array('@num' => $entity->payer->target_id))
+      );
     }
     //check that the current user is permitted to pay out and in according to the wallet permissions
     $walletAccess = \Drupal::entityManager()->getAccessControlHandler('mcapi_wallet');
-    if (!$walletAccess->checkAccess($transaction->payer->entity, 'payout', NULL, \Drupal::currentUser())) {
-      $violations['payer'] = t('You are not allowed to make payments from this wallet');
-    }
-    if (!$walletAccess->checkAccess($transaction->payee->entity, 'payout', NULL, \Drupal::currentUser())) {
-      $violations['payee'] = t('You are not allowed to pay into this wallet');
-    }
-    //check that the description isn't too long
-    $length = strlen($transaction->description->value);
-    if ($length > MCAPI_MAX_DESCRIPTION) {
-      $violations['payee'] = t(
-        'The description field is @num chars longer than the @max maximum',
-        array('@num' => $strlen-$max, '@max' => MCAPI_MAX_DESCRIPTION)
+    if (!$walletAccess->checkAccess($entity->payer->entity, 'payout', NULL, \Drupal::currentUser())) {
+      $exceptions[] = new McapiTransactionException(
+        'payer', 
+        t('You are not allowed to make payments from this wallet.')
       );
     }
-    //is it worth checking whether all the entity properties and fields are actually fieldItemLists?
-    return $violations;
+    if (!$walletAccess->checkAccess($entity->payee->entity, 'payout', NULL, \Drupal::currentUser())) {
+      $exceptions[] = new McapiTransactionException(
+        'payee', 
+        t('You are not allowed to pay into this wallet.')
+      );
+    }
+    //check that the description isn't too long
+    $length = strlen($entity->description->value);
+    if ($length > MCAPI_MAX_DESCRIPTION) {
+      $exceptions[] = new McapiTransactionException('description', t(
+        'The description field is @num chars longer than the @max maximum',
+        ['@num' => $strlen-$max, '@max' => MCAPI_MAX_DESCRIPTION]
+      ));
+    }
+    return $exceptions;
   }
 
   /**
@@ -423,9 +449,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setRequired(TRUE);
 
     $fields['created'] = BaseFieldDefinition::create('created')
-    ->setLabel(t('Created'))
+    ->setLabel(t('Created on'))
     ->setDescription(t('The time that the transaction was created.'))
-    ->setTranslatable(TRUE)
+    ->setRevisionable(FALSE)
+    ->setTranslatable(FALSE)
     ->setDisplayOptions('view', array(
       'label' => 'hidden',
       'type' => 'timestamp',
@@ -465,6 +492,20 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     }
     unset($clone->children);
     return $flatarray;
+  }
+
+  /**
+   * Override Entity.php to update wallets as well as transaction
+   * @param type $update
+   */
+  protected function invalidateTagsOnSave($update) {
+    parent::invalidateTagsOnSave($update);
+    $walletStorage = $this->entityManager()->getStorage('mcapi_wallet');
+    foreach ($this->flatten() as $transaction) {
+      foreach (['payer', 'payee'] as $actor) {
+        $wallet = $transaction->{$actor}->getEntity()->invalidateTagsOnSave();
+      }
+    }
   }
 
 

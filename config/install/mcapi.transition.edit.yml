@@ -1,6 +1,8 @@
 id: edit
 title: Edit
 tooltip: 'Change transaction details'
+states: 
+  done: done
 page_title: 'Edit transaction?'
 format: certificate
 twig: ''

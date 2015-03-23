@@ -1,0 +1,4 @@
+mcapi.exchanges:
+  ticks_name:
+    type: String
+    label: Base unit

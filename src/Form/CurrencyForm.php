@@ -150,6 +150,21 @@ class CurrencyForm extends EntityForm {
       '#default_value' => $currency->ticks,
       '#weight' => 6
     );
+    $serials = $this->entity->transactions(array('curr_id' => $currency->id(), 'value' => 0));
+    $form['zero'] = array(
+      '#title' => t('Allow zero transactions'),
+      '#type' => 'checkbox',
+      '#default_value' => $currency->zero,
+      //this is required if any existing transactions have zero value
+      '#required' => !empty($serials),
+      '#weight' => 7
+    );
+    if ($form['zero']['#required']) {
+      $form['zero']['#description'] = t("Zero transaction already exist so this field is required");
+    }
+    else {
+      $form['zero']['#description'] = t("Leave blank to disallow zero value transactions");
+    }
 
     $form['deletion'] = array(
       '#title' => t('Deletion'),
@@ -161,13 +176,13 @@ class CurrencyForm extends EntityForm {
     	  '2' => $this->t('remove completely from the database'),
       ),
       '#default_value' => $currency->deletion,
-      '#weight' => 7
+      '#weight' => 8
     );
     $form['display'] = array(
       '#title' => t('Appearance'),
       '#type' => 'fieldset',
       '#collapsible' => TRUE,
-      '#weight' => 8,
+      '#weight' => 10,
     );
     $help[] = t('E.g. for Hours, Minutes put Hr00:60/4mins , for dollars and cents put $0.00; for loaves put 0 loaves.');
     $help[] = t('The first number is always a string of zeros showing the number of characters (powers of ten) the widget will allow.');
@@ -184,20 +199,6 @@ class CurrencyForm extends EntityForm {
       '#size' => 10,
     );
 
-    $serials = $this->entity->transactions(array('curr_id' => $currency->id(), 'value' => 0));
-    $form['zero'] = array(
-      '#title' => t('Allow zero transactions'),
-      '#type' => 'checkbox',
-      '#default_value' => $currency->zero,
-      //this is required if any existing transactions have zero value
-      '#required' => !empty($serials)
-    );
-    if ($form['zero']['#required']) {
-      $form['zero']['#description'] = t("Zero transaction already exist so this field is required");
-    }
-    else {
-      $form['zero']['#description'] = t("Leave blank to disallow zero value transactions");
-    }
     $form['display']['color'] = array(
     	'#title' => t('Colour'),
     	'#description' => t('Colour may be used in visualisations'),

@@ -19,16 +19,25 @@ class WalletAddForm extends Formbase {
   private $owner;
   private $pluginManager;
 
+  /**
+   * {@inheritdoc}
+   */
   public function getFormId() {
     return 'wallet_add_form';
   }
   
+  /**
+   * {@inheritdoc}
+   */
   public function __construct($route_match, $entity_manager) {
     $this->owner = $entity_manager
       ->getStorage($route_match->getParameters()->getIterator()->key())
       ->load($route_match->getParameters()->getIterator()->current());
   }
   
+  /**
+   * {@inheritdoc}
+   */
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('current_route_match'),
@@ -36,6 +45,9 @@ class WalletAddForm extends Formbase {
     );
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function title() {
     return 
       t("New wallet for @entity_type '!title'", 
@@ -46,8 +58,10 @@ class WalletAddForm extends Formbase {
     );
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    
     $form['wid'] = array(
       '#type' => 'value',
       '#value' => NULL,
@@ -98,6 +112,9 @@ class WalletAddForm extends Formbase {
     return $form;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   function validateForm(array &$form, FormStateInterface $form_state) {
     //just check that the name isn't the same
     //if there was a wallet storage controller this unique checking would happen there.

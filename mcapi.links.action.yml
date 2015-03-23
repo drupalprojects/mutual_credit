@@ -16,6 +16,7 @@ mcapi.admin.currency.add:
   appears_on:
     - mcapi.admin_currency_list
 
+#puts an add wallet action on some entity canonical pages
 mcapi.addWallet.action:
   class: \Drupal\Core\Menu\LocalActionDefault
   deriver: \Drupal\mcapi\Plugin\Derivative\WalletLocalAction

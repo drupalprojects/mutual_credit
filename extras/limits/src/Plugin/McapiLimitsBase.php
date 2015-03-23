@@ -46,7 +46,7 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
   public function defaultConfiguration() {
     return array(
       'override' => 0,
-      'skip' => array(),
+      'skip' => [],
       'display_relative' => FALSE
     );
   }

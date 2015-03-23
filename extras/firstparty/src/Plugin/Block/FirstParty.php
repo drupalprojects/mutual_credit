@@ -65,7 +65,7 @@ class FirstParty extends BlockBase {
    *   the form elements
    */
   function blockForm($form, $form_state) {
-    $options = array();
+    $options = [];
     //entity_load_multiple_by_properties doesn't seem to work on empty values
     //do we'll have to iterate though
     foreach (FirstPartyFormDesign::loadMultiple() as $id => $editform) {

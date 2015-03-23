@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * mcapi_exchanges.install
+ */
+
 use Drupal\mcapi_exchanges\Entity\Exchange;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Transaction;
@@ -25,7 +30,7 @@ function mcapi_exchanges_install() {
   $props = array(
     'name' => t(
       'First !sitename exchange',
-      array('!sitename' => \Drupal::config('system.site')->get('name'))
+      ['!sitename' => \Drupal::config('system.site')->get('name')]
     ),
     'uid' => 1,
     'mail' => \Drupal::config('system.site')->get('mail'),
@@ -38,9 +43,12 @@ function mcapi_exchanges_install() {
   //NB this could cause memory problems might be better to hard-insert
   //now put all the existing users in the first exchange
   foreach (User::loadMultiple() as $account) {
-    if ($account->id() == 0) continue;
+    if ($account->id() == 0) {
+      continue;
+    }
     mcapi_exchange_join($ex->id(), array($account));
-    put_owned_wallets_in_exchange($account);
+    //this should happen automatically in mcapi_entity_update() assuming this module's hooks are working
+    //put_owned_wallets_in_exchange($account);
   }
   
   //now put all the existing transactions in the first exchange
@@ -52,8 +60,9 @@ function mcapi_exchanges_install() {
  * submit callback for wallet settings form
  */
 function mcapi_exchanges_check_og_fields(&$form, &$form_state) {
+  
   //note that these fields can never be removed
-  ensure_membership_fields(array_filter($vals['entity_types']));
+  //ensure_membership_fields(array_filter($form_state->getValue('entity_types')));
 }
 
 /**
@@ -61,6 +70,7 @@ function mcapi_exchanges_check_og_fields(&$form, &$form_state) {
  * create field storage and add fields to entitytypes
  */
 function ensure_membership_fields($types) {
+  debug($types, 'enabling membership fields');
   $field_storage = FieldStorageConfig::loadMultiple();
   $field_config = FieldConfig::loadMultiple();
   foreach(array_keys(array_filter($types)) as $combo) {
@@ -69,7 +79,7 @@ function ensure_membership_fields($types) {
     //check the field storage exists for that entity
     $id = $entity_type_id .'.'. EXCHANGE_OG_REF;
     if (!array_key_exists($id, $field_storage)) {
-      $props = array(
+      $props = [
         'id' => $id,
         'dependencies' => ['module' => ['og', 'mcapi']],
         'field_name' => EXCHANGE_OG_REF,
@@ -80,7 +90,7 @@ function ensure_membership_fields($types) {
         'cardinality' => -1,
         'translatable' => 'false',
         'indexes' => []
-      );
+      ];
       $new_storage = new FieldStorageConfig($props);
       $new_storage->enforceIsNew(TRUE)->save();
       echo("\nCreated new storage field for entity: $entity_type_id with id: $id\n");
@@ -119,4 +129,3 @@ function ensure_membership_fields($types) {
         direction: DESC
   */
 }
-

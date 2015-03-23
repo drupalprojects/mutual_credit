@@ -17,7 +17,7 @@ class ExchangeViewsData implements EntityViewsDataInterface {
    * {@inheritdoc}
    */
   public function getViewsData() {
-    $data = array();
+    $data = [];
 
     $data['mcapi_exchange']['table'] = array(
       'group'  => t('Exchanges'),

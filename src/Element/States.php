@@ -9,9 +9,11 @@ namespace Drupal\mcapi\Element;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\Radios;
+use Drupal\Core\Render\Element\Checkboxes;
 
 /**
  * Provides a form element for selecting a transaction state
+ * It inherits everything from radios except the trasaction states are autofilled
  *
  * @FormElement("mcapi_states")
  */
@@ -22,25 +24,27 @@ class States extends Radios {
    */
   public function getInfo() {
     $class = get_class($this);
-    return array(
-      '#title_display' => 'before',
-      '#process' => array(
-        array($class, 'mcapi_process_states'),
-      ),
-      '#theme_wrappers' => array('radios'),
-      '#pre_render' => array('form_pre_render_conditional_form_element')
-    );
+    return [
+      '#process' => [
+        array(get_class($this), 'mcapi_process_states'),
+      ],
+      '#multiple' => FALSE,
+      '#pre_render' => [
+        array($class, 'preRenderCompositeFormElement'),
+      ]
+    ];
   }
 
-  public static function mcapi_process_states($element) {
+  public static function mcapi_process_states(&$element, FormStateInterface $form_state, &$complete_form) {
     $element['#options'] = mcapi_entity_label_list('mcapi_state');
-    $element = form_process_radios($element);
-    //sort the currencies by weight.
-    return $element;
-  }
-
-  public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
-    if ($input == NULL) return;
-    return $input;
+    if ($element['#multiple']) {
+      $element['#theme_wrappers'] = array('checkboxes');
+     // $element['theme_wrappers'] = array('checkboxes');
+      return Checkboxes::processCheckboxes($element, $form_state, $complete_form);
+    }
+    else {
+      $element['#theme_wrappers'] = array('radios');
+      return Radios::processRadios($element, $form_state, $complete_form);
+    }
   }
 }

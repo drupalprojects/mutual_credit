@@ -11,6 +11,7 @@ namespace Drupal\mcapi\Plugin\Transition;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi\Plugin\TransitionBase;
 
 /**
@@ -31,7 +32,7 @@ class View extends TransitionBase {//does it go without saying that this impleme
   /*
    * {@inheritdoc}
    */
-  public function opAccess(TransactionInterface $transaction) {
+  public function opAccess(TransactionInterface $transaction, AccountInterface $account) {
     //you can view a transaction if you can view either the payer or payee wallets
     return $transaction->payer->entity->access('details')
     || $transaction->payee->entity->access('details');

@@ -1,6 +1,8 @@
 id: erase
 title: Erase
 tooltip: The administrator will still be able to access the transaction
+states: 
+  done: done
 page_title: 'Really erase this transaction?'
 format: certificate
 twig: ''
@@ -26,7 +28,6 @@ access:
   erased: { }
 status: true
 weight: 5
-
 send: 1
 subject: 'Transaction [mcapi:serial] was deleted'
 body: "Dear [user:name],\r\n"

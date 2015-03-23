@@ -117,5 +117,12 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * @param array $transactions
    */
   public function doErase(array $transactions);
+  
+  /**
+   * Return the ids of all the wallets which HAVE USED this currency
+   * @param type $curr_id
+   * @param type $conditions
+   */
+  public function wallets($curr_id, $conditions = []);
 
 }

@@ -2,13 +2,12 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi_exchanges\Exchange.
+ * Contains \Drupal\mcapi_exchanges\Entity\Exchange.
  * @todo make this work with OG and OG roles
  */
 
 namespace Drupal\mcapi_exchanges\Entity;
 
-use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
@@ -18,7 +17,6 @@ use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\mcapi\Entity\Wallet;
-use Drupal\mcapi\ExchangesInterface;
 use Drupal\mcapi_exchanges\ExchangeInterface;
 
 define('EXCHANGE_VISIBILITY_PRIVATE', 0);
@@ -267,7 +265,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    * {@inheritdoc}
    */
   function deactivatable() {
-    static $active_exchange_ids = array();
+    static $active_exchange_ids = [];
     if (!$active_exchange_ids) {
       //get the names of all the open exchanges
       foreach (Self::loadMultiple() as $entity) {

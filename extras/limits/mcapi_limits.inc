@@ -11,11 +11,12 @@ use Drupal\mcapi\Entity\Wallet;
  * and add excecptions to the main transaction object when they do
  */
 function _mcapi_limits_mcapi_transaction_validate($clusters) {
-  $errors = $messages = $violations = array();
+  $errors = $messages = $violations = [];
   //first add up all the transactions
   //to exclude the current transactions from the sum of saved transactions
   //compare the resulting balances for each wallet with its limits
   foreach ($clusters as $transaction){
+    
     foreach (_transactions_diff($transaction->flatten()) as $wid => $percurrency) {
       $wallet = Wallet::load($wid);
       foreach ($percurrency as $curr_id => $diffs) {
@@ -38,15 +39,17 @@ function _mcapi_limits_mcapi_transaction_validate($clusters) {
         elseif ($config['skip']['mass'] && $transaction->type->target_id == 'mass') {
           $messages[$curr_id] = t("Skipped balance limit checks for @currency.", $replacements);
         }
+        
         if ($messages) continue;
+        
         $summary = $wallet->getStats($curr_id);
         $diff = array_sum($diffs);
         $projected = $summary['balance'] + $diff;
         $limits = mcapi_limits($wallet)->limits($curr_id);//TODO consider making this call more elegant
+        
         extract ($limits);//produces $min and $max
         //we could send 'worth' values to the exception, but they are hard to work with
         //instead we'll send the currency and the quantities
-//debug("New $curr_id balance for $wid will be $projected while range is $min to $max");
         if ($diff > 0 && $projected > 0 && is_numeric($max) && $projected > $max) {
           $errors[$wid][] = array(
             'currency' => $currency,
@@ -248,7 +251,7 @@ function mcapi_limits_submit(&$form, $form_state) {
  * incoming transaction can be a transaction object with children or an array
  */
 function _transactions_diff(array $cluster) {
-  $diff = array();
+  $diff = [];
   foreach ($cluster as $transaction) {
     foreach ($transaction->worth->getValue() as $worth) {
       extract($worth); //makes variables $value and $curr_id

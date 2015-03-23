@@ -17,11 +17,12 @@ use Drupal\user\Entity\User;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Plugin\TransitionInterface;
-use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\TransactionInhook_iterface;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\State;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\Entity\Type;
 
 //states are mutually exclusive //is it appropriate to use constants for plugin names?
@@ -66,18 +67,10 @@ function mcapi_requirements($phase) {
 
 /**
  * implements hook_help()
- * TODO shouldn't there be some in each page controller to inject help?
+ * @todo make the links work in drupal_set_message()
  */
-function mcapi_help($route_name, $route_match) {
+function mcapi_help($route_name, $route_match) {debug($route_name);
   switch ($route_name) {
-    case 'mcapi.admin':
-      if (enough_wallets()->isForbidden()) {
-        $m[] = t("There aren't enough wallets for you to create a transaction.");
-        $m[] = Drupal::l(t("Give yourself a(nother) wallet"), Url::fromRoute('mcapi.wallet.add.user', ['user' => \Drupal::currentUser()->id()]));
-        //todo make this work with the link
-        debug($m);
-        drupal_set_message(implode(' ', $m), 'warning');
-      }
     case 'mcapi.admin_currency_list':
       return implode(' ', array(
         t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.'),
@@ -108,7 +101,6 @@ function mcapi_help($route_name, $route_match) {
   }
 }
 
-
 /**
  * implements hook_theme().
  */
@@ -131,10 +123,10 @@ function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDis
       $wids = \Drupal::EntityManager()
         ->getStorage('mcapi_wallet')
         ->getOwnedIds($entity);
-print_r($wids);
+      
       $viewbuilder =\Drupal::entityManager()->getViewBuilder('mcapi_wallet');
       foreach (Wallet::loadMultiple($wids) as $wid => $wallet) {
-        if ($wallet->access('view')) {
+        if ($wallet->access('summary')) {
           //this line might run multiple times, but most likely once or not at all
           $build['wallets_summaries']['#theme'] = 'mcapi_wallets';
           $build['wallets_summaries']['#wallets'][$wid] = $viewbuilder->view($wallet, 'summary');
@@ -217,6 +209,8 @@ function mcapi_currency_load($id) {
  *
  * @return array
  *   The entity names, keyed by entity id
+ * 
+ * @todo see if we can reuse anything from #type => entity_autocomplete
  */
 function mcapi_entity_label_list($entity_type_id, array $data = []) {
   if (empty($data)) {
@@ -249,7 +243,7 @@ function mcapi_entity_label_list($entity_type_id, array $data = []) {
  */
 function mcapi_mcapi_transition(TransactionInterface $transaction, TransitionInterface $transition, array $context) {
   //TODO invoke rules hook
-  if (\Drupal::currentUser()->id() == 1) debug($context, 'Ran hook_mcapi_transition');
+  if (\Drupal::currentUser()->id() == 1) drupal_set_message('Ran hook_mcapi_transition');
   //example code
   if (@$context['config']['send']) {
     $recipients = [];
@@ -367,7 +361,11 @@ function mcapi_entity_operation_alter(&$operations, $entity) {
 
 /**
  * Implements hook_hook_info().
- * @todo is it worth creating hook group and filename extension?
+ * 
+ * @todo replace all of these with the event dispatcher
+ * @see https://api.drupal.org/api/drupal/core!modules!system!core.api.php/group/events/8
+ * use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+ * $this->eventDispatcher->dispatch(SomethingEvent::JUST_DO_IT, $event);
  */
 function mcapi_hook_info() {
   $hooks = array(
@@ -376,10 +374,6 @@ function mcapi_hook_info() {
     'mcapi_transaction_validate',//throw violations without affecting transaction
     'mcapi_transaction_alter',//alter the main transaction
     'mcapi_transition',
-    //and all the entity hooks e.g
-    'mcapi_wallet_update',
-    'mcapi_wallet_delete'
-    //...there are many
   );
   return array('group' => 'mcapi') + array_combine($hooks, $hooks);
 }
@@ -403,16 +397,35 @@ function mcapi_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
 }
 
 
-  /**
-   * router access callback
-   * Find out if the user has access to enough wallets to be able to transact
-   * i.e. 2
-   * @todo find out how many wallets any given user can pay from and to
-   */
-  function enough_wallets() {
-    $count = db_select('mcapi_wallet', 'w')->fields('w', array('wid'))->countQuery()->execute()->fetchfield();
-    return $count > 1 ? 
-      Drupal\Core\Access\AccessResult::allowed()->cachePerUser() :
-      Drupal\Core\Access\AccessResult::forbidden()->cachePerUser();
+/**
+ * router access callback
+ * Find out if the user has access to enough wallets to be able to transact
+ * 
+ * @return AccessResult
+ */
+function enough_wallets() {
+  $account = \Drupal::currentUser();
+  $walletStorage = \Drupal::entitymanager()->getStorage('mcapi_wallet');
+  $payin = $walletStorage->walletsUserCanTransit('payin', $account);
+  $payout = $walletStorage->walletsUserCanTransit('payout', $account);
+  //there must be at least one wallet in each and they must be different
+  return ($payin && $payout && count(array_unique(array_merge($payin, $payout))) > 1) ?
+    Drupal\Core\Access\AccessResult::allowed()->cachePerUser() :
+    Drupal\Core\Access\AccessResult::forbidden()->cachePerUser();
+}
+
+//@todo static this
+function _wallet_owning_entity_routes($config_mcapi_misc) {
+  $routes = [];
+  foreach($config_mcapi_misc->get('entity_types') as $entity_type_bundle => $max) {
+    if (!$max) continue;
+    list($entity_type, $bundle) = explode(':', $entity_type_bundle);
+    $canonical = \Drupal::entityManager()->getDefinition($entity_type, TRUE)
+      ->getLinkTemplate('canonical');
+    if (!$canonical) continue;
+    if ($canonical == "/user/{user}") $canonical = 'entity.user.canonical';//user.page';
+    elseif ($canonical == '/node/{node}')  $canonical = 'entity.node.canonical';
+    $routes[$canonical] = $bundle;
   }
-  
+  return $routes;
+}

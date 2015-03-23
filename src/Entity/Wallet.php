@@ -58,19 +58,6 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
 
   private $owner;
   private $stats = [];
-  //access settings
-  private $access;
-  private $currencies_available;
-  
-  static function ___create(array $values = []) {
-    //trying to inject storage or even entityManager
-    echo ('wallet::create');mdump($values);
-    return $values;
-  }
-  static function createInstance(array $values = []) {
-    //trying to inject storage or even entityManager
-    die('Wallet::createInstance');
-  }
 
   /**
    * {@inheritdoc}
@@ -140,7 +127,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     if (!array_key_exists('pid', $values) && array_key_exists('entity_type', $values)) {
       throw new Exception("new wallets must have an entity_type and a parent entity_id (pid)");
     }
-    $values += array('name' => '');
+    $values += array('name' => '', 'orphaned' => 0);
     //put the default values for the access here
     $access_settings = \Drupal::config('mcapi.wallets')->getRawData();
     foreach (Wallet::ops() as $op) {
@@ -153,7 +140,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
   /**
    * {@inheritdoc}
    */
-  function doSave($id, EntityInterface $entity) {
+  public function doSave($id, EntityInterface $entity) {
     //check the name length
     if (strlen($this->name->value) > 64) {
       $this->name->value = substr($this->name->value, 0, 64);
@@ -198,9 +185,10 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
 
     $defaults = array(
       'details' => array(t('Details'), t('Access code for viewing transaction details'), 'e'),
-      'summary' => array(t('Details'), t('Access code for viewing wallet summary'), '2'),
-      'payout' => array(t('Details'), t('Access code for paying in'), 'o'),
-      'payin' => array(t('Details'), t('Access code for paying out'), 'e')
+      'summary' => array(t('Summary'), t('Access code for viewing wallet summary'), '2'),
+      'payout' => array(t('Pay out'), t('Access code for paying in'), 'o'),
+      'payin' => array(t('Pay in'), t('Access code for paying out'), 'e'),
+      'edit' => array(t('Edit'), t('Access code for paying out'), 'e')
     );
     if ($access_settings = \Drupal::config('mcapi.wallets')->getRawData()) {
       foreach (array_keys($defaults) as $key) {
@@ -216,7 +204,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
 
     $fields['orphaned'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Orphaned'))
-      ->setSetting('default_value', array(0 => ''));
+      ->setSetting('default_value', array(0 => '0'));
     
     //TODO in beta2, this field is required by views. Delete if pos
     $fields['langcode'] = BaseFieldDefinition::create('language')
@@ -231,7 +219,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
   /**
    * get a list of all the currencies used and available to the wallet.
    */
-  function currencies_all() {
+  public function currencies_all() {
     //that means unused currencies should appear last
     return $this->currencies_used() + $this->currencies_available();
   }
@@ -240,7 +228,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    * get a list of the currencies held in the wallet
    * @todo consider moving to static class Mcapi
    */
-  function currencies_used() {
+  public function currencies_used() {
     if (!$this->currencies_used) {
       $this->currencies_used = [];
       foreach (Currency::loadMultiple(array_keys($this->getSummaries())) as $currency) {
@@ -255,7 +243,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    * get a list of all the currencies in in all the exchanges this wallets owner is in
    * @todo consider moving to static class Mcapi
    */
-  function currencies_available() {
+  public function currencies_available() {
     if (!isset($this->currencies_available)) {
       $this->currencies_available = [];
       $exchanges = Exchanges::walletInExchanges($this);
@@ -270,7 +258,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
   /**
    * {@inheritDoc}
    */
-  function getSummaries() {
+  public function getSummaries() {
     if (!$this->stats) {
       $this->stats = $this->Entitymanager()->getStorage('mcapi_transaction')->summaryData($this->id());
       foreach ($this->currencies_available() as $curr_id => $currency) {
@@ -293,7 +281,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    * (non-PHPdoc)
    * @see \Drupal\mcapi\WalletInterface::getStats()
    */
-  function getStats($curr_id) {
+  public function getStats($curr_id) {
     $summaries = $this->getSummaries();
     if (array_key_exists($curr_id, $summaries)) {
       return $summaries[$curr_id];
@@ -304,7 +292,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    * (non-PHPdoc)
    * @see \Drupal\mcapi\WalletInterface::getStat()
    */
-  function getStat($curr_id, $stat) {
+  public function getStat($curr_id, $stat) {
     $stats = getStats($curr_id);
     if (array_key_exists($curr_id, $stats)) return $stats[$curr_id];
     //else return NULL
@@ -353,7 +341,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    * (non-PHPdoc)
    * @see \Drupal\mcapi\WalletInterface::orphan()
    */
-  static function orphan(ContentEntityInterface $owner) {
+  public static function orphan(ContentEntityInterface $owner) {
     if($exchange_ids = Exchanges::in($owner, FALSE)) {
       $exchange = Exchange::load(reset($exchanges));//if the parent entity was in more than one exchange, this will pick a random one to take ownership
       if ($wids = \Drupal\mcapi\Storage\WalletStorage::getOwnedIds($owner, TRUE)) {
@@ -385,7 +373,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
   /**
    * {@inheritdoc}
    */
-  static function ownedBy(ContentEntityInterface $entity) {
+  public static function ownedBy(ContentEntityInterface $entity) {
     return \Drupal::EntityManager()
       ->getStorage('mcapi_wallet')
       ->getOwnedIds($entity);
@@ -395,7 +383,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    * {inheritdoc}
    * overrides parent function to also invalidate the wallet's parent's tag
    */
-  protected function invalidateTagsOnSave($update) {
+  public function invalidateTagsOnSave($update) {
     $tags = $this->getEntityType()->getListCacheTags();
     //invalidate the parent, especially the entity view, see mcapi_entity_view()
     $tags = Cache::mergeTags($tags, array($this->entity_type->value.':'.$this->pid->value));
@@ -418,7 +406,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     return array(
       //TODO only wallets owned by user entities can have this option
       WALLET_ACCESS_OWNER => t('Just the owner'),
-      WALLET_ACCESS_EXCHANGE => t('Members in the same exchange(s)'),//todo: which exchanges?
+      //WALLET_ACCESS_EXCHANGE => t('Members in the same exchange(s)'),//todo: which exchanges?
       WALLET_ACCESS_AUTH => t('Any logged in users'),
       WALLET_ACCESS_ANY => t('Anyone on the internet'),
       WALLET_ACCESS_USERS => t('Named users...')
@@ -433,6 +421,11 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    *   THE list of ops because arrays cannot be stored in constants
    */
   public static function ops() {
-    return array('details', 'summary', 'payin', 'payout');
+    return [
+      'details' => t('View transaction log'), 
+      'summary' => t('View summary'), 
+      'payin' => t('Pay into this wallet'),
+      'payout' => t('Pay out of this wallet'),
+    ];
   }
 }

@@ -11,7 +11,7 @@ use Drupal\field\Entity\FieldConfig;
 define('MCAPI_IMPORT_TRANSACTION_BATCH_SIZE', 100);
 
 function mcapi_import_help($path) {
-  $help = array();
+  $help = [];
   switch ($path) {
     case 'admin/accounting/import':
     case 'admin/accounting/import/balances':
@@ -248,7 +248,7 @@ function import_transactions_form_submit($form, $form_state) {
   mcapi_import_check_terms($csv, TRUE);
 
   if ($form_state['values']['set_created']) {
-    $earliest = array();
+    $earliest = [];
     foreach ($csv as $row) {
       if (empty($row['created'])) continue;
       $earliest[$row['payer']][] = $row['created'];
@@ -289,7 +289,7 @@ function mcapi_import_batch_create_transaction($csv, $settings, &$context) {
   }
   if (!array_key_exists('feedback', $context['results'])) {
     //feedback is an array, unlike $context['message']
-    $context['results']['feedback'] = array();
+    $context['results']['feedback'] = [];
   }
   $ignored = 0;
   //create the transactions
@@ -423,7 +423,7 @@ function import_balances_form_submit($form, $form_state) {
 function mcapi_import_balances_member($uid, $curr_id, $type, $balance, $gross_income = 0) {
   global $language;
   $currency = Currency::load($curr_id);
-  $transactions = array();
+  $transactions = [];
   $values = array(
     'type' => $type,
     'state' => TRANSACTION_STATE_FINISHED,
@@ -475,9 +475,9 @@ function mcapi_import_balances_member($uid, $curr_id, $type, $balance, $gross_in
 //check that the user ids or names actually correspond to a user on the system
 //coming from the csv all keys and values will be strings, surrounded by quotes
 function check_users($user_ids) {
-  $errors = array();
+  $errors = [];
   $user_ids = array_unique($user_ids);
-  $unknown = array();
+  $unknown = [];
   foreach ($user_ids as $user_id){
     if (!is_numeric($user_id)) {
       if (valid_email_address($user_id)) {
@@ -575,11 +575,11 @@ function mcapi_import_uif_post_create($account, $user_data, $form_state) {
  * check that the incoming terms already exist, returning a list of terms which need creating
  */
 function mcapi_import_check_terms($rows, $create) {
-  $terms = $imported_terms = $needed = array();
+  $terms = $imported_terms = $needed = [];
 
   list($field_info, $vocab) =  mcapi_import_detect_categories();
   if (!$field_info) {
-    return array();
+    return [];
   }
   foreach ($rows as $row) {
     if (empty($row[$field_info['field_name']])) continue;
@@ -612,5 +612,5 @@ function mcapi_import_detect_categories() {
       return array($field_info, $vocab = taxonomy_vocabulary_machine_name_load($field_info['settings']['allowed_values'][0]['vocabulary']));
     }
   }
-  return array();
+  return [];
 }

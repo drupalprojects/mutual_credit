@@ -8,27 +8,31 @@ namespace Drupal\mcapi\Plugin;
 
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\Entity\Transaction;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\Core\Url;
-use Drupal\mcapi\Entity\Transaction;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Session\AccountInterface;
 
 /**
  * Base class for Transitions for default methods.
  */
 abstract class TransitionBase extends PluginBase implements TransitionInterface {
-
+  
   public $label;
   public $description;
+  private $currentUser;
 
   /**
    * {@inheritdoc}
+   * @todo inject CurrentUser
    */
   function __construct(array $configuration, $plugin_id, array $plugin_definition) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->configuration += $this->defaultConfiguration();
     $this->label = $this->configuration['title'] ? : $this->pluginDefinition['label'];
     $this->description = @$this->configuration['tooltip'] ? : $this->pluginDefinition['description'];
+    
   }
 
   /**
@@ -66,13 +70,28 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
       '#maxlength' => 128,
       '#weight' => 2,
     );
+    
+    $form['states'] = [
+      '#title' => $this->t('Applies to states'),
+      '#description' => $this->t('The transaction states that this transition could apply to'),
+      '#type' => 'mcapi_states',
+      '#multiple' => TRUE,
+      '#default_value' => $this->configuration['states']
+    ];
+    
+    if ($element = $this->transitionSettings($form, $form_state)) {
+      $form['settings'] = [
+        '#type' => 'fieldset',
+        '#title' => 'Editing',
+        '#weight' => 5
+      ] + $element;
+    }
 
     $form['sure']= array(
       '#title' => t('Are you sure page'),
       '#type' => 'fieldset',
       '#weight' => 3
     );
-
     $form['sure']['page_title'] = array(
       '#title' => t('Page title'),
       '#description' => t ("Page title for the transition's page") . ' TODO, make this use the serial number and description tokens or twig. Twig would make more sense, in this context.',
@@ -111,6 +130,9 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     return $form;
   }
 
+  protected function transitionSettings(array $form, FormStateInterface $form_state) {
+    return [];
+  }
 
   /**
    * {@inheritdoc}
@@ -197,8 +219,9 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    *  access callback for transaction transition 'view'
    *  @return boolean
   */
-  public function opAccess(TransactionInterface $transaction) {
+  public function opAccess(TransactionInterface $transaction, AccountInterface $account) {
     $options = array_filter($this->configuration['access']);
+    debug($this->configuration, 'need to deny access according to the state setting', 1);
     if (!array_key_exists($transaction->state->target_id, $options)) {
       drupal_set_message(
         t(
@@ -212,7 +235,6 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
         FALSE
       );
     }
-    $account = \Drupal::currentUser();
     foreach ($options[$transaction->state->target_id] as $option) {
       switch ($option) {
       	case 'helper':

@@ -58,7 +58,7 @@ function mcapi_parse_command($message) {
     '[transaction:payee]' => '(.*)',
     '[transaction:description]' => '(.*)',
   );
-  $most_matches = array();
+  $most_matches = [];
   $strings = explode("\n", \Drupal::config('mcapi.command')->get('command_strings'));
   foreach ($strings as $expression) {
     $expression = trim($expression); //get the linebreak off it yuk
@@ -91,7 +91,7 @@ function mcapi_parse_command($message) {
   elseif ($most_matches) {
 
   }
-  else return array();//probably wasn't even supposed to match, so fail gracefully
+  else return [];//probably wasn't even supposed to match, so fail gracefully
 }
 
 /*
@@ -130,8 +130,8 @@ function mcapi_command_get_uid($string) {
 /*
  * implementation of hook 'sms_incoming'
  * $op = 'pre process', 'process', 'post process'
- * sms_send($number, $message, $options = array());
- * sms_incoming($number, $message, $options = array());
+ * sms_send($number, $message, $options = []);
+ * sms_incoming($number, $message, $options = []);
  */
 function mcapi_command_sms_incoming($op, $number, $message) {
   if ($op != 'process') return;

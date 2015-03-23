@@ -16,7 +16,6 @@ use Drupal\mcapi\Exchanges;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\user\UserInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Config\Entity\ThirdPartySettingsTrait;
 
 /**
  * Defines the Currency entity.
@@ -53,8 +52,6 @@ use Drupal\Core\Config\Entity\ThirdPartySettingsTrait;
  */
 
 class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwnerInterface {
-
-  use ThirdPartySettingsTrait;
 
   public $id;
   
@@ -108,13 +105,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * @var type 
    */
   public $deletion;
-  
-  /**
-   * exchange rate, expressed in ticks
-   * @var integer
-   * @todo move this to the mcapi_exchanges module
-   */
-  public $ticks;
 
   /*
    * the $format is an intricately formatted expression which tells the system 
@@ -136,11 +126,10 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
     $values += array(
       'issuance' => 'acknowledgement',
-      'format' => array('$', 0, '.', '99'),
+      'format' => ['$', 0, '.', '99'],
       'zero' => FALSE,
       'color' => '000',
-      'ticks' => 1,
-      'deletion' => array('erase' => 'erase'),
+      'deletion' => ['erase' => 'erase'],
       'weight' => 0,
       'uid' => \Drupal::CurrentUser()->id() ? : 1
     );

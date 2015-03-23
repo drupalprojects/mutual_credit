@@ -93,7 +93,7 @@ class Generate extends ConfigFormBase {
       if ($currency->id() <> 1)$currency->delete();
     }
 
-    $currencies = array();
+    $currencies = [];
     for ($i = 2; $i < $values['currencies']+2; $i++) {
       $props = array(
         'id' => 'currency_'.$i,
@@ -109,7 +109,7 @@ class Generate extends ConfigFormBase {
     }
     reset($currencies);
 
-    $newexchanges = array();
+    $newexchanges = [];
     if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
       for ($i = 2; $i < $values['exchanges'] + 2; $i++) {
         $props = array(
@@ -147,7 +147,7 @@ class Generate extends ConfigFormBase {
         $props = array(
           'name' => $first[rand(1, 26)] .' '.$last[rand(1, 26)],
           'mail' => (REQUEST_TIME -$i) .'@mutualcredit.org',
-          'roles' => array(),
+          'roles' => [],
           'created' => strtotime("-$i days"),
           'exchanges' => array(
             array('target_id' => next($exchanges) ? : reset($exchanges))

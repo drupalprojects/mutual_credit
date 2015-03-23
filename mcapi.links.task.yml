@@ -1,7 +1,7 @@
 #sits next to the transaction field ui tabs
 mcapi.admin_tab:
   route_name: mcapi.admin.transactions
-  title: Settings
+  title: Workflow
   base_route: mcapi.admin.transactions
   weight: 0
 

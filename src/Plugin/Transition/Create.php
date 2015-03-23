@@ -2,7 +2,7 @@
 
 /**
  * @file
- *  Contains Drupal\mcapi\Plugin\Transitions\Create
+ *  Contains Drupal\mcapi\Plugin\Transition\Create
  */
 
 namespace Drupal\mcapi\Plugin\Transition;
@@ -12,6 +12,7 @@ use Drupal\mcapi\CurrencyInterface;
 use Drupal\mcapi\McapiTransactionException;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Plugin\Transition2Step;
+use Drupal\Core\Session\AccountInterface;
 
 /**
  * Create transition
@@ -30,10 +31,10 @@ class Create extends Transition2Step {
 
   /**
    * {@inheritdoc}
+   * A transaction can be created if the user has a wallet, and permission to transaction
    */
-  public function opAccess(TransactionInterface $transaction) {
-    //this affects the link visibility and the page access
-    //transaction can be created by anyone as long as it hasn't yet been saved
+  public function opAccess(TransactionInterface $transaction, AccountInterface $acount) {
+    //TODO check that the use is allowed to pay in to and out from at least one wallet each.
     return empty($transaction->get('xid')->value);
   }
 

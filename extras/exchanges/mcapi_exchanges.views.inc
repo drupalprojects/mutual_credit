@@ -41,7 +41,7 @@ function mcapi_exchanges_views_data_alter(&$data) {
     $argument = &$data[$entity_type .'__'. EXCHANGE_OG_REF][EXCHANGE_OG_REF .'_target_id']['argument'];
     $argument['help'] = t("Show only entities according to the exchange they are in");
     $argument['id'] = 'standard';//TODO this might need customisig
-    $argument['additional fields'] = array();//no idea how these were helping
+    $argument['additional fields'] = [];//no idea how these were helping
     unset($data[$entity_type .'__'. EXCHANGE_OG_REF]['delta']);
     unset($data[$entity_type .'__'. EXCHANGE_OG_REF][EXCHANGE_OG_REF .'_revision_id']);
   }

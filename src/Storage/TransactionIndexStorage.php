@@ -134,7 +134,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::indexRebuild()
    */
   public function indexRebuild() {
-    $states = $this->counted_states();
+    $states = $this->countedStates();
     db_truncate('mcapi_transactions_index')->execute();
     //don't know how to do this with database API
     $this->database->query("
@@ -187,7 +187,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    */
   public function indexCheck() {
     if ($this->database->query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
-      $states = $this->counted_states();
+      $states = $this->countedStates();
       $volume_index = $this->database->query("SELECT sum(incoming) FROM {mcapi_transactions_index}")->fetchField();
       $volume = $this->database->query("SELECT sum(w.worth_value)
         FROM {mcapi_transaction} t
@@ -334,7 +334,9 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       //@todo this could be optimised since we could be running through a lot of points in chronological order
       //we just need to remove all array values with keys smaller than $since.
       //I think it can't be done in the SQL coz we need them for adding up.
-      if ($point->created < $since) continue;
+      if ($point->created < $since) {
+        continue;
+      }
       $history[$point->created] = $point->balance;
     }
     return $history;
@@ -345,9 +347,11 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * feel free to implement this on the entity table
    */
   public function count($curr_id = '', $conditions = [], $serial = FALSE) {
-    $query = $this->database->select('mcapi_transactions_index', 't')
+    $query = $this->database
+      ->select('mcapi_transactions_index', 't')
       ->condition('t.incoming', 0);
-    $query->addExpression('count(xid)');//how do we do this with countquery()
+    $field = $serial ? 'serial' : 'xid';
+    $query->addExpression("count($field)");//how do we do this with countquery()
     if ($curr_id) {
       $query->condition('t.curr_id', $curr_id);
     }
@@ -379,7 +383,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       $query->conditions($fieldname, $value);
     }
     if (!in_array('state', $conditions) || !is_null($conditions['state'])) {
-      $query->conditions('state', $this->counted_states());
+      $query->conditions('state', $this->countedStates());
     }
   }
 
@@ -388,14 +392,26 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * @return string
    *   a comma separated list of state ids, in quote marks
    */
-  private function counted_states() {
+  private function countedStates() {
     $counted_states = [];
     foreach (mcapi_states_counted(TRUE) as $state_id) {
       $counted_states[] = "'".$state_id."'";
     }
     return implode(', ', $counted_states);
   }
-
+  
+  /**
+   * {@inheritDoc}
+   * @todo make this work with conditions
+   */
+  public function wallets($curr_id, $conditions = []) {
+    return $this->database->select('mcapi_transactions_index', 'i')
+      ->fields('i', ['wallet_id'])
+      ->condition('curr_id', $curr_id)
+      ->distinct()
+      ->execute()
+      ->fetchCol();
+  }
 }
 
 

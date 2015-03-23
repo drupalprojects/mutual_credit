@@ -10,10 +10,11 @@ namespace Drupal\mcapi\Plugin\Transition;
 
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
+use Drupal\mcapi\Plugin\Transition2Step;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\FormState;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
-use Drupal\mcapi\Plugin\Transition2Step;
 
 /**
  * Edit transition
@@ -29,21 +30,30 @@ use Drupal\mcapi\Plugin\Transition2Step;
  * )
  */
 class Edit extends Transition2Step {
+  
+  function create() {
+    die('create');//do we need the 
+  }
 
   /**
    *  access callback for transaction transition 'edit'
    * is the transaction too old according to settings?
    * does the current user have permission?
+   * @todo override access settings in the base configuration base form
   */
-  public function opAccess(TransactionInterface $transaction) {
-
+  public function opAccess(TransactionInterface $transaction, AccountInterface $account) {
+    if ($transaction->state->target_id == 'erased') return FALSE;
     $days = $this->configuration['window'];
     if ($transaction->created->value + 86400*$days < REQUEST_TIME) {
       return FALSE;
     }
     //because children responding to parent edits is too much of a headache
     if ($transaction->children) return FALSE;
-    return parent::opAccess($transaction);
+    return parent::opAccess($transaction, $account);
+  }
+  
+  protected function __accessSettingsForm(&$element) {
+    $element['hello'] = ['#markup' => 'hello'];
   }
 
   /**
@@ -82,14 +92,10 @@ class Edit extends Transition2Step {
   /**
    * {inheritdoc}
    */
-  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    $form = parent::buildConfigurationForm($form, $form_state);
-    module_load_include('inc', 'mcapi');
-//    $fields = array_diff(Mcapi::transactionTokens(), array('serial', 'state', 'type', 'creator', 'exchange'));
-    //TODO these fields will work, but the fieldAPI fields won't
+  public function transitionSettings(array $form, FormStateInterface $form_state) {
     $fields = array('payer', 'payee', 'created', 'description');
     drupal_set_message("More work needs to be done to make the field API fields, including 'worth', editable");
-    $form['fields'] = array(
+    $element['fields'] = array(
       '#title' => t('Editable fields'),
       '#description' => t('select the fields which can be edited'),
       '#type' => 'checkboxes',
@@ -97,14 +103,14 @@ class Edit extends Transition2Step {
       '#default_value' => $this->configuration['fields']
     );
 
-    $form['window'] = array(
+    $element['window'] = array(
       '#title' => t('Editable window'),
       '#description' => t('Number of days after creation that the transaction can be edited'),
       '#type' => 'number',
       '#default_value' => $this->configuration['window'],
       '#min' => 0
     );
-    return $form;
+    return $element;
   }
 
 

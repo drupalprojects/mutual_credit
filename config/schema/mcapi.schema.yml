@@ -27,12 +27,6 @@ mcapi.misc:
         fieldapi: 
           type: boolean
           label: Field API
-    exchange_menu:
-      type: string
-      label: Menu
-    ticks_name:
-      type: String
-      label: Base unit
     worths_delimiter:
       type: string
       label: Delimiter
@@ -79,6 +73,10 @@ mcapi.wallets:
     display_format:
       type: boolean
       label: 'Display format'
+    entity_types:
+      type: sequence
+      label: Max number of wallets
+      sequence: { }
     access_personalised:
       type: boolean
       label: 'Personalised wallet access'
@@ -90,16 +88,16 @@ mcapi.wallets:
       label: 'Location of the link to create new wallets under an entity'
     details:
       type: map
-      label: 'View transaction details'
+      label: 'View transaction log'
     summary:
       type: map
       label: 'View summary'
     payin:
       type: map
-      label: 'Create payments into this wallet'
+      label: 'Pay into this wallet'
     payout:
       type: map
-      label: 'Create payments out of this wallet'
+      label: 'Pay out of this wallet'
 
 mcapi.currency.*:
   type: config_entity
@@ -121,9 +119,9 @@ mcapi.currency.*:
       type: string
       label: 'Basis of issuance'
     format:
-      type: mapping
+      type: sequence
       label: Format
-      mapping: {}
+      sequence: { }
     zero:
       type: boolean
       label: 'Allow zero transactions'
@@ -133,9 +131,6 @@ mcapi.currency.*:
     weight:
       type: integer
       label: 'Weight'
-    ticks:
-      type: float
-      label: Ticks
     deletion:
       type: integer
       label: Delete options
@@ -188,6 +183,10 @@ mcapi.transition.*:
     tooltip:
       'type': string
       'label': Tooltip
+    states:
+      'type': sequence
+      'label': Applies to states
+      'sequence': { }
     page_title:
       'type': string
       'label': Page title
@@ -195,7 +194,7 @@ mcapi.transition.*:
       'type': string
       'label': Transaction display
     twig:
-      'type': string
+      'type': straing
       'label': Template
     button:
       'type': string

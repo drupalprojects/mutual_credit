@@ -155,29 +155,26 @@ function mcapi_exchanges_form_mcapi_wallet_settings_form_alter(&$form, &$form_st
   $form['actions']['submit']['#submit'][] = 'mcapi_exchanges_check_og_fields';
 }
 
-function mcapi_exchanges_check_og_fields(&$form, &$form_state) {
-  debug($form_state->getValues());
-}
-
 /**
  * implements hook_entity_insert();
  * Ensure an entity's wallets are in the same exchange(s) as the entity
  */
 function mcapi_exchanges_entity_insert($entity) {
-  put_owned_wallets_in_exchange($entity);
+  put_owned_wallets_in_exchanges($entity);
 }
 /**
  * implements hook_entity_update();
  * Ensure an entity's wallets are in the same exchange(s) as the entity
  */
 function mcapi_exchanges_entity_update($entity) {
-  put_owned_wallets_in_exchange($entity);
+  put_owned_wallets_in_exchanges($entity);
 }
 
 /*
  * ensure that the wallets of every wallet-owning entity are in the same exchanges as their owner
  */
-function put_owned_wallets_in_exchange($entity) {
+function put_owned_wallets_in_exchanges($entity) {
+  $count = 0;
   if (Mcapi::walletable($entity)) {
     if ($wids = Wallet::ownedBy($entity)) {
       $belongsToExchanges = $entity->getEntityTypeId() == 'mcapi_exchange' ?
@@ -188,12 +185,16 @@ function put_owned_wallets_in_exchange($entity) {
         //each wallet is in exactly the same exchanges as the parent.
         $wallet->set(EXCHANGE_OG_REF, $belongsToExchanges);
         $wallet->save();
+        $count++;
       }
       //todo check this after the OG api is written and implemented, and used above
-      //foreach ($belongsToExchanges as $exchange)debug($wids, 'check these wallets are in exchange '.$exchange->id());
+      //foreach ($belongsToExchanges as $exchange)debug($wids, 'check these wallets are in exchanges: '.$exchange->id());
     }
-    else drupal_set_message($entity->bundle() .' '.$entity->id() .' has no wallets, but probably should. ');
   }
+  drupal_set_message(
+    "Put $count wallets belonging to ".$entity->bundle() .' '.$entity->id(). ' into exchanges: '.
+      implode(', ', array_keys((array)$belongsToExchanges))
+  );
 }
 
 function mcapi_exchanges_element_info_alter($info) {
@@ -292,7 +293,7 @@ if (!is_array($my_exchange_ids)){print_r($my_exchange_ids);die('mcapi_exchanges_
       }
     }
   }
-  $violations = array();
+  $violations = [];
   if (!$source) {
     throw new McapiTransactionException('worth', 'Neither party can access all the currencies in the transaction: '.implode(', ', $transaction_curr_ids));
   }
@@ -413,7 +414,7 @@ function has_currencies($exchange, $currency_ids) {
 function intertrading_new_worths(TransactionInterface $transaction, WalletInterface $dest_wallet) {
   $transaction_curr_ids = $transaction->get('worth')->curr_ids();
 
-  return array();//no problems
+  return [];//no problems
 }
 
 /**
@@ -507,7 +508,7 @@ debug($maxes);
       )
     );
     $form['partner_all'] = $form['partner'];
-    $form['partner_all']['#exchanges'] = array();
+    $form['partner_all']['#exchanges'] = [];
     $form['partner_all']['#states']['visible'][':input[name="intertrade"]']['checked'] = TRUE;
   }
 }
@@ -569,7 +570,7 @@ function mcapi_exchanges_first_party_editform_submit(&$form, &$form_state) {
  * @todo check if this is the best approach usability wise
  */
 function mcapi_default_currency_id(EntityInterface $exchange, $field_definition) {
-  $output = array();
+  $output = [];
   //default currencies are the currencies of the exchanges of which the current user is a member
   $exchange_ids = Exchanges::in(NULL, TRUE);
   foreach (Mcapi::currencies($exchange_ids) as $currency) {
@@ -595,47 +596,13 @@ function mcapi_default_currency_id(EntityInterface $exchange, $field_definition)
  */
 function mcapi_default_exchange_id(ContentEntityInterface $entity, $field_definition) {
   if ($entity->getEntityTypeId == 'user' && $entity->id() == 0)drupal_set_message('putting user 0 in default exchange. Prevent this!');
-  $output = array();
+  $output = [];
   $exchanges = Exchange::loadMultiple(Exchanges::in(NULL, TRUE));
   foreach ($exchanges as $exchange) {
     
     $output[]['target_uuid'] = $exchange->uuid->value;
   }
   return $output;
-}
-
-
-/**
- * implements hook_block_view_BLOCK_BASE_ID_alter
- * 
- * Add a links to the menu block, one for each exchange the current user is in.
- * The alternative, to create many links and give them all access control would be
- * rather expensive, I think, for a system with many exchanges
- *
- * @todo second opinion?
- */
-function mcapi_exchanges_block_view_system_menu_block_alter(&$build, $block) {
-  if($block->getPluginId() == 'system_menu_block:tools') {
-    if (!array_key_exists('content', $build)) {
-      $build['content'] = array();
-    }
-    $exchanges = Exchange::loadMultiple(Exchanges::in());
-    foreach ($exchanges as $exchange) {
-      //does a menu link really require all of these properties
-      $renderable = array(
-      	'#theme' => 'menu_link',
-        '#title' => $exchange->label(),
-        '#href' => $exchange->url(),
-        '#weight' => -100,
-        '#localized_options' => array(),
-        '#below' => array(),
-        '#attributes' => new Attribute(),
-        '#original_link' => array('menu_name' => 'tools'),//required by menu_block_view_system_menu_block_alter
-      );
-      array_unshift($build['content'], $renderable);
-    }
-    //TODO exchange admins links to their currency(s) OR a link to admin/accounting/currencies
-  }
 }
 
 

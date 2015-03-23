@@ -40,9 +40,7 @@ class CurrencyListBuilder extends DraggableListBuilder {
     if (empty($actions)) {
       return;
     } 
-    $row['title'] = array(
-      '#markup' => $this->getLabel($entity),
-    );
+    $row['title'] = ['#markup' => $entity->link(NULL, 'canonical')];
     $type_names = array(
       CURRENCY_TYPE_ACKNOWLEDGEMENT => t('Acknowledgement'),
       CURRENCY_TYPE_EXCHANGE => t('Exchange'),

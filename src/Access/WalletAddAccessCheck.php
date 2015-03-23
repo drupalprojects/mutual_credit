@@ -40,7 +40,6 @@ class WalletAddAccessCheck implements AccessInterface {
    * @todo work out how to do this now that the $request isn't passed
    */
   public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
-
     $config = \Drupal::config('mcapi.wallets');
     //this fetches the entity we are viewing - the would-be owner of the wallet we would add
     $params = $route_match->getParameters()->all();

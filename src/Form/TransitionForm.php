@@ -7,31 +7,56 @@ use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 //I don't know if it is a good idea to extend the confirm form if we want ajax.
 class TransitionForm extends EntityConfirmFormBase {
 
   private $op;
-  private $transaction;
-  private $destination;
   private $transition;
+  private $request;
 
-  function __construct() {
-    $request = \Drupal::request();
-//    $this->transition = $request->attributes->get('transition') ? : 'view';
-    $id = \Drupal::RouteMatch()->getparameter('transition') ? : 'view';
-    $this->transition = \Drupal::service('mcapi.transitions')
-      ->getPlugin($id);
-
-    if ($path = $this->transition->getConfiguration('redirect')) {
-      $this->destination = $path;
+  function __construct($request, $route_match, $transitionManager) {
+    $this->request = $request;
+    $this->op = $route_match->getparameter('transition') ? : 'view';
+    $this->transition = $transitionManager->getPlugin($this->op);
+  }
+  
+  /**
+   * calculate the route name and args
+   * @return type
+   */
+  private function getDestinationPath() {
+    if ($this->request->getCurrentRequest()->query->has('destination')) {
+      $path = $request->query->get('destination');
+      $request->query->remove('destination');//can't remember why
+    }
+    elseif ($redirect = $this->transition->getConfiguration('redirect')) {
+      $path = strtr($redirect, array(
+        '[uid]' => \Drupal::currentUser()->id(),
+        '[serial]' => $this->entity->serial->value
+      ));
+    }
+    if ($path) {
+      $url = Url::fromUri('base:'.$path);
     }
     else {
-      if ($request->query->has('destination')) {
-        $this->destination = $request->query->get('destination');
-        $request->query->remove('destination');
-      }
+      //if it's not set, go to the transaction's own page
+      $url = Url::fromRoute(
+        'entity.mcapi_transaction.canonical',
+        array('mcapi_transaction' => $this->entity->serial->value)
+      );
     }
+    
+    return $url;
+  }
+  
+  public static function create(\Symfony\Component\DependencyInjection\ContainerInterface $container) {
+    return new static(
+      $container->get('request_stack'),
+      $container->get('current_route_match'),
+      $container->get('mcapi.transitions')
+    );
   }
 
   /**
@@ -137,7 +162,6 @@ class TransitionForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $transaction = $this->entity;
 
     //the op might have injected values into the form, so it needs to be able to access them
     $form_state->cleanValues();;
@@ -145,26 +169,13 @@ class TransitionForm extends EntityConfirmFormBase {
 
     unset($values['confirm'], $values['langcode']);
     try {
-      $renderable = $transaction->transition($this->transition, $values);
+      $renderable = $this->entity->transition($this->transition, $values);
     }
+    //Should this be McapiError?
     catch (\Exception $e) {
       throw new \Exception("An error occurred in performing the transition:".$e->getMessage());
     }
-    //if there is no redirect then the link to this form should have a destination
-    if ($redirect = $this->transition->getConfiguration('redirect')) {
-      $path = strtr($redirect, array(
-        '[uid]' => \Drupal::currentUser()->id(),
-        '[serial]' => $transaction->serial->value
-      ));
-      $form_state->setRedirectUrl(Url::createFromPath($path));
-    }
-    else {
-      //if it's not set, go to the transaction's own page
-      $form_state->setRedirect(
-        'entity.mcapi_transaction.canonical',
-        array('mcapi_transaction' => $transaction->serial->value)
-      );
-    }
+    $form_state->setRedirectUrl($this->getDestinationPath());
 
     return $renderable;
   }

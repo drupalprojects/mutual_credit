@@ -18,40 +18,13 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface {
 
-  /**
-   * The route provider.
-   *
-   * @var \Drupal\Core\Routing\RouteProviderInterface
-   */
-  protected $routeProvider;
+  var $config;
 
   /**
-   * The entity manager
-   *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
+   * {@inheritDoc}
    */
-  protected $entityManager;
-
-  /**
-   * The translation manager service.
-   *
-   * @var \Drupal\Core\StringTranslation\TranslationInterface
-   */
-  protected $translationManager;
-
-  /**
-   * Creates a WalletLocalAction object.
-   *
-   * @param \Drupal\Core\Routing\RouteProviderInterface $route_provider
-   *   The route provider.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager.
-   * @param \Drupal\Core\StringTranslation\TranslationInterface $translation_manager
-   *   The translation manager.
-   */
-  public function __construct(RouteProviderInterface $route_provider, EntityManagerInterface $entity_manager) {
-    $this->routeProvider = $route_provider;
-    $this->entityManager = $entity_manager;
+  public function __construct($configFactory) {
+    $this->config = $configFactory->get('mcapi.wallets');
   }
 
   /**
@@ -59,40 +32,39 @@ class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface
    */
   public static function create(ContainerInterface $container, $base_plugin_id) {
     return new static(
-      $container->get('router.route_provider'),
-      $container->get('entity.manager')
+      $container->get('config.factory')
     );
   }
 
   /**
    * {@inheritdoc}
+   * @todo tidy up once the user entity links are routes not paths
    */
   public function getDerivativeDefinitions($base_plugin_definition) {
     $this->derivatives = [];
-    $config = \Drupal::config('mcapi.wallets');
-    if ($config->get('add_link_location') != 'summaries') {
-      $types = $config->get('entity_types');
-      foreach((array)$types as $entity_bundle => $max) {
-        list($entity_type, $bundle) = explode(':', $entity_bundle);
-        //assumes that bundle names are unique
+    //add wallet links can go in three locations
+    if ($this->config->get('add_link_location') != 'summaries') {
+      foreach (_wallet_owning_entity_routes($this->config) as $canonical_route_name => $bundle) {
         $this->derivatives["mcapi.wallet.add.".$bundle.'.action'] = array(
           'id' => "mcapi.wallet.add.".$bundle.'.action',
           'route_name' => "mcapi.wallet.add.$bundle",//taken from the routesubscriber
           'title' => t('Add Wallet'),
-          'appears_on' => array(
-            $this->entityManager->getDefinition($entity_type, TRUE)->getLinkTemplate('canonical')
-          ),
+          'appears_on' => [$canonical_route_name]
         );
       }
       foreach ($this->derivatives as &$entry) {
+        //don't know if this is needed
         $entry += $base_plugin_definition;
       }
     }
     return $this->derivatives;
   }
-
-  public function getDerivativeDefinition($derivative_id, $base_plugin_definition){
-    //so far this hasn't been called, I don't know when it is used
-    die('\Drupal\mcapi\Plugin\Derivative\WalletLocalAction::getDerivativeDefinition');
-  }
 }
+
+/* which gives us things like */
+//mcapi.wallet.add.user.action:
+//  id: mcapi.wallet.add.user.action
+//  route_name: mcapi.wallet.add.user
+//  title: Add Wallet
+//  appears_on:
+//    - user.page

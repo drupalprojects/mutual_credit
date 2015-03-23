@@ -24,14 +24,12 @@ class FirstPartyFormDesigner extends EntityForm {
    */
   public function form(array $form, FormStateInterface $form_state) {
     
-    
-    
     $form = parent::form($form, $form_state);
     //widgetBase::Form expects this
-    $form['#parents'] = array();
+    $form['#parents'] = [];
 
     $configEntity = $this->entity;
-    $configEntity->set('fieldapi_presets', array());
+    $configEntity->set('fieldapi_presets', []);
     $template_transaction = mcapi_1stparty_make_template($configEntity);
 
     $form['#tree'] = TRUE;
@@ -253,27 +251,30 @@ class FirstPartyFormDesigner extends EntityForm {
       ),
       '#weight' => $w++
     );
-    //iterate through the field api fields adding a vertical tab for each
-    foreach (mcapi_1stparty_fieldAPI() as $field_name => $data) {//need the fieldname & label & widget
-      //this element will contain the default value ONLY for the fieldAPI element
-      //assumes a cardinality of 1!
-      $element = array();
-      $element['#required'] = FALSE;
-      $form['fieldapi_presets'][$field_name] = array(
-        '#title' => $this->t('@fieldname preset', array('@fieldname' => $data['definition']->getLabel())),
-        '#description' => $this->t(
-          'For more field configuration options, see !link',
-          array('!link' => $this->l(
-            'admin/accounting/transactions/form-display',
-            Url::fromRoute('field_ui.form_display_overview_mcapi_transaction')
-          ))
-        ),
-        '#description_display' => 'below',//not working
-        '#type' => 'details',
-        '#group' => 'steps',
-        'preset' => $data['widget']->formElement($template_transaction->{$field_name}, 0, $element, $form, $form_state),
-        '#weight' => $w++
-      );
+    //TODO inject the module handler
+    if ($this->moduleHandler->moduleExists('field_ui')) {
+      //iterate through the field api fields adding a vertical tab for each
+      foreach (mcapi_1stparty_fieldAPI() as $field_name => $data) {//need the fieldname & label & widget
+        //this element will contain the default value ONLY for the fieldAPI element
+        //assumes a cardinality of 1!
+        $element = [];
+        $element['#required'] = FALSE;
+        $form['fieldapi_presets'][$field_name] = array(
+          '#title' => $this->t('@fieldname preset', array('@fieldname' => $data['definition']->getLabel())),
+          '#description' => $this->t(
+            'For more field configuration options, see !link',
+            array('!link' => $this->l(
+              'admin/accounting/transactions/form-display',
+              Url::fromRoute('entity.entity_form_display.mcapi_transaction.default')
+            ))
+          ),
+          '#description_display' => 'below',//not working
+          '#type' => 'details',
+          '#group' => 'steps',
+          'preset' => $data['widget']->formElement($template_transaction->{$field_name}, 0, $element, $form, $form_state),
+          '#weight' => $w++
+        );
+      }
     }
 
     //ensure the worth field is showing all possible currencies ()
@@ -354,43 +355,55 @@ class FirstPartyFormDesigner extends EntityForm {
   /**
    * Overrides Drupal\Core\Entity\EntityForm::validate().
    */
-  public function validate(array $form, FormStateInterface $form_state) {
-    //$values = $form_state->getValues();
-  }
-
-  //form element validation callback
-  public static function validate_twig_template(array $element, $form_state) {
-    $txt = $element['#value'];
-    $errors = array();
-    if (strpos($txt, "{{ mywallet }}") === NULL) {
-      $form_state->setError(
-        $element,
-        t('@token token is required in template', array('@token' => '{{ mywallet }}'))
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    $max = $this->config('mcapi.wallets')->get('entity_types')['user:user'];
+    $text = $form_state->getValue('experience')['twig'];
+    $mywallet = !is_boolean(strpos($txt, "{{ mywallet }}"));
+    if ($max > 1 && !$mywallet) {
+      $message = $this->t(
+        '@token token is required in template', 
+        ['@token' => '{{ mywallet }}']
       );
     }
-    $values = $form_state->getValues();
-    //the essential transaction fields must be either present in the template or populated
-    if ((strpos($txt, "{{ partner }}") === NULL) && !$values['partner']['preset']) {
-      $errors[] = 'partner';
+    elseif ($max < 2 && $mywallet){
+      $message = $this->t(
+        '@token token should be removed from template', 
+        ['@token' => '{{ mywallet }}']
+      );
+    }
+    if ($error) {
+      $form_state->setError($element, $message);
+    }
+  }
+
+  //check that the required transaction form elements either have preset OR are in the Twig
+  public static function validate_twig_template(array $element, $form_state) {
+    $errors = [];
+    if (strpos($element['#value'], "{{ partner }}") === NULL) {
+      if (!$form_state->getValue('partner')['preset']) {
+        $errors[] = 'partner';
+      }
     }
 
-    //and the same for worth
-    if (strpos($txt, '{{ worth }}') == NULL) {
+    //ensure the worth field is present if there are 
+    if (strpos($element['#value'], '{{ worth }}') == NULL) {
       $empty = TRUE;
-      foreach ($values['fieldapi_presets']['worth']['preset'] as $item) {
+      foreach ($form_state->getValues('fieldapi_presets')['worth']['preset'] as $item) {
         if ($item['value']) {
           $empty = FALSE;
           break;
         }
       }
-      if ($empty)$errors[] = 'worth';
+      if ($empty){
+        $errors[] = 'worth';
+      }
     }
     foreach ($errors as $field_name) {
       $form_state->setError(
         $element,
-        t(
+        $this->t(
           'Field @fieldname neither appears in the form, nor has a preset value',
-          array('@fieldname' => $field_name)
+          ['@fieldname' => $element['#title']]
         )
       );
     }
@@ -399,7 +412,7 @@ class FirstPartyFormDesigner extends EntityForm {
   /**
    * Overrides Drupal\Core\Entity\EntityForm::save().
    */
-  public function submitForm(array $form, FormStateInterface $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $form_state->cleanValues();
     $values = $form_state->getValues();
     //we need to alter the structure a bit for the fieldAPI fields

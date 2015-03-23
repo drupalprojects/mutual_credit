@@ -125,7 +125,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
       //OR we need to NOT render links when the transaction is being previewed
       if ($view_mode == 'certificate') $exclude[] = 'view';
       foreach ($this->transitionManager->active($exclude, $transaction->worth) as $transition => $plugin) {
-        if ($transaction->access($transition)) {
+        if ($transaction->access($transition)->isAllowed()) {
           $route_name = $transition == 'view' ? 'entity.mcapi_transaction.canonical' : 'mcapi.transaction.op';
           $renderable['#links'][$transition] = array(
             'title' => $plugin->label,
@@ -156,6 +156,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
           '#theme' => 'links',
           '#attached' => array('library' => array('mcapi/mcapi.transaction')),
           '#attributes' => new Attribute(array('class' => array('transaction-transitions'))),
+          '#attributes' => ['class' => ['transaction-transitions']],
           '#cache' => []//TODO prevent this from being ever cached
         );
       }

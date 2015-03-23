@@ -18,9 +18,22 @@ use Drupal\mcapi\ViewBuilder\TransactionViewBuilder;
 use Drupal\mcapi\McapiTransactionException;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Exchanges;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class TransactionForm extends ContentEntityForm {
 
+  public $tempstore;
+  
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    $static = parent::create($container);
+    //this saves overriding the __construct method at a cost of making $tempstore public
+    $static->tempstore = $container->get('user.private_tempstore');
+    return $static;
+  }
+  
   /**
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
@@ -72,39 +85,18 @@ class TransactionForm extends ContentEntityForm {
     $form['payer'] = array(
       '#title' => t('Wallet to be debited'),
       '#type' => 'select_wallet',
+      '#role' => 'payer',
       '#default_value' => $transaction->get('payer')->target_id,
       '#weight' => 9,
     );
     $form['payee'] = array(
       '#title' => t('Wallet to be credited'),
       '#type' => 'select_wallet',
+      '#role' => 'payee',
       '#default_value' => $transaction->get('payee')->target_id,
       '#weight' => 9,
     );
-    //direct copy from the node module, but what about the datetime field?
-    //see datetime_form_node_form_alter
-    $form['created'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Entered on'),
-      '#maxlength' => 25,
-      '#description' => t(
-        'Format: %time. The date format is YYYY-MM-DD and %timezone is the time zone offset from UTC. Leave blank to use the time of form submission.',
-        array(
-          '%time' => !empty($transaction->date)
-            ? date_format(date_create($transaction->date), 'Y-m-d H:i:s O')
-            : format_date($transaction->get('created')->value, 'custom', 'Y-m-d H:i:s O'),
-          '%timezone' => !empty($transaction->created)
-            ? date_format(date_create($transaction->date), 'O')
-            : format_date($transaction->created->value, 'custom', 'O')
-          )
-        ),
-      '#default_value' => !empty($transaction->date) ? $transaction->date : '',
-      '#access' => $this->currentUser()->hasPermission('manage mcapi'),
-    );
-    if (\Drupal::moduleHandler()->moduleExists('datetime')) {
-      //improve the date widget, which by a startling coincidence is called 'created' in the node form as well.
-      //datetime_form_node_form_alter($form, $form_state, NULL);
-    }
+
     $form['type'] = array(
       '#title' => t('Transaction type'),
       '#options' => mcapi_entity_label_list('mcapi_type'),
@@ -114,9 +106,7 @@ class TransactionForm extends ContentEntityForm {
       '#weight' => 18,
     );
     
-    $form = parent::form($form, $form_state);
-
-    return $form;
+    return parent::form($form, $form_state);
   }
 
   /**
@@ -136,48 +126,19 @@ class TransactionForm extends ContentEntityForm {
    * this is unusual because normally build a temp object
    */
   public function validate(array $form, FormStateInterface $form_state) {
-    //$form_state->cleanValues();;//without this, buildentity fails, but not so in nodeForm
-
-    $transaction = $this->buildEntity($form, $form_state);
-    
-    // The date element contains the date object.
-    $date = $transaction->created instanceof DrupalDateTime
-      ? $transaction->created->value
-      : new DrupalDateTime($transaction->created->value);
-    
-    //TODO there was a problem creating the date in alpha14
-    if ($date->hasErrors()) {
-      $message = $this->t('You have to specify a valid date.');
-      //$form_state->setErrorByName('created', 'MCAPI:'.$message);
-    }
-    if (!$transaction->creator->target_id) {
-      $transaction->set('creator', \Drupal::currentUser()->id());
-    }
-
-    
+    //runs the form validation handlers and 
+    //runs datatype->validate() on all shown fields.
     parent::validate($form, $form_state);
+    $this->typedDataValidated = TRUE;//temp flag
     
-    //node_form controller runs a hook for validating the node
-    //however we do it here IN the transaction entity validation which is less form-dependent
-
-    //validate the fieldAPI widgets
-    //$this->getFormDisplay($form_state)
-      //->validateFormValues($transaction, $form, $form_state);
-
-    //if there are errors at the form level don't bother validating the entity object
-    if ($form_state->getErrors()) {
-      return;
+    $transaction = $this->buildEntity($form, $form_state);
+    $exceptions = $transaction->validate();
+    foreach ($exceptions as $mcapi_exception) {
+      $form_state->setErrorByName($mcapi_exception->getField(), $mcapi_exception->getMessage());
     }
-
-    //curiously, I can't find an instance of the entity->validate() being called. I think it might be new in alpha 11
-    //if ($violations = $transaction->validate()) {
-    //  foreach ($violations as $field => $message) {
-    //    $form_state->setErrorByName($field, $message);
-    //  }
-    //}
     //show the warnings
     $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
-    foreach ($transaction->warnings as $message) {
+    foreach ($transaction->warnings as $e) {
       if ($child_errors['show_messages']) {
         drupal_set_message($e->getMessage, 'warning');
       }
@@ -196,7 +157,7 @@ class TransactionForm extends ContentEntityForm {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     //TODO inject this
-    \Drupal::service('user.tempstore')
+    \Drupal::service('user.private_tempstore')
       ->get('TransactionForm')
       ->set('entity', $this->entity);
     //Drupal\mcapi\ParamConverter\TransactionSerialConverter
@@ -212,15 +173,17 @@ class TransactionForm extends ContentEntityForm {
    */
   public function buildEntity(array $form, FormStateInterface $form_state) {
     $entity = parent::buildEntity($form, $form_state);
-    $entity->creator->target_id = \Drupal::currentUser()->id();//MUST be a logged in user!
-    $entity->set('created', REQUEST_TIME);
     
     $values = $form_state->getValues();
+    //if a valid creator uid was submitted then use that
     if (array_key_exists('creator', $values) && $account = User::load($values['creator'])) {
       $entity->creator->target_id = $account->id();
     }
-    if (!empty($values['created']) && $values['created'] instanceOf DrupalDateTime) {
-      $entity->set('created', $values['created']->getTimestamp());
+    else {
+      $entity->creator->target_id = \Drupal::currentUser()->id();//MUST be a logged in user!
+    }
+    if (!empty($values['created'])) {
+      //$entity->set('created', $values['created']);
     }
     return $entity;
   }

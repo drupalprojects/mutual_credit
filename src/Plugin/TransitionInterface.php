@@ -11,6 +11,7 @@ use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\McapiTransactionException;
 use Drupal\Component\Plugin\ConfigurablePluginInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
+use Drupal\Core\Session\AccountInterface;
 
 interface TransitionInterface extends ConfigurablePluginInterface, PluginFormInterface {
 
@@ -35,7 +36,7 @@ interface TransitionInterface extends ConfigurablePluginInterface, PluginFormInt
    * @return Boolean
    *   TRUE if access is granted
 	 */
-  public function opAccess(TransactionInterface $transaction);
+  public function opAccess(TransactionInterface $transaction, AccountInterface $account);
 
   /**
    * Do the actual transition on the passed transaction, and return some html

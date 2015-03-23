@@ -18,11 +18,11 @@ use Drupal\views\Plugin\views\query\QueryPluginBase;
 
 /**
  * implements hook_views_query_alter().
- * Implement per-transaction access control
+ * Per-transaction access control on transaction views
+ * on the basis of seeing EITHER wallet
  *
  * @param Drupal\views\ViewExecutable $view
  * @param Drupal\views\Plugin\views\query\QueryPluginBase $query
- *$ase_b$ase
  */
 function mcapi_views_query_alter(ViewExecutable $view, QueryPluginBase $query) {
 
@@ -54,12 +54,9 @@ function mcapi_views_query_alter(ViewExecutable $view, QueryPluginBase $query) {
       'left_field' => $db_field_name,
       'adjusted' => TRUE,
       'type' => 'LEFT',
-      'extra' => array(
-        array(
-          'field' => 'operation',
-          'value' => 'details'
-        ),
-      )
+      'extra' => [
+        ['field' => 'operation', 'value' => 'details']
+      ]
     );
     $query->addRelationship(
       'mcapi_wallet_access_designated',
@@ -93,6 +90,8 @@ function mcapi_views_query_alter(ViewExecutable $view, QueryPluginBase $query) {
  * 
  * @return array
  *   the base table name and the names of the two wallet fields in that table
+ * 
+ * @note also used in mcapi_exchanges_views_query_alter_setup()
  */
 function mcapi_views_query_alter_setup(ViewExecutable $view) {
   $base = $view->storage->get('base_table');

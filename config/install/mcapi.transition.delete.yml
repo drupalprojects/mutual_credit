@@ -1,6 +1,8 @@
 id: delete
 title: Delete
 tooltip: Remove the transaction from the database
+states: 
+  done: done
 page_title: 'Really erase this transaction?'
 format: certificate
 twig: ''

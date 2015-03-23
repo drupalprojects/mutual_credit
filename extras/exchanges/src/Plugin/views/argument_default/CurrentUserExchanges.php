@@ -26,7 +26,7 @@ class CurrentUserExchanges extends ArgumentDefaultPluginBase {
    * Return the default argument.
    */
   public function getArgument() {
-    $ids = array();
+    $ids = [];
     //TODO is is possible to iterate through an entity_reference field like this?
     //can we not just pull out all the target_ids?
     foreach (\Drupal::currentUser()->exchanges->referencedEntities() as $exchange) {

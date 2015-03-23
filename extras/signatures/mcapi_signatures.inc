@@ -77,7 +77,7 @@ function mcapi_signall_submit($form, $form_state) {
 
 
 function list_waiting_on_uid($uid) {
-  $output = array();
+  $output = [];
   $serials = transactions_needing_sig_of_user($uid);
   if ($serials) {
     if (count($serials) > 1) {
@@ -101,7 +101,7 @@ function list_waiting_on_uid($uid) {
 //returns a render array
 function list_waiting_not_on_uid($uid) {
   $entityManager = \Drupal::entityManager();
-  $waiting_on = $output = array();
+  $waiting_on = $output = [];
   $serials = $entityManager
     ->getStorage('mcapi_transaction')
     ->filter(array('involving' => $uid, 'state' => TRANSACTION_STATE_PENDING));

@@ -86,8 +86,8 @@ class ExchangeListBuilder extends EntityListBuilder {
    */
   public function load() {
     $entities = array(
-      'enabled' => array(),
-      'disabled' => array(),
+      'enabled' => [],
+      'disabled' => [],
     );
     foreach (parent::load() as $entity) {
       if ($entity->status->value) {
@@ -111,7 +111,7 @@ class ExchangeListBuilder extends EntityListBuilder {
         array('class' => array('exchanges-listing-table'))
       ),
       '#header' => $this->buildHeader(),
-      '#rows' => array(),
+      '#rows' => [],
     );
     foreach (array('enabled', 'disabled') as $status) {
       foreach ($entities[$status] as $entity) {

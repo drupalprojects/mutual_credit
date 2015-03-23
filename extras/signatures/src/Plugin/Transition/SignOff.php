@@ -11,6 +11,7 @@ namespace Drupal\mcapi_signatures\Plugin\Transition;
 use Drupal\mcapi\Plugin\TransitionBase;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\user\Entity\User;
 
 /**
@@ -49,7 +50,7 @@ class SignOff extends TransitionBase {
   /*
    * {@inheritdoc}
    */
-  public function opAccess(TransactionInterface $transaction) {
+  public function opAccess(TransactionInterface $transaction, AccountInterface $account) {
     //@todo this transition needs some permission settings...
     return FALSE;
     if ($transaction->get('state')->value == TRANSACTION_STATE_PENDING) {

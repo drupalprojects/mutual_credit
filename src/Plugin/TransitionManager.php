@@ -50,11 +50,16 @@ class TransitionManager extends DefaultPluginManager {
     return $this->plugins;
   }
 
+  /*
+   * retrieve the plugins which are not disabled
+   * @todo use pluginbags?
+   */
   public function active(array $exclude = [], $worth) {
+    //no need to put this in a static coz should be used once only
     if ($worth) {
+      //some deleteModes are not available for some currencies
       $exclude = array_merge($exclude, $this->deletemodes($worth->currencies(TRUE)));
     }
-    //static shouldn't be needed
     foreach ($this->all(FALSE) as $id => $plugin) {
       if (!in_array($id, $exclude) and $plugin->getConfiguration('status')) {
         $output[$plugin->getConfiguration('id')] = $plugin;
@@ -66,7 +71,7 @@ class TransitionManager extends DefaultPluginManager {
   public function getPlugin($id, $editable = FALSE) {
     if (!array_key_exists($id, $this->plugins)) {
       $config = $this->config_factory->get('mcapi.transition.'. $id)->getRawData();
-      $this->plugins[$id] = $this->createInstance($id, $config);
+      $this->plugins[$id] = $this->createInstance($id, $config, 'blahblah');
     }
     return $this->plugins[$id];
   }

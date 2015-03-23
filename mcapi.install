@@ -25,20 +25,18 @@ function mcapi_install() {
   foreach ($users as $account) {
     if ($account->id() == 0) continue;
     //give every existing user a wallet
-    $values = array('entity_type' => $account->getEntityTypeId(), 'pid' => $account->id());
+    $values = ['entity_type' => $account->getEntityTypeId(), 'pid' => $account->id()];
     $w = Wallet::create($values);
-    $w->set('name', t("@name's default wallet", array('@name' => $account->label())));
+    $w->set('name', t("@name's default wallet", ['@name' => $account->label()]));
     $w->save();
-    debug('wallet created for user '.$account->id());
   }
   
-  $config = \Drupal::config('mcapi.misc');
-  $zero_icon = 'base://'. drupal_get_path('module', 'mcapi') . '/templates/present.png';
-  $path = Url::fromUri($zero_icon)->getUri();
-  $config->getConfigurable('zero_snippet')
-    ->set('zero_snippet', '<img src = "'. $path .'" width = "31" />')
+  $zero_icon_uri = '/'. drupal_get_path('module', 'mcapi') . '/templates/present.png';
+  \Drupal::configFactory()->getEditable('mcapi.misc')
+    ->set('zero_snippet', '<img src = "'. $zero_icon_uri .'" width = "31" />')
     ->save();
-  drupal_set_message($config->get('zero_snippet'));
+  
+  drupal_set_message(\Drupal::configFactory()->get('mcapi.misc')->get('zero_snippet'));
 }
 
 

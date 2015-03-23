@@ -1,13 +1,10 @@
 mcapi_1stparty.editform.*:
-  type: config_entity
+  type: mapping
   label: 'Designed transaction form'
   mapping:
     id:
       type: string
       label: 'Mcapiform identifier'
-    exchange:
-      type: string
-      label: 'Exchange'
     title:
       type: label
       label: 'Form title'
@@ -40,9 +37,6 @@ mcapi_1stparty.editform.*:
         widget:
           type: string
           label: 'Widget'
-        unused:
-          type: string
-          label: 'Unused behaviour'
     partner:
       type: mapping
       label: 'Settings for partner field'

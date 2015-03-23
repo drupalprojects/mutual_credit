@@ -8,28 +8,27 @@
 namespace Drupal\mcapi\ViewBuilder;
 
 use Drupal\Core\Entity\EntityViewBuilder;
+use Drupal\Core\Entity\EntitytypeInterface;
 
 /**
- * Base class for entity view controllers.
+ * NB EntityViewBuilder should have been called ContentEntityViewBuilder
  */
 class CurrencyViewBuilder extends EntityViewBuilder {
 
+  public function __construct(EntityTypeInterface $entity_type, EntityManagerInterface $entity_manager, LanguageManagerInterface $language_manager) {
+    $this->entityTypeId = 'mcapi_currency';//$ntity_type->id() doesn't work on config entities
+    $this->entityType = $entity_type;
+    $this->entityManager = $entity_manager;
+    $this->languageManager = $language_manager;
+  }
+  
   /**
    * {@inheritdoc}
+   * 
    */
-  public function buildComponents(array &$build, array $entities, array $displays, $view_mode, $langcode = NULL) {
-    //parent::buildComponents($build, $entities, $displays, $view_mode, $langcode);
-    foreach ($entities as $id => $currency) {
-      //instead of using <br> here, isn't there a nicer way to make each render array into a div or something like that
-      $build[$id]['whatever'] = [];
-
-      //TEMP!!!
-      $build[$id]['placeholder_text'] = array(
-        '#weight' => -1,
-      	'#markup' => "View mode: <strong>$view_mode</strong> <br />We need a nice statistical display of all the transactions done in a currency, what categories it is used in, proportion of intertrading transactions, greco index, trades/volume per week, average satisfaction ratings, etc whatever, it might be overriden in exchanges module with more info still"
-      );
-    }
-    die('sdsd');
+  public function build(array $build) {
+    //there's nothing to build we can just theme it as is
+    return $build;
   }
 
 }

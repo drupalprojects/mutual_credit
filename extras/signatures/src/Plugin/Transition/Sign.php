@@ -11,6 +11,7 @@ namespace Drupal\mcapi_signatures\Plugin\Transition;
 use Drupal\mcapi\Plugin\TransitionBase;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
+use Drupal\Core\Session\AccountInterface;
 
 /**
  * Sign transition
@@ -55,7 +56,7 @@ class Sign extends TransitionBase {
   /*
    * {@inheritdoc}
   */
-  public function opAccess(TransactionInterface $transaction) {
+  public function opAccess(TransactionInterface $transaction, AccountInterface $account) {
     //Only the designated users can sign transactions, and
     if ($transaction->state->target_id == TRANSACTION_STATE_PENDING //the transaction is pending
       && isset($transaction->signatures) && is_array($transaction->signatures)// signatures property is populated

@@ -46,35 +46,18 @@ abstract class Transition2step extends TransitionBase {
       '#required' => TRUE
     );
 
-
+    
     $form['access'] = array(
       '#title' => t('Access control'),
-      '#description' => t('Who can @label transactions in each state?', array('@label' => $this->label)),
+      '#description' => t('Who can @label transactions?', array('@label' => $this->label)),
       '#type' => 'details',
       '#tree' => TRUE,
       '#collapsible' => TRUE,
       '#open' => FALSE,
       '#weight' => 8,
     );
-
-    //TODO would be really nice if this was in a grid
-    foreach (State::loadMultiple() as $state) {
-      $form['access'][$state->id] = array (
-        '#title' => $state->label,
-        '#description' => $state->description,
-        '#type' => 'checkboxes',
-        '#options' => array(
-          'payer' => t('Owner of payer wallet'),
-          'payee' => t('Owner of payee wallet'),
-          'creator' => t('Creator of the transaction'),
-          'helper' => t('An exchange helper'),
-          'admin' => t('The super admin')
-          //its not elegant for other modules to add options
-        ),
-        '#default_value' => $this->configuration['access'][$state->id],
-        '#weight' => $this->configuration['weight']
-      );
-    }
+    
+    $this->accessSettingsForm($form['access']);
 
     $form['feedback']= array(
       '#title' => t('Feedback'),
@@ -137,6 +120,30 @@ abstract class Transition2step extends TransitionBase {
     return $form;
   }
 
+  /**
+   * This defaul
+   * @param type $element
+   */
+  protected function accessSettingsForm(&$element) {
+    //TODO would be really nice if this was in a grid
+    foreach (State::loadMultiple() as $state) {
+      $element[$state->id] = array (
+        '#title' => $state->label,
+        '#description' => $state->description,
+        '#type' => 'checkboxes',
+        '#options' => array(
+          'payer' => t('Owner of payer wallet'),
+          'payee' => t('Owner of payee wallet'),
+          'creator' => t('Creator of the transaction'),
+          'helper' => t('An exchange helper'),
+          'admin' => t('The super admin')
+          //its not elegant for other modules to add options
+        ),
+        '#default_value' => $this->configuration['access'][$state->id],
+        '#weight' => $this->configuration['weight']
+      );
+    }
+  }
 
   /**
    * {@inheritdoc}
@@ -200,29 +207,30 @@ abstract class Transition2step extends TransitionBase {
   /**
    *  access callback for transaction transition 'view'
    *  @return boolean
+   * @todo compare this with the parent::opAccess
   */
-  public function opAccess(TransactionInterface $transaction) {
+  public function __opAccess(TransactionInterface $transaction) {
     $options = array_filter($this->configuration['access']);
     $state_id = $transaction->state->target_id;
-    $account = \Drupal::currentUser();
+    
     foreach (@$options[$state_id] as $option) {
       switch ($option) {
       	case 'helper':
-      	  if ($account->hasPermission('exchange helper')) return TRUE;
+      	  if ($this->currentUser->hasPermission('exchange helper')) return TRUE;
       	  continue;
       	case 'admin':
-      	  if ($account->hasPermission('manage mcapi')) return TRUE;
+      	  if ($this->currentUser->hasPermission('manage mcapi')) return TRUE;
       	  continue;
       	case 'payer':
       	case 'payee':
       	  $wallet = $transaction->{$option}->entity;
       	  $parent = $$wallet->getOwner();
-      	  if ($parent && $wallet->pid->value == $account->id() && $parent->getEntityTypeId() == 'user') {
+      	  if ($parent && $wallet->pid->value == $this->currentUser->id() && $parent->getEntityTypeId() == 'user') {
       	    return TRUE;
       	  }
       	  continue;
       	case 'creator':
-      	  if ($transaction->creator->target_id == $account->id()) return TRUE;
+      	  if ($transaction->creator->target_id == $this->currentUser->id()) return TRUE;
       	  continue;
       }
     }

@@ -83,21 +83,19 @@ class FirstPartyTransactionForm extends TransactionForm {
       'mcapi_wallet',
       Wallet::ownedBy(User::load(\Drupal::currentUser()->id()))
     );
-    //if I only have one wallet, we'll put a bogus disabled chooser
+    //if more than one wallet is allowed we'll put a chooser
     //however disabled widgets don't return a value, so we'll store the value we need in a helper element
     if (\Drupal::config('mcapi.wallets')->get('entity_types.user:user') > 1) {//show a widget
       $form['mywallet']['#type'] = $config->mywallet['widget'];
       $form['mywallet']['#options'] = $my_wallets;
       $form['mywallet']['#weight'] = -1;//ensure this is processed before the direction
     }
+    //if the currentUser doesn't have more than one wallet, disable the field and store the value
     if (count($my_wallets) < 2) {
       $form['mywallet']['#disabled'] = TRUE;
       $form['mywallet']['#default_value'] = reset($my_wallets);
       //this will be used to populate mywallet in the validation
-      $form['mywallet_value'] = array(
-        '#type' => 'value',
-        '#value' => key($my_wallets)
-      );
+      $form_state->set('mywallet', key($my_wallets));
     }
     $form['partner'] = array(
       '#exchanges' => array_keys(Exchanges::in()),
@@ -131,7 +129,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     //worth field needs special treatment.
     //The allowed_curr_ids provided by the widget need to be overwritten
     //by the curr_ids in the designed form, if any.
-    $curr_ids = array();
+    $curr_ids = [];
     foreach ((array)$config->get('fieldapi_presets.worth') as $item) {
       if ($item['value'] == '')continue;
       $curr_ids[] = $item['curr_id'];
@@ -174,8 +172,7 @@ class FirstPartyTransactionForm extends TransactionForm {
   static function firstparty_convert_direction(&$element, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     $form = $form_state->getCompleteForm();
-    $my_wallet = isset($values['mywallet_value']) ? $values['mywallet_value'] : $values['mywallet'];
-    drupal_set_message("My wallet is $my_wallet [in firstparty_convert_direction]");
+    $my_wallet = $form_state->get('mywallet') ? : $values['mywallet'];
     if ($values['direction'] == 'outgoing') {
       $form_state->setValueForElement($form['payer'], $values['partner']);
       $form_state->setValueForElement($form['payee'], $my_wallet);

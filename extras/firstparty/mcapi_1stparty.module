@@ -59,7 +59,7 @@ function template_preprocess_1stpartyform(&$vars) {
  */
 function theme_1stpartyform($vars) {
   $form = $vars['element'];
-  $tokens = array();
+  $tokens = [];
   foreach (element_children($form) as $fieldname) {
     if (strpos($form['#twig'], '{{ '.$fieldname.' }}') !== FALSE) {
       $tokens[$fieldname] = mcapi_render_stripped($form[$fieldname]);
@@ -166,7 +166,7 @@ function mcapi_1stparty_access(FirstPartyFormDesign $editform, AccountInterface 
  *   a partially populated transaction entity
  */
 function mcapi_1stparty_make_template($configEntity) {
-  $props = array();
+  $props = [];
   $props['type'] = $configEntity->get('type');
   $props['description'] = $configEntity->get('description.preset');
   //we can't set a default for mywallet because it is differnet for every user
@@ -194,7 +194,7 @@ function mcapi_1stparty_make_template($configEntity) {
 function mcapi_1stparty_fieldAPI() {
   //we need this to get the widgets for entering the defaults
   $entity_display = EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.default');
-  $fieldAPI = array();
+  $fieldAPI = [];
   //get the field API fields showing according to the the default display
   //and filter out the entity properties
   //the entity_form_display does this more elegantly but function is protected

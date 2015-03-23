@@ -10,7 +10,6 @@ namespace Drupal\mcapi_1stparty\Entity;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\Annotation\EntityType;
-use Drupal\Core\Config\Entity\ThirdPartySettingsTrait;
 
 /**
  * Defines the 1stparty_editform entity.
@@ -41,18 +40,15 @@ use Drupal\Core\Config\Entity\ThirdPartySettingsTrait;
  *   links = {
  *     "edit-form" = "entity.1stparty_editform.edit_form",
  *     "delete-form" = "entity.1stparty_editform.delete_form",
- *     "enable" = "mcapi.admin.1stparty_editform.enable_confirm",
- *     "disable" = "mcapi.admin.1stparty_editform.disable_confirm",
+ *     "enable" = "entity.1stparty_editform.enable",
+ *     "disable" = "entity.1stparty_editform.disable",
  *   }
  * )
  */
 
 class FirstPartyFormDesign extends ConfigEntityBase {
 
-  use ThirdPartySettingsTrait;
-
   public $id;
-  public $exchange;
   public $path;
   public $menu;
   public $title;
@@ -80,7 +76,6 @@ class FirstPartyFormDesign extends ConfigEntityBase {
       'path' => '',
       'status' => 1,
       'type' => 'default',
-      'exchange' => '0',
       'partner' => array(
         //@todo fill in the selection with something the entity_reference widget would understand
         'selection' => '',
@@ -97,7 +92,7 @@ class FirstPartyFormDesign extends ConfigEntityBase {
         'placeholder' => ''
       ),
       'fieldapi_presets' => array(
-        'worth' => array(),//and there are likely others
+        'worth' => [],//and there are likely others
       ),
       'other' => array(
         'intertrade' => FALSE

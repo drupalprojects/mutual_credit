@@ -71,18 +71,18 @@ class DashboardController extends ControllerBase {
           '#prefix' => '<br />',
           '#markup' => 'Open to intertrade: '. ($exchange->open->value ? 'Yes' : 'No'),
         ),
-        'wallets' => array()
+        'wallets' => []
       );
-      $currnames = array();
+      $currnames = [];
       foreach ($exchange->currencies->referencedEntities() as $entity) {
         $currnames[] = \Drupal::l($entity->label(), 'admin/accounting/currencies/'.$entity->id());
       }
       $page[$id]['currencies']['#markup'] = 'Currencies: '.implode(', ', $currnames);
       $wids = get_mcapi_wallets_in_exchanges(array($id));
-      $tbody = array();
+      $tbody = [];
       foreach (Wallet::loadMultiple($wids) as $wallet) {
         $limits = mcapi_limits($wallet);
-        $mins = $maxes = $balances = array();
+        $mins = $maxes = $balances = [];
         foreach ($wallet->getSummaries() as $curr_id => $summary) {
           $mins = $limits->mins(TRUE);
           $maxes = $limits->maxes(TRUE);
@@ -111,7 +111,7 @@ class DashboardController extends ControllerBase {
         '#attributes' => new Attribute(array('border' => 1))
       );
       //show a list of forms which will work in this or all exchanges
-      $forms = array();
+      $forms = [];
       foreach (FirstPartyFormDesign::loadMultiple() as $editform) {
         if ($editform->exchange == $id || empty($editform->exchange)) {
           $forms[] = \Drupal::l($editform->label(), $editform->path);

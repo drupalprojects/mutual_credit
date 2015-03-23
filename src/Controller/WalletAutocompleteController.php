@@ -10,12 +10,36 @@ namespace Drupal\mcapi\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\Core\DependencyInjection\DependencySerializationTrait;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Drupal\Core\Entity\EntityManagerInterface;
 /**
  * Returns responses for Transaction routes.
  * @todo Make this better
  */
-class WalletAutocompleteController {
-
+class WalletAutocompleteController implements ContainerInjectionInterface{
+  
+  use DependencySerializationTrait;
+  
+  private $entitymanager;
+  private $currentUser;
+  private $role;
+  
+  function __construct(EntityManagerInterface $entityManager, $account, $routeMatch) {
+    $this->entityManager = $entityManager;
+    $this->currentUser = $account;
+    $this->role = $routeMatch->getParameter('role');
+  }
+  
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('entity.manager'),
+      $container->get('current_user'),
+      $container->get('current_route_match')
+    ); 
+  }
+  
   /*
    * get a list of all wallets.
    *
@@ -24,10 +48,12 @@ class WalletAutocompleteController {
     //there are three different ways offered here, none of which is perfect
     //because of the different ways that wallet names can be construed
     $results = [];
-
     $conditions = [];
 
     $string = $request->query->get('q');
+    
+    $all_wids = $this->entityManager->getStorage('mcapi_wallet')
+      ->walletsUserCanTransit($this->role, $this->currentUser);
 
     //there is no need to handle multiple values because the javascript of the widget
     //handles all stuff before the last comma.
@@ -41,27 +67,26 @@ class WalletAutocompleteController {
     else {
       $conditions['fragment'] = $string;
     }
-    //TODO inject this
-    return $this->returnWallets(\Drupal\mcapi\Storage\WalletStorage::filter($conditions));
+    $filtered_wids = $this->entityManager->getStorage('mcapi_wallet')->filter($conditions);
+    return $this->returnWallets(array_intersect($all_wids, $filtered_wids));
 
   }
   
   protected function returnWallets($wids) {
+    $json = [];
     if (empty($wids)) {
-      $json = array(
-        array(
-          'value' => '',
-          'label' => '--'.t('No matches').'--'
-        )
-      );
+      $json[] = [
+        'value' => '',
+        'label' => '--'.t('No matches').'--'
+      ];
     }
     else {
       foreach (Wallet::loadMultiple($wids) as $wallet) {
-        $json[] = array(
+        $json[] = [
           'value' => $wallet->label(NULL, FALSE),//maybe shorter
           'label' => $wallet->label(NULL, TRUE)
-          //both values should end in the hash which is needed for parsing later
-        );
+          //both labels should end with the #wid which is needed for parsing later
+        ];
       }
     }
     return new JsonResponse($json);

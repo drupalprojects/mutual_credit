@@ -15,7 +15,8 @@ use Drupal\mcapi\Exchanges;
  */
 function mcapi_exchanges_views_query_alter(ViewExecutable $view, QueryPluginBase $query) {
   list($base, $wallet_fields) = mcapi_views_query_alter_setup($view);
-  if (!$base return;
+  if (!$base) return;
+  debug('Need to test per-exchange wallet view access control');
   $exchange_ids = Exchanges::in();
   $details_field = $wallet_table.'.details';
   foreach ($wallet_fields as $db_field_name) {

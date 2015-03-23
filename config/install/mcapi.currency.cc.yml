@@ -12,4 +12,3 @@ color: '#ff00ff'
 weight: '1'
 limits_plugin: none
 limits_settings: 
-ticks: 10

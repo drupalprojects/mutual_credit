@@ -1,5 +1,4 @@
 id: pay
-exchange: ''
 path: 'transact/pay'
 menu:
   title: 'Pay someone'
@@ -9,7 +8,6 @@ title: 'Pay someone'
 status: 1
 type: default
 mywallet:
-  unused: disabled
   widget: select
 partner:
   preset: ''
@@ -26,11 +24,10 @@ fieldapi_presets:
 other:
   intertrade: false
 experience:
-  twig: "Pay: {{ partner }}\r\n{{ worth }}\r\nfor {{ description }}"
+  twig: "From {{ mywallet }}\r\nPay: {{ partner }}\r\n{{ worth }}\r\nfor {{ description }}"
   button: Preview
   preview: page
 cache: ''
-uuid: a2afbadb-a9db-4895-ba01-1d94483cb783
 langcode: en
 dependencies: {  }
 third_party_settings: { }

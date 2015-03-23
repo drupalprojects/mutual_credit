@@ -50,24 +50,6 @@ class MiscForm extends ConfigFormBase {
       '#default_value' => $config->get('sentence_template'),
       '#weight' => 2
     );
-    $form['ticks_name'] = array(
-      '#title' => t('Base Unit'),
-      '#description' => t('Plural name of the base unit, used for intertrading.'),
-      '#type' => 'textfield',
-      '#default_value' => $config->get('ticks_name'),
-      '#weight' => 7
-    );
-    $menu_options = \Drupal::moduleHandler()->moduleExists('menu')
-      ? menu_get_menus()
-      : menu_list_system_menus();
-    $form['exchange_menu'] = array(
-      '#title' => t('Menu'),
-      '#description' => t("Menu containing dynamic menu links to user's exchange(s)"),
-      '#type' => 'select',
-      '#options' => $menu_options,
-      '#default_value' => $config->get('exchange_menu'),
-      '#weight' => 8
-    );
     $form['child_errors'] = array(
       '#title' => t('Invalid child transactions'),
       '#description' => t('What to do if a child transaction fails validation'),

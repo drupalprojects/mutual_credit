@@ -3,8 +3,6 @@ editable: false
 fields:
   description: true
   participants: true
-exchange_menu: 'tools'
-ticks_name: Seconds
 worths_delimiter: '|'
 zero_snippet: '<img src = "present.png" width="31" />'
 counted:

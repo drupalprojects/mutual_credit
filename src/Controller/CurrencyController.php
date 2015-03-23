@@ -24,7 +24,6 @@ class CurrencyController extends ControllerBase {
    *  An array suitable for drupal_render().
    */
   public function page(CurrencyInterface $mcapi_currency) {
-
     return $this->buildPage($mcapi_currency);
   }
 
@@ -37,22 +36,6 @@ class CurrencyController extends ControllerBase {
    *   The page title.
    */
   public function pageTitle(CurrencyInterface $mcapi_currency) {
-    return t('Activity in !currency', array('!currency' => String::checkPlain($mcapi_currency->label())));
-  }
-
-  /**
-   * Builds an exchange page render array.
-   *
-   * @param EntityInterface $mcapi_currency
-   *
-   * @return array
-   *   An array suitable for drupal_render().
-   */
-  protected function buildPage(CurrencyInterface $mcapi_currency) {
-    return array(
-      'exchanges' => $this->entityManager()
-        ->getViewBuilder('mcapi_currency')
-        ->view($mcapi_currency)
-    );
+    return String::checkPlain($mcapi_currency->label());
   }
 }

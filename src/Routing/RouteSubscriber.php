@@ -8,69 +8,54 @@
 
 namespace Drupal\mcapi\Routing;
 
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Routing\RouteSubscriberBase;
-use Drupal\Core\Routing\RoutingEvents;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Subscriber for walletadd routes on specified entities
  */
 class RouteSubscriber extends RouteSubscriberBase {
 
-  /**
-   * The entity type manager
-   *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
-   */
-  protected $manager;
-
-  /**
-   * Constructs a RouteSubscriber object.
-   *
-   * @param \Drupal\Core\Entity\EntityManagerInterface $manager
-   *   The entity type manager.
-   */
-  public function __construct(EntityManagerInterface $manager) {
-    $this->manager = $manager;
-  }
 
   /**
    * {@inheritdoc}
    */
   protected function alterRoutes(RouteCollection $collection) {
+    //there's no way to inject this.
+    $config = \Drupal::configFactory()->get('mcapi.wallets');
     //add a route to add a wallet to each entity type
-    $types = \Drupal::config('mcapi.wallets')->get('entity_types');
-    foreach((array)$types as $entity_type_bundle => $max) {
-      list($entity_type, $bundle) = explode(':', $entity_type_bundle);
-      $path = $this->manager->getDefinition($entity_type)
-        ->getLinkTemplate('canonical');
-      if (!$path) continue;
-      $route = new Route("$path/addwallet");
-      $route->setDefaults(array(
+    foreach (_wallet_owning_entity_routes($config) as $routeName => $bundle) {
+      $canonical_path = $collection->get($routeName)->getPath();
+      //TODO find out how this is supposed to work after beta 7
+      if ($canonical_path == '/user')$canonical_path = '/user/{user}';
+      if ($canonical_path == '/node')$canonical_path = '/node/{node}';
+      //something funny going on with canonical path for user.page contains no entity_id
+      $route = new Route("$canonical_path/addwallet");
+      $route->setDefaults([
         '_form' => '\Drupal\mcapi\Form\WalletAddForm',
         '_title_callback' => '\Drupal\mcapi\Form\WalletAddForm::title'
-      ));
-      $route->setRequirements(array(
+      ]);
+      $route->setRequirements([
         '_custom_access' => '\Drupal\mcapi\Access\WalletAddAccessCheck::access'
-      ));
+      ]);
       //see Plugin/Derivative/WalletLocalAction...
       $collection->add("mcapi.wallet.add.$bundle", $route);
     }
-    //I'm in two minds about whether it is appropriate to remove these routes
-    //see hook_help
-    //$collection->remove('field_ui.display_overview_mcapi_transaction');
-    //$collection->remove('field_ui.display_overview_view_mode_mcapi_transaction');
+    //would be nice to delete these but local actions depend on them
+//    $collection->remove('entity.entity_view_display.mcapi_transaction.default');    
+//    $collection->remove('entity.entity_view_display.$bundle_entity_type.view_mode');
   }
 
   /**
    * {@inheritdoc}
    * @todo is this needed?
    */
-  public static function getSubscribedEvents() {
+  public static function __getSubscribedEvents() {
     $events = parent::getSubscribedEvents();
     $events[RoutingEvents::ALTER] = array('onAlterRoutes', -100);
     return $events;
   }
+  
 }

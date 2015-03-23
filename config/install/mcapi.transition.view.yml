@@ -1,6 +1,9 @@
 id: view
 title: View
 tooltip: The transaction certificate
+states:
+  done: done
+  erased: done
 page_title: 'Transaction certificate'
 format: certificate
 twig: ''

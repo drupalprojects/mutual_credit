@@ -25,7 +25,7 @@ class WalletLimits {//couldn't be bothered to make an interface for this
     $this->wallet = $wallet;
     
     $needed_currencies = $this->wallet->currencies_available();
-    $this->limits = array();
+    $this->limits = [];
     //get the default limits
     foreach ($needed_currencies as $curr_id => $currency) {
       $this->limits[$curr_id] = $this->default_limits($currency);
@@ -88,7 +88,7 @@ class WalletLimits {//couldn't be bothered to make an interface for this
   function __toString() {
     foreach ($this->limits as $curr_id => $limits) {
       $currency = mcapi_currency_load($curr_id);
-      $row = array();
+      $row = [];
       if (!is_null($limits['min'])) {
         $row[] = t('Min !quant', array('!quant' => $currency->format($limits['min'])));
       }
@@ -127,7 +127,7 @@ class WalletLimits {//couldn't be bothered to make an interface for this
         $overridable_curr_ids[] = $currency->id();
       }
     }
-    if (empty($overridable_curr_ids))return array();
+    if (empty($overridable_curr_ids))return [];
     //if there is no override value saved, nothing will be returned
     $limits = db_select('mcapi_wallets_limits', 'l')
       ->fields('l', array('curr_id', 'max', 'value', 'editor', 'date'))

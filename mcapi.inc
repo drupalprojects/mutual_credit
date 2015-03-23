@@ -63,6 +63,11 @@ function _mcapi_theme() {
     'template' => 'transaction',
     'file' => 'mcapi.inc'
   );
+  $items['mcapi_currency'] = array(
+    'render element' => 'currency',
+    'template' => 'currency',
+    'file' => 'mcapi.inc'
+  );
   //the above is the theme wrapper for the below
   //so they both take the same render_element
   $items['certificate'] = array(
@@ -233,3 +238,27 @@ function mcapi_render_twig_transaction($template, TransactionInterface $transact
   return \Drupal::service('twig')->renderInline($template, Mcapi::processTransactionVars($vars, $transaction));
 }
 
+/*
+ * - $currency: Full mcapi_transaction entity
+ * - $name: name of the currency (probably used in the page title)
+ * - $created: unixtime of creation date.
+ * - $owner: linked username of owner
+ * - $color: hex code
+ * and a range of usage stats yet to be determined
+ * - $transactions: the number of transactions using this currency
+ * - $wallets: the number of wallets with this currency
+ * - $exchanges: a list of links to exchanges (added by exchanges module)
+ */
+function template_preprocess_mcapi_currency(&$vars) {
+  $build = $vars['currency'];
+  $currency = $build['#mcapi_currency'];
+  $vars['name'] = $currency->name;
+  $vars['owner'] = entity_load('user', $currency->uid)->link();
+  $vars['color'] = $currency->color;
+  $storage = \Drupal::entityManager()->getStorage('mcapi_transaction');
+  $vars['transactions'] = $storage->count($currency->id);
+  $vars['volume'] = $storage->volume($currency->id);
+  $vars['wallets'] = count($storage->wallets($currency->id));
+  //$vars['exchanges'] = $currency->created;//TODO put this in an alter hook
+  
+}

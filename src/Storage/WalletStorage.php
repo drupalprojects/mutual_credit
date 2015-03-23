@@ -25,7 +25,7 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
     //add the access settings to each wallet
     $q = $this->database->select('mcapi_wallets_access', 'a')
       ->fields('a', array('wid', 'operation', 'uid'))
-      ->condition('wid', array_keys($records));
+      ->condition('wid', array_keys($records), 'IN');
 
     foreach(Wallet::ops() as $op) {
       foreach ($records as $key => $record) {
@@ -200,7 +200,6 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
               'permission' => $op,
               'value' => $value
             );
-            debug($values);
             $access_query->values($values);
           }
         }
@@ -218,9 +217,45 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
   private function dropIndex(array $wallets) {
     if ($wids = array_keys($wallets)) {
       $this->database->delete('mcapi_wallets_access')
-        ->condition('wid', $wids)
+        ->condition('wid', $wids, 'IN')
         ->execute();
     }
   }
+  
+  
+  /**
+   * get the wallets the given user can do the operation on
+   * @param string $operation
+   * @param AccountInterface $account
+   * @return []
+   */
+  function walletsUserCanTransit($operation, $account) {
+    $wallets = [];
+    $or = db_or();
+    //wallets the user owns
+    $or->condition(db_and()
+      ->condition($operation, 0)
+      ->condition('entity_type', 'user')
+      ->condition('pid', $account->id()));
+    //wallets which can be seen by all, including anon
+    $or->condition($operation, 1);
+    //wallets which can be seen by authenticated users
+    if ($account->id()) {
+      $or->condition($operation, 2);
+    }
+    //TODO make this work for anyone in the same exchange
+    $w1 = $this->database->select('mcapi_wallet', 'w')
+      ->fields('w', array('wid'))
+      ->condition($or)
+      ->execute();
+    $w2 = $this->database->select('mcapi_wallets_access', 'w')
+      ->fields('w', ['wid'])
+      ->condition('operation', $operation)
+      ->condition('uid', $account->id())
+      ->execute();
+    return array_unique(array_merge($w1->fetchCol(), $w2->fetchCol()));
+  }
+  
+  
 }
 

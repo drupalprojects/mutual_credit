@@ -14,13 +14,6 @@ use Drupal\mcapi\Entity\Type;
 
 class Settings extends ConfigFormBase {
 
-
-  //private $settings;
-
-  //function __construct(ConfigFactoryInterface $config_factory) {
-  //  parent::__construct($config_factory);
-  //}
-
   /**
    * {@inheritdoc}
    */
@@ -47,7 +40,7 @@ class Settings extends ConfigFormBase {
         '#type' => 'checkboxes',
         '#options' => array(
           'both' => t('Payer & payee (The current user signs automatically)'),
-          'exman' => t('The exchange manager')
+//          'exman' => t('The exchange manager')
         ),
         //checkboxes are a bit strange.
         //if we don't array filter, every array key will be read as a checked box
@@ -81,6 +74,14 @@ class Settings extends ConfigFormBase {
 
     $form_state->setRedirect('mcapi.admin.transactions');
   }
+  
+  /**
+   * {@inheritdoc}
+   */
+  protected function getEditableConfigNames() {
+    return ['mcapi.signatures'];
+  }
+
 }
 
 

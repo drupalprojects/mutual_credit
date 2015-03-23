@@ -1,7 +1,7 @@
 mcapi.admin:
   path: '/admin/accounting'
   defaults:
-    _controller: 'Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _controller: 'Drupal\mcapi\Controller\AccountingAdmin::systemAdminMenuBlockPage'
     _title: 'Accounting'
   requirements:
     _permission: 'access administration pages'
@@ -22,7 +22,6 @@ mcapi.admin_misc:
 entity.mcapi_currency.canonical:
   path: '/currency/{mcapi_currency}'
   defaults:
-  #TODO I've got a nasty feeling config entities can't do this Bcoz they have no view modes
     _entity_view: 'mcapi_currency.default'
     _title_callback: 'Drupal\mcapi\Controller\CurrencyController::pageTitle'
   requirements:
@@ -89,7 +88,6 @@ entity.mcapi_transaction.canonical:
     parameters:
       mcapi_transaction:
         serial: true
-
 
 mcapi.admin.transactions:
   path: '/admin/accounting/transactions'
@@ -168,11 +166,12 @@ mcapi.admin_wallets:
     _permission: 'configure mcapi'
 
 mcapi.wallets.autocomplete:
-  path: '/mcapi/walletcomplete'
+  path: '/mcapi/walletcomplete/{role}'
   defaults:
     _controller: 'Drupal\mcapi\Controller\WalletAutocompleteController::autocomplete'
   requirements:
-    _permission: 'access content'
+    _custom_access: 'enough_wallets'
+    
 
 #this is replaced by the mcapi_exchanges module
 mcapi.masspay:

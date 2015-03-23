@@ -17,10 +17,14 @@ use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
  * @param array $clusters
  *   fully loaded transaction objects with children
  *
- * @return ViolationInterface[]
+ * @todo convert this into an event listener.
+ * 
  */
 function mcapi_limits_mcapi_transaction_validate(array $clusters) {
-  if (reset($clusters)->mcapiExceptions) return;
+  
+  if (reset($clusters)->mcapiExceptions) {
+    return;
+  }
   module_load_include('inc', 'mcapi_limits');
   return _mcapi_limits_mcapi_transaction_validate($clusters);
 }
@@ -47,7 +51,7 @@ function mcapi_limits($wallet) {
  * @todo expand this function to keep the Plugins in static
  */
 function mcapi_limits_saved_plugin(CurrencyInterface $currency, $name = '') {
-  $plugins = &drupal_static(__FUNCTION__, array());
+  $plugins = &drupal_static(__FUNCTION__, []);
   $curr_id = $currency->id();
   if (!array_key_exists($curr_id, $plugins)) {
     $plugin_id = $name ? : @$currency->getThirdpartySettings('mcapi_limits')['plugin'];
@@ -155,7 +159,7 @@ function mcapi_limits_mcapi_wallet_view(&$build, WalletInterface $wallet, Entity
  * $param boolean $relative
  */
 function mcapi_view_limits(WalletInterface $wallet) {
-  $renderable = array();
+  $renderable = [];
   foreach ($wallet->currencies_all() as $currency) {
     if ($currency->getThirdPartySetting('mcapi_limits', 'plugin', 'none') == 'none') continue;
     if ( $currency->getThirdPartySetting('mcapi_limits', 'display_relative', 'absolute') == 'relative') {

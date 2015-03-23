@@ -51,6 +51,6 @@ class None extends McapiLimitsBase implements McapiLimitsInterface {
     );
   }
   public function defaultConfiguration() {
-    return array();
+    return [];
   }
 }
