@@ -44,12 +44,6 @@ class TransactionForm extends ContentEntityForm {
       ? $this->entity
       : Transaction::Create();
 
-    //TODO do this with access control, including the dsm
-    if (!Exchanges::in(NULL, TRUE)) {
-      drupal_set_message(t('You are not a member of any exchanges, so you cannot trade with anyone'));
-      $form['#disabled'] = TRUE;
-    }
-
     //borrowed from NodeForm::prepareEntity in alpha14
     $transaction->date = format_date($transaction->created->value, 'custom', 'Y-m-d H:i:s O');
     //but this looks better to me

@@ -1,5 +1,5 @@
 id: mass
 label: Mass
-description: Between one account and many accounts
+description: Between one wallet and many
 start_state: done
 module: mcapi

@@ -12,6 +12,7 @@ use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\user\Entity\User;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Utility\Tags;
+use Drupal\mcapi\Exchange;
 
 class WalletForm extends ContentEntityForm {
 
@@ -41,7 +42,7 @@ class WalletForm extends ContentEntityForm {
       );
     }
 
-    $this->permissions = $this->entity->permissions();
+    $this->permissions = Exchange::walletPermissions();
     $this->permissions['owner'] = t('The owner');
 
     $this->default_wallet_access = \Drupal::config('mcapi.wallets');

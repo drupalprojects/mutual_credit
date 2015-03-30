@@ -2,7 +2,6 @@ langcode: en
 status: true
 dependencies:
   module:
-    - entity_reference
     - mcapi
 id: mcapi_transaction.worth
 field_name: worth
@@ -11,7 +10,7 @@ type: worth
 settings: {  }
 module: mcapi
 locked: true
-cardinality: -1
+cardinality: 1
 translatable: false
 indexes: {  }
-persist_with_no_fields: false
+persist_with_no_fields: true

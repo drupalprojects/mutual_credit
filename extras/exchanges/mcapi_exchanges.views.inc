@@ -1,7 +1,6 @@
 <?php
 
 use Drupal\mcapi\Exchanges;
-use Drupal\mcapi\Mcapi;
 
 /**
  * implements hook_views_data_alter
@@ -37,7 +36,7 @@ function mcapi_exchanges_views_data_alter(&$data) {
   );
 
   //make an argument for every entity that uses the field 'exchanges'
-  foreach (Mcapi::walletableBundles() as $entity_type => $bundles) {
+  foreach (Exchange::walletableBundles() as $entity_type => $bundles) {
     $argument = &$data[$entity_type .'__'. EXCHANGE_OG_REF][EXCHANGE_OG_REF .'_target_id']['argument'];
     $argument['help'] = t("Show only entities according to the exchange they are in");
     $argument['id'] = 'standard';//TODO this might need customisig

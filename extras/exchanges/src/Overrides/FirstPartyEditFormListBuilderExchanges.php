@@ -1,10 +1,11 @@
 <?php
 
 /**
- * Definition of Drupal\mcapi_exchanges\FirstPartyEditFormListBuilder.
+ * @file
+ * Definition of Drupal\mcapi_exchanges\Overrides\FirstPartyEditFormListBuilder.
  */
 
-namespace Drupal\mcapi_exchanges;
+namespace Drupal\mcapi_exchanges\Overrides;
 
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;

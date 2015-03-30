@@ -6,7 +6,7 @@
  */
 namespace Drupal\mcapi\Plugin;
 
-use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Exchange;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\Core\Plugin\PluginBase;
@@ -40,8 +40,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     //gives array keyed page_title, twig, format, button, cancel_button
-    module_load_include ('inc', 'mcapi');
-    $tokens = implode(', ', Mcapi::transactionTokens(FALSE));
+    $tokens = implode(', ', Exchange::transactionTokens(FALSE));
     //TODO currently there is NO WAY to put html in descriptions because twig autoescapes it
     //see cached classes extending TwigTemplate->doDisplay twig_drupal_escape_filter last argument
     $this->help = t('Use the following twig tokens: @tokens.', array('@tokens' => $tokens)) .' '.
@@ -71,6 +70,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
       '#weight' => 2,
     );
     
+    debug("States aren't saving/retrieving properly");
     $form['states'] = [
       '#title' => $this->t('Applies to states'),
       '#description' => $this->t('The transaction states that this transition could apply to'),

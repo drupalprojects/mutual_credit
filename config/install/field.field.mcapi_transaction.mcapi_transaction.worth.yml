@@ -3,6 +3,8 @@ status: true
 dependencies:
   config:
     - field.storage.mcapi_transaction.worth
+  module:
+    - mcapi
 id: mcapi_transaction.mcapi_transaction.worth
 field_name: worth
 entity_type: mcapi_transaction
@@ -12,7 +14,6 @@ description: ''
 required: true
 translatable: false
 default_value: {  }
-default_value_function: ''
+default_value_callback: ''
 settings: {  }
 field_type: worth
-

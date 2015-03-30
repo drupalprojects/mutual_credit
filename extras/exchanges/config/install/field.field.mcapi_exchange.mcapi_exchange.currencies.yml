@@ -1,8 +1,6 @@
 id: mcapi_exchange.mcapi_exchange.currencies
-uuid: 55bc7cbb-a831-4756-9500-c5fbd1e3df53
 status: true
 langcode: en
-field_uuid: 537ffa88-ea0c-41d9-ac00-cfe5e23b7dd3
 field_name: currencies
 entity_type: mcapi_exchange
 bundle: mcapi_exchange
@@ -10,7 +8,7 @@ label: Currency(s)
 description: 'Which currencies can be used in this exchange?'
 required: 1
 default_value: {  }
-default_value_function: 'mcapi_default_currency_id'
+default_value_callback: 'mcapi_default_currency_id'
 settings:
   handler: default
   handler_settings:

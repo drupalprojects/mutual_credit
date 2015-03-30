@@ -24,6 +24,7 @@ entity.1stparty_editform.edit_form:
     _entity_form: '1stparty_editform.edit'
     _title: 'Transaction form designer'
   requirements:
+    #this needs to be overridden by the exchanges module so that forms can belong to groups
     _permission: 'configure mcapi'
   options:
     _admin_route: TRUE
@@ -57,5 +58,3 @@ entity.1stparty_editform.enable:
 
 route_callbacks:
   - '\Drupal\mcapi_1stparty\FirstPartyRoutes:routes'
-
-

@@ -10,17 +10,18 @@ namespace Drupal\mcapi\Entity;
 
 use Drupal\mcapi\TransactionInterface;
 
-const MCAPI_MAX_DESCRIPTION = 255;
-
+use Drupal\mcapi\Access\WalletAccessControlHandler;
+use Drupal\mcapi\Entity\State;
+use Drupal\mcapi\McapiEvents;
+use Drupal\mcapi\TransactionCreateEvent;
+use Drupal\mcapi\McapiTransactionException;
+use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
+use Drupal\user\Entity\User;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
-use Drupal\mcapi\McapiTransactionException;
-use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\mcapi\Access\WalletAccessControlHandler;
-use Drupal\user\Entity\User;
-use Drupal\mcapi\Entity\State;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 /**
  * Defines the Transaction entity.
@@ -58,8 +59,20 @@ use Drupal\mcapi\Entity\State;
  * )
  */
 class Transaction extends ContentEntityBase implements TransactionInterface {
-
-  public $warnings = [];
+  
+  /**
+   * these objects have a method getMessage which is used for a form error
+   * 
+   * @var array
+   */
+  public $violations = [];
+  
+  /**
+   * These are the secondary transactions in the cluster. Identical to the $this
+   * but they will have no children
+   * 
+   * @var Transaction[] 
+   */
   private $children = [];
 
   /**
@@ -153,80 +166,66 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * @todo there seens to be no precedent for whole-entity validation in drupal
    * so there's no format for handling errors outside $form and typedata violations
    * 
-   * @return Violation[]
+   * @return \Symfony\Component\Validator\ConstraintViolationInterface[]
+   * 
+   * @throws McapiException
    */
   function validate() {
     //if this is coming from transactionForm then all the entiry fields are validated
-    $child_exceptions = $exceptions = $violations = [];
+    $this->errors = $thisx->violations = [];
     if ($this->validated) {
       return [];
     }
     try{
       $this->preValidate();
+      if (!$this->typedDataValidated) {
+        foreach ($this->flatten() as $entity) {
+          $this->violations = array_merge(
+            $this->violations, 
+            $entity->validateTypedData()
+          );
+        }
+      }
+      \Drupal::service('event_dispatcher')->dispatch(
+        McapiEvents::VALIDATE,
+        new TransactionCreateEvent(clone($this))
+      );
     }
     catch(\Exception $e) {
-      $exceptions[] = $e;
-    }
-    $cloned = $this->flatten();
-    
-    //note that this validation cannot change the original transaction because a clone of it is passed
-    $exceptions = array_merge(
-      $exceptions, 
-      \Drupal::moduleHandler()->invokeAll('mcapi_transaction_validate', array($cloned))
-    );
-    
-    if (!$this->typedDataValidated) {
-      $violations = $this->validateTypedData();
-    }
-    
-    //validate the parent and children separately in case the errors are handled differently
-    $exceptions = array_merge(
-      $exceptions, 
-      self::validateTransaction(array_shift($cloned))//top level
-    );
-    foreach ($cloned as $child_transaction) {
-      $violations = array_merge($violations, parent::validate($child_transaction));
-      $child_exceptions = array_merge($child_exceptions, self::validateTransaction($child_transaction));
-    }
-    if ($child_exceptions) {
-      $settings = \Drupal::config('mcapi.misc')->get('child_errors');
-
-      if ($settings['allow']) {
-        $this->warnings = $child_exceptions;
-      }
-      else {
-        $exceptions = array_merge($exceptions, $child_exceptions);
-      }
-      if ($settings['log']){
-        //TODO will there be an mcapi logger?
-        \Drupal::logger('mcapi')->error(
-          t(
-            "transaction failed validation with the following messages: !messages", 
-            ['!messages' => implode(' ', $this->warnings)]
-          )
-        );
-      }
       if ($settings['mail_user1']){
-        $message[] = $child_errors['allow'] ? 
-          t('Transaction was allowed.') : 
-          t('Transaction was blocked');
-        foreach ($this->warnings as $line) $message[] = $line;
+        foreach ($this->errors as $line) {
+          $message[] = $line;
+        }
         $message[] = print_r($this, 1);
-        //should this be done using the drupal mail system? my life is too short for such a rigmarole
-        mail(
-          User::load(1)->mail,
-          t(
-            'Child transaction error on !site', 
+        //should this be done using the drupal mail system? 
+        //my life is too short for such a rigmarol
+        $context = [
+          'subject' =>  t(
+            'Transaction error on !site', 
             ['!site' => \Drupal::config('system.site')->get('name')]
           ),
-          implode('\n', $message)//text of the message
+          'message' => implode('\n', $message)
+        ];
+        
+        \Drupal::services('plugin.manager.mail')->mail(
+          'system',
+          'action_send_email',
+          User::load(1)->mail,
+          $langcode,
+          ['context' => $context]
         );
       }
+      //TEMP
+      drupal_set_message($e->getMessage(), 'error');
+      
+      //TODO sort out the McapiExceptions
+      throw new McapiException('', $e->getMessage());
     }
     
+    $this->validated = TRUE;
     //we're actually supposed only to return violations, 
     //but the Exceptions also have the same getMessage method
-    return array_merge($violations, $exceptions);
+    return array_merge($this->violations, $this->errors);
   }
   
   /**
@@ -245,58 +244,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $violations;
   }
 
-  /**
-   * validate a transaction entity i.e. 1 ledger entry level
-   * There should be no children!
-   *
-   * @param Transaction $transaction
-   *
-   * @return violation[]
-   *
-   * @todo Decide whether this should be static or not
-   */
-  private static function validateTransaction($entity) {
-    $exceptions = [];
-    if ($entity->isNew()) {
-      //check that the uuid doesn't already exist. i.e. that we are not resubmitting the same transactions
-      if (entity_load_multiple_by_properties('mcapi_transaction', ['uuid' => $entity->uuid->value])) {
-        $exceptions[] = new McapiTransactionException(
-          'uuid',
-          t('Transaction has already been inserted: @uuid', ['@uuid' => $entity->uuid->value])
-        );
-      }
-    }
-    //check the payer and payee aren't the same
-    if ($entity->payer->target_id == $entity->payee->target_id) {
-      $exceptions[] = new McapiTransactionException(
-        'payee',
-        t('Wallet @num cannot pay itself.', array('@num' => $entity->payer->target_id))
-      );
-    }
-    //check that the current user is permitted to pay out and in according to the wallet permissions
-    $walletAccess = \Drupal::entityManager()->getAccessControlHandler('mcapi_wallet');
-    if (!$walletAccess->checkAccess($entity->payer->entity, 'payout', NULL, \Drupal::currentUser())) {
-      $exceptions[] = new McapiTransactionException(
-        'payer', 
-        t('You are not allowed to make payments from this wallet.')
-      );
-    }
-    if (!$walletAccess->checkAccess($entity->payee->entity, 'payout', NULL, \Drupal::currentUser())) {
-      $exceptions[] = new McapiTransactionException(
-        'payee', 
-        t('You are not allowed to pay into this wallet.')
-      );
-    }
-    //check that the description isn't too long
-    $length = strlen($entity->description->value);
-    if ($length > MCAPI_MAX_DESCRIPTION) {
-      $exceptions[] = new McapiTransactionException('description', t(
-        'The description field is @num chars longer than the @max maximum',
-        ['@num' => $strlen-$max, '@max' => MCAPI_MAX_DESCRIPTION]
-      ));
-    }
-    return $exceptions;
-  }
 
   /**
    * {@inheritdoc}
@@ -312,7 +259,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'payer' => 1,//chances are that these exist
       'payee' => 2,
       'children' => [],
-      'exchange' => 1
     );
   }
 

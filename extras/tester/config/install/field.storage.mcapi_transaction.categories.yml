@@ -1,10 +1,9 @@
 id: mcapi_transaction.categories
-uuid: d9c2e85c-4479-4ba3-9c00-ad7ea2f0b246
 status: true
 langcode: en
 field_name: categories
 entity_type: mcapi_transaction
-type: taxonomy_term_reference
+type: entity_reference
 settings:
   allowed_values:
     -

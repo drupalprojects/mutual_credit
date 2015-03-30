@@ -15,7 +15,7 @@ use Drupal\mcapi\Exchanges;
 
 
 /**
- * Access control for first party transaction forms, according to the form's own settings
+ * Access control for first party transaction forms
  *
  */
 class FirstPartyEditFormAccessControlHandler extends EntityAccessControlHandler {
@@ -31,19 +31,7 @@ class FirstPartyEditFormAccessControlHandler extends EntityAccessControlHandler 
    * {@inheritdoc}
    */
   protected function checkAccess(EntityInterface $entity, $op, $langcode, AccountInterface $account) {
-    if (Exchanges::in()) {
-      //only $accounts with wallets can access the form
-      if ($account->hasPermission('configure mcapi')) {
-        return AccessResult::allowedIfHasPermission($account, 'configure mcapi');
-      }
-      elseif ($entity->exchange) {
-        //only the exchange owner can edit the form
-        if (entity_load('mcapi_exchange', $entity->exchange)->getOwnerId() == $account->id()) {
-          return AccessResult::allowed()->cachePerUser();
-        }
-      }
-    }
-    return AccessResult::forbidden()->cachePerUser();
+    debug('how is access controlled without this FirstPartyEditFormAccessControlHandler?');
+    return AccessResult::allowedIfHasPermission($account, 'configure mcapi'); 
   }
-
 }

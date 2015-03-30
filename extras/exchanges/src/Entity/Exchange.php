@@ -31,16 +31,36 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  *   label = @Translation("Exchange"),
  *   handlers = {
  *     "storage" = "Drupal\mcapi_exchanges\ExchangeStorage",
+ *     "view_builder" = "Drupal\mcapi_exchanges\ExchangeViewBuilder",
+ *     "access" = "Drupal\mcapi_exchanges\ExchangeAccessControlHandler",
+ *     "list_builder" = "Drupal\mcapi_exchanges\ExchangeListBuilder"
+ *     "form" = {
+ *       "add" = "Drupal\mcapi_exchanges\Form\ExchangeWizard",
+ *       "edit" = "Drupal\mcapi_exchanges\Form\ExchangeForm",
+ *       "delete" = "Drupal\mcapi_exchanges\Form\ExchangeDeleteConfirm",
+ *       "masspay" = "Drupal\mcapi_exchanges\Form\MassPay",
+ *       "enable" = "Drupal\mcapi_exchanges\Form\ExchangeEnableConfirm",
+ *       "disable" = "Drupal\mcapi_exchanges\Form\ExchangeDisableConfirm",
+ *     },
+ *     "views_data" = "Drupal\mcapi_exchanges\ExchangeViewsData"
  *   },
  *   admin_permission = "configure mcapi",
  *   translatable = FALSE,
  *   base_table = "mcapi_exchange",
+ *   field_ui_base_route = "mcapi.admin_exchange_list",
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "name",
  *     "uuid" = "uuid",
  *     "weight" = "weight",
  *     "status" = "status"
+ *   }
+ *   links = {
+ *     "canonical" = "entity.mcapi_exchange.canonical",
+ *     "edit-form" = "mcapi.exchange.edit",
+ *     "delete-form" = "mcapi.exchange.delete_confirm",
+ *     "enable" = "mcapi.exchange.enable_confirm",
+ *     "disable" = "mcapi.exchange.disable_confirm"
  *   }
  * )
  */

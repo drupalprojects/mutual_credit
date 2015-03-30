@@ -36,22 +36,9 @@ mcapi.misc:
     counted:
       type: map
       label: Counted transaction states
-    child_errors:
-      type: mapping
-      label: Invalid child transactions
-      mapping:
-        mail_user1:
-          type: string
-          label: Send diagnostics to user 1 by mail
-        allow:
-          type: string
-          label: Allow the parent transaction
-        log:
-          type: string
-          label: Log a warning
-        show_messages:
-          type: string
-          label: Show warning messages to user
+    mail_errors:
+      type: string
+      label: Send diagnostics to user 1 by mail
 
 mcapi.wallets:
   type: mapping

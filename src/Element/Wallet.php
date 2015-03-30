@@ -45,7 +45,7 @@ class Wallet extends EntityAutocomplete {
   /**
    * process callback
    */
-  static function processEntityAutocomplete($element, FormStateInterface $form_state) {
+  static function processEntityAutocomplete(array &$element, FormStateInterface $form_state, array &$complete_form) {
     $element['#placeholder'] = t('Wallet name or #number');
     $element['#autocomplete_route_parameters'] = [
       'role' => $element['#role'] == 'payer' ? 'payout' : 'payin',
@@ -77,7 +77,7 @@ class Wallet extends EntityAutocomplete {
    * element_validate callback for select_wallet
    * ensure the passed value is a wallet id, not of an intertrading wallet
    */
-  static function validateEntityAutocomplete(&$element, FormStateInterface $form_state, array &$complete_form) {
+  public static function validateEntityAutocomplete(array &$element, FormStateInterface $form_state, array &$complete_form) {
     $input = $element['#value'];
     if (!empty($input)) {
       if (is_numeric($input)) {

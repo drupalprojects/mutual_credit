@@ -15,7 +15,7 @@ namespace Drupal\mcapi_limits\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Wallet;
-use Drupal\mcapi\Exchanges;
+use Drupal\mcapi\Exchange;
 
 class WalletLimitOverride extends FormBase {
 
@@ -39,17 +39,14 @@ class WalletLimitOverride extends FormBase {
     //this is tricky. We need to know all the currency that could go in the wallet.
     //to do that we have to know all the currencies in the all the active exchanges the wallets parent is in.
     $wallet = $this->wallet;
-    $owner = $wallet->getOwner();
-    if (!Exchanges::in($owner)) {
-      drupal_set_message(t("!name is not currently in any active exchange", array('!name' => $owner->label())));
-      return $form;
-    }
+
     //TODO put some inline css here when drupal_process_attached no longer uses deprecated _drupal_add_html_head
     //see https://api.drupal.org/api/drupal/core!includes!common.inc/function/drupal_process_attached/8
     //$form['#attached']['html_head']
     
     $overridden = mcapi_limits($wallet)->saved_overrides();
-    foreach ($wallet->currencies_available() as $curr_id => $currency) {
+    //TODO can we refactor this so we don't need to call on Exchanges?
+    foreach (Exchange::currenciesAvailable($wallet) as $curr_id => $currency) {
       $config = $currency->getThirdPartySettings('mcapi_limits');      
       if (!$config || $config['plugin'] == 'none') continue;
       $defaults = mcapi_limits($wallet)->default_limits($currency);

@@ -8,8 +8,4 @@ zero_snippet: '<img src = "present.png" width="31" />'
 counted:
   done: true
   undone: false
-child_errors:
-  mail_user1: mail_user1
-  allow: 0
-  log: log
-  show_messages: show_messages
+mail_errors: true

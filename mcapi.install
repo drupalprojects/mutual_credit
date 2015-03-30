@@ -6,7 +6,6 @@
  */
 
 use Drupal\user\Entity\User;
-use Drupal\mcapi\Exchanges;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Url;
 
@@ -39,19 +38,11 @@ function mcapi_install() {
   drupal_set_message(\Drupal::configFactory()->get('mcapi.misc')->get('zero_snippet'));
 }
 
-
-
 /**
- * Implements hook_uninstall().
- * need to do this in devel/php before uninstalling:
- *
- //doesn't work
-  \Drupal::moduleInstaller()->uninstall(array('mcapi_tester'));
-  use Drupal\field\Entity\FieldStorageConfig;
-  FieldStorageConfig::load('mcapi_transaction.worth')->delete();
-  FieldStorageConfig::load('user.og_group_ref')->delete();
-  FieldStorageConfig::load('mcapi_transaction.og_group_ref')->delete();
-  field_purge_batch(10000);//rows at a time
+use Drupal\field\Entity\FieldStorageConfig;
+FieldStorageConfig::load('mcapi_transaction.worth')->delete();
+//FieldStorageConfig::load('core.entity_view_display.user.user.default')->delete();
+field_purge_batch(10000);//rows at a time
 
 db_drop_table('mcapi_transaction');
 db_drop_table('mcapi_exchange');
@@ -61,10 +52,18 @@ db_drop_table('mcapi_wallets_access');
 db_drop_table('mcapi_wallet_exchanges_index');
 db_drop_table('mcapi_transaction__worth');
 db_drop_table('mcapi_exchange__currencies');
+db_drop_table('mcapi_signatures');
 db_delete('config')->condition('name', '%mcapi%', 'LIKE')->execute();
+db_delete('key_value')->condition('name', '%mcapi%', 'LIKE')->execute();
+db_delete('key_value')->condition('value', '%mcapi%', 'LIKE')->execute();
 db_truncate('cache_config')->execute();
-$extension_config = \Drupal::config('core.extension');
-$extension_config->clear("module.mcapi")->save();
+$extension_config =  \Drupal::configFactory()->getEditable('core.extension');
+$extension_config
+->clear("module.mcapi")
+->clear("module.mcapi_1stparty")
+->clear("module.mcapi_limits")
+->clear("module.mcapi_signatures")
+->save();
 drupal_flush_all_caches();
  *
  */

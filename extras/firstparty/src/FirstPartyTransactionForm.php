@@ -97,10 +97,6 @@ class FirstPartyTransactionForm extends TransactionForm {
       //this will be used to populate mywallet in the validation
       $form_state->set('mywallet', key($my_wallets));
     }
-    $form['partner'] = array(
-      '#exchanges' => array_keys(Exchanges::in()),
-      '#default_value' => $config->partner['preset']
-    ) + $form['partner'];
 
     $form['direction'] = array(
       '#type' => $config->direction['widget'],

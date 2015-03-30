@@ -428,20 +428,7 @@ display:
           plugin_id: entity
           provider: views
       footer: {  }
-      empty:
-        area_text_custom:
-          id: area_text_custom
-          table: views
-          field: area_text_custom
-          relationship: none
-          group_type: group
-          admin_label: ''
-          empty: true
-          tokenize: false
-          content: 
-            value: 'No transactions'
-            format: plain_text
-          plugin_id: text_custom
+      empty: { }
       relationships: {  }
       arguments:
         wallet_id:

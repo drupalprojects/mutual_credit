@@ -74,16 +74,6 @@ interface CurrencyInterface extends ConfigEntityInterface {
    */
   public function faux_format($raw_num, $format = []);
 
-  /**
-   * Load currencies for a given wallet
-   * A list of all the currencies available to the current user
-   *
-   * @param AccountInterface $account
-   *
-   * @return array
-   *   of currencies
-   */
-  public static function user(AccountInterface $account = NULL);
 
   /**
    * Check whether it is allowed to deleted this currency, which means deleting all transactions in it

@@ -38,15 +38,6 @@ interface WalletInterface extends ContentEntityInterface {
   function currencies_used();
 
   /**
-   * get a list of all the currencies currently in this wallet's scope
-   * which is to say, in any of the wallet's parent's exchanges
-   *
-   * @return CurrencyInterface[]
-   *   keyed by currency id
-   */
-  function currencies_available();
-
-  /**
    * get a list of the currencies used or available to this wallet
    * @return CurrencyInterface[]
    *   keyed by currency id
@@ -116,14 +107,4 @@ interface WalletInterface extends ContentEntityInterface {
   public static function ownedBy(ContentEntityInterface $entity);
   
   
-  /**
-   * check if the max number of wallets has been reached for that entity
-   *
-   * @param ContentEntityInterface $owner
-   *
-   * @return boolean
-   *   TRUE if the limit has not been reached
-   */
-  public static function spare(ContentEntityInterface $owner);
-    
 }

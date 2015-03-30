@@ -2,7 +2,7 @@
 
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
-use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
 use Drupal\field\Entity\FieldConfig;
@@ -26,7 +26,8 @@ function mcapi_1stparty_help($route_name) {
  * @deprecated
  */
 function mcapi_1stparty_entity_type_alter(array &$entity_types) {
-  $entity_types['mcapi_transaction']->setFormClass('1stparty', 'Drupal\mcapi_1stparty\FirstPartyTransactionForm');
+  $entity_types['mcapi_transaction']
+    ->setFormClass('1stparty', 'Drupal\mcapi_1stparty\FirstPartyTransactionForm');
 }
 
 
@@ -126,7 +127,7 @@ function mcapi_editform_load($id) {
  *   the token names, without the 'type:'
  */
 function mcapi_1stparty_transaction_tokens() {
-  $tokens = Mcapi::transactionTokens(FALSE);
+  $tokens = Exchange::transactionTokens(FALSE);
 
   unset($tokens[array_search('state', $tokens)]);
   unset($tokens[array_search('serial', $tokens)]);
@@ -138,9 +139,6 @@ function mcapi_1stparty_transaction_tokens() {
   $tokens[array_search('payer', $tokens)] = 'partner';
   $tokens[array_search('payee', $tokens)] = 'mywallet';
   $tokens[] = 'direction';
-  if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-    $tokens[] = 'intertrade';
-  }
   return $tokens;
 }
 

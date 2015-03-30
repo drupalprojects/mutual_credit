@@ -4,7 +4,7 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Exchange;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -40,7 +40,7 @@ class MiscForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->configFactory->getEditable('mcapi.misc');
     module_load_include('inc', 'mcapi');
-    foreach (Mcapi::transactionTokens(TRUE) as $token) {
+    foreach (Exchange::transactionTokens(TRUE) as $token) {
       $tokens[] = "[mcapi:$token]";
     }
     $form['sentence_template'] = array(
@@ -50,17 +50,10 @@ class MiscForm extends ConfigFormBase {
       '#default_value' => $config->get('sentence_template'),
       '#weight' => 2
     );
-    $form['child_errors'] = array(
-      '#title' => t('Invalid child transactions'),
-      '#description' => t('What to do if a child transaction fails validation'),
-      '#type' => 'checkboxes',
-      '#options' => array(
-    	  'mail_user1' => t('Send diagnostics to user 1 by mail'),
-        'allow' => t('Allow the parent transaction'),
-        'log' => t('Log a warning'),
-        'show_messages' => t('Show warning messages to user')
-      ),
-      '#default_value' => $config->get('child_errors'),
+    $form['mail_errors'] = array(
+      '#title' => t('Send diagnostics to user 1 by mail'),
+      '#type' => 'checkbox',
+      '#default_value' => $config->get('mail_errors'),
       '#weight' => 10
     );
     $form['worths_delimiter'] = array(
@@ -135,7 +128,7 @@ class MiscForm extends ConfigFormBase {
       ->set('ticks_name', $values['ticks_name'])
       ->set('zero_snippet', $values['zero_snippet'])
       ->set('worths_delimiter', $values['worths_delimiter'])
-      ->set('child_errors', $values['child_errors'])
+      ->set('mail_errors', $values['mail_errors'])
       ->set('counted', $values['counted'])
       ->save();
 

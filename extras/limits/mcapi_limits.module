@@ -7,27 +7,6 @@ use Drupal\mcapi_limits\WalletLimits;
 use Drupal\mcapi\WalletInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 
-/**
- * implements hook_mcapi_transaction_validate().
- * takes the transaction cluster and makes a projection of the sum of these plus all saved transactions in a positive state.
- * against the balance limits for each affected account,
- * NB. the accounting_validate hook is only run when a transaction is inserted:
- * It only checks against transactions in a POSITIVE state i.e. counted transactions.
- *
- * @param array $clusters
- *   fully loaded transaction objects with children
- *
- * @todo convert this into an event listener.
- * 
- */
-function mcapi_limits_mcapi_transaction_validate(array $clusters) {
-  
-  if (reset($clusters)->mcapiExceptions) {
-    return;
-  }
-  module_load_include('inc', 'mcapi_limits');
-  return _mcapi_limits_mcapi_transaction_validate($clusters);
-}
 
 /**
  * add the limits decorator to the wallet class

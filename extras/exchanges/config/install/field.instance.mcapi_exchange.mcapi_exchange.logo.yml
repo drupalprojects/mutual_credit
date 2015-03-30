@@ -1,4 +1,3 @@
-uuid: aae16d97-639a-43c9-8f24-363ef42efa4b
 langcode: en
 status: true
 dependencies:
@@ -13,7 +12,7 @@ description: ''
 required: false
 translatable: false
 default_value: {  }
-default_value_function: ''
+default_value_callback: ''
 settings:
   file_directory: logos
   file_extensions: 'png gif jpg jpeg'

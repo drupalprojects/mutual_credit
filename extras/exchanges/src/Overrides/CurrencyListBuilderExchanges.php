@@ -1,6 +1,7 @@
 <?php
 
 /**
+ * @file
  * Definition of Drupal\mcapi_exchanges\CurrencyListBuilderExchanges.
  */
 
@@ -27,7 +28,10 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
    * @todo we might want to somehow filter the currencies before they get here, if there are large number
    */
   public function buildRow(EntityInterface $entity) {
-    $used_in = $entity->used_in();
+    $used_in = db_select('mcapi_exchange__currencies', 'c')
+      ->fields('c', array('entity_id'))
+      ->condition('currencies_target_id', $this->id())
+      ->execute()->fetchCol();
     if (count($used_in) > 1) {
       $row['exchanges']['#markup'] = $this->t('@count exchanges', array('@count' => count($used_in)));
     }
@@ -37,7 +41,6 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
       }
       $row['exchanges']['#markup'] = implode(', ', $names);
     }
-      
     return $row + parent::buildRow($entity);
   }
 

@@ -2,6 +2,7 @@
 
 namespace Drupal\mcapi\Form;
 
+use Drupal\Mcapi\Exchange;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -10,17 +11,24 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class TransitionSettingsForm extends ConfigFormBase {
 
   private $plugin;
-  private $transitionManager;
   
-  public function __construct(ConfigFactoryInterface $configFactory, $transitionManager) {
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(ConfigFactoryInterface $configFactory, $transitionManager, $routeMatch) {
     $this->setConfigFactory($configFactory);
-    $this->transitionManager = $transitionManager;
+    $transition = $routeMatch->getParameters()->get('transition');
+    $this->plugin = $transitionManager->getPlugin($transition, FALSE);
   }
   
+  /**
+   * {@inheritdoc}
+   */
   static public function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
-      $container->get('mcapi.transitions')
+      $container->get('mcapi.transitions'),
+      $container->get('current_route_match')
     );
   }    
   
@@ -30,12 +38,19 @@ class TransitionSettingsForm extends ConfigFormBase {
   public function getFormID() {
     return 'mcapi_transition_settings_form';
   }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function title() {
+    return $this->t("@name transition settings", ['@name' => $this->plugin->label]);
+  }
 
   /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $transition = NULL) {
-    $this->plugin = $this->transitionManager->getPlugin($transition, FALSE);
+    
     $form = $this->plugin->buildConfigurationForm($form, $form_state);
 
     //TODO move the following to an action when rules is readier
@@ -47,7 +62,7 @@ class TransitionSettingsForm extends ConfigFormBase {
 
       //TODO this will be replaced by rules
       $defaults = $this->configFactory->get('mcapi.transition.'.$this->plugin->getPluginId());
-      $tokens = Mcapi::transactionTokens(TRUE);
+      $tokens = Exchange::transactionTokens(TRUE);
       unset($tokens[array_search('links', $tokens)]);
       $form['notify'] = array(
         '#type' => 'fieldset',

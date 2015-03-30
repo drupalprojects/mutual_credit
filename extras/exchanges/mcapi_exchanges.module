@@ -15,37 +15,29 @@ use Drupal\og\Entity\OgMembership;
 use Drupal\mcapi\Mcapi;
 
 
-define('EXCHANGE_OG_REF', 'mcapi_exchange_og_ref');
+const EXCHANGE_OG_REF = 'mcapi_exchange_og_ref';
+const WALLET_ACCESS_EXCHANGE = 'e';//this could be moved the exchange module
 
 /**
  * implements hook_entity_info_alter().
  * add new handlers for the Exchange entity
  */
 function mcapi_exchanges_entity_type_alter(array &$entity_types) {
-  $e = $entity_types['mcapi_exchange'];
-  $e->setFormClass("add", "Drupal\mcapi_exchanges\Form\ExchangeWizard");
-  $e->setFormClass("edit", "Drupal\mcapi_exchanges\Form\ExchangeForm");
-  $e->setFormClass("masspay", "Drupal\mcapi_exchanges\Form\MassPay");
-  $e->setFormClass("delete", "Drupal\mcapi_exchanges\Form\ExchangeDeleteConfirm");
-  $e->setFormClass("enable", "Drupal\mcapi_exchanges\Form\ExchangeEnableConfirm");
-  $e->setFormClass("disable", "Drupal\mcapi_exchanges\Form\ExchangeDisableConfirm");
-  $e->setLinkTemplate("canonical", "mcapi.exchange.view");
-  $e->setLinkTemplate("edit-form", "mcapi.exchange.edit");
-  $e->setLinkTemplate("field_ui_base_route", "mcapi.admin_exchange_list");
-  $e->setLinkTemplate("delete-form", "mcapi.exchange.delete_confirm");
-  $e->setLinkTemplate("enable", "mcapi.exchange.enable_confirm");
-  $e->setLinkTemplate("disable", "mcapi.exchange.disable_confirm");
-  $e->setViewBuilderClass("Drupal\mcapi_exchanges\ExchangeViewBuilder");
-  $e->setAccessClass("Drupal\mcapi_exchanges\ExchangeAccessControlHandler");
-  $e->setListbuilderClass("Drupal\mcapi_exchanges\ExchangeListBuilder");
-  //there isn't an explicit method for views_data yet
-  $e->setHandlerClass('views_data', "Drupal\mcapi_exchanges\ExchangeViewsData");
-  $e->set('field_ui_base_route', "mcapi.admin_exchange_list");
+  $path = 'Drupal\mcapi_exchanges\Overrides\\';
   if (array_key_exists('1stparty_editform', $entity_types)) {
-    $entity_types['1stparty_editform']->setListbuilderClass("Drupal\mcapi_exchanges\FirstPartyEditFormListBuilderExchanges");
+    $entity_types['1stparty_editform']
+      ->setListbuilderClass($path.'FirstPartyEditFormListBuilderExchanges');
+    $entity_types['1stparty_editform']
+      ->setAccessClass($path.'ExchangesFirstPartyEditFormAccessControlHandler');
+    //what is this?
+    $entity_types['1stparty_editform']
+      ->setAccessClass($path.'ExchangesTransactionFormAccessCheck');
   }
-  $entity_types['mcapi_currency']->setListbuilderClass("Drupal\mcapi_exchanges\CurrencyListBuilderExchanges");
-}
+  $entity_types['mcapi_currency']
+    ->setListbuilderClass($path.'CurrencyListBuilderExchanges');
+  $entity_types['mcapi_wallet']
+    ->setAccessClass($path.'ExchangesWalletAccessControlHandler')
+  }
 
 /**
  * implements hook_ENTITY_TYPE_load().
@@ -145,7 +137,7 @@ function mcapi_exchanges_entity_extra_field_info() {
 }
 
 /**
- * implements hook_form_alter()
+ * implements hook_form_FORM_ID_alter()
  * add a submit callback to the wallet settings
  */
 function mcapi_exchanges_form_mcapi_wallet_settings_form_alter(&$form, &$form_state) {
@@ -317,7 +309,7 @@ if (!is_array($my_exchange_ids)){print_r($my_exchange_ids);die('mcapi_exchanges_
   //it must contain all the worth's currencies bar one.
   
   foreach (Exchanges::walletInExchanges($transaction->{$dest}->entity) as $dest_exchange) {
-    $dest_exchange_currencies = Mcapi::currencies(array($dest_exchange->id()));
+    $dest_exchange_currencies = exchange_currencies(array($dest_exchange->id()));
     $diff = array_diff_key(array_flip($transaction_curr_ids), $dest_exchange_currencies);
     //diff is the currencies in worth which are not in the dest exchange
     //if there is no diff, we shouldn't be intertrading but doing a straight transaction
@@ -476,6 +468,21 @@ function mcapi_exchanges_form_alter(&$form, FormStateInterface $form_state, $for
       array_unshift($form['actions']['submit']['#submit'], 'mcapi_exchanges_changed_submit');
     }
   }
+  debug($form_id, 'looking for the designed transaction form_id');//see below
+  //is it one name for ALL designed forms, all transaction forms, or each form?
+  
+}
+
+/**
+ * restrict the wallet fields to the current users' exchanges' wallets
+ */
+function blah(&$form, &$form_state) {
+  
+    $form['partner'] = array(
+      '#exchanges' => array_keys(Exchanges::in()),
+      '#default_value' => $config->partner['preset']
+    ) + $form['partner'];
+    //
 }
 
 /**
@@ -573,7 +580,7 @@ function mcapi_default_currency_id(EntityInterface $exchange, $field_definition)
   $output = [];
   //default currencies are the currencies of the exchanges of which the current user is a member
   $exchange_ids = Exchanges::in(NULL, TRUE);
-  foreach (Mcapi::currencies($exchange_ids) as $currency) {
+  foreach (exchange_currencies($exchange_ids) as $currency) {
     $output[]['target_uuid'] = $currency->uuid;
   }
   return $output;
@@ -637,4 +644,45 @@ function get_mcapi_wallets_in_exchanges(array $exchange_ids) {
   return $query->execute()->fetchCol();
 }
 
+/**
+ * implements hook_field_widget_WIDGET_ID_form_alter
+ */
+function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $context) {
+  //element may already contain #allowed_curr_ids
+  $exchange_ids = Exchanges::in(NULL, TRUE);
+  $element['#allowed_curr_ids'] = array_keys(exchange_currencies($exchange_ids));
+}
 
+/**
+ * implement hook_form_FORM_ID_alter
+ * in the unlikely event that a wallets owner is not in any exchanges
+ * put a warning on the wallet limits form
+ */
+function mcapi_exchanges_form_wallet_limits_form_alter(&$form, $form_state) {
+  if (!Exchanges::in($form_state->getFormObject()->wallet->getOwner();)) {
+    drupal_set_message(t("!name is not currently in any active exchange", array('!name' => $owner->label())));
+  }
+}
+
+
+ /**
+  * Get all the currencies from (common to) the given exchanges, sorted
+  * 
+  * @param array $exchange_ids
+  *
+  * @param boolean $ticks
+  *   filter out currencies with no exchange rate
+  *
+  * @param boolean $status
+  *   filter out disabled currencies
+  *
+  * @return Currency[]
+  *   the intersection of used currencies
+  */
+  public static function exchange_currencies(array $exchange_ids, $ticks = FALSE) {
+    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+      return Exchanges::new_owner($owner);
+    }
+    //All currencies are available
+    else return Currency::loadMultiple();
+  }

@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\Field\FieldWidget\WorthWidget.
@@ -13,7 +12,6 @@ use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Drupal\Component\Utility\String;
-use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Exchanges;
 
 /**
@@ -37,15 +35,11 @@ class WorthWidget extends WidgetBase {
    * @see \Drupal\Core\Field\WidgetInterface
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
-    //element may already contain #allowed_curr_ids
-    $exchange_ids = Exchanges::in(NULL, TRUE);
     $element += array(
       '#title' => String::checkPlain($this->fieldDefinition->label()),
       '#title_display' => 'attribute',
       '#type' => 'worth',
       '#default_value' => $items->getValue(),
-      '#allowed_curr_ids' => array_keys(Mcapi::currencies($exchange_ids)),
-      //'#theme_wrappers' => array('form_element'),
     );
     return $element;
   }
@@ -56,11 +50,11 @@ class WorthWidget extends WidgetBase {
    */
   public function errorElement(array $element, ConstraintViolationInterface $violation, array $form, FormStateInterface $form_state) {
     echo "\Drupal\mcapi\Plugin\Field\FieldWidget\WorthWidget::errorElement hasn't been written yet";
-    if ($violation->arrayPropertyPath == array('format') && isset($element['format']['#access']) && !$element['format']['#access']) {
-      // Ignore validation errors for formats if formats may not be changed,
-      // i.e. when existing formats become invalid. See filter_process_format().
-      return FALSE;
-    }
+    print_R($violation); 
+    print_R($element);
+    //might want to return a sub element if we can pinpoint the error
+    die();
+
     return $element;
   }
 }

@@ -67,7 +67,7 @@ entity.mcapi_currency.delete_form:
     _admin_route: TRUE
 
 mcapi.transaction_admin:
-  path: '/admin/accounting/add'
+  path: '/transaction/log'
   defaults:
     _entity_form: 'mcapi_transaction.admin'
     _title: 'Log transaction'
@@ -113,7 +113,7 @@ mcapi.workflow_settings:
   path: '/admin/accounting/transactions/{transition}'
   defaults:
     _form: 'Drupal\mcapi\Form\TransitionSettingsForm'
-    _title: 'Transition settings'
+    _title_callback: 'Drupal\mcapi\Form\TransitionSettingsForm::title'
   requirements:
     _permission: 'configure mcapi'
   options:

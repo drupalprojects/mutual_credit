@@ -16,7 +16,7 @@ use Drupal\Core\Cache\Cache;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi\Mcapi;
-use Drupal\mcapi\Exchanges;
+use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\WalletInterface;
 
@@ -130,7 +130,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     $values += array('name' => '', 'orphaned' => 0);
     //put the default values for the access here
     $access_settings = \Drupal::config('mcapi.wallets')->getRawData();
-    foreach (Wallet::ops() as $op) {
+    foreach (Mcapi::walletOps() as $op => $description) {
       if (!array_key_exists($op, $values)) {
         $values[$op] = key(array_filter($access_settings[$op]));
       }
@@ -188,7 +188,6 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
       'summary' => array(t('Summary'), t('Access code for viewing wallet summary'), '2'),
       'payout' => array(t('Pay out'), t('Access code for paying in'), 'o'),
       'payin' => array(t('Pay in'), t('Access code for paying out'), 'e'),
-      'edit' => array(t('Edit'), t('Access code for paying out'), 'e')
     );
     if ($access_settings = \Drupal::config('mcapi.wallets')->getRawData()) {
       foreach (array_keys($defaults) as $key) {
@@ -221,7 +220,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    */
   public function currencies_all() {
     //that means unused currencies should appear last
-    return $this->currencies_used() + $this->currencies_available();
+    return $this->currencies_used() + Exchange::currenciesAvailable($this);
   }
 
   /**
@@ -240,28 +239,12 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
   }
 
   /**
-   * get a list of all the currencies in in all the exchanges this wallets owner is in
-   * @todo consider moving to static class Mcapi
-   */
-  public function currencies_available() {
-    if (!isset($this->currencies_available)) {
-      $this->currencies_available = [];
-      $exchanges = Exchanges::walletInExchanges($this);
-      foreach (Mcapi::currencies($exchanges) as $currency) {
-        $this->currencies_available[$currency->id()] = $currency;
-      }
-    }
-    //TODO get these in weighted order
-    return $this->currencies_available;
-  }
-
-  /**
    * {@inheritDoc}
    */
   public function getSummaries() {
     if (!$this->stats) {
       $this->stats = $this->Entitymanager()->getStorage('mcapi_transaction')->summaryData($this->id());
-      foreach ($this->currencies_available() as $curr_id => $currency) {
+      foreach (Exchange::currenciesAvailable($this) as $curr_id => $currency) {
         if (!array_key_exists($curr_id, $this->stats)) {
           $this->stats[$curr_id] = array(
             'balance' => 0,
@@ -294,8 +277,9 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    */
   public function getStat($curr_id, $stat) {
     $stats = getStats($curr_id);
-    if (array_key_exists($curr_id, $stats)) return $stats[$curr_id];
-    //else return NULL
+    if (array_key_exists($curr_id, $stats)) {
+      return $stats[$curr_id];
+    }
   }
 
 
@@ -327,54 +311,46 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
   }
   
   /**
-   * @see \Drupal\mcapi\Storage\WalletInterface::spare()
-   */
-  public static function spare(ContentEntityInterface $owner) {
-    //check the number of wallets already owned against the max for this entity type
-    $bundle = $owner->getEntityTypeId().':'.$owner->bundle();
-    $max = \Drupal::config('mcapi.wallets')->get('entity_types.'.$bundle);
-    $owned = \Drupal\mcapi\Storage\WalletStorage::getOwnedIds($owner);
-    return count($owned) < $max;
-  }
-
-  /**
    * (non-PHPdoc)
    * @see \Drupal\mcapi\WalletInterface::orphan()
    */
   public static function orphan(ContentEntityInterface $owner) {
-    if($exchange_ids = Exchanges::in($owner, FALSE)) {
-      $exchange = Exchange::load(reset($exchanges));//if the parent entity was in more than one exchange, this will pick a random one to take ownership
-      if ($wids = \Drupal\mcapi\Storage\WalletStorage::getOwnedIds($owner, TRUE)) {
-        foreach (Wallet::loadMultiple($wids) as $wallet) {
-          //if there are transactions change parent, otherwise delete
-          if (\Drupal\mcapi\Storage\TransactionStorage::filter(array('involving' => $wallet->id()))) {
-            $new_name = t(
-              "Formerly !name's wallet: !label",
-              array('!name' => $wallet->label(), '!label' => $wallet->label(NULL, FALSE))
-            );
-            $wallet->set('name', $new_name);
-            $wallet->set('entity_type', 'mcapi_exchange');
-            $wallet->set('pid', $exchange->id());
-            //TODO make the number of wallets an exchange can own to be unlimited.
-            drupal_set_message(t(
-              "!name's wallets are now owned by exchange !exchange",
-              array('!name' => $wallet->label(), '!exchange' => \Drupal::l($exchange->label(), $exchange->url()))
-            ));
-            $wallet->save();
-          }
-          else {
-            $wallet->delete();
-          }
-        }
+    $new_owner_entity = Exchange::new_owner($owner);
+    $wallet_ids = Self::entityManager()->getStorage('mcapi_wallet')->getOwnedIds($owner);
+    foreach (entity_load('mcapi_wallet', $wallet_ids) as $wallet) {
+      $criteria = ['involving' => $wallet->id()];
+      if (Self::entityManager()->getStorage('mcapi_transaction')->filter($criteria)) {
+
+        $new_name = t(
+          "Formerly !name's wallet: !label",
+          ['!name' => $wallet->label(), '!label' => $wallet->label(NULL, FALSE)]
+        );
+        $wallet->set('name', $new_name)
+          ->set('entity_type', $new_owner_entity->getEntityTypeId())
+          ->set('pid', $new_owner_entity->id())
+          ->save();
+        //TODO make the number of wallets an exchange can own to be unlimited.
+        drupal_set_message(t(
+          "!name's wallets are now owned by exchange !exchange",
+          [
+            '!name' => $wallet->label(), 
+            '!exchange' => \Drupal::l($new_owner_entity->label(), $exchange->url())
+          ]
+        ));
+      }
+      else {
+        $wallet->delete();
+        return;
       }
     }
   }
 
+ 
   /**
    * {@inheritdoc}
    */
   public static function ownedBy(ContentEntityInterface $entity) {
-    return \Drupal::EntityManager()
+    return Self::EntityManager()
       ->getStorage('mcapi_wallet')
       ->getOwnedIds($entity);
   }
@@ -384,9 +360,11 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    * overrides parent function to also invalidate the wallet's parent's tag
    */
   public function invalidateTagsOnSave($update) {
-    $tags = $this->getEntityType()->getListCacheTags();
     //invalidate the parent, especially the entity view, see mcapi_entity_view()
-    $tags = Cache::mergeTags($tags, array($this->entity_type->value.':'.$this->pid->value));
+    $tags = Cache::mergeTags(
+      $this->getEntityType()->getListCacheTags(), 
+      [$this->entity_type->value.':'.$this->pid->value]
+    );
     if ($update) {
       // An existing entity was updated, also invalidate its unique cache tag.
       $tags = Cache::mergeTags($tags, $this->getCacheTags());
@@ -394,38 +372,4 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     Cache::invalidateTags($tags);
   }
 
-  /**
-   * Check if an entity is the owner of a wallet
-   * @todo this is really a constant, but constants can't store arrays. What @todo?
-   *
-   * @return array
-   *   THE list of permissions used by walletAccess. Note this is not connected
-   *   to the roles/permissions system for account entity
-   */
-  public static function permissions() {
-    return array(
-      //TODO only wallets owned by user entities can have this option
-      WALLET_ACCESS_OWNER => t('Just the owner'),
-      //WALLET_ACCESS_EXCHANGE => t('Members in the same exchange(s)'),//todo: which exchanges?
-      WALLET_ACCESS_AUTH => t('Any logged in users'),
-      WALLET_ACCESS_ANY => t('Anyone on the internet'),
-      WALLET_ACCESS_USERS => t('Named users...')
-    );
-  }
-
-  /**
-   * Check if an entity is the owner of a wallet
-   * @todo this is really a constant, but constants can't store arrays. What @todo?
-   *
-   * @return array
-   *   THE list of ops because arrays cannot be stored in constants
-   */
-  public static function ops() {
-    return [
-      'details' => t('View transaction log'), 
-      'summary' => t('View summary'), 
-      'payin' => t('Pay into this wallet'),
-      'payout' => t('Pay out of this wallet'),
-    ];
-  }
 }

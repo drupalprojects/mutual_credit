@@ -17,7 +17,7 @@ use Drupal\user\Entity\User;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Plugin\TransitionInterface;
-use Drupal\mcapi\TransactionInhook_iterface;
+use Drupal\mcapi\TransactionIniterface;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\State;
 use Drupal\mcapi\Entity\Wallet;
@@ -36,10 +36,11 @@ const CURRENCY_TYPE_COMMODITY = 'commodity';
 
 //
 const WALLET_ACCESS_OWNER =  'o';//this is replaced with a named user
-const WALLET_ACCESS_EXCHANGE = 'e';//this could be moved the exchange module
 const WALLET_ACCESS_AUTH = '2';//this is the role id
 const WALLET_ACCESS_ANY = '1';//this is the role id
 const WALLET_ACCESS_USERS = 'u';//user id is in the wallet access table
+
+const MCAPI_MAX_DESCRIPTION = 255;
 
 /**
  * implements hook_requirements().
@@ -86,20 +87,22 @@ function mcapi_help($route_name, $route_match) {debug($route_name);
     case 'field_ui.overview_mcapi_transaction':
       $settings_url = Url::fromRoute('mcapi.admin_misc');
       $transitions_url = Url::fromRoute('mcapi.admin.transactions');
-      return implode(' ', array(
+      $message = [
         t('These transaction display settings should always be overridden.'), 
         t('To configure the certificate, override certificate.html.twig in your theme'),
         t(
           'To configure the sentence, see the Accounting settings: !link.',
-          array('!link' => \Drupal::l($settings_url->toString(), $settings_url))
+          ['!link' => \Drupal::l($settings_url->toString(), $settings_url)]
         ),
         t(
           'Custom Twig can be used for display on the transition settings pages: !link.',
-          array('!link' => \Drupal::l($transitions_url->toString(), $transitions_url))
+          ['!link' => \Drupal::l($transitions_url->toString(), $transitions_url)]
         ),
-      ));
+      ];
+      return implode(' ', $message);
   }
 }
+
 
 /**
  * implements hook_theme().
@@ -370,13 +373,12 @@ function mcapi_entity_operation_alter(&$operations, $entity) {
 function mcapi_hook_info() {
   $hooks = array(
     //TODO document these properly in mcapi.api.php
-    'mcapi_transaction_children',//add children without affecting parent
-    'mcapi_transaction_validate',//throw violations without affecting transaction
-    'mcapi_transaction_alter',//alter the main transaction
-    'mcapi_transition',
+    'mcapi_transaction_children',// a whole transaction, cloned, return additiona; children
+    'mcapi_transaction_validate',//flattened transaction array, return errors?
+    'mcapi_transaction_alter',//a whole transaction no returns
+    'mcapi_transition',//transaction, transition, context. return $renderable
   );
-  return array('group' => 'mcapi') + array_combine($hooks, $hooks);
-}
+  }
 
 /*
  * implements hook_form_alter
@@ -428,4 +430,23 @@ function _wallet_owning_entity_routes($config_mcapi_misc) {
     $routes[$canonical] = $bundle;
   }
   return $routes;
+}
+
+
+//determine whether a wallet can be added
+function wallet_room($owner) {
+  $config = \Drupal::config('mcapi.wallets');
+  $entity_type = $owner->getEntityTypeId();
+  $max = $config->get('entity_types.'.$entity_type .':'. $owner->bundle());
+  //quick check first for this common scenario
+  if ($entity_type == 'user' && $max == 1 && $config->get('autoadd_name')) {
+    $full = TRUE;
+  }
+  else {
+    $bundle = $entity_type.':'.$owner->bundle();
+    $max = \Drupal::config('mcapi.wallets')->get('entity_types.'.$bundle);
+    $owned = \Drupal\mcapi\Storage\WalletStorage::getOwnedIds($owner);
+    $full = count($owned) >= $max;
+  }
+  return !$full;
 }

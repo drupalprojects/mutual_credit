@@ -4,9 +4,5 @@ mcapi.wallet.admin_limits:
     _form: 'Drupal\mcapi_limits\Form\WalletLimitOverride'
     _title: 'Override limits'
   requirements:
-    _permission: 'configure mcapi'
-   #this doesn't work but I can't see why, its too deep
-   #_entity_access: 'mcapi_wallet.admin'
-   #and, is this wallet using any overridable currencies?
-   #_custom_access: 
+    _permission: 'manage mcapi'
 

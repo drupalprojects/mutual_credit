@@ -10,6 +10,7 @@ namespace Drupal\mcapi_limits\Plugin\views\field;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Exchange;
 
 /**
  * Field handler to show a user's balance limits
@@ -63,7 +64,7 @@ class Limits extends FieldPluginBase {
   public function render(ResultRow $values) {
     $account = $this->getEntity($values);
     if (empty($this->options['currencies'])) {
-      $this->options['currencies'] = Currency::user($account);
+      $this->options['currencies'] = Exchange::userCurrencies($account);
     }
     drupal_set_message('check Drupal\mcapi_limits\Plugin\views\field\Limits.');
     return mcapi_view_limits(

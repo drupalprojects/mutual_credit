@@ -9,11 +9,13 @@ namespace Drupal\mcapi\Controller;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
+
 /**
  * Returns responses for Transaction routes.
  * @todo Make this better
@@ -45,16 +47,19 @@ class WalletAutocompleteController implements ContainerInjectionInterface{
    *
    */
   function autocomplete(Request $request) {
+    $wids = $this->getWalletIds($request);
+    return $this->returnWallets($wids);
+
+  }
+  
+  protected function getWalletIds(Request $request) {
     //there are three different ways offered here, none of which is perfect
     //because of the different ways that wallet names can be construed
     $results = [];
     $conditions = [];
-
+    
     $string = $request->query->get('q');
     
-    $all_wids = $this->entityManager->getStorage('mcapi_wallet')
-      ->walletsUserCanTransit($this->role, $this->currentUser);
-
     //there is no need to handle multiple values because the javascript of the widget
     //handles all stuff before the last comma.
     if (is_numeric($string)) {
@@ -67,9 +72,13 @@ class WalletAutocompleteController implements ContainerInjectionInterface{
     else {
       $conditions['fragment'] = $string;
     }
-    $filtered_wids = $this->entityManager->getStorage('mcapi_wallet')->filter($conditions);
-    return $this->returnWallets(array_intersect($all_wids, $filtered_wids));
-
+    
+    //return only the wallets which are both permitted and meet the filter criteria
+    $walletStorage =  $this->entityManager->getStorage('mcapi_wallet');
+    return array_intersect(
+      $walletStorage->walletsUserCanTransit($this->role, $this->currentUser),
+      $walletStorage->filter($conditions)
+    );
   }
   
   protected function returnWallets($wids) {

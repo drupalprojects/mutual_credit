@@ -8,7 +8,7 @@ label: 'Member of exchange(s)'
 description: ''
 required: false
 default_value: {  }
-default_value_function: mcapi_default_exchange_id
+default_value_callback: mcapi_default_exchange_id
 settings:
   handler: default
   handler_settings:

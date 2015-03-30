@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Element;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Entity\Currency;
 //use Drupal\mcapi\Entity\Currency; some wierd problem with this loading twice
 use Drupal\Core\Template\Attribute;
 
@@ -25,21 +26,21 @@ class Worth extends FormElement {
    */
   public function getInfo() {
     $class = get_class($this);
-    return array(
+    return [
       '#tree' => TRUE,
-      '#process' => array(
-        array($class, 'process_defaults'),
-        array($class, 'process')
-      ),
-      '#element_validate' => array(
-        array($class, 'validate')
-      ),
-      '#theme_wrappers' => array('form_element'),
-      '#attached' => array('library' => array('mcapi/mcapi.worth.element')),
+      '#process' => [
+        [$class, 'process_defaults'],
+        [$class, 'process']
+      ],
+      '#element_validate' => [
+        [$class, 'validate']
+      ],
+      '#theme_wrappers' => ['form_element'],
+      '#attached' => ['library' => ['mcapi/mcapi.worth.element']],
       '#minus' => FALSE,
       '#config' => FALSE,
       '#allowed_curr_ids' => []
-    );
+    ];
     debug('mcapi.worth.element', 'library');
   }
 
@@ -53,17 +54,20 @@ class Worth extends FormElement {
       $element['#default_value'] = $element['#value'];
     }
     else {
+      if (empty($element['#allowed_curr_ids'])) {
+        $element['#allowed_curr_ids'] = array_keys(Currency::loadMultiple());
+      }
+      
       //change the all_available array to a worths value array populated by zeros
-      if ($allowed_curr_ids = $element['#allowed_curr_ids']) {
+      if ($element['#allowed_curr_ids']) {
         $existing_curr_ids = [];
-
         foreach ((array)$element['#default_value'] as $item) {
           if (!$item['curr_id']) continue; //means the widget was unpopulated
           $existing_curr_ids[] = $item['curr_id'];
         }
         unset($element['#default_value']);
         //restrict the defaults according to the allowed currencies
-        if ($not_allowed = array_diff($existing_curr_ids, $allowed_curr_ids)) {
+        if ($not_allowed = array_diff($existing_curr_ids, $element['#allowed_curr_ids'])) {
           //message only shows the FIRST not allowed currency
           drupal_set_message(
             t(
@@ -74,16 +78,12 @@ class Worth extends FormElement {
           );
         }
         //ensure each allowed currencies has a default value, which is used for building the widget
-        foreach (array_diff($allowed_curr_ids, $existing_curr_ids) as $curr_id) {
-          //$element['#default_value'][] = array('curr_id' => $curr_id, 'value' => $blank);
+        foreach (array_diff($element['#allowed_curr_ids'], $existing_curr_ids) as $curr_id) {
+          $element['#default_value'][] = array('curr_id' => $curr_id, 'value' => $blank);
         }
       }
-      if (empty($element['#default_value'])) {
-        debug($element, 'No currencies have been specified in the worth field.', 1);
-      }
     }
-    
-    //sort the currencies by weight.
+    //TODO sort the currencies by weight
     return $element;
   }
 
@@ -94,6 +94,7 @@ class Worth extends FormElement {
   public static function process($element, FormStateInterface $form_state, $form) {
     //we might need to filter #default_value not in config mode
     $worth_cardinality = count($element['#default_value']) > 1 ? 'multiple' : 'single';
+    //by now the #default_value MUST contain some $items.
     foreach ($element['#default_value'] as $delta => $item) {
       //i want a div around each currency widget
       extract($item);//creates $curr_id and $value
@@ -186,6 +187,9 @@ class Worth extends FormElement {
       if (array_key_exists('#max', $element)) $element[$delta][1]['#max'] = $element['#max'];
       if (array_key_exists('#min', $element)) $element[$delta][1]['#min'] = $element['#min'];
     }
+    if (!$element['#required']) {
+      $element['#config'] = TRUE;
+    }
     return $element;
   }
 
@@ -236,6 +240,7 @@ class Worth extends FormElement {
       $setval = TRUE;
     }
     else {
+      print_r($element);
       //check for allowed zero values.
       foreach ($element['#value'] as $delta => $worth) {
         $currency = mcapi_currency_load($worth['curr_id']);

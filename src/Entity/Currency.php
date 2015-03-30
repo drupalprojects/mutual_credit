@@ -307,34 +307,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
-   * get the exchange entity ids which reference this currency
-   * 
-   * @return integer[]
-   *   the ids of the exchanges
-   * 
-   * @todo find somewhere better to put this storage method
-   */
-  function used_in() {
-    if (\Drupal::moduleHandler()->moduleExists('mcpai_exchanges')) {
-      return db_select('mcapi_exchange__currencies', 'c')
-        ->fields('c', array('entity_id'))
-        ->condition('currencies_target_id', $this->id())
-        ->execute()->fetchCol();
-    }
-    //TODO ensure exchange id 0 is reserved
-    return array(0);
-  }
-
-  /**
-   * {@inheritdoc}
-   * @todo
-   */
-  public static function user(AccountInterface $account = NULL) {
-    $exchange_ids = Exchanges::in($account, TRUE);
-    return Mcapi::currencies($exchange_ids, 0);
-  }
-
-  /**
    * {@inheritdoc}
    */
   function deletable() {
