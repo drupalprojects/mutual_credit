@@ -66,13 +66,13 @@ entity.mcapi_currency.delete_form:
   options:
     _admin_route: TRUE
 
-mcapi.transaction_admin:
+mcapi.transaction_log:
   path: '/transaction/log'
   defaults:
     _entity_form: 'mcapi_transaction.admin'
     _title: 'Log transaction'
   requirements:
-    _custom_access: 'enough_wallets'
+    _custom_access: 'Drupal\mcapi\Access\TransactionAccessControlHandler::enoughWallets'
     _permission: 'manage mcapi'
   options:
     _admin_route: TRUE
@@ -80,7 +80,8 @@ mcapi.transaction_admin:
 entity.mcapi_transaction.canonical:
   path: '/transaction/{mcapi_transaction}'
   defaults:
-    _entity_view: 'mcapi_transaction.full' #full means defer to the view transition settings
+    #full means defer to the view transition settings
+    _entity_view: 'mcapi_transaction.full' 
     _title_callback: 'Drupal\mcapi\Controller\TransactionController::pageTitle'
   requirements:
     _entity_access: 'mcapi_transaction.view'
@@ -133,7 +134,7 @@ mcapi.transaction.op:
 
 
 #wallets
-mcapi.wallet_view:
+entity.mcapi_wallet.canonical:
   path: '/wallet/{mcapi_wallet}'
   defaults:
     _entity_view: 'mcapi_wallet.default'
@@ -170,7 +171,7 @@ mcapi.wallets.autocomplete:
   defaults:
     _controller: 'Drupal\mcapi\Controller\WalletAutocompleteController::autocomplete'
   requirements:
-    _custom_access: 'enough_wallets'
+    _custom_access: 'Drupal\mcapi\Access\TransactionAccessControlHandler::enoughWallets'
     
 
 #this is replaced by the mcapi_exchanges module

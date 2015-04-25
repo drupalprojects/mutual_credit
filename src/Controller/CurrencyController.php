@@ -7,7 +7,7 @@
 
 namespace Drupal\mcapi\Controller;
 
-use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\mcapi\CurrencyInterface;
 
@@ -21,7 +21,7 @@ class CurrencyController extends ControllerBase {
    * @param EntityInterface $mcapi_currency
    *
    * @return array
-   *  An array suitable for drupal_render().
+   *  A render array
    */
   public function page(CurrencyInterface $mcapi_currency) {
     return $this->buildPage($mcapi_currency);
@@ -36,6 +36,6 @@ class CurrencyController extends ControllerBase {
    *   The page title.
    */
   public function pageTitle(CurrencyInterface $mcapi_currency) {
-    return String::checkPlain($mcapi_currency->label());
+    return SafeMarkup::checkPlain($mcapi_currency->label());
   }
 }

@@ -15,6 +15,7 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\views\Plugin\views\access\AccessPluginBase;
 use Symfony\Component\Routing\Route;
 use Drupal\Core\Language\LanguageInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Access plugin that provides access control according to which wallet is being viewed
@@ -28,15 +29,39 @@ use Drupal\Core\Language\LanguageInterface;
  * )
  */
 class Wallet extends AccessPluginBase {
+  
+  private $entityManager;
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, $entityManager) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->definition = $plugin_definition + $configuration;
+    $this->entityManager = $entityManager;
+  }
 
   /**
    * {@inheritdoc}
    */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration, 
+      $plugin_id, 
+      $plugin_definition,
+      $container->get('entity.manager')
+    );
+  }
+  /**
+   * {@inheritdoc}
+   */
   public function access(AccountInterface $account) {
-    $storage = \Drupal::entityManager()->getAccess('mcapi_wallet');
+    //TODO inject this
+    $access = $this->entityManager->getAccessControlHandler('mcapi_wallet');
     drupal_set_message('Views access-by-wallet not working yet.', 'warning');
+    return TRUE;
     $wallet = '';//TODO get the wallet either from the views argument
-    return $storage->checkAccess($wallet, 'view', LanguageInterface::LANGCODE_DEFAULT, $account)
+    return $access->checkAccess($wallet, 'view', LanguageInterface::LANGCODE_DEFAULT, $account)
       || $account->hasPermission('access all views');
   }
 

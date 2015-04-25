@@ -12,7 +12,6 @@ use Drupal\Core\Template\Attribute;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\user;
 use Drupal\og\Entity\OgMembership;
-use Drupal\mcapi\Mcapi;
 
 
 const EXCHANGE_OG_REF = 'mcapi_exchange_og_ref';
@@ -167,7 +166,7 @@ function mcapi_exchanges_entity_update($entity) {
  */
 function put_owned_wallets_in_exchanges($entity) {
   $count = 0;
-  if (Mcapi::walletable($entity)) {
+  if (walletable($entity)) {
     if ($wids = Wallet::ownedBy($entity)) {
       $belongsToExchanges = $entity->getEntityTypeId() == 'mcapi_exchange' ?
         [$entity] :
@@ -251,8 +250,8 @@ function mcapi_transaction_get_exchanges(Transaction $transaction) {
  */
 function mcapi_exchanges_mcapi_transaction_alter(TransactionInterface $transaction) {
   $common_exchanges = array_intersect_key(
-    Exchanges::walletInExchanges($transaction->payer->entity),
-    Exchanges::walletInExchanges($transaction->payee->entity)
+    Exchanges::walletExchanges($transaction->payer->entity),
+    Exchanges::walletExchanges($transaction->payee->entity)
   );
   if ($common_exchanges) {
     mcapi_exchange_join($exchange->id(), array($transaction));
@@ -263,7 +262,7 @@ function mcapi_exchanges_mcapi_transaction_alter(TransactionInterface $transacti
   $my_exchange_ids = Exchanges::in();
 //TODO delete this
 if (!is_array($my_exchange_ids)){print_r($my_exchange_ids);die('mcapi_exchanges_mcapi_transaction_alter');}
-  $payer_exchanges = Exchanges::walletInExchanges($transaction->payer->entity, TRUE);
+  $payer_exchanges = Exchanges::walletExchanges($transaction->payer->entity, TRUE);
   $common = Exchange::loadMultiple(array_intersect($payer_exchanges, $my_exchange_ids));
   foreach ($common as $exchange) {
     if (has_currencies($exchange, $transaction_curr_ids))  {
@@ -275,7 +274,7 @@ if (!is_array($my_exchange_ids)){print_r($my_exchange_ids);die('mcapi_exchanges_
   }
   $source = 0;
   if (empty($set))  {
-    $exchange_ids = array_intersect(Exchanges::walletInExchanges($transaction->payee->entity, TRUE), $my_exchange_ids);    
+    $exchange_ids = array_intersect(Exchanges::walletExchanges($transaction->payee->entity, TRUE), $my_exchange_ids);    
     foreach (Exchange::loadMultiple($exchange_ids) as $exchange) {
       if (has_currencies($exchange, $transaction_curr_ids))  {
         mcapi_exchange_join($exchange->id(), array($transaction));
@@ -308,8 +307,8 @@ if (!is_array($my_exchange_ids)){print_r($my_exchange_ids);die('mcapi_exchanges_
   //which of the $dest_wallet's parent's exchanges is most suitable, if any?
   //it must contain all the worth's currencies bar one.
   
-  foreach (Exchanges::walletInExchanges($transaction->{$dest}->entity) as $dest_exchange) {
-    $dest_exchange_currencies = exchange_currencies(array($dest_exchange->id()));
+  foreach (Exchanges::walletExchanges($transaction->{$dest}->entity) as $dest_exchange) {
+    $dest_exchange_currencies = Exchanges::currencies(array($dest_exchange->id()));
     $diff = array_diff_key(array_flip($transaction_curr_ids), $dest_exchange_currencies);
     //diff is the currencies in worth which are not in the dest exchange
     //if there is no diff, we shouldn't be intertrading but doing a straight transaction
@@ -464,7 +463,7 @@ function mcapi_exchanges_form_alter(&$form, FormStateInterface $form_state, $for
   if (array_key_exists('controller', $form_state) && $form_state->get('controller') instanceof \Drupal\Core\Entity\ContentEntityForm) {
     $entity = $form_state->get('controller')->getEntity();
     $form_state->loadInclude('mcapi', 'inc');
-    if (Mcapi::walletable($entity)) {
+    if (walletable($entity)) {
       array_unshift($form['actions']['submit']['#submit'], 'mcapi_exchanges_changed_submit');
     }
   }
@@ -580,7 +579,7 @@ function mcapi_default_currency_id(EntityInterface $exchange, $field_definition)
   $output = [];
   //default currencies are the currencies of the exchanges of which the current user is a member
   $exchange_ids = Exchanges::in(NULL, TRUE);
-  foreach (exchange_currencies($exchange_ids) as $currency) {
+  foreach (Exchanges::currencies($exchange_ids) as $currency) {
     $output[]['target_uuid'] = $currency->uuid;
   }
   return $output;
@@ -650,7 +649,7 @@ function get_mcapi_wallets_in_exchanges(array $exchange_ids) {
 function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $context) {
   //element may already contain #allowed_curr_ids
   $exchange_ids = Exchanges::in(NULL, TRUE);
-  $element['#allowed_curr_ids'] = array_keys(exchange_currencies($exchange_ids));
+  $element['#allowed_curr_ids'] = array_keys(Exchanges::currencies($exchange_ids));
 }
 
 /**
@@ -664,25 +663,3 @@ function mcapi_exchanges_form_wallet_limits_form_alter(&$form, $form_state) {
   }
 }
 
-
- /**
-  * Get all the currencies from (common to) the given exchanges, sorted
-  * 
-  * @param array $exchange_ids
-  *
-  * @param boolean $ticks
-  *   filter out currencies with no exchange rate
-  *
-  * @param boolean $status
-  *   filter out disabled currencies
-  *
-  * @return Currency[]
-  *   the intersection of used currencies
-  */
-  public static function exchange_currencies(array $exchange_ids, $ticks = FALSE) {
-    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-      return Exchanges::new_owner($owner);
-    }
-    //All currencies are available
-    else return Currency::loadMultiple();
-  }

@@ -1,0 +1,40 @@
+<?php
+
+/**
+ * @file
+ *  Contains Drupal\mcapi\Plugin\TransactionRelative\Payer
+ */
+
+namespace Drupal\mcapi\Plugin\TransactionRelative;
+
+use Drupal\mcapi\Plugin\TransactionRelativeInterface;
+use Drupal\mcapi\TransactionInterface;
+use Drupal\Core\Entity\Query\QueryInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Plugin\PluginBase;
+
+/**
+ * Defines a payer relative to a Transaction entity.
+ *
+ * @TransactionRelative(
+ *   id = "authenticated",
+ *   label = @Translation("Authenticated users"),
+ *   description = @Translation("Anyone who is logged in")
+ * )
+ */
+class Authenticated extends PluginBase implements TransactionRelativeInterface {
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isRelative(TransactionInterface $transaction, AccountInterface $account) {
+    return !empty($account->isAuthenticated());
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function condition(QueryInterface $query) {
+
+  }
+}

@@ -7,21 +7,16 @@
 
 namespace Drupal\mcapi\Annotation;
 
-use Drupal\Core\TypedData\Annotation\DataType;
+use Drupal\Component\Annotation\Plugin;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Defines a Transaction Transition annotation object.
  *
  * @Annotation
  */
-class Transition extends DataType {
+class Transition extends Plugin {
 
   public $id;
-
-  public $label;
-
-  public $description;
-
-  public $settings;
 
 }

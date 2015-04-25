@@ -3,19 +3,6 @@
 use Drupal\views\ViewExecutable;
 use Drupal\views\Plugin\views\query\QueryPluginBase;
 
-/* see https://api.drupal.org/api/drupal/core!modules!views!views.module/function/views_hook_info/8
-    'views_query_substitutions',
-    'views_form_substitutions',
-    'views_pre_view',
-    'views_pre_build',
-    'views_post_build',
-    'views_pre_execute',
-    'views_post_execute',
-    'views_pre_render',
-    'views_post_render',
-    'views_query_alter',
-*/
-
 /**
  * implements hook_views_query_alter().
  * Per-transaction access control on transaction views
@@ -25,29 +12,29 @@ use Drupal\views\Plugin\views\query\QueryPluginBase;
  * @param Drupal\views\Plugin\views\query\QueryPluginBase $query
  */
 function mcapi_views_query_alter(ViewExecutable $view, QueryPluginBase $query) {
-
+  return;
   list($base, $wallet_fields) = mcapi_views_query_alter_setup($view);
-  if (!$base) return;
+  if (!$base) {
+    return;
+  }
   $query->setWhereGroup('AND', 'both_wallets');
 
   foreach ($wallet_fields as $db_field_name) {
-    $wallet_join = array(
+    $wallet_join = [
       'table' => 'mcapi_wallet',
       'field' => 'wid',
       'left_table' => $base,
       'left_field' => $db_field_name,
       'adjusted' => TRUE,
       'type' => 'LEFT',
-    );
-    $wallet_table = 'mcapi_wallet_'.$db_field_name;
-    $details_field = $wallet_table.'.details';
+    ];
+    $wallet_table = 'mcapi_wallet_' . $db_field_name;
+    $details_field = $wallet_table . '.details';
     $query->addRelationship(
-      $wallet_table,
-      Drupal\views\Views::pluginManager('join')->createInstance('standard', $wallet_join),
-      $base
+      $wallet_table, Drupal\views\Views::pluginManager('join')->createInstance('standard', $wallet_join), $base
     );
 
-    $users_join = array(
+    $users_join = [
       'table' => 'mcapi_wallets_access',
       'field' => 'wid',
       'left_table' => $base,
@@ -57,11 +44,9 @@ function mcapi_views_query_alter(ViewExecutable $view, QueryPluginBase $query) {
       'extra' => [
         ['field' => 'operation', 'value' => 'details']
       ]
-    );
+    ];
     $query->addRelationship(
-      'mcapi_wallet_access_designated',
-      Drupal\views\Views::pluginManager('join')->createInstance('standard', $users_join),
-      $base
+      'mcapi_wallet_access_designated', Drupal\views\Views::pluginManager('join')->createInstance('standard', $users_join), $base
     );
 
     $wallet_operations = db_or();
@@ -75,31 +60,33 @@ function mcapi_views_query_alter(ViewExecutable $view, QueryPluginBase $query) {
       //or if the current user is named
       $wallet_operations->condition(
         db_and()
-        ->condition($details_field, WALLET_ACCESS_USERS)
-        ->condition('mcapi_wallet_access_designated.uid', $uid)
+          ->condition($details_field, WALLET_ACCESS_USERS)
+          ->condition('mcapi_wallet_access_designated.uid', $uid)
       );
     }
+//    print_r($wallet_operations);
     $query->addWhere('both_wallets', $wallet_operations);
   }
 }
 
 /**
- * helper to alter a transaction view
- * 
+ * changes the wallet field names if the view is on the index table
+ *
  * @param ViewExecutable $view
- * 
+ *
  * @return array
  *   the base table name and the names of the two wallet fields in that table
- * 
+ *
  * @note also used in mcapi_exchanges_views_query_alter_setup()
  */
 function mcapi_views_query_alter_setup(ViewExecutable $view) {
+  return;
   $base = $view->storage->get('base_table');
-  if (!in_array($base, ['mcapi_transaction', 'mcapi_transactions_index'])){
+  if (!in_array($base, ['mcapi_transaction', 'mcapi_transactions_index'])) {
     return;
   }
-  $fields = $base == 'mcapi_transaction' ? 
-    ['payer', 'payee'] : 
+  $fields = $base == 'mcapi_transaction' ?
+    ['payer', 'payee'] :
     ['wallet_id', 'partner_id'];
   return [$base, $fields];
 }

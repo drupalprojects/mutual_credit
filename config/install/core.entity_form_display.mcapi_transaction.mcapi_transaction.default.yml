@@ -2,7 +2,7 @@ langcode: en
 status: true
 dependencies:
   config:
-    - field.instance.mcapi_transaction.mcapi_transaction.worth
+    - field.field.mcapi_transaction.mcapi_transaction.worth
   module:
     - mcapi
 id: mcapi_transaction.mcapi_transaction.default

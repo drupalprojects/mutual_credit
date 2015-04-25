@@ -13,23 +13,7 @@ redirect: user
 twig2: ''
 message: 'The transaction has been deleted'
 access:
-  done:
-    admin: admin
-    payer: 0
-    payee: 0
-    manager: manager
-    helper: 0
-  pending: 
-    admin: admin
-    payer: 0
-    payee: 0
-    manager: manager
-    helper: 0
-  undone: 
-    admin: admin
-    payer: 0
-    payee: 0
-    manager: manager
-    helper: 0
-status: true
+  creator: creator
+  payer: 0
+  payee: 0
 weight: 5

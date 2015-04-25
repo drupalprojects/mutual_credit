@@ -7,7 +7,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Url;
 use Drupal\mcapi\Exchange;
-use Drupal\mcapi\Mcapi;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\field\Entity\FieldConfig;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -106,7 +105,14 @@ class WalletSettings extends ConfigFormBase {
       '#weight' => 5
     ];
     $w = 0;
-    foreach (Mcapi::walletOps() as $key => $description) {
+    /*
+     * [
+      [details] => View transaction log
+      [summary] => View summary
+      [payin] => Pay into this wallet
+      [payout] => Pay out of this wallet
+     */
+    foreach (Exchange::walletOps() as $key => $description) {
       $form['wallet_access'][$key] = [
         '#title' => $description,
         '#type' => 'checkboxes',
@@ -117,12 +123,12 @@ class WalletSettings extends ConfigFormBase {
       //TODO debug why these aren't working
       //should we remove the owner checkbox and let access control grant
       //all permissions to owner?
-      $form['wallet_access'][WALLET_ACCESS_OWNER]['#default_value'] = TRUE;
-      $form['wallet_access'][WALLET_ACCESS_OWNER]['#disabled'] = TRUE;
+      //$form['wallet_access'][WALLET_ACCESS_OWNER]['#default_value'] = TRUE;
+      //$form['wallet_access'][WALLET_ACCESS_OWNER]['#disabled'] = TRUE;
     }
-    unset($form['wallet_access']['payin']['#options'][WALLET_ACCESS_ANY]);
-    unset($form['wallet_access']['payout']['#options'][WALLET_ACCESS_ANY]);
-    unset($form['wallet_access']['edit']['#options'][WALLET_ACCESS_ANY]);
+    //unset($form['wallet_access']['payin']['#options'][WALLET_ACCESS_ANY]);
+    //unset($form['wallet_access']['payout']['#options'][WALLET_ACCESS_ANY]);
+    //unset($form['wallet_access']['edit']['#options'][WALLET_ACCESS_ANY]);
     return parent::buildForm($form, $form_state);
   }
 
@@ -134,7 +140,7 @@ class WalletSettings extends ConfigFormBase {
     //TODO check that none of the access is set to 'users' only
     //this would be very awkward for new wallets
     $values = $form_state->getValues();
-    foreach (array_keys(Mcapi::walletOps()) as $op_name) {
+    foreach (array_keys(Exchange::walletOps()) as $op_name) {
       if (array_filter($values[$op_name]) == array('WALLET_ACCESS_USERS' => 'WALLET_ACCESS_USERS')) {
         $form_state->setErrorByName($op_name, t("'Named users' cannot be selected by itself"));
       }

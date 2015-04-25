@@ -26,11 +26,9 @@ class WalletStats extends McapiBlockBase {
    */
   public function build() {
     parent::build();
-    module_load_include('inc', 'mcapi');
-    //@todo make this work
-    $build = mcapi_view_wallets_balances($this->account->wallets, $this->currencies);
-    //this is helpful for when the signatures module wants to alter the block.
-    $build['#account'] = $this->account;
-    return $build;
+    return [
+      '#theme' => 'mcapi_wallets',
+      '#wallets' => $this->account->wallets
+    ];
   }
 }

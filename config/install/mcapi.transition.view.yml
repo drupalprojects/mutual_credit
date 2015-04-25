@@ -8,6 +8,5 @@ page_title: 'Transaction certificate'
 format: certificate
 twig: ''
 weight: 1
-status: true
 #this transition has its own view access settings
 #this special transition doesn't  need many of the properties

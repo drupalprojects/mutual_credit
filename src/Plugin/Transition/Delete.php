@@ -18,13 +18,7 @@ use Drupal\mcapi\Plugin\Transition2Step;
  * Undo transition
  *
  * @Transition(
- *   id = "delete",
- *   label = @Translation("Delete"),
- *   description = @Translation("Remove the transaction from the database"),
- *   settings = {
- *     "weight" = "3",
- *     "sure" = "Are you sure you want to remove the transaction completely?"
- *   }
+ *   id = "delete"
  * )
  */
 class Delete extends Transition2Step {
@@ -56,7 +50,7 @@ class Delete extends Transition2Step {
     $violations = $transaction->delete();
 
     if ($violations) {
-      throw new McapiTransactionException('', implode('. ', $violations));
+      throw new \Exception('', implode('. ', $violations));
     }
 
     return array('#markup' => $this->t('The transaction is deleted.'));

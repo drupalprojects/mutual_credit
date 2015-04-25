@@ -17,17 +17,19 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class TransitionToggle extends ConfirmFormBase {
 
-  
+  private $id;
   private $transition;
+  private $config;
 
   public function __construct($configFactory, $transition_manager, $route_match) {
     $this->setConfigFactory($configFactory);
-    $id = $route_match->getParameter('transition');
-    if ($id) {
-      $this->transition = $transition_manager->getPlugin($id);
+    $this->id = $route_match->getParameter('transition');
+    if ($this->id) {
+      $this->transition = $transition_manager->getPlugin($this->id)->getConfiguration();
     }
+    $this->config = $this->configFactory->getEditable('mcapi.misc');
   }
-    
+
   static public function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
@@ -35,7 +37,7 @@ class TransitionToggle extends ConfirmFormBase {
       $container->get('current_route_match')
     );
   }
-  
+
   public function getFormId() {
     return 'transition_toggle';
   }
@@ -44,8 +46,8 @@ class TransitionToggle extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getQuestion() {
-    $args = array('%name' => $this->transition->label);
-    return $this->transition->getConfiguration('status') ?
+    $args = array('%name' => $this->transition['title']);
+    return $this->config->get('active_transitions')[$this->id] ?
       $this->t('Are you sure you want to disable %name?', $args) :
       $this->t('Are you sure you want to enable %name?', $args);
     }
@@ -77,15 +79,20 @@ class TransitionToggle extends ConfirmFormBase {
    * @todo might want to clear the rules cache or something
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $name = 'mcapi.transition.' .$this->transition->getConfiguration('id');
-    $config = $this->configFactory->getEditable($name);
-    $config->set('status', !$config->get('status'));
-    $config->save();
-    if ($config->get('status')) {
-      drupal_set_message($this->t('Transition %label has been enabled.', array('%label' => $this->transition->label)));
+    $active = $this->config->get('active_transitions');
+    $active[$this->id] = !$active[$this->id];
+    $this->config->set('active_transitions', $active)->save();
+    if ($active[$this->id]) {
+      drupal_set_message($this->t(
+        'Transition %label has been enabled.',
+        ['%label' => $this->transition['title']]
+      ));
     }
     else {
-      drupal_set_message($this->t('Transition %label has been disabled.', array('%label' => $this->transition->label)));
+      drupal_set_message($this->t(
+        'Transition %label has been disabled.',
+        ['%label' => $this->transition['title']]
+      ));
     }
     $form_state->setRedirect('mcapi.admin.transactions');
   }

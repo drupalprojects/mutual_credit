@@ -25,16 +25,15 @@ class ExchangeViewBuilder extends EntityViewBuilder {
     $build = parent::getBuildDefaults($entity, $view_mode, $langcode);
     //we shouldn't have to build all of this stuff until the entity display has been processed
     //instead of using <br> here, isn't there a nicer way to make each render array into a div or something like that
-    $link = Url::fromUri('base://exchange/'.$entity->id().'/members');
+    $link = Url::fromUri('base://exchange/' . $entity->id() . '/members');
     $build['people'] = array(
       '#type' => 'item',
       '#title' => t('People'),
       '#weight' => 4,
       'members' => array(
         '#prefix' => '<br />',
-        '#markup' =>  \Drupal::l(
-          t('@count members', array('@count' => count($entity->users()))),
-          Url::fromUri('base://exchange/'.$entity->id().'/members')//this is a view
+        '#markup' => \Drupal::l(
+          t('@count members', array('@count' => count($entity->users()))), Url::fromUri('base://exchange/' . $entity->id() . '/members')//this is a view
         )
       ),
       'admin' => array(
@@ -50,22 +49,21 @@ class ExchangeViewBuilder extends EntityViewBuilder {
       '#title' => t('Intertrading wallet'),
       '#weight' => 5,
       '#markup' => \Drupal::l(
-        t('View'), 
-        Url::fromRoute('mcapi.wallet_view', array('mcapi_wallet' => $entity->intertrading_wallet()->id()))
+        t('View'), Url::fromRoute('entity.mcapi_wallet.canonical', array('mcapi_wallet' => $entity->intertrading_wallet()->id()))
       )
     );
 
 
     $count = db_select("user__exchanges", 'e')->fields('e', array('entity_id'))
-    ->condition('exchanges_target_id', $entity->id())
-    ->countQuery()->execute()->fetchField();
+        ->condition('exchanges_target_id', $entity->id())
+        ->countQuery()->execute()->fetchField();
     $build['members_link'] = array(
       '#type' => 'item',
-      '#title' => t('@count members', array('@count'=> $count)),
+      '#title' => t('@count members', array('@count' => $count)),
       'link' => array(
         '#type' => 'link',
         '#title' => t('Show members'),
-        '#href' => 'exchange/'.$entity->id().'/members',
+        '#href' => 'exchange/' . $entity->id() . '/members',
         //maybe instead put a view with the last five members here
         '#options' => array(
           'attributes' => new Attribute(array('title' => "This view doesn't exist yet"))
@@ -75,11 +73,11 @@ class ExchangeViewBuilder extends EntityViewBuilder {
 
     $build['transactions_link'] = array(
       '#type' => 'item',
-      '#title' => t('@count transactions', array('@count'=> $entity->transactions())),
+      '#title' => t('@count transactions', array('@count' => $entity->transactions())),
       'link' => array(
         '#type' => 'link',
         '#title' => t('Show transactions'),
-        '#href' => 'exchange/'.$entity->id().'/transactions',
+        '#href' => 'exchange/' . $entity->id() . '/transactions',
         //TODO maybe instead put a view with the last five members here
         '#options' => array(
           'attributes' => new Attribute(array('title' => "This view doesn't exist yet"))

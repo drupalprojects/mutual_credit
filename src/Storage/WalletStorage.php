@@ -10,7 +10,7 @@ namespace Drupal\mcapi\Storage;
 use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\mcapi\WalletInterface;
-use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Exchange;
 use Drupal\Core\Entity\EntityInterface;
 
 class WalletStorage extends SqlContentEntityStorage implements WalletStorageInterface {
@@ -26,7 +26,7 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
       ->fields('a', array('wid', 'operation', 'uid'))
       ->condition('wid', array_keys($records), 'IN');
 
-    foreach(array_keys(Mcapi::walletOps()) as $op) {
+    foreach(array_keys(Exchange::walletOps()) as $op) {
       foreach ($records as $key => $record) {
         //the zero values will be replaced by an array of user ids from the access table.
         //if all goes according to plan...
@@ -90,7 +90,7 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
       ->fields(array('wid', 'permission', 'value'));
     
     foreach ($wallets as $wid => $wallet) {
-      foreach (array_keys(Mcapi::walletOps()) as $op) {
+      foreach (array_keys(Exchange::walletOps()) as $op) {
         if (is_array($wallet->{$op})) {
           foreach ($wallet->$op as $value) {
             $values = array(

@@ -93,6 +93,13 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     parent::doDelete($transactions);
     $this->resetCache(array_keys($transactions));
     $this->indexDrop($serials);
+    \Drupal::logger('mcapi')->notice(
+      'Transaction deleted by user @uid: @serials', 
+      [
+        '@uid' => \Drupal::currentuser()->id(), 
+        '@serials' => implode(', ', array_keys($transactions))
+      ]
+    );
   }
 
   /**
@@ -103,6 +110,13 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       $transaction->set('state', TRANSACTION_STATE_ERASED);
       $transaction->save($transaction);
     }
+    \Drupal::logger('mcapi')->notice(
+      'Transaction erased by user @uid: @serials', 
+      [
+        '@uid' => \Drupal::currentuser()->id(), 
+        '@serials' => implode(', ', array_keys($transactions))
+      ]
+    );
   }
 
 
@@ -148,11 +162,11 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
           t.type,
           t.created,
           t.changed,
-          worth_curr_id,
           0 AS incoming,
           worth_value AS outgoing,
           - worth_value AS diff,
           worth_value AS volume,
+          worth_curr_id,
           t.parent as child
         FROM {mcapi_transaction} t
         RIGHT JOIN {mcapi_transaction__worth} w ON t.xid = w.entity_id
@@ -170,11 +184,11 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
           t.type,
           t.created,
           t.changed,
-          worth_curr_id,
           worth_value AS incoming,
           0 AS outgoing,
           worth_value AS diff,
           worth_value AS volume,
+          worth_curr_id,
           t.parent as child
         FROM {mcapi_transaction} t
         RIGHT JOIN {mcapi_transaction__worth} w ON t.xid = w.entity_id

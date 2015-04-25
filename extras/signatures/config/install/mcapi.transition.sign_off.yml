@@ -1,6 +1,8 @@
 id: sign_off
 title: Sign off
 tooltip: Sign on behalf of all remaining signatories
+states: 
+  pending: pending
 page_title: 'Are you sure you want to complete this transaction?'
 format: certificate
 twig: ''
@@ -10,18 +12,13 @@ format2: certificate
 redirect: ''
 twig2: ''
 message: 'Transaction was completed'
+access:
+  creator: creator
+  payer: 0
+  payee: 0
 send: 1
 subject: 'Transaction was completed'
 body: 'Tokens will be needed for this mail!'
-cc: ''
 status: true
 weight: 2
-access:
-  done: {}
-  pending: 
-    admin: 0
-    payer: 0
-    payee: 0
-    manager: manager
-    helper: helper
-  undone: { }
+access: {}

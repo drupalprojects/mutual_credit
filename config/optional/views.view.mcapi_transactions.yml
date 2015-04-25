@@ -276,7 +276,7 @@ display:
           exclude: false
           alter:
             alter_text: true
-            text: "From: [wallet_label_1] <br />\nTo: [wallet_label] "
+            text: "From: {{ wallet_label_1 }}<br />\nTo: {{ wallet_label }}"
             make_link: false
             path: ''
             absolute: false
@@ -800,54 +800,6 @@ display:
             group_items: {  }
           plugin_id: user_name
           provider: user
-        type:
-          id: type
-          table: mcapi_transaction
-          field: type
-          relationship: none
-          group_type: group
-          admin_label: ''
-          dependencies:
-            module:
-              - mcapi
-          operator: in
-          value:
-            default: default
-          group: 1
-          exposed: true
-          expose:
-            operator_id: type_op
-            label: Type
-            description: ''
-            use_operator: false
-            operator: type_op
-            identifier: type
-            required: false
-            remember: false
-            multiple: true
-            remember_roles:
-              authenticated: authenticated
-              anonymous: '0'
-              member: '0'
-              helper: '0'
-              ladmin: '0'
-              manager: '0'
-              admin: '0'
-            reduce: 0
-          is_grouped: false
-          group_info:
-            label: ''
-            description: ''
-            identifier: ''
-            optional: true
-            widget: select
-            multiple: false
-            remember: false
-            default_group: All
-            default_group_multiple: {  }
-            group_items: {  }
-          plugin_id: mcapi_type
-          provider: mcapi
         creator:
           id: creator
           table: mcapi_transaction
@@ -1362,7 +1314,7 @@ display:
           exclude: false
           alter:
             alter_text: true
-            text: "From: [wallet_label_1]<br />\nTo: [wallet_label]"
+            text: "From: {{ wallet_label_1 }}<br />\nTo: {{ wallet_label }}"
             make_link: false
             path: ''
             absolute: false

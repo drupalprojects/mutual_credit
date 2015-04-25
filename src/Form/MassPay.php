@@ -122,7 +122,7 @@ class MassPay extends TransactionForm {
           //'#description' => $this->t('The following tokens are available:') .' [user:name]',
           '#type' => 'textarea',
           //this needs to be stored per-exchange. What's the best way?
-          '#default_value' => \Drupal::service('user.data')->get('mcapi', \Drupal::currentUser()->id(), 'masspay')
+          '#default_value' => \Drupal::service('user.data')->get('mcapi', $this->currentUser()->id(), 'masspay')
         )
       );
 
@@ -135,7 +135,7 @@ class MassPay extends TransactionForm {
     if (empty($form_state->get('validated_transactions'))) {
       $form_state->cleanValues();;//without this, buildentity fails, but again, not so in nodeFormController
 
-      $form_state->addValue('creator', \Drupal::currentUser()->id());
+      $form_state->addValue('creator', $this->currentUser()->id());
       $form_state->addValue('type', 'mass');
       $values = $form_state->getValues();
       if ($values['direction'] == 'one2many') {
@@ -180,7 +180,8 @@ class MassPay extends TransactionForm {
   public function submit(array $form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     //TODO how do we inject stuff into forms?
-    \Drupal::service('user.data')->set('mcapi', \Drupal::currentUser()->id(), 'masspay', $values['notification']['body']);
+    \Drupal::service('user.data')
+      ->set('mcapi', $this->currentUser()->id(), 'masspay', $values['notification']['body']);
 
     if (!array_key_exists('op', $values)) {
       $form_state->setRebuild(TRUE);
@@ -194,7 +195,7 @@ class MassPay extends TransactionForm {
 
       //mail the owners of all the wallets involved.
       foreach (Wallet::loadMultiple($form_state->get('wallets')) as $wallet) {
-        $uids[] = $wallet->user_id();
+        $uids[] = $wallet->ownerUserId();
       }
       foreach (User::loadMultiple(array_unique($uids)) as $account) {
         $to[] = $account->getEmail();
@@ -210,11 +211,22 @@ class MassPay extends TransactionForm {
           'mcapi_transaction' => $main_transaction->serial->value
         )
       );
+      
+      $this->logger('mcapi')->notice(
+        'User @uid created @num mass transactions @serial', 
+        [
+          '@uid' => $this->currentUser()->id(), 
+          '@count' => count($form_state->get('validated_transactions')),
+          '@serial' => $this->entity->serial->value
+        ]
+      );
     }
   }
 
   function form_type_select_wallets_value(&$element, $input, FormStateInterface $form_state) {
-    if (empty($input)) return;
+    if (empty($input)) {
+      return;
+    }
     foreach (explode(', ', $input) as $val) {
       $values[] = form_type_select_wallet_value($element, $val, $form_state);
     }

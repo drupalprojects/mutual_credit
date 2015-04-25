@@ -8,27 +8,21 @@
 
 namespace Drupal\mcapi_signatures\Plugin\Transition;
 
-use Drupal\mcapi\Plugin\TransitionBase;
+use Drupal\mcapi\Plugin\Transition2Step;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\user\Entity\User;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Sign Off transition
  *
  * @Transition(
- *   id = "sign_off",
- *   label = @Translation("Sign off"),
- *   description = @Translation("Sign a pending transaction on behalf of all pending signatories"),
- *   module = "mcapi_sgnatures",
- *   settings = {
- *     "weight" = "2",
- *     "sure" = "Are you sure you want to finalise this transaction?"
- *   }
+ *   id = "sign_off"
  * )
  */
-class SignOff extends TransitionBase {
+class SignOff extends Transition2Step {
 
   /*
    * {@inheritdoc}
@@ -39,24 +33,37 @@ class SignOff extends TransitionBase {
       if ($signed) continue;
       transaction_sign($transaction, User::load($uid));
     }
-    return array(
+    return [
       '#markup' => t(
         '@transaction is signed off',
-        array('@transaction' => $transaction->label())
+        ['@transaction' => $transaction->label()]
       )
-    );
+    ];
+  }
+
+  /**
+   * @see \Drupal\mcapi\TransitionBase::buildConfigurationForm()
+   * Ensure the pending checkbox is ticked
+   */
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    $form = parent::buildConfigurationForm($form, $form_state);
+    $form['states'][TRANSACTION_STATE_PENDING]['#value'] = TRUE;
+    $form['states'][TRANSACTION_STATE_PENDING]['#disabled'] = TRUE;
+    $form['states'][TRANSACTION_STATE_FINISHED]['#value'] = FALSE;
+    $form['states'][TRANSACTION_STATE_FINISHED]['#disabled'] = TRUE;
+    return $form;
   }
 
   /*
    * {@inheritdoc}
-   */
-  public function opAccess(TransactionInterface $transaction, AccountInterface $account) {
-    //@todo this transition needs some permission settings...
-    return FALSE;
-    if ($transaction->get('state')->value == TRANSACTION_STATE_PENDING) {
-
-    }
+  */
+  public function accessOp(TransactionInterface $transaction, AccountInterface $account) {
+    //Must be a valid transaction relative AND a named signatory.
+    return parent::accessOp($transaction, $account)
+      && isset($transaction->signatures)
+      && is_array($transaction->signatures)// signatures property is populated
+      && array_key_exists(\Drupal::currentUser()->id(), $transaction->signatures)//the current user is a signatory
+      && !$transaction->signatures[\Drupal::currentUser()->id()];//the currency user hasn't signed
   }
-
 
 }

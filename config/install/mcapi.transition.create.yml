@@ -1,6 +1,7 @@
 id: create
 page_title: 'Confirm this transaction'
-states: { }
+states: 
+  done: done
 format: certificate
 twig: ''
 button: 'Yes I''m sure'

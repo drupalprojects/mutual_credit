@@ -39,6 +39,12 @@ mcapi.misc:
     mail_errors:
       type: string
       label: Send diagnostics to user 1 by mail
+    active_relatives: 
+      type: sequence
+      name: Transaction relatives
+    active_transitions:
+      type: sequence
+      name: Active transition plugins
 
 mcapi.wallets:
   type: mapping
@@ -108,7 +114,6 @@ mcapi.currency.*:
     format:
       type: sequence
       label: Format
-      sequence: { }
     zero:
       type: boolean
       label: 'Allow zero transactions'
@@ -121,10 +126,7 @@ mcapi.currency.*:
     deletion:
       type: integer
       label: Delete options
-    third_party_settings:
-      type: sequence
-      label: Third party settings
-      sequence: { }
+    #third_party_settings included in definition of config_entity core.data_types.schema.yml
         
 mcapi.state.*:
   type: config_entity
@@ -159,7 +161,7 @@ mcapi.type.*:
     start_state:
       type: string
       label: Initial workflow state
-
+  
 mcapi.transition.*:
   type: config_entity
   label: Transition settings
@@ -173,7 +175,6 @@ mcapi.transition.*:
     states:
       'type': sequence
       'label': Applies to states
-      'sequence': { }
     page_title:
       'type': string
       'label': Page title
@@ -181,7 +182,7 @@ mcapi.transition.*:
       'type': string
       'label': Transaction display
     twig:
-      'type': straing
+      'type': string
       'label': Template
     button:
       'type': string
@@ -201,4 +202,10 @@ mcapi.transition.*:
     message:
       'type': string
       'label': Success message
-#haven't bothered with the notifications because they really belong elsewhere
+    weight:
+      'type': integer
+      'label': Weight
+    access:
+      'type': sequence
+      'label': Access settings
+    #third_party_settings included in definition of config_entity core.data_types.schema.yml

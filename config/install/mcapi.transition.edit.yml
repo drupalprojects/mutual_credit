@@ -12,26 +12,10 @@ format2: certificate
 redirect: ''
 twig2: ''
 message: 'The transaction has been re-saved'
-access:
-  done:
-    admin: admin
-    payer: 0
-    payee: 0
-    creator: 0
-    helper: 0
-  erased:
-    payer: 0
-    payee: 0
-    creator: 0
-    helper: 0
-    admin: 0
-  pending:
-    helper: helper
-    admin: admin
-    payer: 0
-    payee: 0
-    creator: 0
-status: true
+access: 
+  creator: creator
+  payer: 0
+  payee: 0
 weight: 4
 fields:
   description: description

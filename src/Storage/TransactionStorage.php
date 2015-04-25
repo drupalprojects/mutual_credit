@@ -38,17 +38,18 @@ class TransactionStorage extends TransactionIndexStorage {
     //and in fact be several records
     //NB currently transactions are NOT revisionable
     if ($is_new = $entity->isNew()) {
-      $entity->serial->value = $this->database->query(
+      $entity->serial->value = $this->database->nextId($this->database->query(
         "SELECT MAX(serial) FROM {mcapi_transaction}"
-      )->fetchField() + 1;
+      )->fetchField());
     }
+
     $parent = 0;
     //note that this clones the parent tranaction
     foreach ($entity->flatten() as $transaction) {
       $transaction->serial = $entity->serial->value;
       $record = $this->mapToStorageRecord($transaction);
       $record->changed = REQUEST_TIME;
-      
+
       if (!$is_new) {
         $return = SAVED_UPDATED;
         $this->database
@@ -60,6 +61,7 @@ class TransactionStorage extends TransactionIndexStorage {
         $this->resetCache($cache_ids);
         $this->indexDrop($entity->serial->value);
         $this->invokeFieldMethod('update', $transaction);
+        $this->saveToDedicatedTables($transaction, 1);
         $this->invokeHook('update', $entity);
       }
       else {
@@ -79,8 +81,8 @@ class TransactionStorage extends TransactionIndexStorage {
           //alter the passed entity, at least the parent
           $parent = $entity->xid->value = $insert_id;
         }
-
         $this->invokeFieldMethod('insert', $transaction);
+        $this->saveToDedicatedTables($transaction, 0);
         // The entity is no longer new.
         $entity->enforceIsNew(FALSE);
         $transaction->setOriginalId($entity->id());
@@ -88,7 +90,6 @@ class TransactionStorage extends TransactionIndexStorage {
         // Reset general caches, but keep caches specific to certain entities.
         $cache_ids = [];
       }
-      $this->saveFieldItems($transaction, $return == SAVED_UPDATED);
     }
     // Allow code to run after saving.
     $this->postSave($entity, $return == SAVED_UPDATED);
@@ -98,19 +99,7 @@ class TransactionStorage extends TransactionIndexStorage {
     return $return;
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function doErase(array $transactions) {
-    foreach ($transactions as $transaction) {
-      //its only necessary to set the state of the parent
-      $transaction->set('state', TRANSACTION_STATE_ERASED);
-      $transaction->save();
-    }
-    $this->clearCache($transactions);
-    
-  }
-  
+
   public function clearCache($transactions = []) {
     $ids = [];
     foreach ($transactions AS $transaction) {
@@ -187,7 +176,7 @@ class TransactionStorage extends TransactionIndexStorage {
       	case 'to':
           $query->condition('created', $value, '<');
           break;
-      	default: 
+      	default:
           echo $field;
           mtrace();
       }

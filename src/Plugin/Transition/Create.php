@@ -18,13 +18,7 @@ use Drupal\Core\Session\AccountInterface;
  * Create transition
  *
  * @Transition(
- *   id = "create",
- *   label = @Translation("Create"),
- *   description = @Translation("Create a new transaction"),
- *   settings = {
- *     "weight" = "0",
- *     "sure" = "Are you sure?"
- *   }
+ *   id = "create"
  * )
  */
 class Create extends Transition2Step {
@@ -33,7 +27,7 @@ class Create extends Transition2Step {
    * {@inheritdoc}
    * A transaction can be created if the user has a wallet, and permission to transaction
    */
-  public function opAccess(TransactionInterface $transaction, AccountInterface $acount) {
+  public function accessOp(TransactionInterface $transaction, AccountInterface $acount) {
     //TODO check that the use is allowed to pay in to and out from at least one wallet each.
     return empty($transaction->get('xid')->value);
   }
@@ -42,13 +36,8 @@ class Create extends Transition2Step {
    * {@inheritdoc}
    */
   public function execute(TransactionInterface $transaction, array $context) {
-    //this transaction came from the tempstore and was validated in step one
-    $status = $transaction->save();
-    if ($status != SAVED_NEW) {
-      throw new McapiTransactionException('', t('Failed to save transaction'));
-    }
-
-    return array(t('Transaction created'));
+    //the save operation takes place elsewhere
+    return ['#markup' => t('Transaction created')];
   }
 
   /**
@@ -60,4 +49,10 @@ class Create extends Transition2Step {
     return $form;
   }
 
+
+  final public function accessState($transaction) {
+    //can we payin to the payee wallet and payout of the payer wallet
+    return $transaction->payer->entity->access('payout')
+    || $transaction->payee->entity->access('payin');
+  }
 }

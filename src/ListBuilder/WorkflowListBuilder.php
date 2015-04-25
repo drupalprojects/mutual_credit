@@ -15,125 +15,119 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\Entity\State;
 use Drupal\Core\Template\Attribute;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Displays the workflow page in the management menu admin/accounting/workflow
+ *
+ * @todo widen the table using CSS or style attribute but how when no css files are shown as of now?
  */
 class WorkflowListBuilder extends ControllerBase implements FormInterface {
 
   public function buildHeader() {
-    return array(
+    return [
       'name' => t('Transition'),
       'description' => t('Description'),
       'operations' => '',
       'flip' => '',
       'weight' => t('Weight'),
-    );
+    ];
   }
 
   public function render() {
-    return array(
+    return [
       $this->visualise(),
       $this->formBuilder()->getForm($this)
-    );
+    ];
   }
 
-  public function buildRow($transition) {
+  public function buildRow($transition, $active) {
     $id = $transition->getPluginId();
-
     $config = $transition->getConfiguration();
-    return array(
-      '#weight' => $config['weight'],
-      '#attributes' => new Attribute(array('class' => array('draggable'))),
-      '#attributes' => array('class' => array('draggable')),//TODO sort this out. see \Drupal\Core\Config\Entity\DraggableListBuilder
-      'name' => array(
-        '#markup' => $config['title']
-      ),
-      'description' => array(
-        '#markup' => $transition->description
-      ),
-      'operations' => array(
-        '#markup' => $this->l($this->t('Settings'), Url::fromRoute('mcapi.workflow_settings', array('transition' => $id)))
-      ),
-      'flip' => array(
-        '#markup' => $id == 'view' ? '' : $this->l(t('Disable'), Url::fromRoute('mcapi.admin.workflow.toggle', array('transition' => $id))),
-      ),
-      'weight' => array(
-        '#type' => 'weight',
-        '#title' => t('Weight for @title', array('@title' => $transition->label)),
-        '#title_display' => 'invisible',
-        '#default_value' => $config['weight'],
-        '#attributes' => new Attribute(array('class' => array('weight'))),//TODO sort this out. see \Drupal\Core\Render\Element\RenderElement setAttribute()
-        '#attributes' => array('class' => array('weight'))
-      ),
-    );
-  }
-
-  public function disabledRow($transition) {
-    $id = $transition->getPluginId();
-
-    $config = $transition->getConfiguration();
-    return array(
-      '#weight' => 100,
-      '#attributes' => new Attribute(array('class' => array('draggable'))),
-      '#attributes' => array('class' => array('draggable')),//TODO sort this out. see \Drupal\Core\Config\Entity\DraggableListBuilder
-      'name' => array(
-        '#markup' => $config['title']
-      ),
-      'description' => array(
-        '#markup' => $transition->description
-      ),
-      'operations' => array(
-        '#markup' => $this->t('Disabled'),
-      ),
-      'flip' => array(
-        '#markup' => \Drupal::l(
-          t('Enable'), 
-          Url::fromRoute('mcapi.admin.workflow.toggle', ['transition' => $id])
+    $row = $this->disabledRow($transition, $config);
+    if ($active) {
+      $row['operations'] = [
+        '#markup' => $this->l(
+          $this->t('Settings'),
+          Url::fromRoute('mcapi.workflow_settings', ['transition' => $id])
         )
-      ),
-      'weight' => array(
+      ];
+
+      $row['flip'] = [
+        '#markup' => $id == 'view' ? '' : $this->l(
+          t('Disable'),
+          Url::fromRoute('mcapi.admin.workflow.toggle', ['transition' => $id])
+        ),
+      ];
+    }
+    return $row;
+  }
+
+  private function disabledRow($transition, $config) {
+    return [
+      '#weight' => $config['weight'],
+      '#attributes' => new Attribute(['class' => ['draggable']]),
+      '#attributes' => ['class' => ['draggable']],//TODO sort this out. see \Drupal\Core\Config\Entity\DraggableListBuilder
+      'name' => [
+        '#markup' => $config['title']
+      ],
+      'description' => [
+        '#markup' => $config['tooltip']
+      ],
+      'operations' => [
+        '#markup' => $this->t('Disabled'),
+      ],
+      'flip' => [
+        '#markup' => \Drupal::l(
+          t('Enable'),
+          Url::fromRoute(
+            'mcapi.admin.workflow.toggle',
+            ['transition' => $transition->getPluginId()]
+          )
+        )
+      ],
+      'weight' => [
         '#type' => 'weight',
-        '#title' => t('Weight for @title', array('@title' => $transition->label)),
+        '#title' => t('Weight for @title', ['@title' => $config['title']]),
         '#title_display' => 'invisible',
         '#default_value' => 100,
-        '#attributes' => new Attribute(array('class' => array('weight'))),
-        '#attributes' => array('class' => array('weight'))
-      ),
-    );
+        '#attributes' => new Attribute(['class' => ['weight']]),
+        '#attributes' => ['class' => ['weight']]
+      ],
+    ];
   }
 
   public function buildForm(array $form, FormStateInterface $form_state) {
+    $active = \Drupal::config('mcapi.misc')->get('active_transitions');
+    //reset the form fresh
     $form = [];
-    $form['plugins'] = array(
+    $form['plugins'] = [
       '#type' => 'table',
       '#header' => $this->buildHeader(),
-      '#tabledrag' => array(
-        array(
+      '#tabledrag' => [
+        [
           'action' => 'order',
           'relationship' => 'sibling',
           'group' => 'weight',
-        ),
-      ),
-    );
+        ],
+      ],
+    ];
     foreach (\Drupal::service('mcapi.transitions')->all() as $id => $plugin) {
-      if ($id == 'create') continue;
-      if ($plugin->getConfiguration('status')) {
-        $form['plugins'][$id] = $this->buildRow($plugin);
+      if ($id == 'create') {
+        continue;
       }
-      else {
-        //TODO put a submit button here
-        $form['plugins'][$id] = $this->disabledRow($plugin);
-      }
+
+      $form['plugins'][$id] = $this->buildRow($plugin, $active[$id]);
+
     }
 
-    uasort($form['plugins'], array('\Drupal\Component\Utility\SortArray', 'sortByWeightProperty'));
+    uasort($form['plugins'], ['\Drupal\Component\Utility\SortArray', 'sortByWeightProperty']);
     $form['actions']['#type'] = 'actions';
-    $form['actions']['submit'] = array(
+    $form['actions']['submit'] = [
       '#type' => 'submit',
       '#value' => t('Save order'),
       '#button_type' => 'primary',
-    );
+    ];
     return $form;
   }
 
@@ -146,8 +140,11 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
+    //initiate the config factory
+    $this->config('mcapi.misc');
+    
     foreach ($values['plugins'] as $id => $value) {
-      \Drupal::config('mcapi.transition.'.$id)
+      $this->configFactory->getEditable('mcapi.transition.'.$id)
         ->set('weight', $value['weight'])
         ->save();
     }
@@ -160,16 +157,16 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
   private function visualise() {
     foreach (Type::loadMultiple() as $type => $info) {
       $types[] = '<dt>'.$info->label.'</dt><dd>'.$info->description.'</dd>';
-    }    
+    }
     $renderable['types'] = [
       '#type' => 'container',
       '#attributes' => ['style' => 'display:inline-block; vertical-align:top;'],
-      'title' => array(
+      'title' => [
         '#markup' => "<h4>".t('Transaction types')."</h4>"
-      ),
-      'states' => array(
+      ],
+      'states' => [
         '#markup' => "<dl>".implode("\n\t", $types) . '</dl>'
-      )
+      ]
     ];
     foreach (State::loadMultiple() as $id => $info) {
       $states[] = '<dt>'.$info->label.'</dt><dd>'.$info->description.'</dd>';
@@ -177,12 +174,12 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     $renderable['states'] = [
       '#type' => 'container',
       '#attributes' => ['style' => 'display:inline-block; margin-left:5em; vertical-align:top;'],
-      'title' => array(
+      'title' => [
         '#markup' => "<h4>".t('Workflow states')."</h4>"
-      ),
-      'states' => array(
+      ],
+      'states' => [
         '#markup' => "<dl>".implode("\n\t", $states) . '</dl>'
-      )
+      ]
     ];
     return $renderable;
   }

@@ -4,8 +4,12 @@ fields:
   description: true
   participants: true
 worths_delimiter: '|'
-zero_snippet: '<img src = "present.png" width="31" />'
+zero_snippet: '<img src = "present.png" width = "31" />'
 counted:
   done: true
   undone: false
 mail_errors: true
+#these are populated in hook_modules_enabled
+active_relatives: { }
+active_transitions: { }
+

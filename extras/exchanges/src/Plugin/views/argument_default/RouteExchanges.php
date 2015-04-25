@@ -9,7 +9,6 @@ namespace Drupal\mcapi_exchanges\Plugin\views\argument_default;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Plugin\views\argument_default\ArgumentDefaultPluginBase;
-use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Exchanges;
 
 /**
@@ -33,7 +32,7 @@ class RouteExchanges extends ArgumentDefaultPluginBase {
     //only for ONE given specific entityType
     //so this function needs to decide whether to return an argument
     foreach (\Drupal::service('current_route_match')->getParameters()->all() as $key => $entity) {
-      if (Mcapi::walletable($entity)) {
+      if (walletable($entity)) {
         $ids = Exchanges::in($val);
       }
     }

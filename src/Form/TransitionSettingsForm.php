@@ -11,7 +11,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class TransitionSettingsForm extends ConfigFormBase {
 
   private $plugin;
-  
+
   /**
    * {@inheritdoc}
    */
@@ -20,7 +20,7 @@ class TransitionSettingsForm extends ConfigFormBase {
     $transition = $routeMatch->getParameters()->get('transition');
     $this->plugin = $transitionManager->getPlugin($transition, FALSE);
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -30,30 +30,34 @@ class TransitionSettingsForm extends ConfigFormBase {
       $container->get('mcapi.transitions'),
       $container->get('current_route_match')
     );
-  }    
-  
+  }
+
   /**
    * {@inheritdoc}
    */
   public function getFormID() {
     return 'mcapi_transition_settings_form';
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public function title() {
-    return $this->t("@name transition settings", ['@name' => $this->plugin->label]);
+    return $this->t(
+      "'@name' transition",
+      ['@name' => $this->plugin->getConfiguration('title')]
+    );
   }
 
   /**
    * {@inheritdoc}
+   * @todo convert this into an action perhaps when rules module is ready
+   * @deprecated
    */
   public function buildForm(array $form, FormStateInterface $form_state, $transition = NULL) {
-    
+
     $form = $this->plugin->buildConfigurationForm($form, $form_state);
 
-    //TODO move the following to an action when rules is readier
     if ($transition != 'view' && 0) {
       $form['rules'] = array(
         '#markup' => t('Use the rules module to send notifications'),
@@ -115,10 +119,9 @@ class TransitionSettingsForm extends ConfigFormBase {
         )
       );
     }
-
     return parent::buildForm($form, $form_state);
   }
-  
+
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
     $this->plugin->validateConfigurationForm($form, $form_state);
@@ -131,8 +134,8 @@ class TransitionSettingsForm extends ConfigFormBase {
   	$form_state->cleanValues();;
 
   	$this->plugin->submitConfigurationForm($form, $form_state);
-
-    $config = $this->configFactory->getEditable('mcapi.transition.'.$this->plugin->getPluginId());
+    $id = 'mcapi.transition.'.$this->plugin->getPluginId();
+    $config = $this->configFactory->getEditable($id);
     foreach ($this->plugin->getConfiguration() as $key => $val) {
       $config->set($key, $val);
     }
@@ -141,7 +144,7 @@ class TransitionSettingsForm extends ConfigFormBase {
 
     $form_state->setRedirect('mcapi.admin.transactions');
   }
-  
+
   /**
    * {@inheritdoc}
    */

@@ -10,7 +10,6 @@ namespace Drupal\mcapi\Access;
 use Drupal\Core\Entity\EntityAccessControlHandler;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\mcapi\Exchanges;
 use Drupal\Core\Access\AccessResult;
 
 /**
@@ -19,14 +18,12 @@ use Drupal\Core\Access\AccessResult;
 class WalletAccessControlHandler extends EntityAccessControlHandler {
   
   public function createAccess($entity_bundle = NULL, AccountInterface $account = NULL, array $context = [], $return_as_object = FALSE) {
-    $config = \Drupal::config('mcapi.wallets');
     //this fetches the entity we are viewing - the would-be owner of the wallet we would add
-    $params = \Drupal::routeMatch()->getParameters()->all();
+    $params = \Drupal::routeMatch()->getParameters()->all();//I would expect routematch to have been injected here
     $owner = reset($params);
     if (!is_object($owner)) {
       $owner = entity_load(key($params), reset($params));
     }
-    $max = $config->get('entity_types.'.$owner->getEntityTypeId() .':'. $owner->bundle());
     
     //for users to add their own wallets
     if ($account->hasPermission('create own wallets') && $owner->getEntityTypeId() == 'user' && $account->id() == $owner->id) {
@@ -37,7 +34,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
       $checkroom = TRUE;
     }
     if (isset($checkroom)) {
-      if (wallet_room($owner)) {
+      if ($this->walletRoom($owner)) {
         return AccessResult::allowed()->cachePerUser();
       }
     }
@@ -50,7 +47,9 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
    */
   public function checkAccess(EntityInterface $entity, $op, $langcode, AccountInterface $account) {
 
-    if ($result = $this->initialChecks($entity, $op, $account)) return $result;
+    if ($result = $this->initialChecks($entity, $op, $account)) {
+      return $result;
+    }
     
     switch ($entity->access[$op]) {
       case WALLET_ACCESS_AUTH:
@@ -59,21 +58,25 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
         }
         break;
       case WALLET_ACCESS_ANY:
-        return AccessResult::allowed()->cachePerRole();
+        return AccessResult::allowed()->cachePerPermissions();
       default:
-        return AccessResult::neutral()->cachePerRole();
+        return AccessResult::neutral()->cachePerPermissions();
     }
   }
   
+
+  /**
+   * grant access to administrators, or for editing, or for designated users
+   */
   function initialChecks($entity, $op, $account) {
 
     if ($account->hasPermission('manage mcapi')) {
-      return AccessResult::allowed()->cachePerRole();
+      return AccessResult::allowed()->cachePerPermissions();
     }
     //case WALLET_ACCESS_OWNER
     elseif ($op == 'edit') {
       //edit isn't a configurable operation. Only the owner can do it
-      $entity->access['edit'] = array($entity->user_id());
+      $entity->access['edit'] = array($entity->ownerUserId());
     }
     
     //special case WALLET_ACCESS_USERS where $op is an array
@@ -81,6 +84,26 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
       if(in_array($account->id(), $entity->access[$op])) {
         return AccessResult::allowed()->cachePerUser();
       }
+    }
+  }
+  
+  /**
+   * determine whether a wallet can be added
+   * 
+   * @return AccessResult
+   */
+  function walletRoom($owner) {
+    $config = \Drupal::config('mcapi.wallets');    
+    $entity_type = $owner->getEntityTypeId();
+    $bundle = $entity_type.':'.$owner->bundle();
+    $max = $config->get('entity_types.'. $bundle);
+    //quick check first for this common scenario
+    if ($entity_type == 'user' && $max == 1 && $config->get('autoadd_name')) {
+      return TRUE;
+    }
+    else {
+      $owned_wallets = \Drupal\mcapi\Storage\WalletStorage::getOwnedIds($owner);
+      return count($owned_wallets) >= $max;
     }
   }
 }

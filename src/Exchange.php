@@ -8,7 +8,6 @@
  * mcapi_exchanges is installed. 
  * In which case this is class is replaced by \Drupal\mcapi_exchanges\Exchanges
  * 
- * @todo make an interface for this
  */
 
 namespace Drupal\mcapi;
@@ -23,60 +22,9 @@ use Drupal\mcapi_exchanges\Exchanges;
 
 
 class Exchange {
-  
-  /**
-   * return a list of exchanges of which the passed entity is a member
-   * If an exchange is passed, it returns itself
-   *
-   * @param ContentEntityInterface $entity
-   *   Any Content Entity which is a member of an exchange
-   *
-   * @return integer[]
-   *   Exchange entity ids
-   *
-   * @todo replace all uses of this with _og_get_entity_groups($entity_type = 'user', $entity = NULL, $states = array(OG_STATE_ACTIVE), $field_name = NULL)
-   */
-  static function in(ContentEntityInterface $entity = NULL, $enabled = TRUE, $open = FALSE) {
-    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-      return Exchanges::in($entity, $enabled, $open);
-    }
-    else {
-      debug('improve this format');
-      return array(0 => 0);
-    }
-  }
 
   /**
-   * Get the exchanges which this wallet can be used in.
-   * If the owner is an exchange return that exchange,
-   * otherwise return the exchanges the owner is in.
-   *
-   * @param \Drupal\mcapi\Entity\Wallet $wallet
-   *
-   * @param boolean $open
-   *   exclude closed exchanges
-   *
-   * @return integer[]
-   *   keyed by entity id
-   * 
-   * @todo maybe this should return only exchange ids?
-   * 
-   * @deprecated replace with og_get_entity_groups($entity_type = 'user', $entity = NULL, $states = array(OG_STATE_ACTIVE), $field_name = NULL);
-   */
-  public static function walletInExchanges(Wallet $wallet, $open = FALSE) {
-    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-      return Exchanges::walletInExchanges($wallet, $open);
-    }
-    else {
-      return $wallet->entity_type == 'mcapi_exchange' ?
-        array($wallet->pid => $wallet->getOwner()) ://TODO how do exchanges own wallets if exchanges aren't an entity?
-        Self::in($wallet->getOwner(), TRUE, $open);
-    }
-  }
-  
-  /**
-   * Check if an entity is the owner of a wallet
-   * @todo this is really a constant, but constants can't store arrays. What @todo?
+   * Get all the possible Wallet permissions
    *
    * @return array
    *   THE list of permissions used by walletAccess. Note this is not connected
@@ -161,15 +109,11 @@ class Exchange {
    *
    * @param AccountInterface $account
    *
-   * @return array
-   *   of currencies
-   * 
-   * @todo refactor this
+   * @return Currency[]
    */
   public static function userCurrencies(AccountInterface $account = NULL) {
     if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-      $exchange_ids = Self::in($account, TRUE);
-      return exchange_currencies($exchange_ids, 0);
+      return Exchanges::userCurrencies($account);
     }
     else {
       return Currency::loadMultiple();
@@ -184,7 +128,7 @@ class Exchange {
    * @param boolean
    *   if TRUE the result will include tokens to non-fields, such as the transition links
    *
-   * @return array
+   * @return string[]
    *   names of replicable elements in the transaction
    */
   public static function transactionTokens($include_virtual = FALSE) {
@@ -208,7 +152,6 @@ class Exchange {
     return $tokens;
   }
   
-  
   /**
    * get a list of all the currencies currently in a wallet's scope
    * which is to say, in any of the wallet's parent's exchanges
@@ -218,16 +161,11 @@ class Exchange {
    * @return CurrencyInterface[]
    *   keyed by currency id
    *
-   * @todo consider moving to static class Exchanges
    */
   public static function currenciesAvailable($wallet) {
     if (!isset($wallet->currencies_available)) {
-      $wallet->currencies_available = [];
       if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-        $exchanges = Exchanges::walletInExchanges($wallet);
-        foreach (Exchange::currencies($exchanges) as $currency) {
-          $wallet->currencies_available[$currency->id()] = $currency;
-        }
+        Exchanges::currenciesAvailable($wallet);
       }
       else {
         $wallet->currencies_available = Currency::loadMultiple();
@@ -236,4 +174,24 @@ class Exchange {
     //TODO get these in weighted order
     return $wallet->currencies_available;
   }
+  
+  /**
+   * Give back the operations which can be done on wallets
+   *
+   * @return array
+   *   THE list of ops because arrays cannot be stored in constants
+   */
+  public static function walletOps() {
+    $ops = [
+      'details' => t('View transaction log'), 
+      'summary' => t('View summary'), 
+      'payin' => t('Pay into this wallet'),
+      'payout' => t('Pay out of this wallet'),
+    ];
+    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+      $ops += Exchanges::walletOps();
+    }
+    return $ops;
+  }
+  
 }

@@ -14,22 +14,22 @@ mcapi.admin_wallet_tab:
 
 #actions on an individual wallet
 mcapi.wallet.view.tab:
-  route_name: mcapi.wallet_view
+  route_name: entity.mcapi_wallet.canonical
   title: 'View'
-  base_route: mcapi.wallet_view
+  base_route: entity.mcapi_wallet.canonical
   weight: 0
 
 mcapi.wallet.edit.tab:
   route_name: mcapi.wallet_edit
   title: 'Edit'
-  base_route: mcapi.wallet_view
+  base_route: entity.mcapi_wallet.canonical
   weight: 5
 
 #this could be done by views 
 mcapi.wallet.log.tab:
   route_name: mcapi.wallet_log
   title: 'Log'
-  base_route: mcapi.wallet_view
+  base_route: entity.mcapi_wallet.canonical
   weight: 2
 
 #a default tab for editing a currency, lest more should be needed

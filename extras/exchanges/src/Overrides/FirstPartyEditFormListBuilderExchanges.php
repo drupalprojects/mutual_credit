@@ -35,7 +35,7 @@ class FirstPartyEditFormListBuilderExchanges extends FirstPartyEditFormListBuild
    * @Todo inherit this
    */
   public function buildRow(EntityInterface $entity) {
-    $admin = \Drupal::currentUser()->hasPermission('configure mcapi');
+    $admin = $this->currentUser()->hasPermission('configure mcapi');
     $exchange = Exchange::load($entity->exchange);    
     $style = array('style' => $entity->status ? '' : 'color:#999');
     //only show forms in exchanges that the current user is a member of

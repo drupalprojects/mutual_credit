@@ -4,6 +4,8 @@
  * @file
  * Contains \Drupal\mcapi\Entity\Transaction.
  * @todo on all entity types sort out the linkTemplates https://drupal.org/node/2221879
+ * @todo inject the event_dispatcher, config, pluginmanager, cache,
+ * moduleHandler will surely be injected
  */
 
 namespace Drupal\mcapi\Entity;
@@ -13,7 +15,7 @@ use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\Access\WalletAccessControlHandler;
 use Drupal\mcapi\Entity\State;
 use Drupal\mcapi\McapiEvents;
-use Drupal\mcapi\TransactionCreateEvent;
+use Drupal\mcapi\TransactionSaveEvents;
 use Drupal\mcapi\McapiTransactionException;
 use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
 use Drupal\user\Entity\User;
@@ -21,13 +23,14 @@ use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Cache\Cache;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 /**
  * Defines the Transaction entity.
  * Transactions are grouped and handled by serial number
  * but the unique database key is the xid.
- * 
+ *
  * @ContentEntityType(
  *   id = "mcapi_transaction",
  *   label = @Translation("Transaction"),
@@ -55,23 +58,28 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
  *   translatable = FALSE,
  *   links = {
  *     "canonical" = "entity.mcapi_transaction.canonical"
+ *   },
+ *   constraints = {
+ *     "integrity" = "Drupal\mcapi\TransactionIntegrityConstraint"
  *   }
  * )
  */
 class Transaction extends ContentEntityBase implements TransactionInterface {
-  
+
   /**
    * these objects have a method getMessage which is used for a form error
-   * 
+   *
    * @var array
+   *
+   * @todo remove this in beta10
    */
   public $violations = [];
-  
+
   /**
    * These are the secondary transactions in the cluster. Identical to the $this
    * but they will have no children
-   * 
-   * @var Transaction[] 
+   *
+   * @var Transaction[]
    */
   private $children = [];
 
@@ -82,8 +90,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $transactions = [];
     if ($serials) {
       //not sure which is faster, this or coding it using $this->filter()
-      $results = \Drupal::entityManager()->getStorage('mcapi_transaction')
-        ->loadByProperties(array('serial' => (array)$serials));
+      $results = \Drupal::entityManager()
+        ->getStorage('mcapi_transaction')
+        ->loadByProperties(['serial' => (array)$serials]);
       //put all the transaction children under the parents
       foreach ($results as $xid => $transaction) {
         if ($pxid = $transaction->get('parent')->value) {
@@ -99,7 +108,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       }
     }
 
-    if (is_array($serials)) return $transactions;
+    if (is_array($serials)) {
+      return $transactions;
+    }
     else return reset($transactions);
   }
 
@@ -107,18 +118,17 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * {@inheritdoc}
    */
   public function label($langcode = NULL) {
-    return t("Transaction #@serial", array('@serial' => $this->get('serial')->value));
+    return t("Transaction #@serial", ['@serial' => $this->serial->value]);
   }
 
   /**
    * {@inheritdoc}
    */
   protected function urlRouteParameters($rel) {
-    return array(
+    return [
       'mcapi_transaction' => $this->serial->value
-    );
+    ];
   }
-
 
   /**
    * {@inheritdoc}
@@ -127,7 +137,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   public function save() {
     if (!$this->validated) {
       if ($violations = $this->validate()) {
-        //TODO put all the violations in here, somehow
         reset($violations);
         //throw new McapiTransactionException(key($violations), current($violations)->getMessage());
         throw new McapiTransactionException(key($violations), current($violations) );
@@ -138,41 +147,39 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
   /**
    * work on the transaction prior to validation
-   * 
+   *
    * @return NULL
-   * 
-   * @todo handle errors coming from the hook implementations
-   * 
+   *
    * @throws McapiException
    */
   public function prevalidate() {
-    $this->moduleHandler = \Drupal::moduleHandler();
-    $this->moduleHandler->alter('mcapi_transaction', $this);
-    
     //ensure the transaction is in the right starting state
     if($this->isNew()) {
       $start_state_id = $this->type->entity->start_state;
       $this->state->setValue($start_state_id);
-    }    
-    $clone = clone($this);
-    $this->children = array_merge(
-      $this->moduleHandler->invokeAll('mcapi_transaction_children', array($clone)),
-      $this->children
+    }
+    $new_children = \Drupal::service('event_dispatcher')->dispatch(
+      McapiEvents::CHILDREN,
+      new TransactionSaveEvents(clone($this), $context)
     );
+    array_merge($this->children, $new_children);
+
+    //Alter hooks should throw an McapiException
+    \Drupal::moduleHandler()->alter('mcapi_transaction', $this);
   }
 
   /**
    * Validate a transaction cluster i.e. a transaction with children
    * @todo there seens to be no precedent for whole-entity validation in drupal
    * so there's no format for handling errors outside $form and typedata violations
-   * 
+   *
    * @return \Symfony\Component\Validator\ConstraintViolationInterface[]
-   * 
-   * @throws McapiException
+   *
+   * @throws \Exception
    */
   function validate() {
     //if this is coming from transactionForm then all the entiry fields are validated
-    $this->errors = $thisx->violations = [];
+    $this->errors = $this->violations = [];
     if ($this->validated) {
       return [];
     }
@@ -181,15 +188,16 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       if (!$this->typedDataValidated) {
         foreach ($this->flatten() as $entity) {
           $this->violations = array_merge(
-            $this->violations, 
+            $this->violations,
             $entity->validateTypedData()
           );
         }
       }
-      \Drupal::service('event_dispatcher')->dispatch(
-        McapiEvents::VALIDATE,
-        new TransactionCreateEvent(clone($this))
-      );
+      //TODO remove this and check that EntityTypeValidfation is working
+      //\Drupal::service('event_dispatcher')->dispatch(
+      //  McapiEvents::VALIDATE,
+      //  new TransactionSaveEvents(clone($this))
+      //);
     }
     catch(\Exception $e) {
       if ($settings['mail_user1']){
@@ -197,16 +205,16 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
           $message[] = $line;
         }
         $message[] = print_r($this, 1);
-        //should this be done using the drupal mail system? 
+        //should this be done using the drupal mail system?
         //my life is too short for such a rigmarol
         $context = [
           'subject' =>  t(
-            'Transaction error on !site', 
+            'Transaction error on !site',
             ['!site' => \Drupal::config('system.site')->get('name')]
           ),
           'message' => implode('\n', $message)
         ];
-        
+
         \Drupal::services('plugin.manager.mail')->mail(
           'system',
           'action_send_email',
@@ -217,17 +225,17 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       }
       //TEMP
       drupal_set_message($e->getMessage(), 'error');
-      
+
       //TODO sort out the McapiExceptions
       throw new McapiException('', $e->getMessage());
     }
-    
+
     $this->validated = TRUE;
-    //we're actually supposed only to return violations, 
+    //we're actually supposed only to return violations,
     //but the Exceptions also have the same getMessage method
     return array_merge($this->violations, $this->errors);
   }
-  
+
   /**
    * TEMP
    * Validate the typedData but outside of the form handler
@@ -249,24 +257,18 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageInterface $storage, array &$values) {
-    $values += array(
+    $values += [
       'serial' => 0,
       'type' => 'default',
       'description' => '',
       'created' => REQUEST_TIME,
       'creator' => \Drupal::currentUser()->id(),//uid of 0 means drush must have created it
       'parent' => 0,
-      'payer' => 1,//chances are that these exist
-      'payee' => 2,
-      'children' => [],
-    );
+    ];
   }
 
   /**
    * save the child transactions, which refer to the saved parent
-   *
-   * @todo clear the entity cache of all wallets involved in this transaction and its children
-   *   because the wallet entity cache contains the balance limits and the summary stats
    */
   public function postSave(EntityStorageInterface $storage_controller, $update = TRUE) {
     parent::postSave($storage_controller, $update);
@@ -280,19 +282,18 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     }
   }
 
-  public function erase() {
-    $this->entityManager()->getStorage('mcapi_transaction')->doErase(array($this));
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheTags() {
+    // @todo Add bundle-specific listing cache tag? https://drupal.org/node/2145751
+    return array_merge_recursive(
+      ['mcapi_transaction:'. $this->id()],
+      $this->payer->entity->getCacheTags(),
+      $this->payee->entity->getCacheTags()
+    );
   }
 
-  //also needs doing when a wallet changes ownership
-  //should this be in the interface??
-  private static function clearWalletCache($transaction) {
-    foreach ($transaction->flatten() as $t) {
-      $tags1 = $t->payer->entity->getCacheTags();
-      $tags2 = $t->payee->entity->getCacheTags();
-    }
-    \Drupal\Core\Cache\Cache::invalidateTags(array_merge_recursive($tags1, $tags2));//this isn't tested
-  }
 
   /**
    * Ensure parent transactions have a 'children' property
@@ -309,19 +310,30 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * {@inheritdoc}
    */
   public function transition($transition, array $values) {
-    $context = array(
+    $context = [
       'values' => $values,
       'old_state' => $this->get('state')->value,
-      'config' => $transition->getConfiguration(),
-    );
+      'transition' => $transition,
+    ];
 
-    //any problems need to be thrown
-    $renderable = $transition->execute($this, $context)
+    $renderable = (array)$transition->execute($this, $context)
     or $renderable = 'transition returned nothing renderable';
 
     //notify other modules, especially rules.
-    $renderable += \Drupal::moduleHandler()->invokeAll('mcapi_transition', array($this, $transition, $context));
+    $renderable += \Drupal::moduleHandler()->invokeAll(
+      'mcapi_transition',
+      [$this, $transition, $context]
+    );
 
+    $event = new TransactionSaveEvents(clone($this), $context);
+    //TODO, how to the event handlers return anything,
+    //namely more $renderable items?
+    \Drupal::service('event_dispatcher')->dispatch(
+      McapiEvents::TRANSITION,
+      $event
+    );
+
+    $this->save();
     return $renderable;
   }
 
@@ -329,6 +341,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
+
     //note that the worth field is field API because we can't define multiple cardinality fields in this entity.
     $fields['xid'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Transaction ID'))
@@ -341,7 +354,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setDescription(t('The transaction UUID.'))
       ->setReadOnly(TRUE);
 
-    //borrowed from node->title
     $fields['description'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Description'))
       ->setDescription(t('A one line description of what was exchanged.'))
@@ -373,6 +385,14 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 
+    $fields['creator'] = BaseFieldDefinition::create('entity_reference')
+      ->setLabel(t('Creator'))
+      ->setDescription(t('The user who created the transaction'))
+      ->setSetting('target_type', 'user')
+      ->setReadOnly(TRUE)
+      ->setRevisionable(FALSE)
+      ->setRequired(TRUE);
+
     $fields['type'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Type'))
       ->setDescription(t('The type/workflow path of the transaction'))
@@ -386,34 +406,25 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setSetting('target_type', 'mcapi_state')
       ->setReadOnly(FALSE)
       ->setRequired(TRUE);
-
-    $fields['creator'] = BaseFieldDefinition::create('entity_reference')
-      ->setLabel(t('Creator'))
-      ->setDescription(t('The user who created the transaction'))
-      ->setSetting('target_type', 'user')
-      ->setReadOnly(TRUE)
-      ->setRequired(TRUE);
-
     $fields['created'] = BaseFieldDefinition::create('created')
-    ->setLabel(t('Created on'))
-    ->setDescription(t('The time that the transaction was created.'))
-    ->setRevisionable(FALSE)
-    ->setTranslatable(FALSE)
-    ->setDisplayOptions('view', array(
-      'label' => 'hidden',
-      'type' => 'timestamp',
-      'weight' => 0,
-    ))
-    ->setDisplayOptions('form', array(
-      'type' => 'datetime_timestamp',
-      'weight' => 10,
-    ))
-    ->setDisplayConfigurable('form', TRUE);
+      ->setLabel(t('Created on'))
+      ->setDescription(t('The time that the transaction was created.'))
+      ->setRevisionable(FALSE)
+      ->setDisplayOptions(
+        'view',
+        ['label' => 'hidden', 'type' => 'timestamp', 'weight' => 0]
+      )
+      ->setDisplayOptions(
+        'form',
+        ['type' => 'datetime_timestamp', 'weight' => 10]
+      )
+      ->setDisplayConfigurable('form', TRUE);
 
     $fields['changed'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))
       ->setDescription(t('The time that the transaction was last saved.'))
-      ->setTranslatable(TRUE);
+      ->setRevisionable(FALSE)
+      ->setTranslatable(FALSE);
 
     //TODO in beta2, this field is required by views. Delete if pos
     /*
@@ -430,7 +441,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    */
   function flatten() {
     $clone = clone($this);
-    $flatarray = array($clone);
+    $flatarray = [$clone];
     if (!empty($clone->children)) {
       foreach ($clone->children as $child) {
         $flatarray[] = $child;

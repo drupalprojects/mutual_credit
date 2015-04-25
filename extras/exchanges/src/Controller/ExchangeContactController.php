@@ -23,7 +23,7 @@ class ExchangeContactController extends ContactController {
    *   The exchange to be contacted
    *
    * @return array
-   *   The personal contact form as render array as expected by drupal_render().
+   *   a render array
    */
   public function page(ExchangeInterface $mcapi_exchange) {
     // Check if flood control has been activated for sending emails.

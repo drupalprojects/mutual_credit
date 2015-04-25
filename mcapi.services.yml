@@ -1,6 +1,10 @@
 services:
   mcapi.transitions:
     class: Drupal\mcapi\Plugin\TransitionManager
+    arguments: ['@container.namespaces', '@cache.entity', @module_handler, @config.factory, @current_user]
+
+  mcapi.transaction.relatives:
+    class: Drupal\mcapi\Plugin\TransactionRelativeManager
     arguments: ['@container.namespaces', '@cache.entity', @module_handler, @config.factory]
 
   paramconverter.mcapi_transaction_serial:
@@ -9,14 +13,23 @@ services:
     tags:
       - { name: paramconverter, priority: 10 }
 
-  mcapi.subscriber:
+  mcapi.route.subscriber:
     class: Drupal\mcapi\Routing\RouteSubscriber
     arguments: ['@entity.manager']
     tags:
      - { name: event_subscriber }
-#hooks
+     
+  #register a new logger channel
+  logger.channel.mcapi:
+    class: Drupal\Core\Logger\LoggerChannel
+    factory_method: get
+    factory_service: logger.factory
+    arguments: ['mcapi']
+    
+  #transaction creation hooks
   mcapi.transaction.create.subscriber:
     class: Drupal\mcapi\TransactionSubscriber
     arguments: []
     tags:
       - { name: event_subscriber }
+  

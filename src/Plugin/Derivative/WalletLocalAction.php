@@ -7,10 +7,11 @@
 
 namespace Drupal\mcapi\Plugin\Derivative;
 
+use Drupal\mcapi\Routing\RouteSubscriber;
 use Drupal\Core\Entity\EntityManagerInterface;
-use Drupal\Component\Plugin\Derivative\DeriverBase;
 use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
 use Drupal\Core\Routing\RouteProviderInterface;
+use Drupal\Component\Plugin\Derivative\DeriverBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -19,6 +20,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface {
 
   var $config;
+  
+  var $derivatives = [];
 
   /**
    * {@inheritDoc}
@@ -41,10 +44,9 @@ class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface
    * @todo tidy up once the user entity links are routes not paths
    */
   public function getDerivativeDefinitions($base_plugin_definition) {
-    $this->derivatives = [];
     //add wallet links can go in three locations
     if ($this->config->get('add_link_location') != 'summaries') {
-      foreach (_wallet_owning_entity_routes($this->config) as $canonical_route_name => $bundle) {
+      foreach (RouteSubscriber::walletOwningEntityRoutes() as $canonical_route_name => $bundle) {
         $this->derivatives["mcapi.wallet.add.".$bundle.'.action'] = array(
           'id' => "mcapi.wallet.add.".$bundle.'.action',
           'route_name' => "mcapi.wallet.add.$bundle",//taken from the routesubscriber

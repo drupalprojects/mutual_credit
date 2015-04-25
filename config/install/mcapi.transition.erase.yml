@@ -1,6 +1,5 @@
-id: erase
 title: Erase
-tooltip: The administrator will still be able to access the transaction
+tooltip: Mark the transaction deleted
 states: 
   done: done
 page_title: 'Really erase this transaction?'
@@ -9,26 +8,11 @@ twig: ''
 button: 'Yes I''m sure'
 cancel_button: Cancel
 format2: certificate
-redirect: user
+redirect: 
 twig2: ''
 message: 'The transaction has been erased'
 access:
-  done:
-    admin: admin
-    payer: 0
-    payee: 0
-    manager: 0
-    helper: helper
-  pending: 
-    admin: admin
-    payer: 0
-    payee: 0
-    manager: manager
-    helper: helper
-  erased: { }
-status: true
+  creator: creator
+  payer: 0
+  payee: 0
 weight: 5
-send: 1
-subject: 'Transaction [mcapi:serial] was deleted'
-body: "Dear [user:name],\r\n"
-cc: carboncopy@drupal.org

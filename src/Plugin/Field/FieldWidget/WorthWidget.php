@@ -11,7 +11,7 @@ use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\Validator\ConstraintViolationInterface;
-use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\SafeMarkup;
 use Drupal\mcapi\Exchanges;
 
 /**
@@ -36,7 +36,7 @@ class WorthWidget extends WidgetBase {
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $element += array(
-      '#title' => String::checkPlain($this->fieldDefinition->label()),
+      '#title' => Safemarkup::checkPlain($this->fieldDefinition->label()),
       '#title_display' => 'attribute',
       '#type' => 'worth',
       '#default_value' => $items->getValue(),
@@ -49,11 +49,10 @@ class WorthWidget extends WidgetBase {
    * @todo
    */
   public function errorElement(array $element, ConstraintViolationInterface $violation, array $form, FormStateInterface $form_state) {
-    echo "\Drupal\mcapi\Plugin\Field\FieldWidget\WorthWidget::errorElement hasn't been written yet";
     print_R($violation); 
     print_R($element);
     //might want to return a sub element if we can pinpoint the error
-    die();
+    die('Worth::errorElement()');
 
     return $element;
   }

@@ -2,7 +2,7 @@
 
 /**
  * @file
- *  Contains Drupal\mcapi\Plugin\TransitionBase.
+ * Contains Drupal\mcapi\Plugin\TransitionBase.
  */
 namespace Drupal\mcapi\Plugin;
 
@@ -18,23 +18,20 @@ use Drupal\Core\Session\AccountInterface;
  * Base class for Transitions for default methods.
  */
 abstract class TransitionBase extends PluginBase implements TransitionInterface {
-  
-  public $label;
-  public $description;
-  private $currentUser;
+
+  private $transactionRelativeManager;
+  private $relatives;
 
   /**
    * {@inheritdoc}
-   * @todo inject CurrentUser
    */
   function __construct(array $configuration, $plugin_id, array $plugin_definition) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->configuration += $this->defaultConfiguration();
-    $this->label = $this->configuration['title'] ? : $this->pluginDefinition['label'];
-    $this->description = @$this->configuration['tooltip'] ? : $this->pluginDefinition['description'];
-    
+    //can't work out how to inject this
+    $this->transactionRelativeManager = \Drupal::service('mcapi.transaction.relatives');
+    $this->relatives = $this->transactionRelativeManager->active();
   }
-
   /**
    * {@inheritdoc}
    */
@@ -43,42 +40,41 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     $tokens = implode(', ', Exchange::transactionTokens(FALSE));
     //TODO currently there is NO WAY to put html in descriptions because twig autoescapes it
     //see cached classes extending TwigTemplate->doDisplay twig_drupal_escape_filter last argument
-    $this->help = t('Use the following twig tokens: @tokens.', array('@tokens' => $tokens)) .' '.
-      \Drupal::l(
-        $this->t('What is twig?'),
-        Url::fromUri('http://twig.sensiolabs.org/doc/templates.html')
-      );
+    $twig_help_link = \Drupal::l(
+      $this->t('What is twig?'),
+      Url::fromUri('http://twig.sensiolabs.org/doc/templates.html')
+    );
+    $this->help = t(
+      'Use the following twig tokens: @tokens.',
+      ['@tokens' => $tokens]
+    ) .' '.$twig_help_link;
     //careful changing this form because the view transition alters it significantly
-    $form['title'] = array(
+    $form['title'] = [
       '#title' => t('Link text'),
       '#description' => t('A one word title for this transition'),
       '#type' => 'textfield',
-      '#default_value' => $this->label,
-      '#placeholder' => $this->pluginDefinition['label'],
+      '#default_value' => $this->configuration['title'],
       '#size' => 15,
       '#maxlength' => 15,
       '#weight' => 1,
-    );
-    $form['tooltip'] = array(
+    ];
+    $form['tooltip'] = [
       '#title' => t('Short description'),
       '#description' => t('A few words suitable for a tooltip'),
       '#type' => 'textfield',
       '#default_value' => @$this->configuration['tooltip'],
-      '#placeholder' => $this->pluginDefinition['description'],
       '#size' => 64,
       '#maxlength' => 128,
       '#weight' => 2,
-    );
-    
-    debug("States aren't saving/retrieving properly");
+    ];
+
     $form['states'] = [
       '#title' => $this->t('Applies to states'),
       '#description' => $this->t('The transaction states that this transition could apply to'),
       '#type' => 'mcapi_states',
       '#multiple' => TRUE,
-      '#default_value' => $this->configuration['states']
+      '#default_value' => array_filter($this->configuration['states'])
     ];
-    
     if ($element = $this->transitionSettings($form, $form_state)) {
       $form['settings'] = [
         '#type' => 'fieldset',
@@ -87,12 +83,12 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
       ] + $element;
     }
 
-    $form['sure']= array(
+    $form['sure']= [
       '#title' => t('Are you sure page'),
       '#type' => 'fieldset',
       '#weight' => 3
-    );
-    $form['sure']['page_title'] = array(
+    ];
+    $form['sure']['page_title'] = [
       '#title' => t('Page title'),
       '#description' => t ("Page title for the transition's page") . ' TODO, make this use the serial number and description tokens or twig. Twig would make more sense, in this context.',
       '#type' => 'textfield',
@@ -100,33 +96,44 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
       '#placeholder' => t('Are you sure?'),
       '#weight' => 4,
       '#required' => TRUE
-    );
-    $form['sure']['format'] = array(
+    ];
+    $form['sure']['format'] = [
       '#title' => t('Transaction display'),
       '#type' => 'radios',
       //TODO might want to get the full list of the transaction entity display modes
-      '#options' => array(
+      '#options' => [
         'certificate' => t('Certificate (can be themed per-currency)'),
         'twig' => t('Custom twig template')
-      ),
+      ],
       '#default_value' => $this->configuration['format'],
       '#required' => TRUE,
       '#weight' => 6
-    );
-    $form['sure']['twig'] = array(
+    ];
+    $form['sure']['twig'] = [
       '#title' => t('Template'),
       '#description' => $this->help,//TODO this is escaped in twig so links don't work
       '#type' => 'textarea',
       '#default_value' => @$this->configuration['twig'],
-      '#states' => array(
-        'visible' => array(
-          ':input[name="format"]' => array(
+      '#states' => [
+        'visible' => [
+          ':input[name="format"]' => [
             'value' => 'twig'
-          )
-        )
-      ),
+          ]
+        ]
+      ],
       '#weight' => 8
-    );
+    ];
+
+    $form['access'] = [
+      '#title' => t('Permission'),
+      '#description' => t('When to show the @label link', ['@label' => $this->configuration['title']]),
+      '#type' => 'details',
+      '#open' => FALSE,
+      '#weight' => 8,
+    ];
+
+    $this->accessSettingsForm($form['access']);
+
     return $form;
   }
 
@@ -145,7 +152,6 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    * {@inheritdoc}
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state){
-    //form_state->values was already cleaned
     $this->setConfiguration($form_state->getValues());
   }
 
@@ -161,7 +167,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    * {@inheritdoc}
    */
   public function getConfiguration($key = NULL) {
-    return $key ? 
+    return $key ?
       @$this->configuration[$key] :
       $this->configuration;
   }
@@ -178,86 +184,76 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    */
   public function defaultConfiguration() {
     //this will prevent the config form showing blanks
-    return array(
+    return [
       'title' => '',
       'tooltip' => '',
       'page_title' => '',
       'format' => '',
       'twig' => '',
-    );
+    ];
   }
 
 
   /**
    * {@inheritdoc}
    */
-  function ajax_submit(array $form_state_values) {
-    $transaction = Transaction::load($form_state_values['serial']);
-    $renderable = $this->execute($form_state->get('transaction_transition'), $transaction, $form_state_values);
+  function ajax_submit(FormStateInterface $form_state) {
+    $renderable = $this->execute(
+      $form_state->get('transaction_transition'),
+      Transaction::load($form_state->getValue(['serial'])),
+      $form_state->getValues()
+    );
     // if this is ajax we return the result, otherwise redirect the form
-    $commands[]= ajax_command_replace ('#transaction-transition-form', drupal_render ($renderable));
-    ajax_deliver (array(
+    $commands[]= ajax_command_replace ('#transaction-transition-form', \Drupal::service('renderer')->render($renderable));
+    ajax_deliver ([
       '#type' => 'ajax',
       '#commands' => $commands
-   ));
+   ]);
     exit();
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function calculateDependencies() {
-    die('calculating dependencies');
-    return array(
-      'module' => array('mcapi')
-    );
+  public function accessState($transaction) {
+    return in_array($transaction->state->target_id, $this->configuration['states']);
   }
 
 
+  /**
+   * The default plugin access allows selection of transaction relatives.
+   *
+   * @param array $element
+   */
+  protected function accessSettingsForm(&$element) {
+    $element['access'] = [
+      '#type' => 'checkboxes',
+      '#options' => $this->transactionRelativeManager->options(),
+      '#default_value' => $this->configuration['access'],
+      '#weight' => $this->configuration['weight']
+    ];
+  }
 
   /**
-   *  access callback for transaction transition 'view'
-   *  @return boolean
+   * default access callback for transaction transition
+   * uses transaction relatives
+   *
+   * @return boolean
+   *
+   * @todo rewrite this with transaction relatives.
   */
-  public function opAccess(TransactionInterface $transaction, AccountInterface $account) {
-    $options = array_filter($this->configuration['access']);
-    debug($this->configuration, 'need to deny access according to the state setting', 1);
-    if (!array_key_exists($transaction->state->target_id, $options)) {
-      drupal_set_message(
-        t(
-          "Please resave the @label transition, paying attention to access control for the unconfigured new '@statename' state:",
-          array(
-            '@statename' => $transaction->state->target_id,
-            '@label' => $this->label
-          )
-        ) . ' '.l('admin/accounting/workflow/undo', 'admin/accounting/workflow/undo'),
-        'warning',
-        FALSE
-      );
-    }
-    foreach ($options[$transaction->state->target_id] as $option) {
-      switch ($option) {
-      	case 'helper':
-      	  if ($account->hasPermission('exchange helper')) return TRUE;
-      	  continue;
-      	case 'admin':
-      	  if ($account->hasPermission('manage mcapi')) return TRUE;
-      	  continue;
-      	case 'payer':
-      	case 'payee':
-      	  $wallet = $transaction->{$option}->entity;
-      	  $parent = $$wallet->getOwner();
-      	  if ($parent && $wallet->pid->value == $account->id() && $parent->getEntityTypeId() == 'user') {
-      	    return TRUE;
-      	  }
-      	  continue;
-      	case 'creator':
-      	  if ($transaction->creator->target_id == $account->id()) return TRUE;
-      	  continue;
+  public function accessOp(TransactionInterface $transaction, AccountInterface $account) {
+    foreach (array_filter($this->configuration['access']) as $relative) {
+      //$check if the $acocunt is this relative to the transaction
+      $relative = $this->relatives[$relative];
+      if ($relative->isRelative($transaction, $account)) {
+        return TRUE;
       }
     }
-
     return FALSE;
+  }
+
+  function calculateDependencies() {
+    return [
+      'module' => ['mcapi']
+    ];
   }
 
 }

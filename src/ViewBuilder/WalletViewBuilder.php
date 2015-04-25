@@ -23,7 +23,7 @@ class WalletViewBuilder extends EntityViewBuilder {
    * For multiple nice wallets see theme callback 'mcapi_wallets'
    */
   public function buildComponents(array &$build, array $entities, array $displays, $view_mode, $langcode = NULL) {
-    module_load_include('inc', 'mcapi', 'src/ViewBuilder/wallet');
+    module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');
     //add the field api fields and properties
     parent::buildComponents($build, $entities, $displays, $view_mode, $langcode);
     //add the extraFields

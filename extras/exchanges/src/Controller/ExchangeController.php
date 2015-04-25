@@ -7,7 +7,7 @@
 
 namespace Drupal\mcapi_exchanges\Controller;
 
-use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\mcapi_exchanges\ExchangeInterface;
 
@@ -21,7 +21,7 @@ class ExchangeController extends ControllerBase {
    * @param EntityInterface $mcapi_exchange
    *
    * @return array
-   *  An array suitable for drupal_render().
+   *  A render array
    */
   public function page(ExchangeInterface $mcapi_exchange) {
     return $this->buildPage($mcapi_exchange);
@@ -36,7 +36,7 @@ class ExchangeController extends ControllerBase {
    *   The page title.
    */
   public function pageTitle(ExchangeInterface $mcapi_exchange) {
-    return String::checkPlain($mcapi_exchange->label());
+    return SafeMarkup::checkPlain($mcapi_exchange->label());
   }
 
   /**
@@ -56,9 +56,9 @@ class ExchangeController extends ControllerBase {
   }
   /**
    * show a list of transactions between this exchange and others
-   * 
+   *
    * @param ExchangeInterface $mcapi_exchange
-   * 
+   *
    * @return array
    *   a renderable array
    */

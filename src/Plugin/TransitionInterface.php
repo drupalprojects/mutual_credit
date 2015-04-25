@@ -3,6 +3,8 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\TransitionInterface.
+ * 
+ * @todo update this interface 
  */
 
 namespace Drupal\mcapi\Plugin;
@@ -12,6 +14,7 @@ use Drupal\mcapi\McapiTransactionException;
 use Drupal\Component\Plugin\ConfigurablePluginInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 interface TransitionInterface extends ConfigurablePluginInterface, PluginFormInterface {
 
@@ -36,14 +39,13 @@ interface TransitionInterface extends ConfigurablePluginInterface, PluginFormInt
    * @return Boolean
    *   TRUE if access is granted
 	 */
-  public function opAccess(TransactionInterface $transaction, AccountInterface $account);
+  public function accessOp(TransactionInterface $transaction, AccountInterface $account);
 
   /**
    * Do the actual transition on the passed transaction, and return some html
    * The method in the base class handles the mail notifications
    *
    * @param TransactionInterface $transaction
-   *   A transaction entity object
    *
    * @param array $context
    *   the $form_state->values, the plugin 'config', the transation 'old_state'
@@ -51,7 +53,7 @@ interface TransitionInterface extends ConfigurablePluginInterface, PluginFormInt
    * @return array
    *   a renderable array
    *
-   * @throws McapiTransactionException
+   * @throws \Exception
    */
   public function execute(TransactionInterface $transaction, array $context);
 
@@ -60,9 +62,10 @@ interface TransitionInterface extends ConfigurablePluginInterface, PluginFormInt
    * Execute ajax submission of the transition form, delivering ajax commands to the browser.
    * then the function exits;
    *
-   * @param array $form_state_values
-   *   the result of $form_state->getValues()
+   * @param FormStateInterface $form_state
+   * 
+   * @todo ajax_submit is currently unused
    */
-  public function ajax_submit(array $form_state_values);
+  public function ajax_submit(FormStateInterface $form_state);
 
 }

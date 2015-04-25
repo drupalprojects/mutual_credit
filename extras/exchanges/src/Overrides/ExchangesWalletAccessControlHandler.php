@@ -23,22 +23,24 @@ class ExchangesWalletAccessControlHandler extends WalletAccessControlHandler {
     //if the user is not user 1, and the user is not creating its own, 
     //then the user MUST be in the same exchange
     drupal_set_message("Check that the current user has an exchange in common with ".$entity->label());
-    
     return $access;
   }
+  
   /**
    * {@inheritdoc}
    * $ops are details, summary, payin, payout
    */
   public function checkAccess(EntityInterface $entity, $op, $langcode, AccountInterface $account) {
     
-    if ($result = $this->initialChecks($entity, $op, $account)) return $result;
+    if ($result = $this->initialChecks($entity, $op, $account)) {
+      return $result;
+    }
     
     $result = parent::checkAccess($entity, $op, $langcode, $account);
-    
+    //if the result isn't conclusive then we handle it
     if ($result->isNeutral() && $entity->access[$op] == WALLET_ACCESS_EXCHANGE) {
       $user_is_in = Exchanges::in(NULL, TRUE);
-      $wallet_is_in = array_keys(Exchanges::walletInExchanges($entity));
+      $wallet_is_in = array_keys(Exchanges::walletExchanges($entity));
       //check that the current user is the same exchange as the wallet
       if (array_intersect($user_is_in, $wallet_is_in)) {
         return $result->allowed()->cachePerUser();

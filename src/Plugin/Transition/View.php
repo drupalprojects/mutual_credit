@@ -18,13 +18,7 @@ use Drupal\mcapi\Plugin\TransitionBase;
  * Links to the transaction certificate
  *
  * @Transition(
- *   id = "view",
- *   label = @Translation("View"),
- *   description = @Translation("Visit the transaction's page"),
- *   settings = {
- *     "weight" = "1",
- *     "sure" = ""
- *   }
+ *   id = "view"
  * )
  */
 class View extends TransitionBase {//does it go without saying that this implements TransitionInterface
@@ -32,7 +26,7 @@ class View extends TransitionBase {//does it go without saying that this impleme
   /*
    * {@inheritdoc}
    */
-  public function opAccess(TransactionInterface $transaction, AccountInterface $account) {
+  public function accessOp(TransactionInterface $transaction, AccountInterface $account) {
     //you can view a transaction if you can view either the payer or payee wallets
     return $transaction->payer->entity->access('details')
     || $transaction->payee->entity->access('details');

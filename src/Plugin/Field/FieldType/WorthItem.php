@@ -39,22 +39,22 @@ class WorthItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public static function schema(FieldStorageDefinitionInterface $field_definition) {
-    return array(
-      'columns' => array(
-        'curr_id' => array(
+    return [
+      'columns' => [
+        'curr_id' => [
           'description' => 'The currency ID',
           'type' => 'varchar',//when to use varchar and when string?
           'length' => '8',
-        ),
-        'value' => array(
+        ],
+        'value' => [
           'description' => 'Value',
           'type' => 'int',
           'size' => 'normal',
           'not null' => TRUE,
           'default' => 0
-        )
-      ),
-    );
+        ]
+      ],
+    ];
   }
   
   
@@ -95,6 +95,5 @@ class WorthItem extends FieldItemBase {
     }
     return array('#markup' => $markup);
   }
-  
   
 }

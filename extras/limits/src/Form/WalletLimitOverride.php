@@ -6,8 +6,6 @@
  *
  * Allow an administrator to set the per-wallet limits
  *
- * @todo would be more elegant if the overrides min and max were
- * wallet properties themselves then this build form would be more automatic
  */
 
 namespace Drupal\mcapi_limits\Form;
@@ -20,7 +18,7 @@ use Drupal\mcapi\Exchange;
 class WalletLimitOverride extends FormBase {
 
   function __construct() {
-    if ($wid = \Drupal::routeMatch()->getParameter('mcapi_wallet')){
+    if ($wid = \Drupal::routeMatch()->getParameter('mcapi_wallet')) {
       $this->wallet = Wallet::load($wid);
     }
   }
@@ -43,12 +41,13 @@ class WalletLimitOverride extends FormBase {
     //TODO put some inline css here when drupal_process_attached no longer uses deprecated _drupal_add_html_head
     //see https://api.drupal.org/api/drupal/core!includes!common.inc/function/drupal_process_attached/8
     //$form['#attached']['html_head']
-    
+
     $overridden = mcapi_limits($wallet)->saved_overrides();
     //TODO can we refactor this so we don't need to call on Exchanges?
     foreach (Exchange::currenciesAvailable($wallet) as $curr_id => $currency) {
-      $config = $currency->getThirdPartySettings('mcapi_limits');      
-      if (!$config || $config['plugin'] == 'none') continue;
+      $config = $currency->getThirdPartySettings('mcapi_limits');
+      if (!$config || $config['plugin'] == 'none')
+        continue;
       $defaults = mcapi_limits($wallet)->default_limits($currency);
       $limits = array_filter($defaults);
       if (array_key_exists('min', $limits)) {
@@ -89,7 +88,7 @@ class WalletLimitOverride extends FormBase {
 
     if (\Drupal\Core\Render\Element::children($form)) {
       $form['help'] = array(
-        '#markup' => t("Leave fields blank to use the currencies' own settings") .'<br />',
+        '#markup' => t("Leave fields blank to use the currencies' own settings") . '<br />',
         '#weight' => -1
       );
       $form['submit'] = array(
@@ -115,7 +114,8 @@ class WalletLimitOverride extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $form_state->cleanValues();;
+    $form_state->cleanValues();
+    ;
     $wid = $this->wallet->id();
     //clear db and rewrite
     try {
@@ -127,11 +127,12 @@ class WalletLimitOverride extends FormBase {
       foreach ($values as $curr_id => $minmax) {
 //        unset($minmax['limits']);//here because I don't understand fully how the form values nesting works
         foreach ($minmax as $limit => $worths) {
-          if (empty($worths)) continue;
+          if (empty($worths))
+            continue;
           $row = [
             'wid' => $wid,
             'curr_id' => $curr_id,
-            'max' => (int)($limit == 'max'),
+            'max' => (int) ($limit == 'max'),
             'value' => $worths[0]['value'],
             'editor' => $this->currentUser()->id(),
             'date' => REQUEST_TIME
@@ -139,17 +140,18 @@ class WalletLimitOverride extends FormBase {
           $q->values($row);
         }
       }
-      if (isset($row)) $q->execute();
-      else drupal_set_message('No limits were overridden');
+      if (isset($row))
+        $q->execute();
+      else
+        drupal_set_message('No limits were overridden');
     }
     catch (\Exception $e) {
       $t->rollback();
       //are there security concerns about showing the user this message?
-      drupal_set_message('Failed to save limit overrides: '.$e->getMessage(), 'error');
+      drupal_set_message('Failed to save limit overrides: ' . $e->getMessage(), 'error');
     }
     //TODO clear the wallet cache???
-    $form_state->setRedirect('mcapi.wallet_view', array('mcapi_wallet' => $this->wallet->id()));
-
+    $form_state->setRedirect('entity.mcapi_wallet.canonical', array('mcapi_wallet' => $this->wallet->id()));
   }
 
 }

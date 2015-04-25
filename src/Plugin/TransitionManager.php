@@ -35,14 +35,26 @@ class TransitionManager extends DefaultPluginManager {
    * @param ConfigFactory $config_factory
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler, ConfigFactory $config_factory) {
-    parent::__construct('Plugin/Transition', $namespaces, $module_handler, '\Drupal\mcapi\Plugin\TransitionInterface', '\Drupal\mcapi\Annotation\Transition');
-    //TODO Do we need to do anything to take advantage of the cache backend?
+    parent::__construct(
+      'Plugin/Transition',
+      $namespaces,
+      $module_handler,
+      '\Drupal\mcapi\Plugin\TransitionInterface',
+      '\Drupal\mcapi\Annotation\Transition'
+    );
     $this->setCacheBackend($cache_backend, 'transaction_transitions');
     $this->config_factory = $config_factory;
     $this->plugins = [];
   }
 
-  //TODO pluginbags would be better
+  /*
+   * retrieve all the transition plugins
+   *
+   * @param bool $editable
+   *   whether to get the configuration as immutable or editable.
+   *
+   * @todo use a collection?
+   */
   public function all($editable = FALSE) {
     foreach ($this->getDefinitions() as $id => $def) {
       $this->getPlugin($id, $editable);
@@ -52,26 +64,42 @@ class TransitionManager extends DefaultPluginManager {
 
   /*
    * retrieve the plugins which are not disabled
-   * @todo use pluginbags?
+   *
+   * @param array $exclude
+   *   the names of the active plugins not to return
+   *
+   * @param FieldInterface $worth
+   *   a worth fieldlist instance from which to extract the currencies
+   *
+   * @todo use a collection?
    */
-  public function active(array $exclude = [], $worth) {
+  public function active(array $exclude = [], $worth = NULL) {
     //no need to put this in a static coz should be used once only
     if ($worth) {
       //some deleteModes are not available for some currencies
       $exclude = array_merge($exclude, $this->deletemodes($worth->currencies(TRUE)));
     }
+    $active = $this->config_factory->get('mcapi.misc')->get('active_transitions');
     foreach ($this->all(FALSE) as $id => $plugin) {
-      if (!in_array($id, $exclude) and $plugin->getConfiguration('status')) {
-        $output[$plugin->getConfiguration('id')] = $plugin;
+      if (!in_array($id, $exclude) and $active[$id]) {
+        $output[$id] = $plugin;
       }
     }
     return $output;
   }
 
+  /**
+   * ensure a plugin is loaded and in the list
+   *
+   * @param type $id
+   * @param type $editable
+   *
+   * @return type
+   */
   public function getPlugin($id, $editable = FALSE) {
     if (!array_key_exists($id, $this->plugins)) {
       $config = $this->config_factory->get('mcapi.transition.'. $id)->getRawData();
-      $this->plugins[$id] = $this->createInstance($id, $config, 'blahblah');
+      $this->plugins[$id] = $this->createInstance($id, $config);
     }
     return $this->plugins[$id];
   }
@@ -88,7 +116,7 @@ class TransitionManager extends DefaultPluginManager {
     //return everything larger than the min to be excluded
     return array_slice($modes, $deletemode);
   }
-  
+
   //return the names of the config items
   public function getNames() {
     foreach ($this->getDefinitions() as $name => $info) {

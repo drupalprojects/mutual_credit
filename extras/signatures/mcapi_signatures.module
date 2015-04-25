@@ -28,8 +28,8 @@ function mcapi_signatures_mcapi_transaction_presave($transaction) {
     if ($transaction->isNew()) {
       $override = _mcapi_signature_overrides($transaction->type->target_id);//should always return an array for pending transactions
       if ($override['both']) {
-        $transaction->signatures[$transaction->payer->entity->user_id()] = 0;
-        $transaction->signatures[$transaction->payee->entity->user_id()] = 0;
+        $transaction->signatures[$transaction->payer->entity->ownerUserId()] = 0;
+        $transaction->signatures[$transaction->payee->entity->ownerUserId()] = 0;
       }
       //the exchange manager should also sign
       if($override['exman']) {
@@ -130,12 +130,14 @@ function mcapi_signatures_theme() {
  */
 function mcapi_signatures_mcapi_transaction_view(array &$build, $transaction, $display, $view_mode, $langcode) {
   if ($view_mode == 'certificate' && isset($transaction->signatures) && in_array('mcapi_signatures', $display->getComponents())) {
-    $build['mcapi_signatures'] = array(
+    $build['mcapi_signatures'] = [
       '#theme' => 'mcapi_signatures',
       '#transaction' => $build['#mcapi_transaction'],
-      '#attached' => array('css' => array(drupal_get_path('module', 'mcapi_signatures') .'/templates/signatures.css'))
-    );
-    debug('did the attached css work without making a library?');
+      '#attached' => [
+        'css' => [drupal_get_path('module', 'mcapi_signatures') .'/templates/signatures.css']
+      ]
+    ];
+    $build['watermark'] = t('Pending');
   }
 }
 

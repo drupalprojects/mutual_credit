@@ -51,7 +51,7 @@ function multiple_exchanges() {
 
 
   $exchange_ids = mcapi_tester_make_exchanges();
-  
+
 return;
   put_users_in_exchanges();
   //make some intertrading transactions
@@ -66,13 +66,16 @@ return;
 
 /**
  * implements hook_uninstall().
- * 
+ *
   FieldStorageConfig::load('mcapi_transaction.categories')->delete();
+ *
+ db_delete('config')->condition('name', ['block.block.stark_admin', 'block.block.stark_tools', 'core.entity_form_display.mcapi_transaction.mcapi_transaction.default', 'mcapi_1stparty.editform.pay', 'system.site', 'taxonomy.settings', 'views.settings', 'block.block.systemhelp', 'field.storage.mcapi_transaction.categories', 'mcapi.type.test', 'mcapi_1stparty.editform.test1', 'mcapi_1stparty.editform.test2', 'mcapi_1stparty.editform.test3', 'taxonomy.vocabulary.categories', 'user.role.admin', 'field.field.mcapi_transaction.mcapi_transaction.categories', 'user.role.helper', 'user.role.ladmin', 'user.role.manager', 'user.role.member'], 'IN')->execute();
+ \Drupal::configFactory()->getEditable('core.extension')
+  ->clear("module.mcapi_tester")
+  ->save();
+  drupal_flush_all_caches();
  */
-function mcapi_tester_uninstall() {  return;
-
-
-
+function mcapi_tester_uninstall() {
 
   //in case drush is running
   \Drupal::CurrentUser()->setAccount(User::load(1));
@@ -84,7 +87,7 @@ function mcapi_tester_uninstall() {  return;
 
   module_load_install('mcapi_tester');
   mcapi_tester_delete_transactions();
-  
+
   //delete test wallets
   //foreach (Wallet::loadMultiple() as $wallet) {
   //  if ($wallet->id() < 3) continue;
@@ -96,7 +99,7 @@ function mcapi_tester_uninstall() {  return;
     if ($user->id() < 2) continue;
     $user->delete();//all users' wallets are now 'unused' so will be deleted also
   }
-  
+
   if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
     //delete all exchanges except the first
     foreach (Exchange::loadMultiple() as $exchange) {
@@ -126,7 +129,7 @@ function mcapi_exchanges_uninstall() {
     $currency->delete();
   }
   //delete all exchanges except 1
-  
+
   if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
     foreach (Exchange::loadMultiple() as $exchange) {
       if ($exchange->id() > 1) {

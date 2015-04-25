@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\TransactionCreateEvent.
+ * Contains \Drupal\mcapi\TransactionSaveEvents.
  * @todo consider replacing with Symfony\Component\EventDispatcher\GenericEvent
  */
 
@@ -13,7 +13,7 @@ use Symfony\Component\EventDispatcher\GenericEvent;
 /**
  * Defines a base class for all entity type events.
  */
-class TransactionCreateEvent extends GenericEvent {
+class TransactionSaveEvents extends GenericEvent {
 
   /**
    * same as parent::getSubject();

@@ -24,9 +24,9 @@ class WorthFieldItemList extends FieldItemList {
     $this->parent = $parent;
     $this->name = $name;
   }
-   * 
+   *
    */
-  
+
   /**
    * {@inheritdoc}
    */
@@ -61,7 +61,7 @@ class WorthFieldItemList extends FieldItemList {
   public function view($display_options = []) {
     foreach ($this->list as $item) {
       $renderable = $item->view($display_options);
-      $values[] = drupal_render($renderable);
+      $values[] = \Drupal::service('renderer')->render($renderable);
     }
     $separator = count($values) > 1 ? \Drupal::config('mcapi.misc')->get('worths_delimiter') : '';
     return array(
@@ -95,7 +95,7 @@ class WorthFieldItemList extends FieldItemList {
     }
     return $c;
   }
-  
 
-  
+
+
 }

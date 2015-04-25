@@ -25,14 +25,16 @@
  * - children
  *     child transactions, rendered as sentences
 #}
+
 {% if mcapi_signatures %}{{ mcapi_signatures }}{% endif %}
-<center>
-On {{ created }}, <br />
-{{ payer }} paid {{ payee }} <br />
-the sum of <br />
-<font size=6>{{ worth }}</font><br />
-for: "<em>{{ description }}</em>"
-</center>
+
+<div class = "certificate">
+  On {{ created }}, <br />
+  {{ payer }} paid {{ payee }} <br />
+  the sum of <br />
+  <font size=6>{{ worth }}</font><br />
+  for: "<em>{{ description }}</em>"
+</div>
 
 <br />{% if children %}
 <br /><b>Child transactions: </b>

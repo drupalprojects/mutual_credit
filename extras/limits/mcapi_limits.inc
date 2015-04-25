@@ -146,6 +146,9 @@ function mcapi_limits_validate(&$form, $form_state) {
 function mcapi_limits_submit(&$form, $form_state) {
   $plugin = $form_state->get('limits_plugin');
   $plugin->submitConfigurationForm($form, $form_state);
+  
+  //rendered wallets may be affected by changes in balance limits
+  Drupal\Core\Cache\Cache::invalidateTags(['mcapi_wallet_view']);
 
   //load the plugin settings AS CONFIG
   $currency = $form_state->getFormObject()->getEntity();
@@ -155,6 +158,12 @@ function mcapi_limits_submit(&$form, $form_state) {
   //this has to go after the plugin has set the values
   $currency->setThirdPartySetting('mcapi_limits', 'plugin', $plugin->id);
   $currency->save();
+  
+  //todo would be nice to compare the old balance limits with the new and log only if there are changes
+  $this->logger('mcapi')->notice(
+    'User @uid saved currency @name', 
+    ['@uid' => $this->currentUser()->id(), '@name' => $currency->label()]
+  );
 }
 
 /**

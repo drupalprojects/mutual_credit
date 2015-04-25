@@ -29,7 +29,7 @@ use Drupal\mcapi\Entity\Currency;
  *       description = @Translation("The transaction type, or workflow path")
  *     ),
  *     "otherwallet" = @ContextDefinition("mcapi_wallet",
- *       label = @Translation("Other walet"),
+ *       label = @Translation("Other wallet"),
  *       description = @Translation("The wallet to trade with")
  *     )
  *   }

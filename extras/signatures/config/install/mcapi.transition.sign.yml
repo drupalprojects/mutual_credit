@@ -1,6 +1,8 @@
 id: sign
 title: Sign
 tooltip: Add your signature to this transaction
+states: 
+  pending: pending
 page_title: 'Are you sure you want to sign?'
 format: certificate
 twig: ''
@@ -10,10 +12,13 @@ format2: certificate
 redirect: ''
 twig2: ''
 message: 'Transaction was signed'
+access:
+  creator: creator
+  payer: 0
+  payee: 0
 send: 1
 subject: 'A transaction was signed'
 body: 'Tokens will be needed for this mail'
-cc: ''
 status: true
 weight: 2
 #has its own access function

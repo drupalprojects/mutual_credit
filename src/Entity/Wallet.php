@@ -15,7 +15,6 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\WalletInterface;
@@ -48,13 +47,13 @@ use Drupal\mcapi\WalletInterface;
  *   },
  *   translatable = FALSE,
  *   links = {
- *     "canonical" = "mcapi.wallet_view",
+ *     "canonical" = "entity.mcapi_wallet.canonical",
  *     "log" = "mcapi.wallet_log"
  *   },
  *   field_ui_base_route = "mcapi.admin_wallets"
  * )
  */
-class Wallet extends ContentEntityBase  implements WalletInterface{
+class Wallet extends ContentEntityBase implements WalletInterface {
 
   private $owner;
   private $stats = [];
@@ -65,7 +64,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
    */
   public function uri() {
     return array(
-      'path'=> 'wallet/'.$this->id()
+      'path' => 'wallet/' . $this->id()
     );
   }
 
@@ -79,7 +78,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
         ->load($this->pid->value);
       //in the impossible event that there is no owner, set
       if (!$this->owner) {
-        throw new \Exception('Owner of wallet '. $this->id() .' does not exist: '.$this->entity_type->value .' '.$this->pid->value);
+        throw new \Exception('Owner of wallet ' . $this->id() . ' does not exist: ' . $this->entity_type->value . ' ' . $this->pid->value);
       }
     }
     //if for some reason there isn't an owner, return exchange 1 so as not to break things
@@ -89,11 +88,13 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
   /**
    * {@inheritdoc}
    */
-  public function user_id() {
+  public function ownerUserId() {
     $owner = $this->getOwner();
-    if ($owner instanceof \Drupal\user\UserInterface) return $owner->id();
+    if ($owner instanceof \Drupal\user\UserInterface)
+      return $owner->id();
     //because all wallet owners, whatever entity type, implement OwnerInterface
-    else return $owner->getOwnerId();
+    else
+      return $owner->getOwnerId();
   }
 
   /**
@@ -106,7 +107,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
 
     $name = $this->name->value;
     if ($full || !$name) {
-      $output = $this->getOwner()->label() .": ";
+      $output = $this->getOwner()->label() . ": ";
     }
     if ($name == '_intertrade') {
       $output .= t('Import/Export');
@@ -115,10 +116,8 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
       $output .= $name;
     }
 
-    return $output.' #'.$this->wid->value;
+    return $output . ' #' . $this->wid->value;
   }
-
-
 
   /**
    * {@inheritdoc}
@@ -130,7 +129,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     $values += array('name' => '', 'orphaned' => 0);
     //put the default values for the access here
     $access_settings = \Drupal::config('mcapi.wallets')->getRawData();
-    foreach (Mcapi::walletOps() as $op => $description) {
+    foreach (Exchange::walletOps() as $op => $description) {
       if (!array_key_exists($op, $values)) {
         $values[$op] = key(array_filter($access_settings[$op]));
       }
@@ -145,9 +144,8 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     if (strlen($this->name->value) > 64) {
       $this->name->value = substr($this->name->value, 0, 64);
       drupal_set_message(t(
-        'Wallet name was truncated to 64 characters: !name',
-        array('!name' => $this->name->value))
-      , 'warning');
+          'Wallet name was truncated to 64 characters: !name', array('!name' => $this->name->value))
+        , 'warning');
     }
   }
 
@@ -170,9 +168,9 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
       ->setLabel(t('Name'))
       ->setDescription(t("The owner's name for this wallet"))
       ->addConstraint('max_length', 64)
-      ->setSetting('default_value', array(0 => ''));//if we leave the default to be NULL it is difficult to filter with mysql
-      //->setDisplayConfigurable('view', TRUE)
-      //->setDisplayConfigurable('form', TRUE);
+      ->setSetting('default_value', array(0 => '')); //if we leave the default to be NULL it is difficult to filter with mysql
+    //->setDisplayConfigurable('view', TRUE)
+    //->setDisplayConfigurable('form', TRUE);
 
     $fields['entity_type'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Owner entity type'))
@@ -204,30 +202,28 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     $fields['orphaned'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Orphaned'))
       ->setSetting('default_value', array(0 => '0'));
-    
+
     //TODO in beta2, this field is required by views. Delete if pos
     $fields['langcode'] = BaseFieldDefinition::create('language')
-    ->setLabel(t('Language code'))
-    ->setDescription(t('language code.'))
-    ->setSettings(array('default_value' => 'und'));
+      ->setLabel(t('Language code'))
+      ->setDescription(t('language code.'))
+      ->setSettings(array('default_value' => 'und'));
 
     return $fields;
   }
-
 
   /**
    * get a list of all the currencies used and available to the wallet.
    */
   public function currencies_all() {
     //that means unused currencies should appear last
-    return $this->currencies_used() + Exchange::currenciesAvailable($this);
+    return $this->currenciesUsed() + Exchange::currenciesAvailable($this);
   }
 
   /**
    * get a list of the currencies held in the wallet
-   * @todo consider moving to static class Mcapi
    */
-  public function currencies_used() {
+  public function currenciesUsed() {
     if (!$this->currencies_used) {
       $this->currencies_used = [];
       foreach (Currency::loadMultiple(array_keys($this->getSummaries())) as $currency) {
@@ -282,7 +278,6 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     }
   }
 
-
   /**
    * {@inheritdoc}
    */
@@ -309,7 +304,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     }
     return $this->entitymanager()->getStorage('mcapi_transaction')->filter($conditions);
   }
-  
+
   /**
    * (non-PHPdoc)
    * @see \Drupal\mcapi\WalletInterface::orphan()
@@ -322,8 +317,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
       if (Self::entityManager()->getStorage('mcapi_transaction')->filter($criteria)) {
 
         $new_name = t(
-          "Formerly !name's wallet: !label",
-          ['!name' => $wallet->label(), '!label' => $wallet->label(NULL, FALSE)]
+          "Formerly !name's wallet: !label", ['!name' => $wallet->label(), '!label' => $wallet->label(NULL, FALSE)]
         );
         $wallet->set('name', $new_name)
           ->set('entity_type', $new_owner_entity->getEntityTypeId())
@@ -331,12 +325,18 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
           ->save();
         //TODO make the number of wallets an exchange can own to be unlimited.
         drupal_set_message(t(
-          "!name's wallets are now owned by exchange !exchange",
-          [
-            '!name' => $wallet->label(), 
-            '!exchange' => \Drupal::l($new_owner_entity->label(), $exchange->url())
-          ]
+            "!name's wallets are now owned by exchange !exchange", [
+          '!name' => $wallet->label(),
+          '!exchange' => \Drupal::l($new_owner_entity->label(), $exchange->url())
+            ]
         ));
+        \Drupal::logger('mcapi')->notice(
+          'Wallet @wid was orphaned to @entitytype @id', [
+          '@wid' => $wallet->id(),
+          '@entitytype' => $new_owner_entity->getEntityTypeId(),
+          '@id' => $new_owner_entity->id()->id()
+          ]
+        );
       }
       else {
         $wallet->delete();
@@ -345,16 +345,15 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
     }
   }
 
- 
   /**
    * {@inheritdoc}
    */
   public static function ownedBy(ContentEntityInterface $entity) {
     return Self::EntityManager()
-      ->getStorage('mcapi_wallet')
-      ->getOwnedIds($entity);
+        ->getStorage('mcapi_wallet')
+        ->getOwnedIds($entity);
   }
-  
+
   /**
    * {inheritdoc}
    * overrides parent function to also invalidate the wallet's parent's tag
@@ -362,8 +361,7 @@ class Wallet extends ContentEntityBase  implements WalletInterface{
   public function invalidateTagsOnSave($update) {
     //invalidate the parent, especially the entity view, see mcapi_entity_view()
     $tags = Cache::mergeTags(
-      $this->getEntityType()->getListCacheTags(), 
-      [$this->entity_type->value.':'.$this->pid->value]
+        $this->getEntityType()->getListCacheTags(), [$this->entity_type->value . ':' . $this->pid->value]
     );
     if ($update) {
       // An existing entity was updated, also invalidate its unique cache tag.

@@ -27,7 +27,7 @@ interface WalletInterface extends ContentEntityInterface {
    * @return integer
    *   the user id.
    */
-  public function user_id();
+  public function ownerUserId();
 
   /**
    * get a list of the currencies held in the wallet
@@ -35,7 +35,7 @@ interface WalletInterface extends ContentEntityInterface {
    * @return CurrencyInterface[]
    *   keyed by currency id
    */
-  function currencies_used();
+  function currenciesUsed();
 
   /**
    * get a list of the currencies used or available to this wallet

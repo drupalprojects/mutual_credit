@@ -19,30 +19,51 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Defines an access controller option for the mcapi_transaction entity.
  */
 class TransactionAccessControlHandler extends EntityAccessControlHandler {
-  
+
   private $routeMatch;
   private $transitionManager;
 
-  public function __construct( $entity_type) {
-    //I don't know how to inject when create() is not called
+  public function __construct() {
     $this->routeMatch = \Drupal::RouteMatch();
     $this->transitionManager = \Drupal::Service('mcapi.transitions');
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public function access(EntityInterface $transaction, $transition, $langcode = LanguageInterface::LANGCODE_DEFAULT, AccountInterface $account = NULL, $return_as_object = false) {
-    if ($transition == 'transition') {//wtf?
+    if ($transition == 'transition') {
       $transition = $this->routeMatch->getParameter('transition');
     }
     //the decision is taken by the plugin for the given transition operation
     if ($plugin = $this->transitionManager->getPlugin($transition)) {
-      if ($plugin->opAccess($transaction, $this->prepareUser($account))) {
-        return AccessResult::allowed()->cachePerUser();
+      //check the states this $op can appear on
+      if ($plugin->accessState($transaction)) {
+        if ($plugin->accessOp($transaction, $this->prepareUser($account))) {
+          return AccessResult::allowed()->cachePerUser();
+        }
       }
     }
     return AccessResult::forbidden()->cachePerUser();
   }
-  
+
+
+  /**
+   * router access callback
+   * Find out if the user has access to enough wallets to be able to transact
+   *
+   * @return AccessResult
+   */
+  public static function enoughWallets() {
+    $account = \Drupal::currentUser();
+    $walletStorage = \Drupal::entitymanager()->getStorage('mcapi_wallet');
+    $payin = $walletStorage->walletsUserCanTransit('payin', $account);
+    $payout = $walletStorage->walletsUserCanTransit('payout', $account);
+    //there must be at least one wallet in each and they must be different
+    return ($payin && $payout && count(array_unique(array_merge($payin, $payout))) > 1) ?
+      \Drupal\Core\Access\AccessResult::allowed()->cachePerUser() :
+      \Drupal\Core\Access\AccessResult::forbidden()->cachePerUser();
+  }
+
+
 }

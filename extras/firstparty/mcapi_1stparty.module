@@ -110,7 +110,7 @@ function mcapi_render_stripped(&$element) {
       unset($element['#theme_wrappers']);
     }
   }
-  return drupal_render($element);
+  return \Drupal::service('renderer')->render($element);
 }
 
 /**
@@ -196,7 +196,9 @@ function mcapi_1stparty_fieldAPI() {
   //get the field API fields showing according to the the default display
   //and filter out the entity properties
   //the entity_form_display does this more elegantly but function is protected
-  foreach(\Drupal::entityManager()->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction') as $field_name => $definition) {
+  $definitions = \Drupal::entityManager()
+    ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
+  foreach($definitions as $field_name => $definition) {
     if ($widget = $entity_display->getRenderer($field_name)) {
       if ($definition instanceOf FieldConfig) {
         $fieldAPI[$field_name] = array(
@@ -231,6 +233,26 @@ function mcapi_1stparty_menu_links_discovered_alter(&$definitions) {
       //TODO currently the entity doesn't support nested menu items
 //      'parent' => '',
       'provider' => 'mcapi_1stparty',
+    );
+  }
+}
+
+/**
+ * implement hook_entity_base_field_info_alter().
+ *
+ * change the default date widget for the created field
+ *
+ * @todo make this work with the date_popup widget, but in what module
+ */
+function mcapi_1stparty_entity_base_field_info_alter(&$fields, \Drupal\Core\Entity\EntityTypeInterface $entity_type) {
+  $datewidget = \Drupal::moduleHandler()->moduleExists('datetime') ?
+    'datetime_timestamp' :
+    'datetime_timestamp';
+  return;
+  if ($entity_type->id() == 'mcapi_transaction') {
+    $fields['created']->setDisplayOptions(
+      'form',
+      ['type' => $datewidget, 'weight' => 10]
     );
   }
 }

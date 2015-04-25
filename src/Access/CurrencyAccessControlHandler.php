@@ -26,11 +26,11 @@ class CurrencyAccessControlHandler extends EntityAccessControlHandler {
 
     switch ($operation) {
       case 'view':
-        return AccessResult::allowed()->cachePerRole();
+        return AccessResult::allowed()->cachePerPermissions();
       case 'create':
       case 'delete':
       case 'update':
-        if ($account->hasPermission('configure mcapi')) return AccessResult::allowed()->cachePerRole();
+        if ($account->hasPermission('configure mcapi')) return AccessResult::allowed()->cachePerPermissions();
         elseif ($entity->id()) {//i.e it is already saved
           if ($account->id() == $entity->getOwnerId()) return AccessResult::allowed()->cachePerUser();
           else return AccessResult::forbid()->cachePerUser();

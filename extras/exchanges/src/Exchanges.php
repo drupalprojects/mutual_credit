@@ -31,6 +31,7 @@ class Exchanges {
    * @return integer[]
    *   Exchange entity ids
    *
+   * @deprecated
    * @todo replace all uses of this with _og_get_entity_groups($entity_type = 'user', $entity = NULL, $states = array(OG_STATE_ACTIVE), $field_name = NULL)
    */
   static function in(ContentEntityInterface $entity = NULL, $enabled = TRUE, $open = FALSE) {
@@ -81,7 +82,7 @@ class Exchanges {
    * @todo maybe this should return only exchange ids?
    * @deprecated replace with og_get_entity_groups($entity_type = 'user', $entity = NULL, $states = array(OG_STATE_ACTIVE), $field_name = NULL);
    */
-  public static function walletInExchanges(Wallet $wallet, $open = FALSE) {
+  public static function walletExchanges(Wallet $wallet, $open = FALSE) {
     return $wallet->entity_type == 'mcapi_exchange' ?
       array($wallet->pid => $wallet->getOwner()) ://TODO how do exchanges own wallets if exchanges aren't an entity?
       Self::in($wallet->getOwner(), TRUE, $open);
@@ -112,6 +113,29 @@ class Exchanges {
     }
   }
   
+  /**
+   * Load currencies for a given user
+   * A list of all the currencies available to the current user
+   *
+   * @param AccountInterface $account
+   *
+   * @return CurrencyInterface[]
+   * 
+   * @todo refactor this
+   */
+  public static function userCurrencies(AccountInterface $account = NULL) {
+    $exchange_ids = Exchanges::in($account, TRUE);
+    return SELF::currencies($exchange_ids, FALSE);
+  }
+  
+  /**
+   * Get all the currencies in the given exchanges
+   * 
+   * @param array $exchange_ids
+   * @param type $ticks
+   * 
+   * @return CurrencyInterface[]
+   */
   public static function currencies(array $exchange_ids, $ticks = FALSE) {
     $currencies = [];
     foreach (Exchange::loadmultiple($exchange_ids) as $exchange) {
@@ -123,6 +147,38 @@ class Exchanges {
     }
     uasort($currencies, array('\Drupal\Component\Utility\SortArray', 'sortByWeightProperty'));
     return $currencies;
+  }
+  
+  /**
+   * get a list of all the currencies currently in a wallet's scope
+   * which is to say, in any of the wallet's parent's exchanges
+   *
+   * @param WalletInterface $wallet
+   * 
+   * @return CurrencyInterface[]
+   *   keyed by currency id
+   *
+   */
+  public static function currenciesAvailable($wallet) {
+    $exchanges = Exchanges::walletExchanges($wallet);
+    $wallet->currencies_available = [];
+    foreach (Exchanges::currencies($exchanges) as $currency) {
+      $wallet->currencies_available[$currency->id()] = $currency;
+    }
+  }
+  
+  
+  /**
+   * Check if an entity is the owner of a wallet
+   * @todo this is really a constant, but constants can't store arrays. What @todo?
+   *
+   * @return array
+   *   THE list of ops because arrays cannot be stored in constants
+   * 
+   * @todo this needs to be a plugin, or at least alterable by the exchanges module
+   */
+  public static function walletOps() {
+    return [];
   }
   
 }

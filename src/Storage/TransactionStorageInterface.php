@@ -113,12 +113,6 @@ interface TransactionStorageInterface extends EntityStorageInterface {
   public function timesBalances($wallet_id, $curr_id, $since);
 
   /**
-   * Mark a transaction deleted
-   * @param array $transactions
-   */
-  public function doErase(array $transactions);
-  
-  /**
    * Return the ids of all the wallets which HAVE USED this currency
    * @param type $curr_id
    * @param type $conditions

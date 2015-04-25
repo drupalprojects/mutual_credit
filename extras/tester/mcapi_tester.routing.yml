@@ -1,0 +1,8 @@
+mcapi.tester.dashboard:
+  path: '/admin/accounting/dashboard'
+  defaults:
+    _controller: 'Drupal\mcapi_tester\Controller\DashboardController::page'
+    _title: 'Dashboard'
+  requirements:
+    _permission: 'access administration pages'
+

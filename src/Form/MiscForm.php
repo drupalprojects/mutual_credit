@@ -10,8 +10,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class MiscForm extends ConfigFormBase {
 
-  private $entity_manager;  
-  private $module_handler;
+  private $entityManager;
+  private $moduleHandler;
+  private $transactionRelativeManager;
 
   /**
    * {@inheritdoc}
@@ -19,44 +20,45 @@ class MiscForm extends ConfigFormBase {
   public function getFormID() {
     return 'mcapi_misc_options_form';
   }
-  
-  public function __construct(ConfigFactoryInterface $configFactory, $module_handler, $entity_manager) {
+
+  public function __construct(ConfigFactoryInterface $configFactory, $module_handler, $entity_manager, $transaction_relative_manager) {
     $this->setConfigFactory($configFactory);
-    $this->entity_manager = $entity_manager;
-    $this->module_handler = $module_handler;
+    $this->entityManager = $entity_manager;
+    $this->moduleHandler = $module_handler;
+    $this->transactionRelativeManager = $transaction_relative_manager;
   }
-  
+
   static public function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
       $container->get('module_handler'),
-      $container->get('entity.manager')
+      $container->get('entity.manager'),
+      $container->get('mcapi.transaction.relatives')
     );
-  }    
+  }
 
   /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->configFactory->getEditable('mcapi.misc');
-    module_load_include('inc', 'mcapi');
+    $config = $this->configFactory->get('mcapi.misc');
     foreach (Exchange::transactionTokens(TRUE) as $token) {
       $tokens[] = "[mcapi:$token]";
     }
-    $form['sentence_template'] = array(
+    $form['sentence_template'] = [
       '#title' => t('Default transaction sentence'),
       '#description' => t('Use the following tokens to define how the transaction will read when displayed in sentence mode: @tokens', array('@tokens' => implode(', ', $tokens))),
       '#type' => 'textfield',
       '#default_value' => $config->get('sentence_template'),
       '#weight' => 2
-    );
-    $form['mail_errors'] = array(
+    ];
+    $form['mail_errors'] = [
       '#title' => t('Send diagnostics to user 1 by mail'),
       '#type' => 'checkbox',
       '#default_value' => $config->get('mail_errors'),
       '#weight' => 10
-    );
-    $form['worths_delimiter'] = array(
+    ];
+    $form['worths_delimiter'] = [
       '#title' => t('Delimiter'),
       '#description' => t('What characters should be used to separate values when a transaction has multiple currencies?'),
       '#type' => 'textfield',
@@ -64,8 +66,8 @@ class MiscForm extends ConfigFormBase {
       '#weight' => 12,
       '#size' => 10,
       '#maxlength' => 10,
-    );
-    $form['zero_snippet'] = array(
+    ];
+    $form['zero_snippet'] = [
       '#title' => t('Zero snippet'),
       '#description' => t("string to replace '0:00' when the currency allows zero transactions"),
       '#type' => 'textfield',
@@ -73,40 +75,63 @@ class MiscForm extends ConfigFormBase {
       '#weight' => 13,
       '#size' => 20,
       '#maxlength' => 128,
-    );
+    ];
     //NB Instead of this, 'counted' could be a property of each transaction state
     //however at the moment that would involve user 1 editing the yaml files
     //because transaction states have no ui to edit them
-    $form['counted'] = array(
+    $form['counted'] = [
     	'#title' => t('Counted transaction states'),
       '#description' => t("Transactions in these states will comprise the wallet's balance"),
       '#type' => 'checkboxes',
       '#options' => mcapi_entity_label_list('mcapi_state'),
       '#default_value' => $config->get('counted'),
       '#weight' => 14,
-      TRANSACTION_STATE_FINISHED => array(
+      //these values are absolutely fixed
+      TRANSACTION_STATE_FINISHED => [
     	  '#disabled' => TRUE,
         '#value' => TRUE,
-      ),
-      TRANSACTION_STATE_ERASED => array(
+      ],
+      TRANSACTION_STATE_ERASED => [
     	  '#disabled' => TRUE,
         '#value' => FALSE,
-      )
-    );
+      ]
+    ];
+    foreach ($this->transactionRelativeManager->getDefinitions() as $id => $definition) {
+      $options[$id] = $definition['label'];
+    }
+    $form['relatives_details'] = [
+      '#title' => t('Transaction relatives'),
+      '#description' => $this->t(
+        'Check those needed to determine access to transaction operations'
+      ),
+      '#type' => 'details',
+      '#collapsible' => TRUE,
+      '#weight' => 16,
+      'active_relatives' => [
+        '#type' => 'checkboxes',
+        '#options' => $options,
+        '#default_value' => $config->get('relatives'),
+        //todo - be a bit more specific here; where is this used?
+        '#description' => $this->t(
+          'Warning: unchecking these may make other settings unviable'
+        )
+      ],
+    ];
+
     //TODO only show this button if transactions are present
-    $form['rebuild_mcapi_index'] = array(
+    $form['rebuild_mcapi_index'] = [
       '#title' => t('Rebuild index'),
       '#description' => t('The transaction index table stores the transactions in an alternative format which is helpful for building views'),
       '#type' => 'fieldset',
       '#weight' => 15,
-      'button' => array(
+      'button' => [
         '#type' => 'submit',
         '#value' => 'rebuild_mcapi_index',
-        '#submit' => array(
-          array(get_class($this), 'rebuild_mcapi_index')
-        )
-      )
-    );
+        '#submit' => [
+          [get_class($this), 'rebuild_mcapi_index']
+        ]
+      ]
+    ];
     return parent::buildForm($form, $form_state);
   }
 
@@ -130,6 +155,7 @@ class MiscForm extends ConfigFormBase {
       ->set('worths_delimiter', $values['worths_delimiter'])
       ->set('mail_errors', $values['mail_errors'])
       ->set('counted', $values['counted'])
+      ->set('active_relatives', $values['active_relatives'])
       ->save();
 
     parent::submitForm($form, $form_state);
@@ -140,7 +166,7 @@ class MiscForm extends ConfigFormBase {
 
   static function rebuild_mcapi_index(array &$form, FormStateInterface $form_state) {
     //not sure where to put this function
-    \Drupal::entityManager()->getStorage('mcapi_transaction')->indexRebuild();
+    $this->entityManager->getStorage('mcapi_transaction')->indexRebuild();
     drupal_set_message("Index table is rebuilt");
     $form_state->setRedirect('system.status');
   }

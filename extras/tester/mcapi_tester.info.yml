@@ -12,7 +12,6 @@ dependencies:
   - contextual
   - dblog
   - taxonomy
-  - help
   - config
   - devel
   - mcapi_limits

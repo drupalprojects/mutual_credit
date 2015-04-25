@@ -22,29 +22,22 @@ class FirstPartyTransactionForm extends TransactionForm {
 
   public $config;//the settings as a configuration object
 
-  function __construct(EntityManagerInterface $entity_manager, $route_match, $form_name = NULL) {
+  function __construct(EntityManagerInterface $entity_manager, $form_name = NULL) {
     parent::__construct($entity_manager);
 
     if (!$form_name) {
       //TODO is there a more elegant way to get the route options parameters
       //see \Drupal\mcapi_1stparty\FirstPartyRoutes
-      $form_name = $route_match->getRouteObject()->getOptions()['parameters']['1stparty_editform'];
+      $form_name = $this->getRouteMatch()
+        ->getRouteObject()
+        ->getOptions()['parameters']['1stparty_editform'];
     }
     $this->config = entity_load('1stparty_editform', $form_name);
+    mdump($form_name);die();
     //makes $this->entity;
     $this->prepareTransaction();
-  }
-  
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('entity.manager'),
-      $container->get('current_route_match')
-    );
-  }
 
+  }
 
   /**
    * Symfony routing callback
@@ -81,7 +74,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     );
     $my_wallets = mcapi_entity_label_list(
       'mcapi_wallet',
-      Wallet::ownedBy(User::load(\Drupal::currentUser()->id()))
+      Wallet::ownedBy(User::load($this->currentUser()->id()))
     );
     //if more than one wallet is allowed we'll put a chooser
     //however disabled widgets don't return a value, so we'll store the value we need in a helper element
@@ -226,16 +219,16 @@ class FirstPartyTransactionForm extends TransactionForm {
     }
     //now handle the payer and payee, based on partner and direction
     if ($this->config->direction['preset'] == 'incoming') {
-      $vars['payee'] = \Drupal::currentUser()->id();
+      $vars['payee'] = $this->currentUser()->id();
       $vars['payer'] = $partner;
     }
     elseif($this->config->direction['preset'] == 'outgoing') {
-      $vars['payer'] = \Drupal::currentUser()->id();
+      $vars['payer'] = $this->currentUser()->id();
       $vars['payee'] = $partner;
     }
     //at this point we might want to override some values based on input from the url
     //this means the form can be populated using fields shared with another entity.
 
-    $this->entity = \Drupal::entityManager()->getStorage('mcapi_transaction')->create($vars);
+    $this->entity = $this->entityManager->getStorage('mcapi_transaction')->create($vars);
   }
 }

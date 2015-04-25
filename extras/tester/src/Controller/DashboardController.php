@@ -27,7 +27,7 @@ class DashboardController extends ControllerBase {
    * @param EntityInterface $mcapi_exchange
    *
    * @return array
-   *  An array suitable for drupal_render().
+   *  A render array
    */
   public function page() {
 

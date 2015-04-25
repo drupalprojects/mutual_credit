@@ -1,6 +1,6 @@
 mcapi.wallet.admin_limits.tab:
   route_name: mcapi.wallet.admin_limits
   title: 'Limits'
-  base_route: mcapi.wallet_view
+  base_route: entity.mcapi_wallet.canonical
   weight: 3
 

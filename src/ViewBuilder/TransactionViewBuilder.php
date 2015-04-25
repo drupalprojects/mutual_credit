@@ -7,15 +7,14 @@
 
 namespace Drupal\mcapi\ViewBuilder;
 
+use Drupal\mcapi\TransactionInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
 use Drupal\Core\Template\Attribute;
-use Drupal\Component\Utility\NestedArray;
-use Drupal\mcapi\TransactionInterface;
-use Drupal\Core\Render\Element;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Url;
 
 /**
@@ -27,6 +26,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
 
   public function __construct(EntityTypeInterface $entity_type, EntityManagerInterface $entity_manager, LanguageManagerInterface $language_manager) {
     $this->transitionManager = \Drupal::service('mcapi.transitions');
+    $this->config = \Drupal::config('mcapi.transition.view');
     parent::__construct($entity_type, $entity_manager, $language_manager);
   }
 
@@ -47,8 +47,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
     //if the view_mode is 'full' that means nothing was specified, which is the norm.
     //so we turn to the 'view' transition where the view mode is a configuration.
     if ($view_mode == 'full') {
-      $view_config = \Drupal::config('mcapi.transition.view');
-      $view_mode = $view_config->get('format');
+      $view_mode = $this->config->get('format');
     }
     $build = [];
     //most entity types would build the render array for theming here.
@@ -66,30 +65,28 @@ class TransactionViewBuilder extends EntityViewBuilder {
         );
         break;
       default:
-        $build['#markup'] = mcapi_render_twig_transaction($view_config->get('twig'), $entity);
+        $build['#markup'] = render_twig_transaction(
+          $view_config->get('twig'),
+          $entity
+        );
     }
-
     $build += array(
       '#view_mode' => $view_mode,
       '#theme_wrappers' => ['mcapi_transaction'],
       '#langcode' => $langcode,
       '#mcapi_transaction' => $entity,
-      '#attached' => ['library' => ['mcapi/mcapi.transaction']],
-      '#cache' => [
-        'tags' =>  NestedArray::mergeDeep(
-          $this->getCacheTags(), //['mcapi_transaction_view']
-          $entity->getCacheTags()//['mcapi_transaction:']
-        ),
-      ],
+      '#attached' => ['library' => ['mcapi/mcapi.transaction']]
     );
-    drupal_set_message("The #attached libary mcapi/mcapi.transaction isn't being added in TransactionViewBuilder::getBuildDefaults()", 'warning');
-    //TODO because the transition links are very contextual
-    //we can't cache the transactions without a new preview view_mode which shows no links
-    //Ideally we would cache the certificate but NOT the wrapped certificate
-    /*
-    if ($this->isViewModeCacheable($view_mode) && !$entity->isNew() && $this->entityType->isRenderCacheable()) {
-      $build['#cache'] += array(
-        'keys' => array(
+
+    if ($this->isViewModeCacheable($view_mode) && !$entity->isNew()) {
+      $build['#cache'] = [
+        'bin' => 'render',
+        'tags' => Cache::mergeTags(
+            ['mcapi_transaction_view'],//$this->getCacheTags()
+            $entity->getCacheTags()
+        ),
+        'contexts' => [],//TODO what contexts are appropriate?
+        'keys' => [
           'entity_view',
           'mcapi_transaction',
           $entity->serial->value,
@@ -97,12 +94,9 @@ class TransactionViewBuilder extends EntityViewBuilder {
           'cache_context.theme',
           'cache_context.language',
           'cache_context.user',
-        ),
-        'bin' => 'render',//hardcoded for speed,
-      );
+        ],
+      ];
     }
-     * 
-     */
     return $build;
   }
 
@@ -123,21 +117,29 @@ class TransactionViewBuilder extends EntityViewBuilder {
       $exclude = ['create'];
       //TODO this is inelegant. We need to remove view when the current url is NOT the canonical url
       //OR we need to NOT render links when the transaction is being previewed
-      if ($view_mode == 'certificate') $exclude[] = 'view';
-      foreach ($this->transitionManager->active($exclude, $transaction->worth) as $transition => $plugin) {
+      if ($view_mode == 'certificate') {
+        $exclude[] = 'view';
+      }
+      $active = $this->transitionManager->active($exclude, $transaction->worth);
+
+      foreach ($active as $transition => $plugin) {
         if ($transaction->access($transition)->isAllowed()) {
-          $route_name = $transition == 'view' ? 'entity.mcapi_transaction.canonical' : 'mcapi.transaction.op';
-          $renderable['#links'][$transition] = array(
-            'title' => $plugin->label,
-            'url' => Url::fromRoute($route_name, array(
+          $route_name = $transition == 'view' ?
+            'entity.mcapi_transaction.canonical' :
+            'mcapi.transaction.op';
+          $renderable['#links'][$transition] = [
+            'title' => $plugin->getConfiguration('title'),
+            'url' => Url::fromRoute($route_name, [
               'mcapi_transaction' => $transaction->serial->value,
               'transition' => $transition
-            ))
-          );
+            ])
+          ];
           if ($dest_type == 'modal') {
-            $renderable['#links'][$transition]['attributes'] = new Attribute(
-              array('data-accepts' => 'application/vnd.drupal-modal', 'class' => array('use-ajax'))
-            );
+            $attr = new Attribute([
+              'data-accepts' => 'application/vnd.drupal-modal',
+              'class' => ['use-ajax']
+            ]);
+            $renderable['#links'][$transition]['attributes'] = $attr;
           }
           elseif($dest_type == 'ajax') {
             debug('ajax mode needs work...');
@@ -146,21 +148,22 @@ class TransactionViewBuilder extends EntityViewBuilder {
           }
           elseif(!$plugin->getConfiguration('redirect')){
             if ($transition != 'view') {
-              $renderable['#links'][$transition]['query'] = drupal_get_destination();
+              $path = \Drupal::service('redirect.destination')->get();
+//@todo stop removing leading slash when the redirect service does it properly
+              $renderable['#links'][$transition]['query'] = substr($path, 1);
             }
           }
         }
       }
       if (array_key_exists('#links', $renderable)) {
-        $renderable += array(
+        $renderable += [
           '#theme' => 'links',
-          '#attached' => array('library' => array('mcapi/mcapi.transaction')),
-          '#attributes' => new Attribute(array('class' => array('transaction-transitions'))),
-          '#attributes' => ['class' => ['transaction-transitions']],
-          '#cache' => []//TODO prevent this from being ever cached
-        );
+          '#attached' => ['library' => ['mcapi/mcapi.transaction']],
+          '#attributes' => new Attribute(['class' => ['transaction-transitions']]),
+          //'#attributes' => ['class' => ['transaction-transitions']],
+          '#cache' => []//TODO think carefully about caching per user per transaction
+        ];
       }
-      drupal_set_message("The #attached libary mcapi/mcapi.transaction isn't being added in TransactionViewBuilder::getBuildDefaults()", 'warning');
     }
     return $renderable;
   }

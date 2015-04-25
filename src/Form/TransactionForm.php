@@ -22,16 +22,21 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class TransactionForm extends ContentEntityForm {
 
-  public $tempstore;
+  private $tempstore;
+  
+  public function __construct(EntityManagerInterface $entity_manager, $tempstore) {
+    parent::__construct($entity_manager);
+    $this->tempStore = $tempstore;
+  }
   
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    $static = parent::create($container);
-    //this saves overriding the __construct method at a cost of making $tempstore public
-    $static->tempstore = $container->get('user.private_tempstore');
-    return $static;
+    return new static(
+      $container->get('entity.manager'),
+      $container->get('user.private_tempstore')
+    );
   }
   
   /**
@@ -57,49 +62,44 @@ class TransactionForm extends ContentEntityForm {
 
     unset($form['langcode']); //No language so we remove it.
 
-    $form['description'] = array(
+    $form['description'] = [
       '#type' => 'textfield',
       '#title' => t('Description'),
       '#default_value' => $transaction->description->value,
       '#weight' => 3,
       '#attributes' => new Attribute(
-        array(
-          'style' => "width:100%",
-          'class' => []
-        )
+        ['style' => "width:100%", 'class' => []]
       ),
       //TODO TEMP
-      '#attributes' => array(
+      '#attributes' => [
         'style' => "width:100%",
         'class' => []
-      )
-    );
+      ]
+    ];
 
     //lists all the wallets in the exchange
-    $form['payer'] = array(
+    $form['payer'] = [
       '#title' => t('Wallet to be debited'),
       '#type' => 'select_wallet',
       '#role' => 'payer',
       '#default_value' => $transaction->get('payer')->target_id,
       '#weight' => 9,
-    );
-    $form['payee'] = array(
+    ];
+    $form['payee'] = [
       '#title' => t('Wallet to be credited'),
       '#type' => 'select_wallet',
       '#role' => 'payee',
       '#default_value' => $transaction->get('payee')->target_id,
       '#weight' => 9,
-    );
-
-    $form['type'] = array(
+    ];
+    $form['type'] = [
       '#title' => t('Transaction type'),
       '#options' => mcapi_entity_label_list('mcapi_type'),
       '#type' => 'mcapi_types',
-      '#default_value' => $transaction->get('type')->value,
+      '#default_value' => $transaction->get('type')->target_id,
       '#required' => TRUE,
       '#weight' => 18,
-    );
-    
+    ];
     return parent::form($form, $form_state);
   }
 
@@ -108,7 +108,7 @@ class TransactionForm extends ContentEntityForm {
    */
   protected function actionsElement(array $form, FormStateInterface $form_state) {
     $actions = parent::actionsElement($form, $form_state);
-    $actions['submit']['#submit'] = array('::submitForm');
+    $actions['submit']['#submit'] = ['::submitForm'];
     return $actions;
   }
 
@@ -122,20 +122,16 @@ class TransactionForm extends ContentEntityForm {
   public function validate(array $form, FormStateInterface $form_state) {
     //runs the form validation handlers and 
     //runs datatype->validate() on all shown fields.
-    parent::validate($form, $form_state);
+    $violations = parent::validate($form, $form_state);//TODO deal with these
     $this->typedDataValidated = TRUE;//temp flag
     
     $transaction = $this->buildEntity($form, $form_state);
-    $exceptions = $transaction->validate();
-    foreach ($exceptions as $mcapi_exception) {
-      $form_state->setErrorByName($mcapi_exception->getField(), $mcapi_exception->getMessage());
-    }
-    //show the warnings
-    $child_errors = \Drupal::config('mcapi.misc')->get('child_errors');
-    foreach ($transaction->warnings as $e) {
-      if ($child_errors['show_messages']) {
-        drupal_set_message($e->getMessage, 'warning');
-      }
+    //TODO this better see nodeForm & display
+    foreach ($transaction->validate() as $violation) {
+      $form_state->setErrorByName(
+        $mcapi_exception->getField(), 
+        $mcapi_exception->getMessage()
+      );
     }
     //now validated, this is what will go in the tempstore
     $this->entity = $transaction;
@@ -151,15 +147,26 @@ class TransactionForm extends ContentEntityForm {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     //TODO inject this
-    \Drupal::service('user.private_tempstore')
+    $this->tempStore
       ->get('TransactionForm')
       ->set('entity', $this->entity);
     //Drupal\mcapi\ParamConverter\TransactionSerialConverter
     //then
     //Drupal\mcapi\Plugin\Transition\Create
+    
+    $this->logger('mcapi')->notice(
+      'User @uid created transaction @serial', 
+      [
+        '@uid' => $this->currentUser()->id(), 
+        '@serial' => $this->entity->serial->value
+      ]
+    );
+    debug('Check this transaction is in the dblog');
 
     //now we divert to the transition confirm form
-    $form_state->setRedirect('mcapi.transaction.op', array('mcapi_transaction' => 0, 'transition' => 'create'));
+    $form_state->setRedirect(
+      'mcapi.transaction.op', 
+      ['mcapi_transaction' => 0, 'transition' => 'create']);
   }
 
   /**
@@ -174,7 +181,7 @@ class TransactionForm extends ContentEntityForm {
       $entity->creator->target_id = $account->id();
     }
     else {
-      $entity->creator->target_id = \Drupal::currentUser()->id();//MUST be a logged in user!
+      $entity->creator->target_id = $this->currentUser()->id();//MUST be a logged in user!
     }
     if (!empty($values['created'])) {
       //$entity->set('created', $values['created']);

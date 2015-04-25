@@ -5,7 +5,7 @@ mcapi_add_exchange_laction:
     - mcapi.admin_exchange_list
 
 mcapi.admin.transaction:
-  route_name: mcapi.transaction_admin
+  route_name: mcapi.transaction_log
   title: 'Log Transaction'
   appears_on:
     - mcapi.admin

@@ -9,7 +9,6 @@ namespace Drupal\mcapi\Controller;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;

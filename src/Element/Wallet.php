@@ -35,6 +35,7 @@ class Wallet extends EntityAutocomplete {
     $info['#process'][0] = [$class, 'processEntityAutocomplete'];
     //$element['#prerender'][] = array($class, 'prerender_wallet_field');
     $info['#element_validate'][] = [$class, 'validateEntityAutocomplete'];
+    $info['#pre_render'][] = [$class, 'prerenderWalletElement'];
     $info['#required'] = TRUE;
     $info['#multiple'] = FALSE;
     //TODO this causes an error in alpha 15 which isn't all expecting attribute objects yet
@@ -59,12 +60,7 @@ class Wallet extends EntityAutocomplete {
    */
   static function valueCallback(&$element, $input, FormStateInterface $form_state) {
     if ($input === FALSE) {
-      if (!is_array($element['#default_value'])) {
-        // Convert the default value into an array for easier processing in
-        // static::getEntityLabels().
-        $element['#default_value'] = array($element['#default_value']);
-      }
-      return static::getEntityLabels($element['#default_value']);
+      return;// Self::walletNames((array)$element['#default_value']);
     }
     elseif (is_numeric($input) && is_integer($input + 0)) {
       return $input;
@@ -148,16 +144,16 @@ class Wallet extends EntityAutocomplete {
   /**
    * element_prerender callback for select_wallet
    *
-   * convert the #default value from a wallet id to the autocomplete format
+   * convert the #default value from a wallet id to the autocomplete text format
    * ensure the autocomplete address is going to the right place
    * @todo remove this
    */
-  static function prerender_wallet_field($element) {
+  static function prerenderWalletElement($element) {
     if (is_numeric($element['#default_value'])) {
       $wallet = Wallet::load($element['#default_value']);
       if ($wallet) {
         //this label contains the #id which is picked up by the value callback
-        $element['#default_value'] = $wallet->label(NULL, FALSE);
+        $element['#default_value'] = Self::walletNames([$wallet]);
       }
       else {
         drupal_set_message($this->t("Wallet @num does not exist", array('@num' => $element['#default_value'])), 'warning');
@@ -178,12 +174,11 @@ class Wallet extends EntityAutocomplete {
    * @return string
    *   A string of entity labels separated by commas.
    */
-  public static function getEntityLabels(array $wids) {
+  public static function walletNames(array $wids) {
     $entity_labels = array();
     $entities = \Drupal\mcapi\Entity\Wallet::load($wids);
     foreach ($entities as $entity) {
-      $label = ($entity->access('view')) ? $entity->label() : t('- Restricted access -');
-
+      if (!$entity->access('view')) continue;
       // Labels containing commas or quotes must be wrapped in quotes.
       $entity_labels[] = Tags::encode($entity->label());
     }

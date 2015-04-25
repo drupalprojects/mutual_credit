@@ -1,13 +1,10 @@
 <?php
 
-use Drupal\Core\Entity\EntityStorageException;
-use Drupal\mcapi\McapiTransactionException;
 use Drupal\mcapi\Exchange;
-use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Wallet;
-use Drupal\mcapi_exchanges\Entity\Exchange;
+use Drupal\mcapi_exchanges\Entity\Exchanges;
 use Drupal\user\Entity\User;
 
  
@@ -115,7 +112,7 @@ function mcapi_tester_make_inter_transactions($num) {
     );
     reset($wids1);
     //does key() advance the array cursor?
-    $currencies = exchange_currencies(array(key($wids1), key($wids1)), $ticks = FALSE);
+    $currencies = Exchanges::currencies(array(key($wids1), key($wids1)), $ticks = FALSE);
     if (empty($currencies)) {
       debug('No currencies in exchange(s) '.$exchange_id);
       continue;
@@ -136,11 +133,11 @@ function mcapi_save_test_transaction($props) {
     $transaction = Transaction::create($props);
     $transaction->save();
   }
-  catch (McapiTransactionException $e) {
+  catch (\Exception $e) {
     //todo
 
   }
-  catch(EntityStorageException $e) {
+  catch(\Exception $e) {
     throw new Exception($e->getMessage);
   }
   

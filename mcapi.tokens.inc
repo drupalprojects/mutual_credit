@@ -1,6 +1,5 @@
 <?php
 
-use Drupal\mcapi\Mcapi;
 
 /*
  * implements hook_tokens().
@@ -12,12 +11,12 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
 
   $replacements = $replaced = [];
   $transaction = $data['mcapi'];
-  Mcapi::processTransactionVars($replaced, $transaction);
+  process_transaction_vars($replaced, $transaction);
   foreach ($tokens as $name => $original) {
     $replacements[$original] = $replaced[$name];
   }
   //TODO there seems to be some confusion about when something is a render array and when rendered
-  $replacements['[mcapi:worth]'] = drupal_render($replacements['[mcapi:worth]']);//hack
+  $replacements['[mcapi:worth]'] = \Drupal::service('renderer')->render($replacements['[mcapi:worth]']);//hack
 
   //handle any entity references - tokens within tokens
   $token_service = \Drupal::token();

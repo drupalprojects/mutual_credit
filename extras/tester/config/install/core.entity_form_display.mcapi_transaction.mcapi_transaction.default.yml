@@ -9,19 +9,19 @@ content:
     settings: {  }
     third_party_settings: {  }
   categories:
-    type: taxonomy_autocomplete
+    type: entity_reference_autocomplete
     weight: 1
     settings:
+      match_operator: CONTAINS
       size: 60
-      autocomplete_route_name: taxonomy.autocomplete
-      placeholder: 'Categories, comma separated'
+      placeholder: Category
     third_party_settings: {  }
 hidden: {}
 status: true
 dependencies:
   config:
-    - field.instance.mcapi_transaction.mcapi_transaction.categories
-    - field.instance.mcapi_transaction.mcapi_transaction.worth
+    - field.field.mcapi_transaction.mcapi_transaction.categories
+    - field.field.mcapi_transaction.mcapi_transaction.worth
   module:
     - mcapi
     - taxonomy

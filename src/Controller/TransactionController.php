@@ -7,7 +7,7 @@
 
 namespace Drupal\mcapi\Controller;
 
-use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\mcapi\TransactionInterface;
@@ -21,7 +21,7 @@ class TransactionController extends ControllerBase {
    * @param Drupal\mcapi\TransactionInterface $transaction
    *
    * @return array
-   *  An array suitable for drupal_render().
+   *  a render array
    */
   public function page(TransactionInterface $mcapi_transaction) {
     return $this->buildPage($mcapi_transaction);
@@ -36,7 +36,7 @@ class TransactionController extends ControllerBase {
    *   The page title.
    */
   public function pageTitle(TransactionInterface $mcapi_transaction) {
-    return String::checkPlain($mcapi_transaction->label());
+    return SafeMarkup::checkPlain($mcapi_transaction->label());
   }
 
   /**
@@ -45,7 +45,7 @@ class TransactionController extends ControllerBase {
    * @param Drupal\mcapi\TransactionInterface $transaction
    *
    * @return array
-   *   An array suitable for drupal_render().
+   *   a render array
    */
   protected function buildPage(TransactionInterface $transaction) {
     //we look to the 'view' operation to get the display settings.

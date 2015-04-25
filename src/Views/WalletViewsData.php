@@ -10,9 +10,7 @@ namespace Drupal\mcapi\Views;
 
 use Drupal\views\EntityViewsDataInterface;
 
-
 class WalletViewsData implements EntityViewsDataInterface {
-
 
   /**
    * {@inheritdoc}
@@ -20,52 +18,53 @@ class WalletViewsData implements EntityViewsDataInterface {
   public function getViewsData() {
     $data = [];
 
-    $data['mcapi_wallet']['table'] = array(
-      'group'  => t('Wallets'),
+    $data['mcapi_wallet']['table'] = [
+      'group' => t('Wallets'),
       'entity type' => 'mcapi_wallet',
-      'base' => array(
+      'base' => [
         'field' => 'wid',
         'title' => t('Wallets'),
         'help' => t('List of wallets'),
         'weight' => 5,
-        'defaults' => array(
+        'defaults' => [
           'field' => 'wallet_label',
-        )
-      ),
-    );
-    $data['mcapi_wallet']['wid'] = array(
+        ]
+      ],
+    ];
+    $data['mcapi_wallet']['wid'] = [
       'title' => t('Wallet ID'),
       'help' => t('the unique id of the wallet'),
-      'field' => array(
+      'field' => [
         'id' => 'mcapi_entity'
-      ),
-      'argument' => array(
+      ],
+      'argument' => [
         'id' => 'standard',
-      )
-    );
-    $data['mcapi_wallet']['wallet_label'] = array(
+      ]
+    ];
+    $data['mcapi_wallet']['wallet_label'] = [
       'title' => t('Label'),
       'help' => t('the name of the wallet'),
-      'field' => array(
+      'field' => [
         'id' => 'mcapi_wallet_label',
-      )
-    );
-    $data['mcapi_wallet']['owner'] = array(
+      ]
+    ];
+    $data['mcapi_wallet']['owner'] = [
       'title' => t('The wallet owner'),
-      'field' => array(
+      'field' => [
         'id' => 'mcapi_wallet_owner',
-      ),
-    );
-    $data['mcapi_wallet']['entity_type'] = array(
+      ],
+    ];
+    $data['mcapi_wallet']['entity_type'] = [
       'title' => t('Owner type'),
       'help' => t('The entity type of the wallet owner. good for grouping by'),
-      'field' => array(
+      'field' => [
         'id' => 'mcapi_owner_type',
-      ),
-      'filter' => array(
+      ],
+      'filter' => [
         'id' => 'standard',
-      )
-    );
+      ]
+    ];
     return $data;
   }
+
 }

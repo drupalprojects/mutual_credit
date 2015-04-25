@@ -23,14 +23,16 @@ class RouteSubscriber extends RouteSubscriberBase {
    * {@inheritdoc}
    */
   protected function alterRoutes(RouteCollection $collection) {
-    //there's no way to inject this.
-    $config = \Drupal::configFactory()->get('mcapi.wallets');
     //add a route to add a wallet to each entity type
-    foreach (_wallet_owning_entity_routes($config) as $routeName => $bundle) {
-      $canonical_path = $collection->get($routeName)->getPath();
-      //TODO find out how this is supposed to work after beta 7
-      if ($canonical_path == '/user')$canonical_path = '/user/{user}';
-      if ($canonical_path == '/node')$canonical_path = '/node/{node}';
+    foreach (SELF::walletOwningEntityRoutes() as $canonicalRouteName => $bundle) {
+      $canonical_path = $collection->get($canonicalRouteName)->getPath();
+      //TODO find out how this is supposed to work after beta 9
+      if ($canonical_path == '/user'){
+        $canonical_path = '/user/{user}';
+      }
+      if ($canonical_path == '/node'){
+        $canonical_path = '/node/{node}';
+      }
       //something funny going on with canonical path for user.page contains no entity_id
       $route = new Route("$canonical_path/addwallet");
       $route->setDefaults([
@@ -56,6 +58,37 @@ class RouteSubscriber extends RouteSubscriberBase {
     $events = parent::getSubscribedEvents();
     $events[RoutingEvents::ALTER] = array('onAlterRoutes', -100);
     return $events;
+  }
+  
+  
+  /**
+   * 
+   * @return string[]
+   * 
+   * @todo update this after beta7 with the proper canonical routes directly
+   */
+  public static function walletOwningEntityRoutes() {
+    $config = \Drupal::configFactory()->get('mcapi.wallets');
+    $routes = [];
+    foreach($config->get('entity_types') as $entity_type_bundle => $max) {
+      if ($max) {
+        list($entity_type, $bundle_name) = explode(':', $entity_type_bundle);
+        $canonical = \Drupal::entityManager()
+          ->getDefinition($entity_type, TRUE)
+          ->getLinkTemplate('canonical');
+        if (!$canonical) {
+          continue;
+        }
+        if ($canonical == "/user/{user}") {
+          $canonical = 'entity.user.canonical';//user.page';
+        }
+        elseif ($canonical == '/node/{node}') {
+          $canonical = 'entity.node.canonical';
+        }
+        $routes[$canonical] = $bundle_name;
+      }
+    }
+    return $routes;
   }
   
 }

@@ -8,7 +8,8 @@
  * - links: The transaction transitions, formatted as a list which is never cached
 #}
 <div class = "{{ attributes.class }}">
-  {{ transaction }}
-  {{ links }}
-  {# any unrendered fieldAPI fields will appear here #}
+{% if overlay %}<div class = "{{ overlay_class }}">{{ overlay }}</div>{% endif %}
+ {{ transaction }}
+ {{ links }}
+ {# any unrendered fieldAPI fields will appear here #}
 </div>

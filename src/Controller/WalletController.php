@@ -17,14 +17,14 @@ use Drupal\mcapi\WalletInterface;
 class WalletController extends ControllerBase {
 
   /**
-   * The _content callback for the mcapi.wallet_view route.
+   * The _content callback for the entity.mcapi_wallet.canonical route.
    * Provides a transaction history for the wallet
    *
    * This uses a saved view, but note that the view has no access control of itself.
    * Thats why it is done this way, using normal router entity access
    *
    * @return array
-   *  An array suitable for drupal_render().
+   *  a render array
    *
    * @todo complete the views wallet access plugin (tricky)
    */
@@ -38,6 +38,5 @@ class WalletController extends ControllerBase {
   public function pageTitle(WalletInterface $mcapi_wallet = NULL) {
     return $mcapi_wallet->label();
   }
-  
 
 }

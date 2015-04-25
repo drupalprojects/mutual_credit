@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Element;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
+use Drupal\Core\Render\Element;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Currency;
 //use Drupal\mcapi\Entity\Currency; some wierd problem with this loading twice
@@ -57,7 +58,7 @@ class Worth extends FormElement {
       if (empty($element['#allowed_curr_ids'])) {
         $element['#allowed_curr_ids'] = array_keys(Currency::loadMultiple());
       }
-      
+
       //change the all_available array to a worths value array populated by zeros
       if ($element['#allowed_curr_ids']) {
         $existing_curr_ids = [];
@@ -172,10 +173,10 @@ class Worth extends FormElement {
       }
 
       if ($element['#config']) {
-        static $i = 0; 
+        static $i = 0;
         if (!$i)drupal_set_message('tweaking worth widget for config', 'warning', FALSE);
         $i++;
-        foreach (element_children($element) as $delta) {
+        foreach (Element::children($element) as $delta) {
           //this field will accept a formula, not just a number
           $element[$delta][1]['#size'] = 10;
           $element[$delta][1]['#maxlength'] = 10;
