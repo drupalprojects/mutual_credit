@@ -2,8 +2,8 @@
 
 /**
  * @file
+ *
  * Contains \Drupal\mcapi\Entity\Currency.
- * TODO implement EntityWithPluginBagInterface https://drupal.org/node/2203617
  */
 
 namespace Drupal\mcapi\Entity;
@@ -34,6 +34,9 @@ use Drupal\Core\Session\AccountInterface;
  *       "disable" = "Drupal\mcapi\Form\CurrencyDisableConfirm"
  *     },
  *     "list_builder" = "Drupal\mcapi\ListBuilder\CurrencyListBuilder",
+ *     "route_provider" = {
+ *       "html" = "Drupal\mcapi\Entity\CurrencyRouteProvider",
+ *     },
  *   },
  *   admin_permission = "configure mcapi",
  *   config_prefix = "currency",
@@ -44,9 +47,9 @@ use Drupal\Core\Session\AccountInterface;
  *     "weight" = "weight",
  *   },
  *   links = {
- *     "canonical" = "entity.mcapi_currency.canonical",
- *     "edit-form" = "entity.mcapi_currency.edit_form",
- *     "delete-form" = "entity.mcapi_currency.delete_form",
+ *     "canonical" = "/currency/{mcapi_currency}",
+ *     "edit-form" = "/admin/accounting/currencies/{mcapi_currency}",
+ *     "delete-form" = "/admin/accounting/currencies/{mcapi_currency}/delete",
  *   }
  * )
  */
@@ -54,67 +57,67 @@ use Drupal\Core\Session\AccountInterface;
 class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwnerInterface {
 
   public $id;
-  
+
   public $uuid;
-  
+
   /**
    * The name of the currency
    * Plain text, probabliy with the first char capitalised
    * @var string
    */
   public $name;
-  
+
   /**
    * The owner user id
-   * @var integer 
+   * @var integer
    */
   public $uid;
-  
+
   /*&
    * one of 'acknowledgement', 'commodity', 'exchange'
    * @var string
    */
   public $issuance;
-  
+
   /**
    * The html string to be rendered of the transaction value is zero
    * An empty value means that zero transactions are not allowed
-   * @var string 
+   * @var string
    */
   public $zero;
-  
+
   /**
    * The color hex code to be used in rendering the currency in visualisations
-   * 
-   * @var string 
+   *
+   * @var string
    */
   public $color;
-  
+
   /**
    *  The weight of the currency compared to other currencies
-   * 
+   *
    * @var integer
    */
   public $weight;
-  
+
   /**
    * The delete mode of transactions using this currency.
-   * Note that transactions with multiple currencies will be deleted in the 
+   * Note that transactions with multiple currencies will be deleted in the
    * least destructive way
-   * 
-   * @var type 
+   *
+   * @var type
    */
   public $deletion;
 
   /*
-   * the $format is an intricately formatted expression which tells the system 
+   * the $format is an intricately formatted expression which tells the system
    * how to transform an integer value into a rendered currency value, or form
    * widget and back again.
    *
    * @var string
    */
   public $format;
-  
+
   function __construct($values) {
     parent::__construct($values, 'mcapi_currency');
     $this->preformat();
@@ -136,16 +139,15 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
-   * @see \Drupal\mcapi\CurrencyInterface::label()
+   * {@inheritdoc}
    */
   public function label($langcode = NULL) {
-    //TODO how to we translate this?
     return $this->name;
   }
 
 
   /**
-   * @see \Drupal\mcapi\CurrencyInterface::transactions()
+   * {@inheritdoc}
    */
   public function transactions(array $conditions = [], $serial = FALSE) {
     $conditions += array('curr_id' => $this->id());
@@ -159,7 +161,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
-   * @see \Drupal\mcapi\CurrencyInterface::volume()
+   * {@inheritdoc}
    */
   public function volume(array $conditions = []) {
     //get the transaction storage controller
@@ -199,11 +201,11 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
-   * @see \Drupal\mcapi\CurrencyInterface::format()
+   * {@inheritdoc}
    */
   function format($raw_num) {
     if (!is_numeric($raw_num) || !is_integer($raw_num + 0)) {
-      //TODO log an error
+      //@todo log an watchdog warning
       return '';
     }
     //if there is a minus sign this needs to go before everything
@@ -218,7 +220,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
-   * break a raw value from the database into sections which can be dropped into the parts
+   * {@inheritdoc}
    */
   public function formatted_parts($raw_num) {
     $first = TRUE;
@@ -241,7 +243,8 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
-   * @see \Drupal\mcapi\CurrencyInterface::faux_format()
+   * {@inheritdoc}
+   * @todo I think this is is replaced by format('integer')
    */
   public function faux_format($raw_num, $format = []) {
     //this is a wrapper around $this->format which temporarily changes the configured
@@ -314,12 +317,14 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     $deleted_transactions = $this->transactions(array('state' => 0));
     return $all_transactions == $deleted_transactions;
   }
-  
-  //I think this needed to render the canonical view, which is usually assumed 
+
+  //I think this needed to render the canonical view, which is usually assumed
   //to be a contentEntity
-  function isDefaultRevision() {
+  function __isDefaultRevision() {
     return TRUE;
   }
+
+
 
 }
 

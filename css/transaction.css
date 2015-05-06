@@ -1,4 +1,3 @@
-
 div.mode-certificate {
   padding: 1em 3em 1em 3em;
   text-align: center;
@@ -39,7 +38,6 @@ div.stamp{
   filter: progid:DXImageTransform.Microsoft.Alpha(opacity=8);
   top: 2em;
 }
-
 
 div.transaction.certificate ul.transaction-transitions{
   display: block;

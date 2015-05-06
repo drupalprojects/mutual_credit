@@ -33,7 +33,7 @@ function mcapi_signatures_mcapi_transaction_presave($transaction) {
       }
       //the exchange manager should also sign
       if($override['exman']) {
-        //TODO move or remove this
+        //@todo move or remove this
         //at this point the exchange hasn't been determined
         //foreach ($transaction->flatten() as $t) {
           //$exchange = reset($t->exchange->referencedEntities());
@@ -177,7 +177,7 @@ function mcapi_signatures_entity_extra_field_info() {
  */
 function mcapi_signatures_user_view(array &$build, \Drupal\user\UserInterface $account, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display) {
   if ($display->getComponent('mcapi_signatures')) {
-    //TODO check if the extra field is visible
+    //@todo check if the extra field is visible
     module_load_include('inc', 'mcapi_signatures');
     $serials = list_pending($build['#user']);
     foreach (Transaction::loadBySerials($serials) as $transaction) {

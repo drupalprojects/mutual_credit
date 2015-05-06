@@ -10,16 +10,13 @@ namespace Drupal\mcapi\Element;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\Element\EntityAutocomplete;
 use Drupal\Component\Utility\Tags;
-//use Drupal\Core\Render\Element\Textfield;
 use Drupal\Core\Template\Attribute;
-use Drupal\mcapi\Exchanges;
 
 /**
  * Provides a widget to select wallets, using autocomplete
  *
  * @FormElement("select_wallet")
- * 
- * @todo make this inherit what can be inherited from EntityAutocomplete
+ *
  */
 class Wallet extends EntityAutocomplete {
 
@@ -29,98 +26,82 @@ class Wallet extends EntityAutocomplete {
   public function getInfo() {
     $info = parent::getInfo();
     $class = get_class($this);
-
-    $info['#exchanges'] = [];//todo move this to exchanges module
     $info['#autocomplete_route_name'] = 'mcapi.wallets.autocomplete';
-    $info['#process'][0] = [$class, 'processEntityAutocomplete'];
-    //$element['#prerender'][] = array($class, 'prerender_wallet_field');
-    $info['#element_validate'][] = [$class, 'validateEntityAutocomplete'];
-    $info['#pre_render'][] = [$class, 'prerenderWalletElement'];
+    $info['#autocomplete_route_parameters']['role'] = 'null';
     $info['#required'] = TRUE;
-    $info['#multiple'] = FALSE;
-    //TODO this causes an error in alpha 15 which isn't all expecting attribute objects yet
-    //$info['#attributes'] = new Attribute(array('style' => "width:100%"));
     return $info;
   }
 
   /**
    * process callback
    */
-  static function processEntityAutocomplete(array &$element, FormStateInterface $form_state, array &$complete_form) {
+  public static function processEntityAutocomplete(array &$element, FormStateInterface $form_state, array &$complete_form) {
+    if (isset($element['#role'])) {
+      $element['#autocomplete_route_parameters']['role'] = $element['#role'] == 'payer'
+        ? 'payout'
+        : 'payin';
+    }
+    //this should go in getInfo() but somehow from there it is overridden
     $element['#placeholder'] = t('Wallet name or #number');
-    $element['#autocomplete_route_parameters'] = [
-      'role' => $element['#role'] == 'payer' ? 'payout' : 'payin',
-    ];
     return $element;
   }
 
-  /**
-   * value callback
-   * takes from the autocomplete select_wallet field and returns an integer candidate wallet id.
-   */
-  static function valueCallback(&$element, $input, FormStateInterface $form_state) {
-    if ($input === FALSE) {
-      return;// Self::walletNames((array)$element['#default_value']);
-    }
-    elseif (is_numeric($input) && is_integer($input + 0)) {
-      return $input;
-    }
-    //get the number after the last hash
-    return substr($input, strrpos($input, '#')+1);
-  }
 
   /**
    * element_validate callback for select_wallet
    * ensure the passed value is a wallet id, not of an intertrading wallet
    */
   public static function validateEntityAutocomplete(array &$element, FormStateInterface $form_state, array &$complete_form) {
-    $input = $element['#value'];
-    if (!empty($input)) {
-      if (is_numeric($input)) {
-        $wallet = \Drupal\mcapi\Entity\Wallet::load($input);
-        if (!$wallet) {
-          $form_state->setError(
-            $element,
-            $this->t('Invalid wallet id: @value', ['@value' => $input])
-          );
-        }
-        else {
-          $result[] = ['target_id' => $input];
-        }
-      }
-      else {
-        $options = array(
-          'target_type' => $element['#target_type'],
-          'handler' => $element['#selection_handler'],
-          'handler_settings' => $element['#selection_settings'],
-        );
-        foreach (Tags::explode($input) as $string) {
-          $match = static::extractEntityIdFromAutocompleteInput($string);
-          if ($match === NULL) {
-            // Try to get a match from the input string when the user didn't use
-            // the autocomplete but filled in a value manually.
-            $form_state->setError(
-              $element, 
-              $this->t('Unable to identify wallet: @string', ['@string' => $string])
-            );
+    $value = NULL;
+    if (!empty($element['#value'])) {
+      $input_values = $element['#tags']
+        ? Tags::explode($element['#value'])
+        : array($element['#value']);
+      foreach ($input_values as $input) {
+        if (!empty($input)) {
+          foreach (Tags::explode($input) as $string) {
+            $match = static::extractEntityIdFromAutocompleteInput($string);
+            if ($match === NULL) {
+              // Try to get a match from the input string
+              $form_state->setError(
+                $element,
+                $this->t('Unable to identify wallet: @string', ['@string' => $string])
+              );
+            }
+            else {
+              $value[] = ['target_id' => $match];
+            }
           }
-          if ($match !== NULL) {
-            $result[] = array(
-              'target_id' => $match,
-            );
+        }
+        // Check that the referenced entities are valid, if needed.
+        if ($element['#validate_reference'] && !empty($value)) {
+          $ids = array_reduce($value, function ($return, $item) {
+            if (isset($item['target_id'])) {
+              $return[] = $item['target_id'];
+            }
+            return $return;
+          });
+          if ($ids) {
+            $valid_ids = array_keys(\Drupal\mcapi\Entity\Wallet::loadMultiple($ids));
+            if ($invalid_ids = array_diff($ids, $valid_ids)) {
+              foreach ($invalid_ids as $invalid_id) {
+                $form_state->setError($element, t("The wallet '%id' does not exist.", ['%id' => $invalid_id]));
+              }
+            }
           }
         }
         // Use only the last value if the form element does not support multiple
-        // matches
-        if (!$element['#multiple'] && !empty($result)) {
-          $result = array_slice($result, -1);
+        // matches (tags).
+        if (!$element['#tags'] && !empty($value)) {
+          $last_value = $value[count($value) - 1];
+          $value = isset($last_value['target_id']) ? $last_value['target_id'] : $last_value;
         }
       }
     }
-    $form_state->setValueForElement($element, $result);
+    $form_state->setValueForElement($element, $value);
   }
-  
-  
+
+
   /**
    * Extracts the entity ID from the autocompletion result.
    *
@@ -132,36 +113,13 @@ class Wallet extends EntityAutocomplete {
    */
   public static function extractEntityIdFromAutocompleteInput($input) {
     $match = NULL;
-
     // Take "label (#entity id)', match the ID from # when it's a number
     if (preg_match("/.+\#(\d+)/", $input, $matches)) {
       $match = $matches[1];
     }
-
     return $match;
   }
 
-  /**
-   * element_prerender callback for select_wallet
-   *
-   * convert the #default value from a wallet id to the autocomplete text format
-   * ensure the autocomplete address is going to the right place
-   * @todo remove this
-   */
-  static function prerenderWalletElement($element) {
-    if (is_numeric($element['#default_value'])) {
-      $wallet = Wallet::load($element['#default_value']);
-      if ($wallet) {
-        //this label contains the #id which is picked up by the value callback
-        $element['#default_value'] = Self::walletNames([$wallet]);
-      }
-      else {
-        drupal_set_message($this->t("Wallet @num does not exist", array('@num' => $element['#default_value'])), 'warning');
-      }
-    }
-    return $element;
-  }
-  
   /**
    * Converts an array of entity objects into a string of entity labels.
    *
@@ -178,11 +136,32 @@ class Wallet extends EntityAutocomplete {
     $entity_labels = array();
     $entities = \Drupal\mcapi\Entity\Wallet::load($wids);
     foreach ($entities as $entity) {
-      if (!$entity->access('view')) continue;
-      // Labels containing commas or quotes must be wrapped in quotes.
-      $entity_labels[] = Tags::encode($entity->label());
+      if ($entity->access('view')) {
+        // Labels containing commas or quotes must be wrapped in quotes.
+        $entity_labels[] = Tags::encode($entity->label());
+      }
     }
 
+    return implode(', ', $entity_labels);
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getEntityLabels(array $entities) {
+    $entity_labels = array();
+    foreach ($entities as $entity) {
+      $label = ($entity->access('view')) ? $entity->label() : t('- Restricted access -');
+
+      // Take into account "autocreated" entities.
+      if (!$entity->isNew()) {
+        $label .= ' #' . $entity->id();
+      }
+
+      // Labels containing commas or quotes must be wrapped in quotes.
+      $entity_labels[] = Tags::encode($label);
+    }
     return implode(', ', $entity_labels);
   }
 

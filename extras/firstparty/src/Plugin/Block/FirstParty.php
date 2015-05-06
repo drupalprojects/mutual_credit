@@ -8,13 +8,11 @@
 
 namespace Drupal\mcapi_1stparty\Plugin\Block;
 
-use Drupal\block\BlockBase;
-use Drupal\block\BlockInterface;
-use Drupal\Component\Utility\Unicode;
-use Drupal\Core\Language\Language;
+use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi_1stparty\Form\FirstPartyTransactionForm;
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
+use Drupal\Core\Form\FormStateInterface;
 
 
 /**
@@ -40,10 +38,10 @@ class FirstParty extends BlockBase {
   /**
    * {@inheritdoc}
    */
-  public function access(AccountInterface $account) {
+  public function access(AccountInterface $account, $return_as_object = false) {
     $this->editform = FirstPartyFormDesign::load($this->configuration['editform_id']);
 
-    //TODO get the route name from \Drupal::route() instead
+    //@todo get the route name from \Drupal::route() instead
     $route_name = \Drupal::request()->attributes->get('_route');
     //the block is available if the main page is not already a transaction form
     if (substr($route_name, 0, 6) == 'mcapi.') {
@@ -64,7 +62,7 @@ class FirstParty extends BlockBase {
    * @return array
    *   the form elements
    */
-  function blockForm($form, $form_state) {
+  function blockForm($form, FormStateInterface $form_state) {
     $options = [];
     //entity_load_multiple_by_properties doesn't seem to work on empty values
     //do we'll have to iterate though
@@ -92,7 +90,7 @@ class FirstParty extends BlockBase {
   /**
    * Overrides \Drupal\block\BlockBase::blockSubmit().
    */
-  public function blockSubmit($form, $form_state) {
+  public function blockSubmit($form, FormStateInterface $form_state) {
     parent::blockSubmit($form, $form_state);
     $values = $form_state->getValues();
     $this->configuration['editform_id'] = $values['editform_id'];

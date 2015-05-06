@@ -118,7 +118,7 @@ class ExchangeListBuilder extends EntityListBuilder {
         $list['table']['#rows'][$entity->id()] = $this->buildRow($entity);
       }
     }
-    //TODO look in common.inc drupal_process_attached() to see how to add arbitrary bits of css
+    //@todo look in common.inc drupal_process_attached() to see how to add arbitrary bits of css
     debug('need to add arbitrary css');
 //    _drupal_add_css('table.exchanges-listing-table tr.disabled{color:#999;}', array('type' => 'inline'));
     return $list;

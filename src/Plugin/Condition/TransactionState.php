@@ -30,9 +30,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   }
  * )
  *
- * @todo: Add access callback information from Drupal 7.
- * @todo: Add group information from Drupal 7.
- * @todo: Makek this disappear from the block-page, which seems not to check for contexts
  */
 class TransactionState extends ConditionPluginBase implements ContainerFactoryPluginInterface {
 

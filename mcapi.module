@@ -10,6 +10,8 @@ use Drupal\Core\Url;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\field\Entity\FieldConfig;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Wallet;
@@ -32,6 +34,10 @@ const WALLET_ACCESS_ANY = '1';//this is the role id
 const WALLET_ACCESS_USERS = 'u';//user id is in the wallet access table
 
 const MCAPI_MAX_DESCRIPTION = 255;
+
+const TRANSITION_DISPLAY_NORMAL = 0;
+const TRANSITION_DISPLAY_AJAX = 1;
+const TRANSITION_DISPLAY_MODAL = 2;
 
 /**
  * implements hook_requirements().
@@ -59,8 +65,6 @@ function mcapi_requirements($phase) {
 
 /**
  * implements hook_help().
- *
- * @todo make the links work in drupal_set_message()
  */
 function mcapi_help($route_name, $route_match) {
   switch ($route_name) {
@@ -76,7 +80,7 @@ function mcapi_help($route_name, $route_match) {
         t('Modules can add more states and types'),
         t('Each transition presents the user with confirmation form, which is configured on this page.')
       ));
-    case 'field_ui.overview_mcapi_transaction':
+    case 'entity.mcapi_transaction.field_ui_fields':
       $settings_url = Url::fromRoute('mcapi.admin_misc');
       $transitions_url = Url::fromRoute('mcapi.admin.transactions');
       $message = [
@@ -98,6 +102,8 @@ function mcapi_help($route_name, $route_match) {
 /**
  * implements hook_entity_view().
  * add a wallet summary view to wallet-enabled entities
+ *
+ * @todo check the cache contexts because this contains a link to wallet creation.
  */
 function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode, $langcode) {
 
@@ -109,41 +115,26 @@ function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDis
       $wids = \Drupal::EntityManager()
         ->getStorage('mcapi_wallet')
         ->getOwnedIds($entity);
-
-      $viewbuilder =\Drupal::entityManager()->getViewBuilder('mcapi_wallet');
       foreach (Wallet::loadMultiple($wids) as $wid => $wallet) {
         if ($wallet->access('summary')) {
-          //this line might run multiple times, but most likely once or not at all
-          $build['wallets_summaries']['#theme'] = 'mcapi_wallets';
-          $build['wallets_summaries']['#wallets'][$wid] = $viewbuilder->view($wallet, 'summary');
+          $wallets[] = $wallet;
         }
       }
     }
-    //show the add new wallet link
-    if (\Drupal::config('mcapi.wallets')->get('add_link_location') != 'local_action') {
-      $route_name = 'mcapi.wallet.add.'.$entity->getEntityTypeId();
-      $route_params = array('user' => $entity->id());
-      $access_manager = \Drupal::getContainer()->get('access_manager');
-      if ($access_manager->checkNamedRoute($route_name, $route_params, \Drupal::currentUser())) {
-        $build['wallets_summaries']['add_wallet_link'] = array(
-          '#type' => 'link',
-          '#title' => t('Add wallet'),
-          '#route_name' => $route_name,
-          '#route_parameters' => $route_params,
-          '#weight' => 2,
-          '#options' => array(
-            'attributes' => new Attribute(array(
-              'class' => array('add-wallet-link')
-            )),
-            '#attributes' => array('class' => array('add-wallet-link'))
-          ),
-          //this gets around the default css inline-block with which css 'clear' doesn't seem to work
-          '#prefix' => '<br />'
-        );
-      }
+    if ($wallets) {
+      $build += [
+        'wallets_summaries' => [
+          '#theme' => 'mcapi_wallets',
+          '#wallets' => $wallets,
+          '#owner' => $entity,
+          '#view_mode' => 'summary',//@todo make wallet viewmode a variable
+          '#cache' => [
+            'contexts' => []
+          ]
+        ]
+      ];
     }
   }
-  return $build;
 }
 
 /**
@@ -182,14 +173,28 @@ function mcapi_entity_label_list($entity_type_id, array $data = []) {
     $entities = \Drupal::entityManager()->getStorage($entity_type_id)->loadMultiple($data);
   }
   else $entities = $data;
+  if (property_exists($entity, 'weight') && count($entities) > 1) {
+    uasort($list, 'mcapi_uasort_weight');
+  }
   $list = [];
   foreach ($entities as $entity) {
     $list[$entity->id()] = $entity->label();
   }
-  //TODO sort these entities by weight but how?
   return $list;
 }
 
+/**
+ * uasort callback for configuration entities.
+ * could be included in Drupal Core?
+ */
+function mcapi_uasort_weight($a, $b) {
+  $a_weight = (is_object($a) && property_exists($a, 'weight')) ? $a->weight : 0;
+  $b_weight = (is_object($b) && property_exists($b, 'weight')) ? $b->weight : 0;
+  if ($a_weight == $b_weight) {
+    return 0;
+  }
+  return ($a_weight < $b_weight) ? -1 : 1;
+}
 
 /**
  * implements hook_element_info_alter().
@@ -380,7 +385,9 @@ function mcapi_theme() {
   ] + $file;
   $items['mcapi_wallets'] = [
     'variables' => [
-      'wallets' => NULL
+      'wallets' => [],
+      'owner' => NULL,
+      'view_mode' => ''
     ]
   ] + $file;
   $items['wallet_wrapper'] = [
@@ -426,22 +433,20 @@ function mcapi_theme() {
  * Determine whether the system architecture allows an entity to hold wallets.
  * which is to say, whether it is a contentEntity with an audience field
  *
- * @param unknown $entity_type
- *   an entity OR entityType object
- *
- * @param string $bundle
- *   bundlename, if the first arg is an entityType
+ * @param ContentEntity $entity
  *
  * @return NULL | string
  *   TRUE means the entitytype can hold wallets
- *
- * @todo update function and documentation after OG is integrated
  */
 function walletable($entity) {
   $type_id = $entity->getEntityTypeId();
-  if ($type_id == 'user' || $type_id == 'mcapi_exchange') return TRUE; //because of intertrading wallets
+  //the quick answer
+  if ($type_id == 'user' || $type_id == 'mcapi_exchange') {
+    return TRUE; //because of intertrading wallets
+  }
   $bundles = Exchange::walletableBundles();
-  return in_array($type_id,  $bundles) and in_array($bundles[$type_id], $entity->bundle());
+  return in_array($type_id,  $bundles)
+    && in_array($entity->bundle(), $bundles[$type_id]);
 }
 
 
@@ -465,4 +470,50 @@ function mcapi_mcapi_transaction_view(array &$build, $transaction, $display, $vi
   if ($view_mode == 'certificate' && $transaction->state->target_id == 'erased') {
     $build['stamp'] = $transaction->state->entity->label;//this is translated
   }
+}
+
+/**
+ * return the visible field definitions for any transaction field API fields
+ * according to the default transaction entity_form_display
+ * including worth, or course
+ *
+ * @return array
+ *   field definitions and widgets keyed by field name
+ */
+function mcapi_default_display_fields() {
+  //we need this to get the widgets for entering the defaults
+  $entity_display = EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.default');
+  $fieldAPI = [];
+  //get the field API fields showing according to the the default display
+  //and filter out the entity properties
+  //the entity_form_display does this more elegantly but function is protected
+  $definitions = \Drupal::entityManager()
+    ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
+  foreach($definitions as $field_name => $definition) {
+    if ($widget = $entity_display->getRenderer($field_name)) {
+      $fieldAPI[$field_name] = array(
+        'definition' => $definition,
+        'widget' => $widget
+      );
+    }
+  }
+  return $fieldAPI;
+}
+
+/**
+ * implements hook_form_FORM_ID_alter().
+ * @todo remove this when https://www.drupal.org/node/2480277 is addressed
+ */
+function mcapi_form_mcapi_transaction_form_alter(&$form, $form_state) {
+  $form['payer']['widget'][0]['target_id']['#type'] = 'select_wallet';
+  $form['payee']['widget'][0]['target_id']['#type'] = 'select_wallet';
+}
+
+/**
+ * implements hook_entity_type_alter().
+ * helps the wallet autocomplete to find the username
+ * @todo see if the user & node 'entity keys' have a label after beta 9 or if entity_keys is alterable
+ */
+function mcapi_entity_type_alter(array &$entity_types) {
+  //$entity_types['user']->entity_keys['label'] = 'name';
 }

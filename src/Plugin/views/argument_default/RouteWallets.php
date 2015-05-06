@@ -35,8 +35,9 @@ class RouteWallets extends ArgumentDefaultPluginBase {
         $ids = Wallet::ownedBy($entity);
       }
     }
-    //TODO returning nothing means the view doesn't show
-    //compare: Drupal\mcapi_exchanges\Plugin\views\argument_default\RouteExchanges.
+    //@todo returning nothing means the view doesn't show - maybe throw a 404?
+    //@see Drupal\mcapi_exchanges\Plugin\views\argument_default\RouteExchanges.
+
   }
 
 }

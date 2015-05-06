@@ -8,8 +8,6 @@
 namespace Drupal\mcapi\Plugin\views\wizard;
 
 use Drupal\views\Plugin\views\wizard\WizardPluginBase;
-use Drupal\views\Annotation\ViewsWizard;
-use Drupal\Core\Annotation\Translation;
 
 /**
  * Defines a wizard for the mcapi_transaction table.

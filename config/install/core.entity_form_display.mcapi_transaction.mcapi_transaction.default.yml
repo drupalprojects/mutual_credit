@@ -1,3 +1,4 @@
+id: mcapi_transaction.mcapi_transaction.default
 langcode: en
 status: true
 dependencies:
@@ -5,16 +6,42 @@ dependencies:
     - field.field.mcapi_transaction.mcapi_transaction.worth
   module:
     - mcapi
-id: mcapi_transaction.mcapi_transaction.default
 targetEntityType: mcapi_transaction
 bundle: mcapi_transaction
 mode: default
 content:
+  created:
+    type: datetime_timestamp
+    weight: 5
+    settings: {  }
+    third_party_settings: {  }
+  description:
+    type: string_textfield
+    weight: 0
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  payee:
+    type: entity_reference_autocomplete
+    weight: 1
+    settings:
+      match_operator: CONTAINS
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  payer:
+    type: entity_reference_autocomplete
+    weight: 2
+    settings:
+      match_operator: CONTAINS
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   worth:
     type: worth
-    weight: 0
+    weight: 3
     settings: {  }
     third_party_settings: {  }
 hidden: {  }
-third_party_settings: {  }
 

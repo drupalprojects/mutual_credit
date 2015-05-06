@@ -9,7 +9,7 @@
 
 namespace Drupal\mcapi_signatures\Plugin\Transition;
 
-use Drupal\mcapi\Plugin\Transition2Step;
+use Drupal\mcapi\Plugin\TransitionBase;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -22,7 +22,7 @@ use Drupal\Core\Form\FormStateInterface;
  *   id = "sign"
  * )
  */
-class Sign extends Transition2Step {
+class Sign extends TransitionBase {
 
   /*
    * {@inheritdoc}

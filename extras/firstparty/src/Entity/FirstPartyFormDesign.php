@@ -38,10 +38,10 @@ use Drupal\Core\Entity\Annotation\EntityType;
  *   },
  *   field_ui_base_route = "mcapi.admin_1stparty_editform_list",
  *   links = {
- *     "edit-form" = "entity.1stparty_editform.edit_form",
- *     "delete-form" = "entity.1stparty_editform.delete_form",
- *     "enable" = "entity.1stparty_editform.enable",
- *     "disable" = "entity.1stparty_editform.disable",
+ *     "edit-form" = "/admin/accounting/forms/{1stparty_editform}",
+ *     "delete-form" = "/admin/accounting/forms/{1stparty_editform}/delete",
+ *     "enable" = "/admin/accounting/forms/{1stparty_editform}/enable",
+ *     "disable" = "/admin/accounting/forms/{1stparty_editform}/disable",
  *   }
  * )
  */
@@ -64,7 +64,7 @@ class FirstPartyFormDesign extends ConfigEntityBase {
   public $other;
   public $experience;
   public $message;
-  public $cache;//TODO per-user cache
+  public $cache; //@todo per-user cache?
 
   /**
    * {@inheritdoc}

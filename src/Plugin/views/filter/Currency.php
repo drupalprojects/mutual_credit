@@ -8,7 +8,6 @@
 namespace Drupal\mcapi\Plugin\views\filter;
 
 use Drupal\views\Plugin\views\filter\InOperator;
-use Drupal\Component\Annotation\PluginID;
 
 /**
  * Filter by currency code.

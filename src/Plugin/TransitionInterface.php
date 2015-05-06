@@ -3,8 +3,8 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\TransitionInterface.
- * 
- * @todo update this interface 
+ *
+ * @todo update this interface
  */
 
 namespace Drupal\mcapi\Plugin;
@@ -23,23 +23,23 @@ interface TransitionInterface extends ConfigurablePluginInterface, PluginFormInt
    * the values will be passed into the transition execute function
    *
    * @param TransactionInterface $transaction
-   * @param ConfigFactory $config
    *
    * @return array
-   *   FormAPI $elements
+   *   Renderable FormAPI elements
    */
-	public function form(TransactionInterface $transaction);
+ function form(TransactionInterface $transaction);
 
 	/**
 	 * Access control function to determine whether this
 	 * transition can be performed on a given transaction
 	 *
 	 * @param TransactionInterface $transaction
+   * @param AccountInterface $account
 	 *
    * @return Boolean
    *   TRUE if access is granted
 	 */
-  public function accessOp(TransactionInterface $transaction, AccountInterface $account);
+  function accessOp(TransactionInterface $transaction, AccountInterface $account);
 
   /**
    * Do the actual transition on the passed transaction, and return some html
@@ -55,7 +55,7 @@ interface TransitionInterface extends ConfigurablePluginInterface, PluginFormInt
    *
    * @throws \Exception
    */
-  public function execute(TransactionInterface $transaction, array $context);
+  function execute(TransactionInterface $transaction, array $context);
 
 
   /**
@@ -63,9 +63,17 @@ interface TransitionInterface extends ConfigurablePluginInterface, PluginFormInt
    * then the function exits;
    *
    * @param FormStateInterface $form_state
-   * 
+   *
    * @todo ajax_submit is currently unused
    */
-  public function ajax_submit(FormStateInterface $form_state);
+  function ajax_submit(FormStateInterface $form_state);
+
+  /**
+   * Check whether this transition applicable for the currenct state of the transaction
+   *
+   * @param TransactionInterface $transaction
+   * @param AccountInterface $account
+   */
+  function accessState(TransactionInterface $transaction, AccountInterface $account);
 
 }

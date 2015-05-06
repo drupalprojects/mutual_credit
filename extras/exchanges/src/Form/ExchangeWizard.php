@@ -28,7 +28,7 @@ class ExchangeWizard extends ExchangeForm {
     //to the exchange form we are going to add a few possibilities
     //allow to choose no user as manager and specfify a new user account below.
     if (\Drupal::currentUser()->hasPermission('administer users')) {
-      //TODO I'd really like to use \Drupal\user\AccountForm::form() here
+      //@todo I'd really like to use \Drupal\user\AccountForm::form() here
       //but it is abstract class and nonstatic method
       //and I don't know OOP well enough!
       $form['uid']['#required'] = FALSE;
@@ -150,12 +150,12 @@ class ExchangeWizard extends ExchangeForm {
         'name' => $user_values['username'],
         'mail' => $user_values['mail'],
         'pass' => $user_values['pass'],
-//TODO we need a role configured to be the exchange manager
+//@todo we need a role configured to be the exchange manager
         'roles' => []
       );
       $this->manager = User::Create($defaults);
 
-      //TODO how now to validate the user entity? $this->manager->validate() coming after alpha12?
+      //@todo how now to validate the user entity? $this->manager->validate() coming after alpha12?
     }
     else {
       $this->manager = User::load($values['uid']);
@@ -168,7 +168,7 @@ class ExchangeWizard extends ExchangeForm {
       'ticks' => $values['ticks']
     );
     $this->currency = Currency::create($defaults);
-    //TODO handle violations
+    //@todo handle violations
     foreach ($this->currency->validate() as $field => $violation) {
       $form_state->setErrorByName($field, (string) $violation);
     }

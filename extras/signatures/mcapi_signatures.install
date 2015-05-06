@@ -58,7 +58,7 @@ function mcapi_signatures_schema() {
 }
 
 
-//TODO migrate these into whatever the notification framework will look like
+//@todo migrate these into whatever the notification framework will look like
 /*
  $mcapi_signed_off_notify_template = array(
      'subject' =>  t('Transaction signed off'),

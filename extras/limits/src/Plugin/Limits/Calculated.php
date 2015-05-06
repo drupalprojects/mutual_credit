@@ -87,7 +87,7 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
     $value = Self::parse($element['#value'], $test_values);
 
     if (!is_numeric($value)) {
-      //TODO display this error properly
+      //@todo display this error properly
       form_error($element, t('Formula does not evaluate to a number: @result', array('@result' => $result)));
     }
   }

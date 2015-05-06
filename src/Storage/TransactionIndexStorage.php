@@ -36,13 +36,15 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         ->condition('serial', $entity->serial->value)
         ->execute();
     }
-    
-    // we only index transactions in states which are 'counted'
-    if (!in_array($entity->state->target_id, mcapi_states_counted(TRUE))) return;
-    
+
+    //@todo reconsider whether the index table should have transactions in uncounted states
+    if (!in_array($entity->state->target_id, \Drupal::config('mcapi.misc')->get('counted'))) {
+      return;
+    }
+
     foreach ($entity->flatten() as $transaction) {
       $record = $this->mapToStorageRecord($transaction);//if this was an entity property it wouldn't need recalculating
-      
+
       $common = [
         'xid' => $transaction->id(),
         'serial' => $record->serial,
@@ -51,10 +53,10 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         'created' => $record->created,
         'child' => intval((bool)$record->parent),
       ];
-      
+
       $fields = ['xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'];
       $query = $this->database->insert('mcapi_transactions_index')->fields($fields);
-  
+
       foreach ($transaction->worth->getValue() as $worth) {
         $query->values($common + [
           'wallet_id' => $record->payer,
@@ -94,9 +96,9 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     $this->resetCache(array_keys($transactions));
     $this->indexDrop($serials);
     \Drupal::logger('mcapi')->notice(
-      'Transaction deleted by user @uid: @serials', 
+      'Transaction deleted by user @uid: @serials',
       [
-        '@uid' => \Drupal::currentuser()->id(), 
+        '@uid' => \Drupal::currentuser()->id(),
         '@serials' => implode(', ', array_keys($transactions))
       ]
     );
@@ -111,9 +113,9 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       $transaction->save($transaction);
     }
     \Drupal::logger('mcapi')->notice(
-      'Transaction erased by user @uid: @serials', 
+      'Transaction erased by user @uid: @serials',
       [
-        '@uid' => \Drupal::currentuser()->id(), 
+        '@uid' => \Drupal::currentuser()->id(),
         '@serials' => implode(', ', array_keys($transactions))
       ]
     );
@@ -219,7 +221,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       ->condition('serial', (array)$serials)
       ->execute();
   }
-  
+
   /**
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::filter()
    * Makes it unnecessary to query the entity table itself, unless you want payer/payee
@@ -228,56 +230,27 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     if (!empty($conditions['payer']) && !empty($conditions['payee'])) {
       throw new Exception('TransactionIndexStorage cannot filter by both payer and payee');
     }
-    
+
     $query = db_select('mcapi_transactions_index', 'x')
       ->fields('x', array('xid', 'serial'))
       ->orderby('created', 'DESC');
+    //in any filter operation we need to need to halve the query because this table
+    //has 2 rows for every transaction
     $halve = db_and();
-
     if (array_key_exists('payer', $conditions)) {
       $halve->condition('uid1', $conditions['payer'])->condition('income', '0');
+      unset($condition['payer']);
     }
     else{
       if (array_key_exists('payee', $conditions)) {
         $halve->condition('uid1', $conditions['payee']);
+        unset($condition['payee']);
       }
       $halve->condition('expenditure', '0');
     }
     $query->condition($halve);//this ensures we only return one row coz there are 2 foreach transaction
 
-    $conditions + array(
-      state => mcapi_states_counted()
-    );
-    foreach($conditions as $field => $value) {
-      switch($field) {
-        case 'state':
-        case 'serial':
-        case 'creator':
-        case 'type':
-        case 'curr_id':
-          $query->condition($field, (array)$value);
-          break;
-        case 'involving':
-          $value = (array)$value;
-          $cond_group = count($value) == 1 ? db_or() : db_and();
-          $query->condition($cond_group
-            ->condition('wallet_id', $value)
-            ->condition('partner_id',$value)
-          );
-          break;
-        case 'from':
-          $query->condition('created', $value, '>');
-          break;
-        case 'to':
-          $query->condition('created', $value, '<');
-          break;
-        case 'quantity':
-        case 'value'://synonyms as far as the index table is concerned.
-          $query->condition('volume', $value);
-          break;
-      }
-      unset($conditions[$field]);
-    }
+    $this->parseConditions($query, $conditions);
 
     if ($limit) {
       //assume that nobody would ask for unlimited offset results
@@ -290,8 +263,8 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::summaryData()
    */
   public function summaryData($wallet_id, array $conditions = []) {
-    //TODO We need to return 0 instead of null for empty columns
-    //then get rid of the last line of this function
+    //@todo Prefer to return 0 instead of null for empty columns
+    //@todo if not, the above should be handled in the calling function in wallet.php
     $query = $this->database->select('mcapi_transactions_index', 'i')->fields('i', array('curr_id'));
     $query->addExpression('COUNT(DISTINCT i.serial)', 'trades');
     $query->addExpression('SUM(i.incoming)', 'gross_in');
@@ -303,62 +276,58 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       ->groupby('curr_id');
     $this->parseConditions($query, $conditions);
     $result = $query->execute()->fetchAllAssoc('curr_id', \PDO::FETCH_ASSOC);
-    //if ($result)
       return $result;
-    //return array('curr_id' =>);
   }
 
   /**
-   * experimental - get the balances of many wallets
-   * feel free to implement this on the entity table
-   * @todo put this in the interface or delete it
+   * {@inheritdoc}
    */
-  public function balances ($curr_id, $wids = [], array $conditions = []) {
-    $query = $this->database->select('mcapi_transactions_index', 'i')->fields('i', array('wallet_id'));
+  public function balances($curr_id) {
+    $query = $this->database->select('mcapi_transactions_index', 'i')
+      ->fields('i', ['wallet_id']);
     $query->addExpression('SUM(i.diff)', 'balance');
-    if ($wids) {
-      $query->condition('i.wallet_id', $wids);
-    }
     $query->condition('i.curr_id', $curr_id)
       ->groupby('curr_id');
-    $this->parseConditions($query, $conditions);
     return $query->execute()->fetchAllKeyed();
   }
 
   /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::timesBalances()
-   * feel free to implement this on the entity table
+   * {@inheritdoc}
    */
   public function timesBalances($wallet_id, $curr_id, $since = 0) {
-    //TODO cache this, and clear the cache whenever a transaction changes state or is deleted
-    //this is a way to add up the results as we go along
-    $this->database->query("SET @csum := 0");//not sure which databases it works on
-    //I wish there was a better way to do this.
-    //It is cheaper to do stuff in mysql
-    $all_balances = $this->database->query(
-      "SELECT created, (@csum := @csum + diff) as balance
-        FROM {mcapi_transactions_index}
-        WHERE wallet_id = $wallet_id AND curr_id = '$curr_id'
-        ORDER BY created"
-    )->fetchAll();
-    $history = [];
-    //having done the addition, we can chop the beginning off the array
-    //if two transactions happen on the same second, the latter running balance will be shown only
-    foreach ($all_balances as $point) {
-      //@todo this could be optimised since we could be running through a lot of points in chronological order
-      //we just need to remove all array values with keys smaller than $since.
-      //I think it can't be done in the SQL coz we need them for adding up.
-      if ($point->created < $since) {
-        continue;
+    $cacheTag = 'wallet:timesbalances:'.$curr_id.':'.$wallet_id;
+    if ($cache = Cache::get($cacheTag)) {
+      $history = $cache->data;
+    }
+    else {
+      //this is a way to add up the results as we go along
+      $this->database->query("SET @csum := 0");//not sure which databases it works on
+      //I wish there was a better way to do this.
+      //It is cheaper to do stuff in mysql
+      $all_balances = $this->database->query(
+        "SELECT created, (@csum := @csum + diff) as balance
+          FROM {mcapi_transactions_index}
+          WHERE wallet_id = $wallet_id AND curr_id = '$curr_id'
+          ORDER BY created"
+      )->fetchAll();
+      $history = [];
+      //having done the addition, we can chop the beginning off the array
+      //if two transactions happen on the same second, the latter running balance will be shown only
+      foreach ($all_balances as $point) {
+        //@todo find a more efficient way to filter an array where all the keys are < x
+        if ($point->created < $since) {
+          continue;
+        }
+        $history[$point->created] = $point->balance;
       }
-      $history[$point->created] = $point->balance;
+      //@todo how do we set cachetags for this cache object?
+      Cache::set($cacheTag, $history);
     }
     return $history;
   }
 
   /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::count()
-   * feel free to implement this on the entity table
+   * {@inheritdoc}
    */
   public function count($curr_id = '', $conditions = [], $serial = FALSE) {
     $query = $this->database
@@ -367,15 +336,14 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     $field = $serial ? 'serial' : 'xid';
     $query->addExpression("count($field)");//how do we do this with countquery()
     if ($curr_id) {
-      $query->condition('t.curr_id', $curr_id);
+      $conditions['curr_id'] = $curr_id;
     }
     $this->parseConditions($query, $conditions);
     return $query->execute()->fetchField();
   }
 
   /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::volume()
-   * feel free to implement this on the entity table
+   * {@inheritdoc}
    */
   function volume($curr_id, $conditions = []) {
     $query = $this->database->select('mcapi_transactions_index', 't')
@@ -392,12 +360,49 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * @param SelectInterface $query
    * @param array $conditions
    */
-  protected function parseConditions(SelectInterface $query, array $conditions) {
-    foreach ($conditions as $fieldname => $value) {
-      $query->conditions($fieldname, $value);
+  private function parseConditions(SelectInterface $query, array $conditions) {
+
+    if (empty($conditions['state'])) {
+      $conditions['state'] = $this->countedStates();
     }
-    if (!in_array('state', $conditions) || !is_null($conditions['state'])) {
-      $query->conditions('state', $this->countedStates());
+    foreach($conditions as $field => $value) {
+      switch($field) {
+        case 'xid':
+        case 'serial':
+        case 'payer':
+        case 'payee':
+        case 'creator':
+        case 'type':
+        case 'state':
+        case 'curr_id':
+          $query->condition($field, (array)$value);
+          break;
+        case 'involving':
+          $value = (array)$value;
+          $cond_group = count($value) == 1 ? db_or() : db_and();
+          $query->condition($cond_group
+            ->condition('wallet_id', $value)
+            ->condition('partner_id',$value)
+          );
+          break;
+        case 'since':
+          $query->condition('created', $value, '>');
+          break;
+        case 'until':
+          $query->condition('created', $value, '<');
+          break;
+        case 'value'://synonyms as far as the index table is concerned.
+          $query->condition('volume', $value);
+          break;
+        case 'min'://synonyms as far as the index table is concerned.
+          $query->condition('volume', $value, '>=');
+          break;
+        case 'max'://synonyms as far as the index table is concerned.
+          $query->condition('volume', $value, '<=');
+          break;
+      	default:
+          debug('filtering on unknown field: '.$field);
+      }
     }
   }
 
@@ -408,56 +413,40 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    */
   private function countedStates() {
     $counted_states = [];
-    foreach (mcapi_states_counted(TRUE) as $state_id) {
-      $counted_states[] = "'".$state_id."'";
+    $counted = array_filter(\Drupal::config('mcapi.misc')->get('counted'));
+    foreach ($counted as $state_id) {
+      $counted_states[] = "'".$id."'";
     }
     return implode(', ', $counted_states);
   }
-  
+
   /**
    * {@inheritDoc}
-   * @todo make this work with conditions
    */
   public function wallets($curr_id, $conditions = []) {
-    return $this->database->select('mcapi_transactions_index', 'i')
+    $query = $this->database->select('mcapi_transactions_index', 'i')
       ->fields('i', ['wallet_id'])
-      ->condition('curr_id', $curr_id)
-      ->distinct()
+      ->condition('curr_id', $curr_id);
+    $this->parseConditions($query, $conditions);
+    return $query->distinct()
       ->execute()
       ->fetchCol();
   }
-}
 
-
-/**
- * load the transaction states and filter them according to the misc settings
- *
- * @param boolean $counted
- *
- * @return Drupal\Core\Config\Entity\ConfigEntityInterface[]
- *
- * @todo later we might want to provide a fuller interface for editing states
- * types, esp the name and description e.g. admin/accounting/workflow/states
- *
- * @todo cache this to save loading all the state entities? static this? 
- * @todo better still add this to the saved config on State::postSave
- *
- */
-function mcapi_states_counted($counted = TRUE) {
-  $counted_states = \Drupal::config('mcapi.misc')->get('counted');
-  $result = [];
-  foreach (State::loadMultiple() as $state) {
-    if (array_key_exists($state->id, $counted_states)) {
-      if ($counted_states[$state->id] == $counted) {
-        $result[] = $state->id;
-      }
-    }
-    else {
-      //look at the state entities own setting if it hasn't been saved
-      if ($state->counted == $counted) {
-        $result[] = $state->id;
-      }
-    }
+  /**
+   * {@inheritDoc}
+   */
+  public function runningBalance($wid, $xid, $curr_id) {
+    return db_query(
+      "SELECT SUM(diff) FROM {mcapi_transactions_index}
+        WHERE wallet_id = :wallet_id
+        AND xid <= :xid
+        AND curr_id = :curr_id",
+      array(
+        ':wallet_id' => $wid,
+        ':xid' => $xid,
+        ':curr_id' => $curr_id
+      )
+    )->fetchField();
   }
-  return $result;
 }

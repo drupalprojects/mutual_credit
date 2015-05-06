@@ -50,7 +50,7 @@ return;
 
   if (array_key_exists('mcapi_transactions', $entities)) {
     $display = $entities['mcapi_transactions']->getDisplay('default');
-   
+
     $display['display_options']['arguments']['exchange'] = array (
       'id' => 'exchange',
       'table' => 'mcapi_transaction',
@@ -170,15 +170,15 @@ function put_owned_wallets_in_exchanges($entity) {
     if ($wids = Wallet::ownedBy($entity)) {
       $belongsToExchanges = $entity->getEntityTypeId() == 'mcapi_exchange' ?
         [$entity] :
-        $entity->get(EXCHANGE_OG_REF)->referencedEntities();//TODO 
-      
+        $entity->get(EXCHANGE_OG_REF)->referencedEntities();
+
       foreach (Wallet::loadMultiple($wids) as $wallet) {
         //each wallet is in exactly the same exchanges as the parent.
         $wallet->set(EXCHANGE_OG_REF, $belongsToExchanges);
         $wallet->save();
         $count++;
       }
-      //todo check this after the OG api is written and implemented, and used above
+      //@todo check this after the OG api is written and implemented, and used above
       //foreach ($belongsToExchanges as $exchange)debug($wids, 'check these wallets are in exchanges: '.$exchange->id());
     }
   }
@@ -190,6 +190,8 @@ function put_owned_wallets_in_exchanges($entity) {
 
 function mcapi_exchanges_element_info_alter($info) {
   $info['select_wallet']['#process'][] = 'mcapi_exchanges_process_wallet';//might want to move this to another file or class
+  $info['select_wallet']['#exchanges'] = [];
+
 }
 
 function mcapi_exchanges_process_wallet(&$element, FormStateInterface &$form_state) {
@@ -260,7 +262,7 @@ function mcapi_exchanges_mcapi_transaction_alter(TransactionInterface $transacti
   }
   $transaction_curr_ids = $transaction->worth->currencies();
   $my_exchange_ids = Exchanges::in();
-//TODO delete this
+//@todo delete this
 if (!is_array($my_exchange_ids)){print_r($my_exchange_ids);die('mcapi_exchanges_mcapi_transaction_alter');}
   $payer_exchanges = Exchanges::walletExchanges($transaction->payer->entity, TRUE);
   $common = Exchange::loadMultiple(array_intersect($payer_exchanges, $my_exchange_ids));
@@ -274,7 +276,7 @@ if (!is_array($my_exchange_ids)){print_r($my_exchange_ids);die('mcapi_exchanges_
   }
   $source = 0;
   if (empty($set))  {
-    $exchange_ids = array_intersect(Exchanges::walletExchanges($transaction->payee->entity, TRUE), $my_exchange_ids);    
+    $exchange_ids = array_intersect(Exchanges::walletExchanges($transaction->payee->entity, TRUE), $my_exchange_ids);
     foreach (Exchange::loadMultiple($exchange_ids) as $exchange) {
       if (has_currencies($exchange, $transaction_curr_ids))  {
         mcapi_exchange_join($exchange->id(), array($transaction));
@@ -306,7 +308,7 @@ if (!is_array($my_exchange_ids)){print_r($my_exchange_ids);die('mcapi_exchanges_
   //We need to identify a dest exchange whose intertrading wallet can be used
   //which of the $dest_wallet's parent's exchanges is most suitable, if any?
   //it must contain all the worth's currencies bar one.
-  
+
   foreach (Exchanges::walletExchanges($transaction->{$dest}->entity) as $dest_exchange) {
     $dest_exchange_currencies = Exchanges::currencies(array($dest_exchange->id()));
     $diff = array_diff_key(array_flip($transaction_curr_ids), $dest_exchange_currencies);
@@ -368,7 +370,7 @@ if (!is_array($my_exchange_ids)){print_r($my_exchange_ids);die('mcapi_exchanges_
  * utility function
  * @param integer $exid
  * @param ContentEntityInterface[] $entities
- * @return boolean 
+ * @return boolean
  *   TRUE if successful
  * @todo remove the old exchanges before or during this function
  */
@@ -451,32 +453,31 @@ function mcapi_exchanges_contact_category_load($entities) {
 
 /**
  * Implements hook_form_alter();
- * 
+ *
  * Add a submit callback to ContentEntityForms for contentTypes which reference exchanges
  * to check for entities joining and leaving exchanges
  * Form_alter is rather a blunt instrument but it is the best available.
  * Would be better to use hook_entity_presave or postsave but the old values aren't available there
- * 
- * //TODO rewrite this once we have OG working.
+ *
+ * //@todo rewrite this once we have OG working.
  */
 function mcapi_exchanges_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   if (array_key_exists('controller', $form_state) && $form_state->get('controller') instanceof \Drupal\Core\Entity\ContentEntityForm) {
     $entity = $form_state->get('controller')->getEntity();
-    $form_state->loadInclude('mcapi', 'inc');
     if (walletable($entity)) {
       array_unshift($form['actions']['submit']['#submit'], 'mcapi_exchanges_changed_submit');
     }
   }
   debug($form_id, 'looking for the designed transaction form_id');//see below
   //is it one name for ALL designed forms, all transaction forms, or each form?
-  
+
 }
 
 /**
  * restrict the wallet fields to the current users' exchanges' wallets
  */
 function blah(&$form, &$form_state) {
-  
+
     $form['partner'] = array(
       '#exchanges' => array_keys(Exchanges::in()),
       '#default_value' => $config->partner['preset']
@@ -523,15 +524,15 @@ debug($maxes);
 
 /**
  * implement hook_FORM_first_party_editform_ALTER().
- * 
+ *
  */
 function mcapi_exchanges_form_first_party_editform_alter(&$form, FormStateInterface $form_state) {
   //since this is an entity form, we need to get the $config from the $entity.
-  $config = $form_state->getBuildInfo()['callback_object']->getEntity();  
+  $config = $form_state->getBuildInfo()['callback_object']->getEntity();
   $account = User::load(\Drupal::currentuser()->id());
   $options = [];
-  
-  
+
+
   $exchanges = \Drupal::currentUser()->hasPermission('manage mcapi') ?
     Exchange::loadMultiple() :
     Exchange::loadMultiple();
@@ -565,14 +566,14 @@ function mcapi_exchanges_first_party_editform_submit(&$form, &$form_state) {
  *
  * @param ContentEntityInterface $entity,
  *   the exchange
- * 
+ *
  * @param array $field_definition,
- * 
+ *
  * @param string $langcode
  *
  * @return uuid[]
  *   uuids whose keys I haven't understood yet
- * 
+ *
  * @todo check if this is the best approach usability wise
  */
 function mcapi_default_currency_id(EntityInterface $exchange, $field_definition) {
@@ -590,22 +591,22 @@ function mcapi_default_currency_id(EntityInterface $exchange, $field_definition)
  * when creating a new user, populate the exchanges field
  * with the currentuser's values.
  * N.B. in FieldItemList::setValue
- * 
+ *
  * @param ContentEntityInterface $entity,
- * 
+ *
  * @param array $field_definition,
  *
  * @return array
  *   The uuids of the exchanges of which the passed Entity is a member
  *
- * //TODO an array of uuids whose keys I haven't understood yet
+ * //@todo an array of uuids whose keys I haven't understood yet
  */
 function mcapi_default_exchange_id(ContentEntityInterface $entity, $field_definition) {
   if ($entity->getEntityTypeId == 'user' && $entity->id() == 0)drupal_set_message('putting user 0 in default exchange. Prevent this!');
   $output = [];
   $exchanges = Exchange::loadMultiple(Exchanges::in(NULL, TRUE));
   foreach ($exchanges as $exchange) {
-    
+
     $output[]['target_uuid'] = $exchange->uuid->value;
   }
   return $output;
@@ -617,9 +618,9 @@ function mcapi_default_exchange_id(ContentEntityInterface $entity, $field_defini
  * this can also be done with Wallet::filter() but is quicker.
  * maybe not worth it if this is only used once, in any case the index table is needed for views.
  * Each wallet owner has a required entity reference field pointing to exchanges.
- * 
+ *
  * @param array $exchange_ids
- * 
+ *
  * @param array $intertrading
  *   TRUE if _intertrading wallets are included
  *
@@ -663,3 +664,17 @@ function mcapi_exchanges_form_wallet_limits_form_alter(&$form, $form_state) {
   }
 }
 
+function mcapi_exchanges_preprocess_mcapi_currency(&$vars) {
+  //@todo check this theme hook is firing
+  $vars['exchanges'] = $currency->created;
+}
+
+function mcapi_exchanges_form_transaction_transition_edit_form(&$form, &$form_state) {
+    //payer and payee wallets MUST be limited to the same exchange as the transaction
+    foreach (['payer', 'payee'] as $wallet) {
+      if (array_key_exists($wallet, $form)) {
+        //in fact this might all be done with entity_autocomplete
+        $form[$wallet]['#exchanges'] = [$transaction->exchange->target_id];
+      }
+    }
+}

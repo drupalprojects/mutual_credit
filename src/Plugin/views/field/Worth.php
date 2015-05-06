@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Plugin\views\field;
 
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * When we look at transaction index table, we need to view one worth at a time
@@ -23,19 +24,41 @@ use Drupal\views\ResultRow;
  */
 class Worth extends FieldPluginBase {
 
+
   /**
-   * This field is only used on the mcapi_transactions_index table.
-   * The transaction table is assumed to be rendered by the FieldAPI and WorthFieldItemList
-   * @todo aggregation overrides this handler. But it should be resolved
-   * @see Drupal\views\Plugin\ViewsHandlerManager where it says 'this is crazy'!
+   * {@inheritdoc}
+   */
+  protected function defineOptions() {
+    $options = parent::defineOptions();
+    $options['format'] = array('default' => 'normal');
+    return $options;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function buildOptionsForm(&$form, FormStateInterface $form_state) {
+     $form['format'] = array(
+      '#title' => t('Format'),
+      '#decriptions' => $this->t('Not all formats support multiple cardinality.'),
+      '#type' => 'radios',
+      '#options' => array(
+     	  'normal' => t('Normal'),
+        'decimal' => t('In base 10'),
+        'raw' => t('raw integer from the db')
+      ),
+      '#default_value' => !empty($this->options['format']),
+    );
+    parent::buildOptionsForm($form, $form_state);
+  }
+
+
+
+  /**
+   * @todo aggregation may cause problems with formatting
    */
   public function render(ResultRow $values) {
-    //we have to guess the alias coz I don't know where to find it
-    if ($curr_id = $values->mcapi_transactions_index_curr_id) {
-      $currency = mcapi_currency_load($curr_id);
-    }
-    else throw new \Exception('Problem rendering worth field');//not sure when this would happen or what to do
-    return $currency->format($this->getValue($values));
+    return $this->getEntity($values)->worth->view($this->options['format']);
   }
 
 }

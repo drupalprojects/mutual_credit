@@ -19,6 +19,11 @@ use Drupal\Core\Session\AccountInterface;
  */
 abstract class TransitionBase extends PluginBase implements TransitionInterface {
 
+
+  const TRANSITION_DISPLAY_NORMAL = 0;
+  const TRANSITION_DISPLAY_AJAX = 1;
+  const TRANSITION_DISPLAY_MODAL = 2;
+
   private $transactionRelativeManager;
   private $relatives;
 
@@ -38,7 +43,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     //gives array keyed page_title, twig, format, button, cancel_button
     $tokens = implode(', ', Exchange::transactionTokens(FALSE));
-    //TODO currently there is NO WAY to put html in descriptions because twig autoescapes it
+    //@note currently there is NO WAY to put html in descriptions because twig autoescapes it
     //see cached classes extending TwigTemplate->doDisplay twig_drupal_escape_filter last argument
     $twig_help_link = \Drupal::l(
       $this->t('What is twig?'),
@@ -73,7 +78,8 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
       '#description' => $this->t('The transaction states that this transition could apply to'),
       '#type' => 'mcapi_states',
       '#multiple' => TRUE,
-      '#default_value' => array_filter($this->configuration['states'])
+      '#default_value' => array_filter($this->configuration['states']),
+      '#weight' => 3,
     ];
     if ($element = $this->transitionSettings($form, $form_state)) {
       $form['settings'] = [
@@ -90,28 +96,28 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     ];
     $form['sure']['page_title'] = [
       '#title' => t('Page title'),
-      '#description' => t ("Page title for the transition's page") . ' TODO, make this use the serial number and description tokens or twig. Twig would make more sense, in this context.',
+      '#description' => t ("Page title for the transition's page") .
+        ' @todo, make this use the serial number and twig.',
       '#type' => 'textfield',
       '#default_value' => $this->configuration['page_title'],
       '#placeholder' => t('Are you sure?'),
       '#weight' => 4,
       '#required' => TRUE
     ];
+    foreach (\Drupal::entityManager()->getViewModes('mcapi_transaction') as $id => $def) {
+      $view_modes[$id] = $def['label'];
+    }
     $form['sure']['format'] = [
-      '#title' => t('Transaction display'),
+      '#title' => t('View mode'),
       '#type' => 'radios',
-      //TODO might want to get the full list of the transaction entity display modes
-      '#options' => [
-        'certificate' => t('Certificate (can be themed per-currency)'),
-        'twig' => t('Custom twig template')
-      ],
+      '#options' => $view_modes,
       '#default_value' => $this->configuration['format'],
       '#required' => TRUE,
       '#weight' => 6
     ];
     $form['sure']['twig'] = [
       '#title' => t('Template'),
-      '#description' => $this->help,//TODO this is escaped in twig so links don't work
+      '#description' => $this->help,//@note this is escaped in twig so links don't work
       '#type' => 'textarea',
       '#default_value' => @$this->configuration['twig'],
       '#states' => [
@@ -122,6 +128,101 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
         ]
       ],
       '#weight' => 8
+    ];
+
+    $form['sure']['display'] = [
+      '#title' => $this->t('Display'),
+      '#type' => 'radios',
+      '#options' => [
+        TRANSITION_DISPLAY_NORMAL => $this->t('Next page'),
+        TRANSITION_DISPLAY_AJAX => $this->t('Ajax replacement'),
+        TRANSITION_DISPLAY_MODAL => $this->t('Modal dialogue box'),
+      ],
+      '#default_value' => $this->configuration['display'],
+      '#weight' => 10
+    ];
+
+    $form['sure']['button']= [
+      '#title' => $this->t('Button text'),
+      '#description' => $this->t('The text that appears on the button'),
+      '#type' => 'textfield',
+      '#default_value' => $this->configuration['button'],
+      '#placeholder' => $this->t("I'm sure!"),
+      '#weight' => 10,
+      '#size' => 15,
+      '#maxlength' => 15,
+      '#required' => TRUE
+    ];
+
+    $form['sure']['cancel_button']= [
+      '#title' => $this->t('Cancel button text'),
+      '#description' => $this->t('The text that appears on the cancel button'),
+      '#type' => 'textfield',
+      '#default_value' => $this->configuration['cancel_button'],
+      '#placeholder' => t('Cancel-o'),
+      '#weight' => 12,
+      '#size' => 15,
+      '#maxlength' => 15,
+      '#required' => TRUE
+    ];
+
+    $form['feedback']= [
+      '#title' => t('Feedback'),
+      '#type' => 'fieldset',
+      '#weight' => 6
+    ];
+    $form['feedback']['format2']= [
+      '#title' => t('Confirm form transaction display'),
+      '#type' => 'radios',
+      // TODO get a list of the transaction display formats from the entity type
+      '#options' => [
+        'certificate' => t('Certificate'),
+        'twig' => t('Twig template'),
+        'redirect' => t('Redirect to path') ." TODO this isn't working yet"
+      ],
+      '#default_value' => $this->configuration['format2'],
+      '#required' => TRUE,
+      '#weight' => 14
+    ];
+    $form['feedback']['redirect'] = [
+      '#title' => t('Redirect path'),
+      '#description' => implode(' ', [
+        t('Enter a path from the Drupal root, without leading slash. Use replacements.') . '<br />',
+        t('@token for the current user id', ['@token' => '[uid]']),
+        t('@token for the current transaction serial', ['@token' => '[serial]'])
+      ]),
+      '#type' => 'textfield',
+      '#default_value' => $this->configuration['redirect'],
+      '#states' => [
+        'visible' => [
+          ':input[name="format2"]' => [
+            'value' => 'redirect'
+          ]
+        ]
+      ],
+      '#weight' => 16
+    ];
+    $form['feedback']['twig2']= [
+      '#title' => t('Template'),
+      '#description' => $this->help,
+      '#type' => 'textarea',
+      '#default_value' => $this->configuration['twig2'],
+      '#states' => [
+        'visible' => [
+          ':input[name="format2"]' => [
+            'value' => 'twig'
+          ]
+        ]
+      ],
+      '#weight' => 16
+    ];
+    $form['feedback']['message']= [
+      '#title' => t('Success message'),
+      '#description' => t('Appears in the message box along with the reloaded transaction certificate.') . 'TODO: put help for user and mcapi_transaction tokens, which should be working',
+      '#type' => 'textfield',
+      '#default_value' => $this->configuration['message'],
+      '#placeholder' => t('The transition was successful'),
+      '#weight' => 18
     ];
 
     $form['access'] = [
@@ -190,6 +291,13 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
       'page_title' => '',
       'format' => '',
       'twig' => '',
+      'button' => '',
+      'cancel_button' => '',
+      'access' => '',
+      'format2' => '',
+      'redirect' => '',
+      'twig2' => '',
+      'message' => ''
     ];
   }
 
@@ -212,10 +320,12 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     exit();
   }
 
-  public function accessState($transaction) {
+  /**
+   * {@inheritdoc}
+   */
+  public function accessState(TransactionInterface $transaction, AccountInterface $account) {
     return in_array($transaction->state->target_id, $this->configuration['states']);
   }
-
 
   /**
    * The default plugin access allows selection of transaction relatives.
@@ -236,9 +346,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    * uses transaction relatives
    *
    * @return boolean
-   *
-   * @todo rewrite this with transaction relatives.
-  */
+   */
   public function accessOp(TransactionInterface $transaction, AccountInterface $account) {
     foreach (array_filter($this->configuration['access']) as $relative) {
       //$check if the $acocunt is this relative to the transaction

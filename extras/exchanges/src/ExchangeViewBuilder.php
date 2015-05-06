@@ -42,7 +42,7 @@ class ExchangeViewBuilder extends EntityViewBuilder {
         '#markup' => t('Administrator: !name', array('!name' => $entity->get('uid')->entity->getUsername()))
       )
     );
-    //TODO how do we allow any display or extra_field of the wallet to be viewed as a field in the exchange?
+    //@todo how do we allow any display or extra_field of the wallet to be viewed as a field in the exchange?
     //in extra_fields, no options are possible at the moment
     $build['intertrading'] = array(
       '#type' => 'item',
@@ -78,7 +78,7 @@ class ExchangeViewBuilder extends EntityViewBuilder {
         '#type' => 'link',
         '#title' => t('Show transactions'),
         '#href' => 'exchange/' . $entity->id() . '/transactions',
-        //TODO maybe instead put a view with the last five members here
+        //@todo maybe instead put a view with the last five members here
         '#options' => array(
           'attributes' => new Attribute(array('title' => "This view doesn't exist yet"))
         )

@@ -2,12 +2,12 @@
 
 /**
  * @file
- * 
+ *
  * Contains \Drupal\mcapi\Exchange.
  * The purpose of this class is to contain all the functions that vary when module
- * mcapi_exchanges is installed. 
+ * mcapi_exchanges is installed.
  * In which case this is class is replaced by \Drupal\mcapi_exchanges\Exchanges
- * 
+ *
  */
 
 namespace Drupal\mcapi;
@@ -23,6 +23,7 @@ use Drupal\mcapi_exchanges\Exchanges;
 
 class Exchange {
 
+  static private $walletableBundles;
   /**
    * Get all the possible Wallet permissions
    *
@@ -33,9 +34,7 @@ class Exchange {
    */
   public static function walletPermissions() {
     $perms = [
-      //TODO only wallets owned by user entities can have this option
       WALLET_ACCESS_OWNER => t('The wallet owner'),
-      // => ,//todo: which exchanges?
       WALLET_ACCESS_AUTH => t('Any logged in users'),
       WALLET_ACCESS_ANY => t('Anyone on the internet'),
       WALLET_ACCESS_USERS => t('Named users...')
@@ -49,8 +48,8 @@ class Exchange {
 
   /**
    * Get a list of entities
-   * which is to say, whether it is a contentEntity with an audience field 
-   * 
+   * which is to say, whether it is a contentEntity with an audience field
+   *
    * @param unknown $entity_type
    *   an entity OR entityType object
    *
@@ -59,38 +58,38 @@ class Exchange {
    *
    * @return NULL  | string
    *   TRUE means the entitytype can hold wallets
-   * 
+   *
    * @todo update function and documentation after OG is integrated
    */
   public static function walletableBundles() {
     debug('how many times does this run in a request?', 'does it need cacheing?');
-    $types = &drupal_static('walletableBundles');
-    if (!$types) {
+    //@todo is there a usual way of working with static variables in static functions?
+    if (!Self::$walletableBundles) {
       if (0 && $cache = \Drupal::cache()->get('walletableBundles')) {
-        $types = $cache->data;
+        Self::$walletableBundles = $cache->data;
       }
       else{
         if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-          $types = Exchanges::walletableBundles($wallet, $open);
+          Self::$walletableBundles = Exchanges::walletableBundles($wallet, $open);
         }
         else {
-          foreach (array_keys(array_filter(\Drupal::Config('mcapi.wallets')->get('entity_types'))) as $entity_bundle) {
-            list($entity, $bundle) = explode(':', $entity_bundle);
-            $types[$entity][] = $bundle;
+          $entityTypes = \Drupal::Config('mcapi.wallets')->get('entity_types');
+          foreach (array_keys(array_filter($entityTypes)) as $entity_bundle) {
+            list($type, $bundle) = explode(':', $entity_bundle);
+            Self::$walletableBundles[$type][] = $bundle;
           }
         }
         \Drupal::cache()->set(
           'walletableBundles',
-          $types,
-          \Drupal\Core\Cache\CacheBackendInterface::CACHE_PERMANENT,
-          []//TODO what cache tags to use if the cache is permanent?
+          Self::$walletableBundles,
+          \Drupal\Core\Cache\CacheBackendInterface::CACHE_PERMANENT
         );
       }
     }
-    return $types;
+    return Self::$walletableBundles;
   }
-  
-   
+
+
   /*
    * identify a new parent entity for a wallet
    */
@@ -102,7 +101,7 @@ class Exchange {
       return ['user', 1];
     }
   }
-  
+
   /**
    * Load currencies for a given user
    * A list of all the currencies available to the current user
@@ -119,7 +118,7 @@ class Exchange {
       return Currency::loadMultiple();
     }
   }
-  
+
   /**
    * helper function to get the token names for helptext token service and twig
    * get the entity properties from mcapi_token_info, then the fieldapi fields
@@ -135,10 +134,10 @@ class Exchange {
     $tokens = \Drupal::entityManager()
       ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
     unset(
-      $tokens['uuid'], 
-      $tokens['xid'], 
+      $tokens['uuid'],
+      $tokens['xid'],
       $tokens['parent'],
-      $tokens['type'], 
+      $tokens['type'],
       $tokens['children']
     );
     $tokens = array_keys($tokens);
@@ -151,16 +150,15 @@ class Exchange {
     }
     return $tokens;
   }
-  
+
   /**
-   * get a list of all the currencies currently in a wallet's scope
+   * get a list of all the currencies currently in a wallet's scope, ordered by weight
    * which is to say, in any of the wallet's parent's exchanges
    *
    * @param WalletInterface $wallet
-   * 
+   *
    * @return CurrencyInterface[]
    *   keyed by currency id
-   *
    */
   public static function currenciesAvailable($wallet) {
     if (!isset($wallet->currencies_available)) {
@@ -171,10 +169,12 @@ class Exchange {
         $wallet->currencies_available = Currency::loadMultiple();
       }
     }
-    //TODO get these in weighted order
+    if (count($wallet->currencies_available) > 1) {
+      uasort($wallet->currencies_available, 'mcapi_uasort_weight');
+    }
     return $wallet->currencies_available;
   }
-  
+
   /**
    * Give back the operations which can be done on wallets
    *
@@ -183,15 +183,27 @@ class Exchange {
    */
   public static function walletOps() {
     $ops = [
-      'details' => t('View transaction log'), 
-      'summary' => t('View summary'), 
-      'payin' => t('Pay into this wallet'),
-      'payout' => t('Pay out of this wallet'),
+      'details' => [
+        t('View transaction log'),
+        t('View individual transactions this wallet was involved in')
+      ],
+      'summary' => [
+        t('View summary'),
+        t('The balance, number of transactions etc.')
+      ],
+      'payin' => [
+        t('Pay in'),
+        t('Create payments into this wallet')
+      ],
+      'payout' => [
+        t('Pay out'),
+        t('Create payments out of this wallet')
+      ]
     ];
     if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
       $ops += Exchanges::walletOps();
     }
     return $ops;
   }
-  
+
 }

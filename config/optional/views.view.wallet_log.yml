@@ -1,11 +1,10 @@
-uuid: feb4f270-8b8a-4fa4-a120-32006dfa39cd
 langcode: en
 status: true
 dependencies:
   module:
     - mcapi
-id: wallet_statement
-label: 'wallet statement'
+id: wallet_log
+label: 'wallet log'
 module: views
 description: ''
 tag: ''
@@ -20,7 +19,7 @@ display:
     position: 1
     display_options:
       access:
-        type: wallet
+        type: none
         options: {  }
       cache:
         type: none
@@ -31,7 +30,7 @@ display:
           disable_sql_rewrite: false
           distinct: false
           slave: false
-          query_comment: false
+          query_comment: ''
           query_tags: {  }
       exposed_form:
         type: basic
@@ -165,7 +164,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -227,7 +226,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -277,7 +276,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -334,7 +333,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -428,7 +427,7 @@ display:
           plugin_id: entity
           provider: views
       footer: {  }
-      empty: { }
+      empty: {  }
       relationships: {  }
       arguments:
         wallet_id:
@@ -513,32 +512,23 @@ display:
       field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
       display_extenders: {  }
-  embed_1:
+    cache_metadata:
+      contexts:
+        - 'languages:language_interface'
+        - url
+      cacheable: false
+  embedded_in_route_mcapi_dot_wallet_log:
     display_plugin: embed
-    id: embed_1
+    id: embedded_in_route_mcapi_dot_wallet_log
     display_title: Embed
     position: 1
     display_options:
       field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
       display_extenders: {  }
-  page_1:
-    display_plugin: page
-    id: page_1
-    display_title: Page
-    position: 2
-    provider: views
-    display_options:
-      path: wallet/%/statement
-      menu:
-        type: tab
-        title: Statement
-        description: ''
-        name: navigation
-        weight: 3
-        context: '0'
-      enabled: true
-      field_langcode: '***LANGUAGE_language_interface***'
-      field_langcode_add_to_query: null
-      display_extenders: {  }
+    cache_metadata:
+      contexts:
+        - 'languages:language_interface'
+        - url
+      cacheable: false
 

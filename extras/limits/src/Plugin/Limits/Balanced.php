@@ -79,7 +79,7 @@ class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
       'liquidity' => array(
         array(
           'curr_id' => $this->currency->id(),
-            //TODO check this after we have saved a value
+            //@todo check this after we have saved a value
           'value' => 1000
         )
       ),

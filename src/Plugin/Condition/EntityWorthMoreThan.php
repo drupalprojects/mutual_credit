@@ -3,6 +3,8 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\Condition\EntityWorthMoreThan.
+ *
+ * @todo this is unfinished because there is no UI yet
  */
 
 namespace Drupal\mcapi\Plugin\Condition;
@@ -13,9 +15,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a 'Worth field is more than' condition.
- * 
- * @todo is the worth field multiple?
- * @todo make a worth @contextDefinition
  *
  * @Condition(
  *   id = "mcapi_transaction_type",
@@ -36,13 +35,12 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   }
  * )
  *
- * @todo: Add access callback information from Drupal 7.
- * @todo: Add group information from Drupal 7.
  */
-  
+
 class EntityWorthMoreThan extends ConditionPluginBase implements ContainerFactoryPluginInterface {
 
-  //todo Check this later. This injection seems highly unusually formatted
+  private $worth;
+
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
     return new static(
       $configuration,
@@ -50,12 +48,15 @@ class EntityWorthMoreThan extends ConditionPluginBase implements ContainerFactor
       $plugin_definition
     );
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public function summary() {
-    return $this->t('Transaction is worth at least');
+    return $this->t(
+      'Transaction is worth at least !value',
+      ['!value' => $this->worth->format()]
+    );
   }
 
   /**
@@ -66,7 +67,9 @@ class EntityWorthMoreThan extends ConditionPluginBase implements ContainerFactor
     $fieldname = $this->getContextValue('fieldname');
     $worths = $this->getContextValue('worth');
     foreach ($worths as $worth) {
-      if (is_null($worth->value)) continue;
+      if (is_null($worth->value)) {
+        continue;
+      }
       if ($entity->{$fieldname}->getValue($worth->curr_id)  > $worth->value) {
         continue;
       }

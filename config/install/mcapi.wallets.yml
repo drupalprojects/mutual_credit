@@ -3,7 +3,9 @@ entity_types:
 display_format: '!o'
 access_personalised: 0
 autoadd: 1
-add_link_location: local_action
+add_link_location: 
+  local_action: local_action
+  summaries: summaries
 payout:
   o: 'o'
 details:

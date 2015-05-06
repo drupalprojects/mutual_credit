@@ -33,9 +33,9 @@ class FirstPartyEditFormListBuilder extends ConfigEntityListBuilder{
   public function buildRow(EntityInterface $entity) {
       $style = array('style' => $entity->status ? '' : 'color:#999');
       //$class = array('style' => $entity->status ? 'enabled' : 'disabled');
-      //TODO make a link out of this
-      $name = $entity->access('blah') ? 
-        \Drupal::l($entity->label(), Url::fromRoute('mcapi.1stparty.'.$entity->id())) : 
+      //@todo make a link out of this
+      $name = $entity->access('blah') ?
+        \Drupal::l($entity->label(), Url::fromRoute('mcapi.1stparty.'.$entity->id())) :
         $entity->label();
       $row['title'] = $style + array(
         'data' => $name
@@ -44,10 +44,10 @@ class FirstPartyEditFormListBuilder extends ConfigEntityListBuilder{
         'data' => array('#markup' => $entity->type)
       );
 
-      //TODO load mcapi.css somehow to show the disabled forms in gray using ths class above.
+      //@todo load mcapi.css somehow to show the disabled forms in gray using ths class above.
       //Also see the McapiForm listBuilder.
       return $row + parent::buildRow($entity);
-    
+
   }
 
 

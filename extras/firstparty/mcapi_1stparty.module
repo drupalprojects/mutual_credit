@@ -1,11 +1,9 @@
 <?php
 
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
-use Drupal\field\Entity\FieldConfig;
 
 /**
  * implements hook_help().
@@ -15,7 +13,7 @@ function mcapi_1stparty_help($route_name) {
     $help[] = t('Design your own forms for users to start transactions on their workflow paths.');
     $help[] = t('Each form has access control and can be presented as a block, page or panel.');
     $help[] = t('Each form can have presets and hidden fields.');
-    //TODO might want to put some more detail here or at the top of the form editor page
+    //@todo might want to put some more detail here or at the top of the form editor page
     return implode(' ', $help);
   }
 }
@@ -132,7 +130,7 @@ function mcapi_1stparty_transaction_tokens() {
   unset($tokens[array_search('state', $tokens)]);
   unset($tokens[array_search('serial', $tokens)]);
   unset($tokens[array_search('creator', $tokens)]);
-  //TODO remove this if it isn't required. @see Transaction::baseFieldDefinitions()
+  //@todo remove this if it isn't required. @see Transaction::baseFieldDefinitions()
   unset($tokens[array_search('langcode', $tokens)]);
   unset($tokens[array_search('mcapi_exchange_og_ref', $tokens)]);
   //replace payer and payee with partner and direction
@@ -190,25 +188,7 @@ function mcapi_1stparty_make_template($configEntity) {
  *   field definitions and widgets keyed by field name
  */
 function mcapi_1stparty_fieldAPI() {
-  //we need this to get the widgets for entering the defaults
-  $entity_display = EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.default');
-  $fieldAPI = [];
-  //get the field API fields showing according to the the default display
-  //and filter out the entity properties
-  //the entity_form_display does this more elegantly but function is protected
-  $definitions = \Drupal::entityManager()
-    ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
-  foreach($definitions as $field_name => $definition) {
-    if ($widget = $entity_display->getRenderer($field_name)) {
-      if ($definition instanceOf FieldConfig) {
-        $fieldAPI[$field_name] = array(
-          'definition' => $definition,
-          'widget' => $widget
-        );
-      }
-    }
-  }
-  return $fieldAPI;
+  return mcapi_default_display_fields();
 }
 
 function mcapi_1stparty_form_field_ui_form_display_overview_form_alter(&$form, $form_state) {
@@ -230,7 +210,7 @@ function mcapi_1stparty_menu_links_discovered_alter(&$definitions) {
     $definitions[$route_name.'.link'] = array(
       'title' => $first_party_form->title,
       'route_name' => $route_name,
-      //TODO currently the entity doesn't support nested menu items
+      //@todo currently the entity doesn't support nested menu items
 //      'parent' => '',
       'provider' => 'mcapi_1stparty',
     );

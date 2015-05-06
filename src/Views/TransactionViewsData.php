@@ -10,7 +10,6 @@ namespace Drupal\mcapi\Views;
 
 use Drupal\views\EntityViewsDataInterface;
 
-//if (!class_exists('TransactionViewsData')) {//TODO remove this I don't know how it is included twice
 class TransactionViewsData implements EntityViewsDataInterface {
 
   /**
@@ -34,6 +33,7 @@ class TransactionViewsData implements EntityViewsDataInterface {
         ]
       ],
       'wizard_id' => 'transactions', //this links it to the wizard plugin
+      'entity revision' => ''//temp
     ];
 
 
@@ -64,12 +64,12 @@ class TransactionViewsData implements EntityViewsDataInterface {
       'relationship' => [
         'id' => 'standard',
         'base' => 'mcapi_wallet',
-        'field' => 'wid',
+        'base field' => 'wid',
         'label' => t('Payer'),
         'relationship field' => 'payer'
       ],
       'filter' => [
-        'id' => 'standard',
+        'id' => 'wallet_name',
       ],
       'argument' => [
         'id' => 'standard',
@@ -84,12 +84,12 @@ class TransactionViewsData implements EntityViewsDataInterface {
       'relationship' => [
         'id' => 'standard',
         'base' => 'mcapi_wallet',
-        'field' => 'wid',
+        'base field' => 'wid',
         'label' => t('Payee'),
         'relationship field' => 'payee'
       ],
       'filter' => [
-        'id' => 'standard',
+        'id' => 'wallet_name',
       ],
       'argument' => [
         'id' => 'standard',
@@ -104,7 +104,7 @@ class TransactionViewsData implements EntityViewsDataInterface {
       'relationship' => [
         'id' => 'standard',
         'base' => 'users',
-        'field' => 'uid',
+        'base field' => 'uid',
         'label' => t('Creator'),
         'relationship field' => 'creator',
         'filter' => ['id' => 'user_name']
@@ -271,9 +271,12 @@ class TransactionViewsData implements EntityViewsDataInterface {
       'relationship' => [
         'id' => 'standard',
         'base' => 'mcapi_wallet',
-        'field' => 'wid',
+        'base field' => 'wid',
         'label' => t('1st wallet'),
         'relationship field' => 'wallet_id'
+      ],
+      'filter' => [
+        'id' => 'wallet_name',
       ],
       'argument' => [
         'id' => 'standard',
@@ -288,12 +291,15 @@ class TransactionViewsData implements EntityViewsDataInterface {
       'relationship' => [
         'id' => 'standard',
         'base' => 'mcapi_wallet',
-        'field' => 'wid',
+        'base field' => 'wid',
         'label' => t('1st wallet'),
         'relationship field' => 'partner_id'
       ],
       'field' => [
         'id' => 'mcapi_wallet_label',
+      ],
+      'filter' => [
+        'id' => 'wallet_name',
       ],
       'sort' => [
         'id' => 'standard',
@@ -468,5 +474,3 @@ class TransactionViewsData implements EntityViewsDataInterface {
   }
 
 }
-
-//}

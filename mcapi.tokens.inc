@@ -1,6 +1,5 @@
 <?php
 
-
 /*
  * implements hook_tokens().
  */
@@ -9,14 +8,17 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
     return [];
   }
 
-  $replacements = $replaced = [];
+  $replacements = [];
   $transaction = $data['mcapi'];
-  process_transaction_vars($replaced, $transaction);
+  $replaced = get_transaction_vars($transaction);
   foreach ($tokens as $name => $original) {
     $replacements[$original] = $replaced[$name];
   }
-  //TODO there seems to be some confusion about when something is a render array and when rendered
-  $replacements['[mcapi:worth]'] = \Drupal::service('renderer')->render($replacements['[mcapi:worth]']);//hack
+
+  drupal_set_message('rendering worth in mcapi.tokens.inc');
+  //why do we need to render this and nothing else?
+  $replacements['[mcapi:worth]'] = \Drupal::service('renderer')
+    ->render($replacements['[mcapi:worth]']);
 
   //handle any entity references - tokens within tokens
   $token_service = \Drupal::token();
@@ -68,10 +70,12 @@ function mcapi_token_info() {
       )
     )
   );
-  $definitions = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
+  $definitions = \Drupal::entityManager()
+    ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
   //chance to remove some tokens here using unset($definitions['uuid']).
 
-  //this really should be more automated in core
+  //@todo this really should be more automated in core, but its not so far,
+  //see node_token_info();
   foreach ($definitions as $key => $def) {
     $info['tokens']['mcapi'][$key] = array(
       'name' => $def->getLabel(),

@@ -30,7 +30,7 @@ class ExchangeContactController extends ContactController {
     if (!$this->currentUser()->hasPermission('administer contact forms') && !$this->currentUser()->hasPermission('administer users')) {
       $this->contactFloodControl();
     }
-    //TODO hope the contact module evolves a bit, or build our own contact form
+    //@todo hope the contact module evolves a bit, or build our own contact form
     $message = $this->entityManager()->getStorage('contact_message')->create(array(
       'category' => 'exchange',
     ));

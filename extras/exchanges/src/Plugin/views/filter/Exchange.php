@@ -7,7 +7,6 @@
 
 namespace Drupal\mcapi_exchanges\Plugin\views\filter;
 
-use Drupal\Component\Annotation\PluginID;
 use Drupal\views\Plugin\views\filter\FilterPluginBase;
 use Drupal\Core\Form\FormStateInterface;
 

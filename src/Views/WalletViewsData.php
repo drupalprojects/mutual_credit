@@ -30,6 +30,7 @@ class WalletViewsData implements EntityViewsDataInterface {
           'field' => 'wallet_label',
         ]
       ],
+      'entity revision' => ''//temp
     ];
     $data['mcapi_wallet']['wid'] = [
       'title' => t('Wallet ID'),

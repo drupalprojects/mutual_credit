@@ -24,13 +24,12 @@ mcapi.wallet.edit.tab:
   title: 'Edit'
   base_route: entity.mcapi_wallet.canonical
   weight: 5
-
-#this could be done by views 
+  
 mcapi.wallet.log.tab:
   route_name: mcapi.wallet_log
-  title: 'Log'
+  title: 'Statement'
   base_route: entity.mcapi_wallet.canonical
-  weight: 2
+  weight: 6
 
 #a default tab for editing a currency, lest more should be needed
 mcapi.currency.edit.tab:

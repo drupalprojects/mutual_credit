@@ -3,8 +3,7 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Entity\Transaction.
- * @todo on all entity types sort out the linkTemplates https://drupal.org/node/2221879
- * @todo inject the event_dispatcher, config, pluginmanager, cache,
+ *
  * moduleHandler will surely be injected
  */
 
@@ -45,7 +44,10 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
  *       "admin" = "Drupal\mcapi\Form\TransactionForm",
  *       "delete" = "Drupal\mcapi\Form\TransactionDeleteConfirm",
  *     },
- *     "views_data" = "Drupal\mcapi\Views\TransactionViewsData"
+ *     "views_data" = "Drupal\mcapi\Views\TransactionViewsData",
+ *     "route_provider" = {
+ *       "html" = "Drupal\mcapi\Entity\TransactionRouteProvider",
+ *     },
  *   },
  *   admin_permission = "configure mcapi",
  *   base_table = "mcapi_transaction",
@@ -57,7 +59,7 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
  *   field_ui_base_route = "mcapi.admin.transactions",
  *   translatable = FALSE,
  *   links = {
- *     "canonical" = "entity.mcapi_transaction.canonical"
+ *     "canonical" = "transaction/{mcapi_transaction}"
  *   },
  *   constraints = {
  *     "integrity" = "Drupal\mcapi\TransactionIntegrityConstraint"
@@ -82,6 +84,16 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * @var Transaction[]
    */
   private $children = [];
+
+  private $eventDispatcher;
+  private $mailPluginManager;
+
+  //this is called from ContentEntityStorage::mapFromStorageRecords() so without create function
+  public function __construct(array $values, $entity_type, $bundle = FALSE, $translations = array()) {
+    parent::__construct($values, $entity_type, $bundle, $translations);
+    $this->eventDispatcher = \Drupal::service('event_dispatcher');
+    $this->mailPluginManager = \Drupal::service('plugin.manager.mail');
+  }
 
   /**
    * {@inheritdoc}
@@ -170,16 +182,19 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
   /**
    * Validate a transaction cluster i.e. a transaction with children
-   * @todo there seens to be no precedent for whole-entity validation in drupal
    * so there's no format for handling errors outside $form and typedata violations
    *
    * @return \Symfony\Component\Validator\ConstraintViolationInterface[]
    *
    * @throws \Exception
+   *
+   * @todo after beta10
+   * @see https://www.drupal.org/node/2015613.
    */
   function validate() {
     //if this is coming from transactionForm then all the entiry fields are validated
-    $this->errors = $this->violations = [];
+    $violations = [];
+    $this->errors = [];
     if ($this->validated) {
       return [];
     }
@@ -187,17 +202,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       $this->preValidate();
       if (!$this->typedDataValidated) {
         foreach ($this->flatten() as $entity) {
-          $this->violations = array_merge(
-            $this->violations,
+          $violations = array_merge(
+            $violations,
             $entity->validateTypedData()
           );
         }
       }
-      //TODO remove this and check that EntityTypeValidfation is working
-      //\Drupal::service('event_dispatcher')->dispatch(
-      //  McapiEvents::VALIDATE,
-      //  new TransactionSaveEvents(clone($this))
-      //);
     }
     catch(\Exception $e) {
       if ($settings['mail_user1']){
@@ -215,7 +225,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
           'message' => implode('\n', $message)
         ];
 
-        \Drupal::services('plugin.manager.mail')->mail(
+        $this->mailPluginManager->mail(
           'system',
           'action_send_email',
           User::load(1)->mail,
@@ -226,14 +236,14 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       //TEMP
       drupal_set_message($e->getMessage(), 'error');
 
-      //TODO sort out the McapiExceptions
+      //@todo sort out the McapiExceptions
       throw new McapiException('', $e->getMessage());
     }
 
     $this->validated = TRUE;
     //we're actually supposed only to return violations,
     //but the Exceptions also have the same getMessage method
-    return array_merge($this->violations, $this->errors);
+    return array_merge($this->violations);
   }
 
   /**
@@ -244,7 +254,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   private function validateTypedData() {
     $violations = [];
     foreach ($this as $field_name => $items) {
-      foreach ($items->validate() as $violation) {
+      foreach ($items->validate() as $violation) {echo 'Transaction::validateTypedData-'.$field_name;
         $violations[] = $violation;
       }
     }
@@ -294,6 +304,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     );
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheContexts() {
+    return ['user'];
+  }
 
   /**
    * Ensure parent transactions have a 'children' property
@@ -326,7 +342,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     );
 
     $event = new TransactionSaveEvents(clone($this), $context);
-    //TODO, how to the event handlers return anything,
+    //@todo, how to the event handlers return anything,
     //namely more $renderable items?
     \Drupal::service('event_dispatcher')->dispatch(
       McapiEvents::TRANSITION,
@@ -341,7 +357,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
-
     //note that the worth field is field API because we can't define multiple cardinality fields in this entity.
     $fields['xid'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Transaction ID'))
@@ -358,7 +373,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setLabel(t('Description'))
       ->setDescription(t('A one line description of what was exchanged.'))
       ->setRequired(TRUE)
-      ->setSettings(array('default_value' => '', 'max_length' => MCAPI_MAX_DESCRIPTION));
+      ->setSettings(array('default_value' => '', 'max_length' => MCAPI_MAX_DESCRIPTION))
+      ->setDisplayConfigurable('form', TRUE);
 
     $fields['serial'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Serial number'))
@@ -376,14 +392,16 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setDescription(t('Id of the giving wallet'))
       ->setSetting('target_type', 'mcapi_wallet')
       ->setReadOnly(TRUE)
-      ->setRequired(TRUE);
+      ->setRequired(TRUE)
+      ->setDisplayConfigurable('form', TRUE);
 
     $fields['payee'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Payee'))
       ->setDescription(t('Id of the receiving wallet'))
       ->setSetting('target_type', 'mcapi_wallet')
       ->setReadOnly(TRUE)
-      ->setRequired(TRUE);
+      ->setRequired(TRUE)
+      ->setDisplayConfigurable('form', TRUE);
 
     $fields['creator'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Creator'))
@@ -426,13 +444,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setRevisionable(FALSE)
       ->setTranslatable(FALSE);
 
-    //TODO in beta2, this field is required by views. Delete if pos
-    /*
-    $fields['langcode'] = BaseFieldDefinition::create('language')
-    ->setLabel(t('Language code'))
-    ->setDescription(t('language code.'))
-    ->setSettings(array('default_value' => 'und'));
-    */
     return $fields;
   }
 

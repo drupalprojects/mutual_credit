@@ -9,9 +9,8 @@ namespace Drupal\mcapi\Plugin\Transition;
 
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
-use Drupal\mcapi\McapiTransactionException;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\mcapi\Plugin\Transition2Step;
+use Drupal\mcapi\Plugin\TransitionBase;
 use Drupal\Core\Session\AccountInterface;
 
 /**
@@ -21,14 +20,15 @@ use Drupal\Core\Session\AccountInterface;
  *   id = "create"
  * )
  */
-class Create extends Transition2Step {
+class Create extends TransitionBase {
 
   /**
    * {@inheritdoc}
    * A transaction can be created if the user has a wallet, and permission to transaction
    */
   public function accessOp(TransactionInterface $transaction, AccountInterface $acount) {
-    //TODO check that the use is allowed to pay in to and out from at least one wallet each.
+    //@todo check that the user is allowed to pay in to payee wallet AND out from payer_wallet.
+    mtrace();
     return empty($transaction->get('xid')->value);
   }
 
@@ -50,7 +50,7 @@ class Create extends Transition2Step {
   }
 
 
-  final public function accessState($transaction) {
+  final public function accessState(TransactionInterface $transaction, AccountInterface $account) {
     //can we payin to the payee wallet and payout of the payer wallet
     return $transaction->payer->entity->access('payout')
     || $transaction->payee->entity->access('payin');

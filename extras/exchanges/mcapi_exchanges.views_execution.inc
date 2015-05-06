@@ -20,7 +20,7 @@ function mcapi_exchanges_views_query_alter(ViewExecutable $view, QueryPluginBase
   $exchange_ids = Exchanges::in();
   $details_field = $wallet_table.'.details';
   foreach ($wallet_fields as $db_field_name) {
-    //TODO delete this expression
+    //@todo delete this expression
     $exchange_join = array(
       'table' => 'mcapi_wallet_exchanges_index',
       'field' => 'wid',
@@ -69,8 +69,8 @@ function mcapi_exchanges_views_query_alter(ViewExecutable $view, QueryPluginBase
       );
     }
     $query->addWhere('both_wallets', $wallet_operations);
-    
-    
+
+
   }
 }
 

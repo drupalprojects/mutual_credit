@@ -54,10 +54,10 @@ class WalletStorageSchema extends SqlContentEntityStorageSchema {
         )
       ),
       'unique keys' => array(
-        'walletUserPerm' => array('wid', 'operation', 'uid'),
+        'walletOpUser' => array('wid', 'operation', 'uid'),
       ),
     );
-    
+
     return $schema;
   }
 

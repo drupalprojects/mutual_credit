@@ -131,23 +131,25 @@ class TransactionStorage extends TransactionIndexStorage {
     $query = db_select('mcapi_transaction', 'x')
       ->fields('x', array('xid', 'serial'))
       ->orderby('created', 'DESC');
+    Self::processConditions($query, $conditions);
+    if ($limit) {
+      //assume that nobody would ask for unlimited offset results
+      $query->range($offset, $limit);
+    }
+    return $query->execute()->fetchAllKeyed();
+  }
+
+  private static function processConditions($query, $conditions) {
+
     //take account for the worth table.
     if (array_key_exists('value', $conditions) || array_key_exists('curr_id', $conditions)) {
       $query->join('mcapi_transaction__worth', 'w', 'x.xid = w.entity_id');
-      if (array_key_exists('value', $conditions)) {
-        $conditions['w.worth_value'] = $conditions['value'];
-        unset($conditions['value']);
-      }
-      if (array_key_exists('curr_id', $conditions)) {
-        $conditions['w.worth_curr_id'] = $conditions['curr_id'];
-        unset($conditions['curr_id']);
-      }
     }
-    //TODO generalise this to take account of other fieldAPI fields?
-    $conditions += array(
-      'state' => mcapi_states_counted()
-    );
+    $conditions += [
+      'state' => array_filter(\Drupal::config('mcapi.misc')->get('counted'))
+    ];
     foreach($conditions as $field => $value) {
+      if (!$value) continue;
       switch($field) {
       	case 'xid':
       	case 'state':
@@ -156,12 +158,11 @@ class TransactionStorage extends TransactionIndexStorage {
       	case 'payee':
       	case 'creator':
       	case 'type':
-      	case 'w.worth_value':
-      	case 'w.worth_curr_id':
-          if ($value) {
-            $query->condition($field, (array)$value, 'IN');
-          }
+          $query->condition($field, (array)$value, 'IN');
       	  break;
+      	case 'curr_id':
+          $query->condition('w.worth_curr_id', (array)$value, 'IN');
+          break;
       	case 'involving':
       	  $value = (array)$value;
       	  $cond_group = count($value) == 1 ? db_or() : db_and();
@@ -170,23 +171,25 @@ class TransactionStorage extends TransactionIndexStorage {
     	      ->condition('payee', $value, 'IN')
       	  );
           break;
-      	case 'from':
+      	case 'since':
           $query->condition('created', $value, '>');
           break;
-      	case 'to':
+      	case 'until':
           $query->condition('created', $value, '<');
           break;
+      	case 'value':
+          $query->condition('w.worth_value', $value);
+          break;
+        case 'min':
+          $query->condition('w.worth_value', $value, '>=');
+          break;
+        case 'max':
+          $query->condition('w.worth_value', $value, '<=');
+          break;
       	default:
-          echo $field;
-          mtrace();
+          debug('filtering on unknown field: '.$field);
       }
-      unset($conditions[$field]);
     }
-    if ($limit) {
-      //assume that nobody would ask for unlimited offset results
-      $query->range($offset, $limit);
-    }
-    return $query->execute()->fetchAllKeyed();
   }
 
 }

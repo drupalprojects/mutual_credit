@@ -73,7 +73,7 @@ class Worth extends FormElement {
           drupal_set_message(
             t(
               'Passed default @currency is not one of the allowed currencies',
-              array('@currency' => \Drupal\mcapi\Entity\Currency::load(reset($not_allowed))->label())
+              array('@currency' => Currency::load(reset($not_allowed))->label())
             ),
             'warning'
           );
@@ -84,7 +84,9 @@ class Worth extends FormElement {
         }
       }
     }
-    //TODO sort the currencies by weight
+    if (count($element['#default_value']) > 1) {
+      Self::sort($element['#default_value']);
+    }
     return $element;
   }
 
@@ -128,7 +130,6 @@ class Worth extends FormElement {
           //if a preset value isn't in the $options
           //then we ignore the options and use the numeric sub-widget
           if (isset($options) && array_key_exists(@$parts[$i], $options)) {
-            //TODO how about using another number field instead of select?
             $element[$delta][$i] += array(
               '#type' => 'select',
               '#options' => $options,
@@ -216,7 +217,7 @@ class Worth extends FormElement {
       }
     }
     else {
-      //TODO see how this works when #default_value is already set
+      //@todo see how worth element works when #default_value is already set
       foreach ($element['#allowed_curr_ids'] as $curr_id) {
         $output[] = ['curr_id' => $curr_id, 'value' => 0];
       }
@@ -241,7 +242,6 @@ class Worth extends FormElement {
       $setval = TRUE;
     }
     else {
-      print_r($element);
       //check for allowed zero values.
       foreach ($element['#value'] as $delta => $worth) {
         $currency = mcapi_currency_load($worth['curr_id']);
@@ -257,7 +257,7 @@ class Worth extends FormElement {
         }
         else {
           if ($worth['value'] < 0 && !$element['#minus']) {
-            //TODO check this
+            //@todo check that worth error handling works
             $form_state->setError(
               $element[$worth['curr_id']],
               t('Negative amounts not allowed: !val', array('!val' => $currency->format($worth['value'])))
@@ -272,4 +272,28 @@ class Worth extends FormElement {
     $vals = $form_state->getValues();
   }
 
+  /**
+   * Sort the worth options by currency weights
+   * @param array $options
+   * @todo make this sorting more efficient
+   */
+  private function sort(array &$options) {
+    $new_options = $helper = [];
+    //the currency keys are nested i the options and we need the whole currency object
+    //we're going to extract the currencies keys, load the config entities, sort them
+    //then sort one array by another
+    //first create the helper array
+    foreach ($options as $key => $worth) {
+      $temp_options[$worth['curr_id']] = $worth;//we need the worths keyed by $curr_id
+      $helper[] = $worth['curr_id'];
+    }
+    $helper = Currency::LoadMultiple($helper);
+    uasort($helper, 'mcapi_uasort_weight');
+    //now we have sorted array keys
+    //I'm a bit unsure how to sort one array by another but this is quick and dirty
+    foreach ($helper as $curr_id =>$currency) {
+      $new_options[] = $temp_options[$curr_id];
+    }
+    $options = $new_options;
+  }
 }

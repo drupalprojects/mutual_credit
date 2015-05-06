@@ -43,12 +43,11 @@ interface TransactionInterface extends ContentEntityInterface {
   public function validate();
 
   /**
-   * just gets the children and puts them side by side with the parent
+   * returns a clone of the transaction as an array with the children next to the parent
    *
    * @return Transaction[]
    *   transactions with the cloned parent transaction first and children property removed
    *
-   * @todo would be nice to just have an iterator so we can do foreach ($transaction as $t)
    */
   public function flatten();
 

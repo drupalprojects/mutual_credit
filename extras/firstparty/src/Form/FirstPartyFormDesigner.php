@@ -14,7 +14,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
 
 class FirstPartyFormDesigner extends EntityForm {
-  
+
   function getFormId() {
     return 'first_party_editform';
   }
@@ -23,7 +23,7 @@ class FirstPartyFormDesigner extends EntityForm {
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
   public function form(array $form, FormStateInterface $form_state) {
-    
+
     $form = parent::form($form, $form_state);
     //widgetBase::Form expects this
     $form['#parents'] = [];
@@ -58,7 +58,7 @@ class FirstPartyFormDesigner extends EntityForm {
     $exchange = $configEntity->exchange ?
       entity_load('mcapi_exchange', $configEntity->exchange) :
       NULL;
-      
+
     $form['path'] = array(
       '#title' => t('Path'),
       '#description' => t('The url path at which this form will appear. Must be unique. E.g. myexchange/payme'),
@@ -94,7 +94,7 @@ class FirstPartyFormDesigner extends EntityForm {
         )
       )
     );
-    
+
     foreach (\Drupal\system\Entity\Menu::loadMultiple() as $menu_name => $menu) {
       $custom_menus[$menu_name] = $menu->label();
     }
@@ -133,9 +133,8 @@ class FirstPartyFormDesigner extends EntityForm {
       '#description' => t('Missing fields?'),
       '#type' => 'vertical_tabs',
       '#weight' => $w++,
-      //TODO
-      //'#attributes' => new Attribute(array('id' => array('field-display-overview-wrapper'))),
-      '#attributes' => array('id' => array('field-display-overview-wrapper'))
+      '#attributes' => new Attribute(array('id' => array('field-display-overview-wrapper'))),
+      //'#attributes' => array('id' => array('field-display-overview-wrapper'))
     );
 
     $form['mywallet'] = array(
@@ -251,10 +250,11 @@ class FirstPartyFormDesigner extends EntityForm {
       ),
       '#weight' => $w++
     );
-    //TODO inject the module handler
+    //@todo inject the module handler
     if ($this->moduleHandler->moduleExists('field_ui')) {
       //iterate through the field api fields adding a vertical tab for each
-      foreach (mcapi_1stparty_fieldAPI() as $field_name => $data) {//need the fieldname & label & widget
+      foreach (mcapi_default_display_fields() as $field_name => $data) {
+        //$data is an array with 'definition' and 'widget'
         //this element will contain the default value ONLY for the fieldAPI element
         //assumes a cardinality of 1!
         $element = [];
@@ -295,13 +295,13 @@ class FirstPartyFormDesigner extends EntityForm {
       '#markup' => 'blah',
       '#weight' => $w++
     );
-    //TODO check in 8.0 whether form elements can have rich text descriptions
+    //@todo check in 8.0 whether form elements can have rich text descriptions
     $help = $this->l(
       t('What is twig?'),
       Url::fromUri('http://twig.sensiolabs.org/doc/templates.html')
     );
     $tokens = ' {{ '. implode(' }}, {{ ', mcapi_1stparty_transaction_tokens()) .' }}';
-    //TODO workout what the tokens are and write them in template1['#description']
+    //@todo workout what the tokens are and write them in template1['#description']
     $form['experience'] = array(
       '#title' => t('User experience'),
       '#type' => 'details',
@@ -361,13 +361,13 @@ class FirstPartyFormDesigner extends EntityForm {
     $mywallet = !is_boolean(strpos($txt, "{{ mywallet }}"));
     if ($max > 1 && !$mywallet) {
       $message = $this->t(
-        '@token token is required in template', 
+        '@token token is required in template',
         ['@token' => '{{ mywallet }}']
       );
     }
     elseif ($max < 2 && $mywallet){
       $message = $this->t(
-        '@token token should be removed from template', 
+        '@token token should be removed from template',
         ['@token' => '{{ mywallet }}']
       );
     }
@@ -385,7 +385,7 @@ class FirstPartyFormDesigner extends EntityForm {
       }
     }
 
-    //ensure the worth field is present if there are 
+    //ensure the worth field is present if there are
     if (strpos($element['#value'], '{{ worth }}') == NULL) {
       $empty = TRUE;
       foreach ($form_state->getValues('fieldapi_presets')['worth']['preset'] as $item) {
@@ -408,7 +408,7 @@ class FirstPartyFormDesigner extends EntityForm {
       );
     }
   }
-  
+
   /**
    * Overrides Drupal\Core\Entity\EntityForm::save().
    */

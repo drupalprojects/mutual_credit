@@ -77,8 +77,15 @@ mcapi.wallets:
       type: boolean
       label: 'Auto-create a wallet for every new user'
     add_link_location:
-      type: string
+      type: mapping
       label: 'Location of the link to create new wallets under an entity'
+      mapping: 
+        local_action:
+          label: "Local action on the owner's display page"
+          type: boolean
+        summaries:
+          label: 'In the wallet summaries block'
+          type: boolean
     details:
       type: map
       label: 'View transaction log'
@@ -136,7 +143,7 @@ mcapi.state.*:
       type: string
       label: State ID
     label:
-      type: string
+      type: text
       label: Label
     description:
       type: string
@@ -153,10 +160,10 @@ mcapi.type.*:
       type: string
       label: Type ID
     label:
-      type: string
+      type: text
       label: Label
     description:
-      type: string
+      type: text
       label: Description
     start_state:
       type: string
@@ -167,28 +174,31 @@ mcapi.transition.*:
   label: Transition settings
   mapping: 
     title:
-      'type': string
+      'type': text
       'label': Title
     tooltip:
-      'type': string
+      'type': text
       'label': Tooltip
     states:
       'type': sequence
       'label': Applies to states
     page_title:
-      'type': string
+      'type': text
       'label': Page title
     format:
       'type': string
       'label': Transaction display
     twig:
-      'type': string
+      'type': text
       'label': Template
+    display:
+      'type': integer
+      'label': Display
     button:
-      'type': string
+      'type': text
       'label': Button text
     cancel_button:
-      'type': string
+      'type': text
       'label': Cancel button text
     format2:
       'type': string
@@ -200,7 +210,7 @@ mcapi.transition.*:
       'type': string
       'label': Template
     message:
-      'type': string
+      'type': text
       'label': Success message
     weight:
       'type': integer

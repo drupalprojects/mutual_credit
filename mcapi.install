@@ -39,8 +39,6 @@ function mcapi_install() {
 }
 
 function mcapi_modules_installed() {
-
-  drupal_set_message('mcapi_modules_enabled');
   //ensure all new transactionRelatives and transitions are enabled by default
   $save = FALSE;
   $conf = \Drupal::configFactory()->getEditable('mcapi.misc');
@@ -65,6 +63,11 @@ function mcapi_modules_installed() {
     //this may result in more than one save, but it won't result in saving unchanged values
     $conf->set('active_relatives', $active)->save();
   }
+  //ensure that all states are checked in the view transition
+  $view_transition = \Drupal::configFactory()->getEditable('mcapi.transition.view');
+  $states = array_keys(Drupal\mcapi\Entity\State::loadMultiple());
+  $view_transition->set('states', array_combine($states, $states));
+  $view_transition->save();
   //might need to clear some cache
 }
 

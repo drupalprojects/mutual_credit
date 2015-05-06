@@ -3,14 +3,12 @@
 /**
  * @file
  * Definition of Drupal\mcapi\Plugin\views\access\Wallet.
- * @todo COULDN'T GET THIS TO WORK!!! denies access without even opening this file
- * I don't understand why we need both to alter the route and to check access.
+ *
+ * @deprecated since there seems to be no good way to get the wallet from the views arguments
  */
 
 namespace Drupal\mcapi\Plugin\views\access;
 
-
-use Drupal\views\Annotation\ViewsAccess;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\views\Plugin\views\access\AccessPluginBase;
 use Symfony\Component\Routing\Route;
@@ -19,63 +17,48 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Access plugin that provides access control according to which wallet is being viewed
+ * I can't get this to work any which way.
+ * Consider adding no_ui to the definition if we do get it working
  *
  * @ingroup views_access_plugins
  *
  * @ViewsAccess(
  *   id = "wallet",
  *   title = @Translation("Wallet"),
- *   help = @Translation("Granted according to each wallet's settings.")
+ *   help = @Translation("Granted according to each wallet's settings."),
+ *   base = {"mcapi_wallet", "mcapi_transaction", "mcapi_transactions_index"},
  * )
  */
+
 class Wallet extends AccessPluginBase {
-  
-  private $entityManager;
-  
-  /**
-   * {@inheritdoc}
-   */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, $entityManager) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->definition = $plugin_definition + $configuration;
-    $this->entityManager = $entityManager;
-  }
 
   /**
    * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static(
-      $configuration, 
-      $plugin_id, 
-      $plugin_definition,
-      $container->get('entity.manager')
-    );
-  }
-  /**
-   * {@inheritdoc}
+   * @todo this isn't working well now because the views route doesn't know the wallet is an entity argument
+   * therefore we are using an embed instead, managing the route ourselves
    */
   public function access(AccountInterface $account) {
-    //TODO inject this
     $access = $this->entityManager->getAccessControlHandler('mcapi_wallet');
-    drupal_set_message('Views access-by-wallet not working yet.', 'warning');
-    return TRUE;
-    $wallet = '';//TODO get the wallet either from the views argument
+    //load the view
     return $access->checkAccess($wallet, 'view', LanguageInterface::LANGCODE_DEFAULT, $account)
       || $account->hasPermission('access all views');
   }
+
 
   /**
    * {@inheritdoc}
    */
   public function alterRouteDefinition(Route $route) {
     //doesn't work, unsurprisingly. at least it doesn't throw an error
-    $route->setRequirement('_entity_access', 'mcapi_wallet.view');
+    $route->setRequirement('_entity_access', 'mcapi_wallet.details');
   }
 
-
+  /**
+   * {@inheritdoc}
+   */
   public function summaryTitle() {
-    return t('Wallet');
+    return $this->t('DO NOT USE');
+    return $this->t('Wallet from url');
   }
 
 }

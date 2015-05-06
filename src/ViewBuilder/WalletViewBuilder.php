@@ -45,12 +45,11 @@ class WalletViewBuilder extends EntityViewBuilder {
     $build['#attached'] = array(
       'library' => array(
         'mcapi/mcapi.wallets',
-        'mcapi/mcapi.gchart'
       )
     );
     $build['#sorted'] = FALSE;
   }
-  
+
   /**
    * Populate hook_extra_fields in a way that is consistent with this objects ability to render them
    * @return []
@@ -58,7 +57,7 @@ class WalletViewBuilder extends EntityViewBuilder {
   public static function extraFields() {
     return array(
       'stats' => array(
-        'label' => t('Trading stats'), 
+        'label' => t('Trading stats'),
         'description' => t('Grid showing trading stats for all currencies'),
       ),
       'balances' => array(
@@ -68,7 +67,7 @@ class WalletViewBuilder extends EntityViewBuilder {
       'histories' => array(
         'label' => t('History chart(s)'),
         'description' => t('One line chart per currency showing balance over time.'),
-      ), 
+      ),
       'balance_bars' => array(
         'label' => t('Balance bar charts'),
         'description' => t('One barchart per currency showing incoming and outgoing volumes'),
@@ -76,5 +75,5 @@ class WalletViewBuilder extends EntityViewBuilder {
     );
   }
 
- 
+
 }

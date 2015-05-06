@@ -1,6 +1,6 @@
 <?php
 
-//TODO...
+//@todo...
 
 
 define('GRECO_SAMPLE_PERIOD_DAYS', '90');
@@ -29,7 +29,7 @@ function mcapi_greco_theme() {
 }
 
 /*
- * implements hook_cron
+ * implements hook_cron().
  * Greco says:
  * Dividing the sum of all the debit balances by the average daily sales gives us the sales performance ratio for the system.
  */
@@ -46,15 +46,10 @@ function mcapi_index_views_cron() {
       }
     }
     //now get the average daily sales
-    $since = strtotime(-GRECO_SAMPLE_PERIOD_DAYS .' days');
-    //@todo this should be a general purpose method in the transaction controller
-    $total_daily_sales = db_query(
-      "SELECT SUM(income) FROM {mcapi_transactions_index} WHERE created > :time AND curr_id = :curr_id",
-      array(
-        ':time' => $since,
-        ':curr_id' => $curr_id
-      )
-    )->fetchfield();
+    $total_daily_sales = \Drupal::entityManager()->getStorage('mcapi_transaction')->volume(
+      $curr_id,
+      ['since' => strtotime(-GRECO_SAMPLE_PERIOD_DAYS .' days')]
+    );
     $average_daily_sales = round($total_daily_sales / GRECO_SAMPLE_PERIOD_DAYS);
 
     if ($average_daily_sales) {

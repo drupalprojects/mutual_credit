@@ -7,6 +7,7 @@ states:
 page_title: 'Are you sure you want to restore the transaction?'
 format: certificate
 twig: ''
+display: 2
 button: 'I''m sure'
 cancel_button: Cancel
 format2: certificate

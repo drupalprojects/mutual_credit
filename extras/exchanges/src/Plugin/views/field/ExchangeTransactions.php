@@ -10,7 +10,6 @@ namespace Drupal\mcapi_exchanges\Plugin\views\field;
 use Drupal\views\Plugin\views\area\Result;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
-use Drupal\Component\Annotation\PluginID;
 use Drupal\Core\Form\FormStateInterface;
 
 /**

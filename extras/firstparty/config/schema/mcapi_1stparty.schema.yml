@@ -78,7 +78,7 @@ mcapi_1stparty.editform.*:
           type: text
           label: Button label
         preview:
-          type: text
+          type: string
           label: Preview mode
     third_party_settings:
       type: sequence

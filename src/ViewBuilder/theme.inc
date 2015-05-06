@@ -4,54 +4,15 @@
  * @file
  * View and theme preprocessor functions
  */
+use Drupal\mcapi\Wallet;
 use Drupal\mcapi\WalletInterface;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\Entity\State;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
-
-/*
- * get a renderable array of all the currency balances in one wallet
- *
- * @param WalletInterface $wallet
- *
- * @return []
- *   a render array
- */
-
-function mcapi_balances(WalletInterface $wallet) {
-  $renderable = array(
-    '#theme' => 'wallet_balances',
-    '#wallet' => $wallet,
-    '#attached' => array(
-      'library' => array('mcapi/mcapi.wallets', 'mcapi/mcapi.gchart'),
-    )
-  );
-  foreach ($wallet->currenciesUsed() as $curr_id => $currency) {
-    $renderable['#currencies'][$curr_id] = mcapi_balance_currency($wallet, $currency);
-  }
-  return $renderable;
-}
-
-/*
- * get a renderable array of one set of currency balances in one wallet
- *
- * @param WalletInterface $wallet
- *
- * @param CurrencyInterface $currency
- *
- * @return []
- *   a render array
- */
-
-function mcapi_balance_currency(WalletInterface $wallet, CurrencyInterface $currency) {
-  return array(
-    '#theme' => 'wallet_summary_currency',
-    '#wallet' => $wallet,
-    '#currency' => $currency,
-  );
-}
+use Drupal\Core\Template\Attribute;
+use Drupal\Component\Serialization\Json;
 
 /**
  * get a renderable array of all the trading histories in one wallet
@@ -62,20 +23,18 @@ function mcapi_balance_currency(WalletInterface $wallet, CurrencyInterface $curr
  *   a render array
  */
 function mcapi_histories(WalletInterface $wallet) {
-  $renderable = array(
+  $renderable = [
     '#prefix' => '<div class = "wallet-histories">',
     '#suffix' => '</div>',
-  );
+  ];
   foreach ($wallet->currenciesUsed() as $curr_id => $currency) {
-    $renderable[$curr_id] = array(
+    $renderable[$curr_id] = [
       '#theme' => 'wallet_history',
       '#wallet' => $wallet,
       '#currency' => $currency,
       '#width' => 250,
-      '#attached' => array(
-        'library' => array('mcapi/mcapi.wallets', 'mcapi/mcapi.gchart'),
-      )
-    );
+      '#attached' => ['mcapi/mcapi.gchart']
+    ];
   }
   return $renderable;
 }
@@ -89,20 +48,17 @@ function mcapi_histories(WalletInterface $wallet) {
  *   a render array
  */
 function mcapi_balance_bars(WalletInterface $wallet) {
-  $renderable = array(
+  $renderable = [
     '#prefix' => '<div class = "balance-bars">',
     '#suffix' => '</div>',
-  );
+  ];
   foreach ($wallet->getSummaries() as $curr_id => $data) {
-    $renderable[$curr_id] = array(
+    $renderable[$curr_id] = [
       '#theme' => 'wallet_balance_bars',
       '#wallet' => $wallet,
       '#currency' => mcapi_currency_load($curr_id),
-      '#data' => $data,
-      '#attached' => array(
-        'library' => array('mcapi/mcapi.wallets', 'mcapi/mcapi.gchart'),
-      )
-    );
+      '#data' => $data
+    ];
   }
   return $renderable;
 }
@@ -114,14 +70,11 @@ function mcapi_balance_bars(WalletInterface $wallet) {
  *   a render array
  */
 function mcapi_stats(WalletInterface $wallet) {
-  return array(
+  return [
     '#theme' => 'wallet_stats', //this renders as css block (table) so doesn't sit well with the histories
     '#wallet' => $wallet,
     '#weight' => 5,
-    '#attached' => array(
-      'library' => array('mcapi/mcapi.wallets', 'mcapi/mcapi.gchart'),
-    )
-  );
+  ];
 }
 
 /**
@@ -170,7 +123,6 @@ function template_preprocess_wallet_history(&$vars) {
 /**
  * implements hook_preprocess_THEMEHOOK for wallet_history
  * generates the javascript for the gchart from the user's history of each currency
- * TODO cache this and clear the cache
  */
 function mcapi_preprocess_wallet_history(&$vars) {
   $currency = $vars['currency'];
@@ -186,30 +138,29 @@ function mcapi_preprocess_wallet_history(&$vars) {
     $middle = 0;
     $max = 100;
   }
-  $vars['vaxislabels'] = array(
-    array('value' => $min, 'label' => $currency->format($min, TRUE)),
-    array('value' => $middle, 'label' => $currency->format($middle, TRUE)),
-    array('value' => $max, 'label' => $currency->format($max, TRUE))
-  );
-  $vars['columns'] = array(
+  $vars['vaxislabels'] = [
+    ['value' => $min, 'label' => $currency->format($min, TRUE)],
+    ['value' => $middle, 'label' => $currency->format($middle, TRUE)],
+    ['value' => $max, 'label' => $currency->format($max, TRUE)]
+  ];
+  $vars['columns'] = [
     'date' => t('Date'),
     'number' => $currency->label()
-  );
+  ];
 
   //populate the javascript data object
   foreach ($vars['history'] as $timestamp => $balance) {
     //this has a resolution of one day, not very satisfying perhaps
-    $vars['daterows'][] = array(
+    $vars['daterows'][] = [
       date('m/d/Y', $timestamp),
       $balance,
       $currency->format($balance, TRUE)
-    );
+    ];
   }
 }
 
 /**
  * theme preprocessor for 'wallet_stats'
- * @todo this theme callback is cached - when to clear the cache and what cache is it?
  */
 function template_preprocess_wallet_stats(&$vars) {
   foreach ($vars['wallet']->getSummaries() as $curr_id => $data) {
@@ -225,17 +176,6 @@ function template_preprocess_wallet_stats(&$vars) {
 }
 
 /**
- * theme preprocessor for 'wallet_balances'
- * show the most basic stats for one currency
- * @todo this theme callback is cached - when to clear the cache and what cache is it?
- */
-function template_preprocess_wallet_balances(&$vars) {
-  //TODO would be nice to sort the $vars['currencies'] in order of the number of trades
-  //however can't do that because the currencies haven't been preprocessed yet
-  //would need a quite different approach
-}
-
-/**
  *
  * @param type $vars
  */
@@ -246,45 +186,79 @@ function template_preprocess_wallet_wrapper(&$vars) {
 }
 
 /**
- * show links to the wallet's local tasks
+ * re-present a wallet's local tasks as an set of links
  *
  * @param WalletInterface $wallet
  *
  * @return []
  *   a render array
+ *
+ * @todo when is mcapi_wallet_links() this used? Does it work?
  */
 function mcapi_wallet_links(WalletInterface $wallet) {
   $links = [];
-  $tree = \Drupal::service('plugin.manager.menu.local_task')->getLocalTasksForRoute('entity.mcapi_wallet.canonical');
+  $tree = \Drupal::service('plugin.manager.menu.local_task')
+    ->getLocalTasksForRoute('entity.mcapi_wallet.canonical');
   $access_manager = \Drupal::service('access_manager');
   //which is all very well but getTasksBuild assumes we are on the current route
   foreach ($tree[0] as $child) {
     $route_name = $child->getRouteName();
     $route_parameters = [
-      //TODO arg_0 can be removed when views args are working with the symfony router
+      //arg_0 can be removed when views args are working with the symfony router
       //'arg_0' => $wallet->id(),//this is for view.wallet_statement.page_1
       'mcapi_wallet' => $wallet->id()
     ];
     if ($access_manager->checkNamedRoute($route_name, $route_parameters, \Drupal::currentUser())) {
-      $links[$route_name] = array(
+      $links[$route_name] = [
         'title' => $child->getTitle(),
         'url' => Url::fromRoute($route_name, $route_parameters)
-      );
+      ];
     }
   }
-  return array(
+  return [
     '#theme' => 'links',
     '#links' => $links,
-  );
+  ];
 }
 
 /**
+ * Preprocessor for all of an entity's wallets
+ *
+ * @param type $vars
  *
  */
-function template_preprocess_wallet_summary_currency(&$vars) {
-  $vars['href'] = 'wallet/' . $vars['wallet']->id() . '/inex/' . $vars['currency']->id(); //TODO use \Drupal::url()
-  $vars += $vars['wallet']->getStats($vars['currency']->id());
-  $vars['balance'] = $vars['currency']->format($vars['balance'], TRUE);
+function template_preprocess_mcapi_wallets(&$vars) {
+  $viewbuilder =\Drupal::entityManager()->getViewBuilder('mcapi_wallet');
+  //convert each wallet into a render array
+  foreach ($vars['wallets'] as $key => $wallet) {
+    $vars['wallets'][$key] = $viewbuilder->view($wallet, $vars['view_mode']);
+  }
+  if (Drupal::config('mcapi.wallets')->get('add_link_location')['summaries']) {
+    //show the add new wallet link
+    $route_name = 'mcapi.wallet.add.'.$vars['owner']->getEntityTypeId();
+    $params = ['user' => $vars['owner']->id()];
+    //how do we do this utilising the cached value?
+    $access = \Drupal::service('access_manager')
+      ->checkNamedRoute($route_name, $params, \Drupal::currentUser());
+    //echo $access;die();
+    if ($access) {
+      $vars['add_wallet_link'] = [
+        '#type' => 'link',
+        '#title' => t('Add wallet'),
+        '#url' => Url::fromRoute($route_name, $params),
+        '#weight' => 2,
+        '#options' => [
+          'attributes' => new Attribute([
+            'class' => ['add-wallet-link']
+          ])
+        ],
+        //this gets around the default css inline-block with which css 'clear' doesn't seem to work
+        //'#prefix' => '<br />'
+      ];
+      //print_r($vars['add_wallet_link']['#url']);
+      \Drupal::service('renderer')->render($vars['add_wallet_link']);//@todo is this auto-rendered later?
+    }
+  }
 }
 
 /**
@@ -304,11 +278,11 @@ function template_preprocess_wallet_balance_bars(&$vars) {
   $vars['gotten'] = t('Gotten');
   $max = _mcapi_get_axis_max(max($data['gross_in'], $data['gross_out']));
   $vars['max'] = $max;
-  $vars['vaxislabels'] = array(
-    array('value' => 0, 'label' => $currency->format(0, TRUE)),
-    array('value' => $max / 2, 'label' => $currency->format($max / 2, TRUE)),
-    array('value' => $max, 'label' => $currency->format($max), TRUE)
-  );
+  $vars['vaxislabels'] = [
+    ['value' => 0, 'label' => $currency->format(0, TRUE)],
+    ['value' => $max / 2, 'label' => $currency->format($max / 2, TRUE)],
+    ['value' => $max, 'label' => $currency->format($max), TRUE]
+  ];
 }
 
 function _mcapi_history_axes($vals) {
@@ -316,34 +290,24 @@ function _mcapi_history_axes($vals) {
   $min = min($vals);
   if ($min >= 0) {
     $max = _mcapi_get_axis_max($max);
-    return array(0, $max / 2, $max);
+    return [0, $max / 2, $max];
   }
   elseif ($max <= 0) {
     $min = -_mcapi_get_axis_max(abs($min));
-    return array($min, $min / 2, 0);
+    return [$min, $min / 2, 0];
   }
   else {
-    return array(-_mcapi_get_axis_max(abs($min)), 0, mcapi_get_axis_max($max));
+    return [-_mcapi_get_axis_max(abs($min)), 0, mcapi_get_axis_max($max)];
   }
 }
 
 function _mcapi_get_axis_max($val) {
-  $scale = array(1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 10000, 25000, 50000, 100000, 250000, 500000, 1000000);
+  $scale = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 10000, 25000, 50000, 100000, 250000, 500000, 1000000];
   $scale[] = $val;
   sort($scale);
   return $scale[array_search($val, $scale) + 1];
 }
 
-/**
- * theme implementation function for mcapi_wallets
- */
-function template_preprocess_mcapi_wallets(&$vars) {
-  //are the wallets aready themed?
-//  if (!is_null($vars['wallets']))mtrace();
-  foreach ($vars['wallets'] as $wid => $wallet) {
-    $vars['wallets'][$wid] = \Drupal::service('renderer')->render($wallet);
-  }
-}
 
 /**
  * implements template_preprocess_THEMEHOOK for theme callback 'mcapi_transaction'
@@ -371,11 +335,10 @@ function template_preprocess_mcapi_transaction(&$vars) {
       $vars['overlay_class'] = $overlay;
     }
   }
-  //TODO is noLinks really necessary
+  //@todo consider other approaches rather than the noLinks undeclared variable
   if (!$transaction->noLinks) {
-    $vars['links'] = \Drupal::Entitymanager()
-      ->getViewBuilder('mcapi_transaction')
-      ->renderlinks($transaction, $element['#view_mode']);
+    $vars['links'] = \Drupal::service('mcapi.transitions')
+      ->getLinks($transaction, $element['#view_mode']);
   }
 }
 
@@ -387,7 +350,7 @@ function template_preprocess_mcapi_transaction(&$vars) {
 function template_preprocess_certificate(&$vars) {
   $element = $vars['transaction'];
   $transaction = $element['#mcapi_transaction'];
-  process_transaction_vars($vars, $transaction);
+  $vars = get_transaction_vars($transaction) + $vars;
   //hide the field api label
   foreach (Element::children($element) as $sub) {
     if (array_key_exists('#theme', $element[$sub]) && $element[$sub]['#theme'] == 'field') {
@@ -400,30 +363,16 @@ function template_preprocess_certificate(&$vars) {
   if (isset($transaction->children)) {
     foreach ($transaction->children as $child) {
       $vars['children'][$child->id()] = entity_view($child, 'sentence');
-      //TODO there's something nasty happening with #pre_render being added here
+      //@todo there's something nasty happening with #pre_render being added here
       //pre_render connects to the display modes, which we don't want
       unset($vars['children'][$child->id()]['#pre_render']);
     }
   }
-
   //choose the transaction theme template based on the first currency of the transaction
   //not sure if this is worth the processing power at the moment
-  $vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->get('type')->value;
+  //$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->get('type')->value;
 }
 
-/**
- * theme implementation for callback 'sentence'
- * to show the transaction in one line.
- *
- * @todo remove this in favour of TransactionViewBuilder
- */
-function theme_sentence(&$vars) {
-  die('theme_sentence()'); //this shouldn't be used
-  $element = $vars['transaction'];
-  return \Drupal::Token()->replace(
-      \Drupal::config('mcapi.misc')->get('sentence_template'), array('mcapi' => $element['#mcapi_transaction']), array('sanitize' => TRUE)
-  );
-}
 
 /*
  * - $currency: Full mcapi_transaction entity
@@ -447,70 +396,36 @@ function template_preprocess_mcapi_currency(&$vars) {
   $vars['transactions'] = $storage->count($currency->id);
   $vars['volume'] = $storage->volume($currency->id);
   $vars['wallets'] = count($storage->wallets($currency->id));
-  //$vars['exchanges'] = $currency->created;//TODO put this in an alter hook
-}
-
-/**
- * Prepares a transaction, and renders it using a passed twig template
- *
- * @param string $template
- * @param TransactionInterface $transaction
- *
- * @todo perhaps convert this theme function to use
- * https://api.drupal.org/api/drupal/core!vendor!twig!twig!lib!Twig!Extension!StringLoader.php/function/twig_template_from_string/8
- * New in D8 alpha12
- */
-function render_twig_transaction($template, TransactionInterface $transaction) {
-  $vars = [];
-  $xid = $transaction->id();
-  //Here we have to get all the fieldAPI fields rendered and in $vars
-  $entities = array($xid => $transaction);
-  $build = \Drupal::entityManager()
-    ->getViewBuilder('mcapi_transaction')
-    ->viewMultiple($entities, 'certificate');
-
-  //hide the labels from the standard field rendering
-  foreach (Element::children($build[$xid]) as $sub) {
-    if ($build[$xid][$sub]['#theme'] == 'field') {
-      $build[$xid][$sub]['#label_display'] = 'hidden';
-    }
-    $vars[$sub] = $build[$xid][$sub];
-  }
-  return \Drupal::service('twig')->renderInline(
-    $template,
-    process_transaction_vars($vars, $transaction)
-  );
 }
 
 /**
  * {@inheritdoc}
  */
-function process_transaction_vars(array &$vars, TransactionInterface $transaction) {
-  $v['state'] = State::load($transaction->type->entity->start_state)->label;
-  $v['type'] = $transaction->type->entity->label;
-  $v['serial'] = $transaction->serial->value;
+function get_transaction_vars(TransactionInterface $transaction) {
+  $vars['state'] = State::load($transaction->type->entity->start_state)->label;
+  $vars['type'] = $transaction->type->entity->label;
+  $vars['serial'] = $transaction->serial->value;
   foreach (['payer', 'payee'] as $trader) {
     $owner = $transaction->{$trader}->entity->getOwner();
     if ($owner->hasLinkTemplate('canonical')) {
-      $v[$trader] = $owner->link();
+      $vars[$trader] = $owner->link();
     }
     //if there is no canonical link to this entity just link to the wallet itself
     else {
-      $v[$trader] = $transaction->{$trader}->entity->link();
+      $vars[$trader] = $transaction->{$trader}->entity->link();
     }
   }
-  $v['creator'] = $transaction->creator->entity->link();
-  //TODO do we need to sanitise this or does the theme engine do it?
-  $v['description'] = $transaction->description->getString();
+  $vars['creator'] = $transaction->creator->entity->link();
+  //@todo do we need to sanitise this or does the theme engine do it? Test with a transaction
+  $vars['description'] = $transaction->description->getString();
 
   //NB the transaction certificate, which uses entity_view_display overwrites field with display options, i.e. this one!
   //but this is needed for the sentence display
-  $v['worth'] = $transaction->worth->view();
+  $vars['worth'] = $transaction->worth->view();
 
-  //TODO LEAVE THIS TILL AFTER alpha 11
-  $v['created'] = format_date($transaction->created->value, 'medium');
+  $vars['created'] = format_date($transaction->created->value, 'medium');
 
   //the token service lets you pass url options, but this function doesn't
-  $v['url'] = $transaction->url('canonical');
-  $vars += $v;
+  $vars['url'] = $transaction->url('canonical');
+  return $vars;
 }

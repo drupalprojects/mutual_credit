@@ -51,35 +51,39 @@ class WorthFieldItemList extends FieldItemList {
     return TRUE;
   }
 
-  public function __toString() {
-    return render($this->view());
-  }
 
   /**
    * {@inheritdoc}
    */
-  public function view($display_options = []) {
+  public function view($mode = 'normal') {
     foreach ($this->list as $item) {
-      $renderable = $item->view($display_options);
+      $renderable = $item->view($mode);
       $values[] = \Drupal::service('renderer')->render($renderable);
     }
-    $separator = count($values) > 1 ? \Drupal::config('mcapi.misc')->get('worths_delimiter') : '';
-    return array(
-      0 => array('#markup' => implode($separator, $values))
-    );
+    $delimiter = '';
+    if (count($values) > 1) {
+      $delimiter = \Drupal::config('mcapi.misc')->get('worths_delimiter');
+    }
+    return implode($delimiter, $values);
   }
 
 
   /**
-   * undocumented
-   * used in function intertrading_new_worths()
+   * get the raw value for a given currency
+   *
+   * @param string $curr_id
+   *
    * @return integer | NULL
    *   NULL if the currency isn't known
-   * @todo tidy this up
+   *
+   * @see function intertrading_new_worths().
+   *
    */
   public function val($curr_id) {
     foreach ($this->list as $item) {
-      if ($item->curr_id == $curr_id) return $item->value;
+      if ($item->curr_id == $curr_id) {
+        return $item->value;
+      }
     }
   }
 
@@ -94,6 +98,10 @@ class WorthFieldItemList extends FieldItemList {
       }
     }
     return $c;
+  }
+
+  public function __toString() {
+    return render($this->view());
   }
 
 

@@ -46,21 +46,21 @@ class MiscForm extends ConfigFormBase {
       $tokens[] = "[mcapi:$token]";
     }
     $form['sentence_template'] = [
-      '#title' => t('Default transaction sentence'),
-      '#description' => t('Use the following tokens to define how the transaction will read when displayed in sentence mode: @tokens', array('@tokens' => implode(', ', $tokens))),
+      '#title' => $this->t('Default transaction sentence'),
+      '#description' => $this->t('Use the following tokens to define how the transaction will read when displayed in sentence mode: @tokens', array('@tokens' => implode(', ', $tokens))),
       '#type' => 'textfield',
       '#default_value' => $config->get('sentence_template'),
       '#weight' => 2
     ];
     $form['mail_errors'] = [
-      '#title' => t('Send diagnostics to user 1 by mail'),
+      '#title' => $this->t('Send diagnostics to user 1 by mail'),
       '#type' => 'checkbox',
       '#default_value' => $config->get('mail_errors'),
       '#weight' => 10
     ];
     $form['worths_delimiter'] = [
-      '#title' => t('Delimiter'),
-      '#description' => t('What characters should be used to separate values when a transaction has multiple currencies?'),
+      '#title' => $this->t('Delimiter'),
+      '#description' => $this->t('What characters should be used to separate values when a transaction has multiple currencies?'),
       '#type' => 'textfield',
       '#default_value' => $config->get('worths_delimiter'),
       '#weight' => 12,
@@ -68,8 +68,8 @@ class MiscForm extends ConfigFormBase {
       '#maxlength' => 10,
     ];
     $form['zero_snippet'] = [
-      '#title' => t('Zero snippet'),
-      '#description' => t("string to replace '0:00' when the currency allows zero transactions"),
+      '#title' => $this->t('Zero snippet'),
+      '#description' => $this->t("string to replace '0:00' when the currency allows zero transactions"),
       '#type' => 'textfield',
       '#default_value' => $config->get('zero_snippet'),
       '#weight' => 13,
@@ -80,8 +80,8 @@ class MiscForm extends ConfigFormBase {
     //however at the moment that would involve user 1 editing the yaml files
     //because transaction states have no ui to edit them
     $form['counted'] = [
-    	'#title' => t('Counted transaction states'),
-      '#description' => t("Transactions in these states will comprise the wallet's balance"),
+    	'#title' => $this->t('Counted transaction states'),
+      '#description' => $this->t("Transactions in these states will comprise the wallet's balance"),
       '#type' => 'checkboxes',
       '#options' => mcapi_entity_label_list('mcapi_state'),
       '#default_value' => $config->get('counted'),
@@ -100,7 +100,7 @@ class MiscForm extends ConfigFormBase {
       $options[$id] = $definition['label'];
     }
     $form['relatives_details'] = [
-      '#title' => t('Transaction relatives'),
+      '#title' => $this->t('Transaction relatives'),
       '#description' => $this->t(
         'Check those needed to determine access to transaction operations'
       ),
@@ -109,19 +109,17 @@ class MiscForm extends ConfigFormBase {
       '#weight' => 16,
       'active_relatives' => [
         '#type' => 'checkboxes',
-        '#options' => $options,
-        '#default_value' => $config->get('relatives'),
-        //todo - be a bit more specific here; where is this used?
         '#description' => $this->t(
           'Warning: unchecking these may make other settings unviable'
-        )
+        ),
+        '#options' => $options,
+        '#default_value' => $config->get('relatives'),
       ],
     ];
 
-    //TODO only show this button if transactions are present
     $form['rebuild_mcapi_index'] = [
-      '#title' => t('Rebuild index'),
-      '#description' => t('The transaction index table stores the transactions in an alternative format which is helpful for building views'),
+      '#title' => $this->t('Rebuild index'),
+      '#description' => $this->t('The transaction index table stores the transactions in an alternative format which is helpful for building views'),
       '#type' => 'fieldset',
       '#weight' => 15,
       'button' => [

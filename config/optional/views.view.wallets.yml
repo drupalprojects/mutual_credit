@@ -256,7 +256,7 @@ display:
       field_langcode: null
       field_langcode_add_to_query: null
       block_description: 'My wallets'
-      display_comment: '//TODO The entity row style currently only works for translatable entities in d8alpha14. See Drupal\views\Plugin\views\row\EntityRow'
+      display_comment: ''
       display_description: ''
       block_category: 'Community Accounting'
       title: 'My Wallets'
@@ -272,7 +272,7 @@ display:
       field_langcode: null
       field_langcode_add_to_query: null
       block_description: 'Owned wallets'
-      display_comment: '//TODO The entity row style currently only works for translatable entities in d8alpha14. See Drupal\views\Plugin\views\row\EntityRow'
+      display_comment: ''
       display_description: 'The wallets of the entity indicated in the route, if any'
       block_category: 'Community Accounting'
       arguments:

@@ -175,59 +175,6 @@ display:
           hide_alter_empty: true
           plugin_id: worth
           provider: mcapi
-        curr_id:
-          id: curr_id
-          table: mcapi_transactions_index
-          field: curr_id
-          relationship: none
-          group_type: group
-          admin_label: ''
-          dependencies:
-            module:
-              - views
-          label: Currency
-          exclude: false
-          alter:
-            alter_text: true
-            text: '<strong>[curr_id]</strong>'
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: ''
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          plugin_id: standard
-          provider: views
         outgoing:
           id: outgoing
           table: mcapi_transactions_index
@@ -310,59 +257,6 @@ display:
       field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
       fields:
-        curr_id:
-          id: curr_id
-          table: mcapi_transactions_index
-          field: curr_id
-          relationship: none
-          group_type: group
-          admin_label: ''
-          dependencies:
-            module:
-              - views
-          label: Currency
-          exclude: false
-          alter:
-            alter_text: true
-            text: '<strong>[curr_id]</strong>'
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: ''
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          plugin_id: standard
-          provider: views
         diff:
           id: diff
           table: mcapi_transactions_index
@@ -633,5 +527,5 @@ display:
       display_description: 'transactions summary per currency'
       block_category: 'Community Accounting'
       block_description: 'Wallet summary per currency'
-      display_comment: "//TODO sort out the access for this view\nchange the currency name for the default entity label handler"
+      display_comment: "@todo render the currency name instead of the machine name"
 

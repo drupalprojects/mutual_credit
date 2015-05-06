@@ -30,6 +30,9 @@ class TransitionToggle extends ConfirmFormBase {
     $this->config = $this->configFactory->getEditable('mcapi.misc');
   }
 
+  /**
+   * {@inheritdoc}
+   */
   static public function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
@@ -38,6 +41,9 @@ class TransitionToggle extends ConfirmFormBase {
     );
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getFormId() {
     return 'transition_toggle';
   }
@@ -46,7 +52,7 @@ class TransitionToggle extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getQuestion() {
-    $args = array('%name' => $this->transition['title']);
+    $args = ['%name' => $this->transition['title']];
     return $this->config->get('active_transitions')[$this->id] ?
       $this->t('Are you sure you want to disable %name?', $args) :
       $this->t('Are you sure you want to enable %name?', $args);
@@ -82,23 +88,21 @@ class TransitionToggle extends ConfirmFormBase {
     $active = $this->config->get('active_transitions');
     $active[$this->id] = !$active[$this->id];
     $this->config->set('active_transitions', $active)->save();
+    $args = ['%label' => $this->transition['title']];
     if ($active[$this->id]) {
-      drupal_set_message($this->t(
-        'Transition %label has been enabled.',
-        ['%label' => $this->transition['title']]
-      ));
+      drupal_set_message($this->t('Transition %label has been enabled.', $args));
     }
     else {
-      drupal_set_message($this->t(
-        'Transition %label has been disabled.',
-        ['%label' => $this->transition['title']]
-      ));
+      drupal_set_message($this->t('Transition %label has been disabled.', $args));
     }
     $form_state->setRedirect('mcapi.admin.transactions');
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function title() {
-    $args = array('@name' => $this->transition->label);
+    $args = ['@name' => $this->transition->label];
     return $plugin->getConfiguration('status') ?
       $this->t('Disable transition @name', $args) :
       $this->t('Enable transition @name', $args);

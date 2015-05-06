@@ -10,7 +10,7 @@ namespace Drupal\mcapi\Plugin\Transition;
 
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
-use Drupal\mcapi\Plugin\Transition2Step;
+use Drupal\mcapi\Plugin\TransitionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\Session\AccountInterface;
@@ -23,7 +23,7 @@ use Drupal\Core\Entity\Entity\EntityFormDisplay;
  *   id = "edit"
  * )
  */
-class Edit extends Transition2Step {
+class Edit extends TransitionBase {
 
   /**
    *  access callback for transaction transition 'edit'
@@ -45,30 +45,19 @@ class Edit extends Transition2Step {
    * {inheritdoc}
    */
   public function form(TransactionInterface $transaction) {
-    // Test generating widgets for all fields.
-    //TODO there has to be a better way than this to make a populated entity form
-    $object = new \Drupal\mcapi\Form\TransactionForm(\Drupal::EntityManager());
-    $object->setEntity($transaction);
-    $object->setModuleHandler(\Drupal::moduleHandler());
+    //Test generating widgets for all fields.
 
-    //oops! this changes the form_id and breaks form submission
+    $display = entity_get_form_display('mcapi_transaction', 'mcapi_transaction');
+    //$entityForm;
     $form = [];
     $form_state = new FormState();
-    $display = entity_get_form_display('mcapi_transaction', 'mcapi_transaction', 'default');
-    $object->setFormDisplay($display, $form_state);
-    $transaction_form = $object->form($form, $form_state);
+    //$transaction_form = $entityForm->setFormDisplay($display, $form_state)->form($form, $form_state);
 
 
+    $transaction_form = \Drupal::service('entity.form_builder')->getForm($transaction, 'admin');
     $additional_fields = [];
     foreach (array_filter($this->configuration['fields']) as $fieldname) {
       $additional_fields[$fieldname] = $transaction_form[$fieldname];
-    }
-    //payer and payee wallets MUST be limited to the same exchange as the transaction
-    //TODO move this to mcapi_exchanges module
-    foreach (['payer', 'payee'] as $wallet) {
-      if (array_key_exists($wallet, $additional_fields)) {
-        $additional_fields[$wallet]['#exchanges'] = [$transaction->exchange->target_id];
-      }
     }
 
     return $additional_fields;

@@ -8,7 +8,7 @@
 
 namespace Drupal\mcapi_signatures\Plugin\Transition;
 
-use Drupal\mcapi\Plugin\Transition2Step;
+use Drupal\mcapi\Plugin\TransitionBase;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -22,7 +22,7 @@ use Drupal\Core\Form\FormStateInterface;
  *   id = "sign_off"
  * )
  */
-class SignOff extends Transition2Step {
+class SignOff extends TransitionBase {
 
   /*
    * {@inheritdoc}

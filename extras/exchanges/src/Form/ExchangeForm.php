@@ -34,7 +34,7 @@ class ExchangeForm extends ContentEntityForm {
       '#required' => TRUE,
       '#weight' => 0
     );
-    //TODO how to decide who to select exchange managers from?
+    //@todo how to decide who to select exchange managers from?
     //really it could be any user IN that exchange, although the exchange has no members right now....
     foreach (User::loadMultiple() as $account) {
       $managers[$account->id()] = $account->label();

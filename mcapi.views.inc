@@ -12,21 +12,16 @@
 * implements hook_views_data_alter
 */
 function mcapi_views_data_alter(&$data) {
-  //todo only show this if max wallets per user = 1;
-  $data['users']['trade_stats'] = array(
-    'title' => t('Transaction statistic'),
-    'help' => t('The balance, trading volume, or transaction count for each user. NB Assumes 1 wallet per user.'),
-    'field' => array(
-      'id' => 'mcapi_userstat',
-    )
-  );
-  $data['users']['exchanges'] = array(
-    'title' => t('Exchange'),
-    'help' => t('Filter users by the exchange they are in.'),
-    'argument' => array(
-      'id' => 'user_exchanges',
-    )
-  );
+  if (\Drupal::config('mcapi.wallet')->get('entity_types')['user:user'] == 1) {
+    $data['users']['trade_stats'] = array(
+      'title' => t('Transaction statistic'),
+      'help' => t('The balance, trading volume, or transaction count for each user.'),
+      'field' => array(
+        'id' => 'mcapi_userstat',
+      )
+    );
+  }
+  $data['mcapi_transaction_worth']['worth']['field']['id'] = 'worth';
 }
 
 /**
@@ -40,7 +35,6 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
 }
 
 function mcapi_views_states() {
-  debug(\Drupal::config('mcapi.misc')->get('counted'));
   foreach (\Drupal::config('mcapi.misc')->get('counted') as $key => $val) {
     if ($val) $options['value']['default'][$key] = $key;
   }

@@ -89,7 +89,7 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) 
     $plugin = mcapi_limits_saved_plugin($currency);
   }
   $form_state->set('limits_plugin', $plugin);
-  
+
   //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
   $warning[] = t("With great power comes great responsibility!");
   $warning[] = t("The first rule of accounting is: no account should issue more credit than it can redeem.");
@@ -146,7 +146,7 @@ function mcapi_limits_validate(&$form, $form_state) {
 function mcapi_limits_submit(&$form, $form_state) {
   $plugin = $form_state->get('limits_plugin');
   $plugin->submitConfigurationForm($form, $form_state);
-  
+
   //rendered wallets may be affected by changes in balance limits
   Drupal\Core\Cache\Cache::invalidateTags(['mcapi_wallet_view']);
 
@@ -158,10 +158,10 @@ function mcapi_limits_submit(&$form, $form_state) {
   //this has to go after the plugin has set the values
   $currency->setThirdPartySetting('mcapi_limits', 'plugin', $plugin->id);
   $currency->save();
-  
-  //todo would be nice to compare the old balance limits with the new and log only if there are changes
+
+  //@todo would be nice to compare the old balance limits with the new and log only if there are changes
   $this->logger('mcapi')->notice(
-    'User @uid saved currency @name', 
+    'User @uid saved currency @name',
     ['@uid' => $this->currentUser()->id(), '@name' => $currency->label()]
   );
 }

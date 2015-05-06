@@ -86,7 +86,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    *   whether the wallet already existed
    */
   public function postSave(EntityStorageInterface $storage, $update = TRUE) {
-    //TODO add the manager user to the exchange if it is not a member
+    //@todo add the manager user to the exchange if it is not a member
     //$exchange_manager = User::load($this->get('uid')->value);
 
     //create a new wallet for new exchanges
@@ -94,7 +94,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       $this->addIntertradingWallet();
     }
   }
-  
+
   public function addIntertradingWallet() {
     $props = array(
       'entity_type' => 'mcapi_exchange',
@@ -158,7 +158,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     $fields['mail'] = BaseFieldDefinition::create('email')
       ->setLabel(t('Email'))
       ->setDescription(t('The official contact address'));
-      
+
     $fields['created'] = BaseFieldDefinition::create('created')
     ->setLabel(t('Created'))
     ->setDescription(t('The time that the transaction was created.'))
@@ -169,13 +169,6 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     ))
     ->setDisplayConfigurable('form', TRUE);;
 
-    
-    //TODO in beta2, this field is required by views. Delete if pos
-    $fields['langcode'] = BaseFieldDefinition::create('language')
-    ->setLabel(t('Language code'))
-    ->setDescription(t('language code.'))
-    ->setSettings(array('default_value' => 'und'));
-    
     return $fields;
   }
 
@@ -242,14 +235,13 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    * {@inheritdoc}
    */
   public function transactions($children = FALSE) {
-    //TODO use the og API for this
     $xids = db_select('og_membership', 'm')
       ->fields('m', array('etid'))
       ->condition('entity_type', 'mcapi_transaction')
       ->condition('group_type', 'mcapi_exchange')
       ->condition('gid', $this->id())
       ->execute()->fetchCol();
-      
+
     if ($xids && !$children) {
       $filtered = $this->entityManager()
         ->getStorage('mcapi_transaction')
@@ -297,21 +289,21 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     if ($this->get('status')->value && count($active_exchange_ids) > 1)return TRUE;
     return FALSE;
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public function ___isMember($exchange, ContententityInterface $entity) {
     if ($this->multiple) {
       return _og_is_member(
-        'mcapi_exchange', 
-        $this->id(), 
-        $entity->getEntityType(), 
-        $entity, 
+        'mcapi_exchange',
+        $this->id(),
+        $entity->getEntityType(),
+        $entity,
         array(OG_STATE_ACTIVE)
       );
 
-      //TODO remove all this
+      //@todo remove all this
       if ($entity->getEntityTypeId() == 'mcapi_wallet') {
         $entity = $entity->getOwner();
       }
@@ -325,13 +317,11 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     }
     return TRUE;
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public function users() {
-  
-    //TODO use the og API for this
     return db_select('og_membership', 'm')
       ->fields('m', array('etid'))
       ->condition('entity_type', 'user')
@@ -339,8 +329,8 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       ->condition('gid', $this->id())
       ->execute()->fetchCol();
   }
-  
-  
+
+
 }
 
 

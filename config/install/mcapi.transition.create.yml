@@ -4,6 +4,7 @@ states:
   done: done
 format: certificate
 twig: ''
+display: 2
 button: 'Yes I''m sure'
 cancel_button: Cancel
 format2: certificate

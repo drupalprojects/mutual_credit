@@ -48,7 +48,7 @@ class Levy extends RulesActionBase {//implements ContainerFactoryPluginInterface
     $worth = $this->getContextValue('worth');
     $target = $this->getContextValue('target');
     $round = $this->getContextValue('round');
-    //TODO what should this output?
+    //@todo what should this output?
     //old code follows
     $values = [];
     foreach ($worth as $delta => $item) {
@@ -85,7 +85,7 @@ class Levy extends RulesActionBase {//implements ContainerFactoryPluginInterface
     }
     $values += array(
       'description' => $this->configuration['description'],
-      'type' => 'auto',//TODO children should be able to have their own transaction type without setting the state
+      'type' => 'auto',//@todo children should be able to have their own transaction type without setting the state
       'state' => $transaction->state->target_id
     );
     return entity_create('mcapi_transaction', $values);

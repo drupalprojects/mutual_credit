@@ -56,8 +56,8 @@ class WorthItem extends FieldItemBase {
       ],
     ];
   }
-  
-  
+
+
 
   /**
    * {@inheritdoc}
@@ -71,7 +71,7 @@ class WorthItem extends FieldItemBase {
       $this->parent->onChange($this->name);
     }
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -81,19 +81,38 @@ class WorthItem extends FieldItemBase {
   }
 
   /**
-   * {@inheritdoc}
+   * format the worth value according to 3 view modes, normal, decimal and raw
+   * taking into account that there may be special formatting if worth is 0
    */
-  public function view($display_mode = []) {
+  public function view($mode = 'normal') {
     extract($this->getValue(FALSE));
     $currency = Currency::load($curr_id);
-    if ($value) {
-      $markup = $currency->format($value);
+    if ($mode == 'raw') {
+      $markup = $value;
     }
-    //optional special display if the item is zero in this currency
-    elseif ($currency->zero) {
-      $markup = \Drupal::config('mcapi.misc')->get('zero_snippet');
+    else {
+      if ($value) {
+        $markup = $currency->format($value);
+        if ($mode == 'decimal') {
+          //this could be smarter, but for now we're just going to strip out
+          //all the non-numeric characters
+          //can't think how best to do it with regex
+          $new = '';
+          foreach(str_split($markup) as $char) {
+            if (is_numeric($char)) $new .= $char;
+          }
+          $markup = $new;
+        }
+      }
+      //optional special display if the item is zero in this currency
+      elseif ($currency->zero) {
+        if ($mode == 'decimal') {
+          $markup = 0;
+        }
+        $markup = \Drupal::config('mcapi.misc')->get('zero_snippet');
+      }
     }
     return array('#markup' => $markup);
   }
-  
+
 }

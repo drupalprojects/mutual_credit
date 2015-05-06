@@ -12,16 +12,19 @@ use Drupal\mcapi_exchanges\Entity\Exchange;//if the module is enabled!
 
 /**
  * Provides a listing of currencies
+ *
  */
 class CurrencyListBuilder extends DraggableListBuilder {
+
   /**
    * {@inheritdoc}
    */
   public function getFormID() {
     return 'currencies_list';
   }
+
   /**
-   * Overrides Drupal\Core\Entity\EntityListBuilder::buildHeader().
+   * {@inheritdoc}
    */
   public function buildHeader() {
     $header['title'] = t('Title');
@@ -32,14 +35,14 @@ class CurrencyListBuilder extends DraggableListBuilder {
   }
 
   /**
-   * Overrides Drupal\Core\Entity\EntityListBuilder::buildRow().
-   * @todo we might want to somehow filter the currencies before they get here, if there are large number
+   * {@inheritdoc}
+   *
    */
   public function buildRow(EntityInterface $entity) {
     $actions = parent::buildRow($entity);
     if (empty($actions)) {
       return;
-    } 
+    }
     $row['title'] = ['#markup' => $entity->link(NULL, 'canonical')];
     $type_names = array(
       CURRENCY_TYPE_ACKNOWLEDGEMENT => t('Acknowledgement'),
@@ -67,5 +70,36 @@ class CurrencyListBuilder extends DraggableListBuilder {
     }
     return $row + $actions;
   }
+
+  /**
+   * {@inheritdoc}
+   *
+   * @todo make the currency filter work when the views filter works
+   * @note that we must choose between currency weights and the paged / filtered list
+   * @see \Drupal\views_ui\ViewListBuilder::render
+   */
+  /*
+  public function render() {
+    $this->limit = 2;//set this to 50 after testing
+    $list = parent::render();
+
+    $list['filters'] = [
+      '#type' => 'search',
+      '#title' => $this->t('Filter'),
+      '#title_display' => 'invisible',
+      '#size' => 40,
+      '#placeholder' => $this->t('Filter by currency name or machine name'),
+      '#weight' => -1,
+      '#attributes' => array(
+        'class' => array('views-filter-text'),
+        'data-table' => '.views-listing-table',
+        'autocomplete' => 'off',
+        'title' => $this->t('Enter a part of the view name or description to filter by.'),
+      ),
+    ];
+    return $list;
+  }
+   *
+   */
 
 }

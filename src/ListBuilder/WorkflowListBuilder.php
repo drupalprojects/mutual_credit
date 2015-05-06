@@ -20,10 +20,27 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Displays the workflow page in the management menu admin/accounting/workflow
  *
- * @todo widen the table using CSS or style attribute but how when no css files are shown as of now?
  */
 class WorkflowListBuilder extends ControllerBase implements FormInterface {
 
+  private $config;
+  private $transitionManager;
+
+  function __construct($config_factory, $transition_manager) {echo 1;
+    $this->config = $config_factory->get('mcapi.misc');
+    $this->transitionManager = $transition_manager;
+  }
+
+  static function create(ContainerInterface $container) {
+    return new static (
+      $container->get('config.factory'),
+      $container->get('mcapi.transitions')
+    );
+  }
+
+  /**
+   * {@inheritDoc}
+   */
   public function buildHeader() {
     return [
       'name' => t('Transition'),
@@ -34,6 +51,9 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     ];
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public function render() {
     return [
       $this->visualise(),
@@ -41,6 +61,9 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     ];
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public function buildRow($transition, $active) {
     $id = $transition->getPluginId();
     $config = $transition->getConfiguration();
@@ -63,11 +86,15 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     return $row;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   private function disabledRow($transition, $config) {
     return [
       '#weight' => $config['weight'],
       '#attributes' => new Attribute(['class' => ['draggable']]),
-      '#attributes' => ['class' => ['draggable']],//TODO sort this out. see \Drupal\Core\Config\Entity\DraggableListBuilder
+      //@todo wait for the \Drupal\Core\Config\Entity\DraggableListBuilder::buildrow to recognise Attribute object
+      '#attributes' => ['class' => ['draggable']],
       'name' => [
         '#markup' => $config['title']
       ],
@@ -97,8 +124,10 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     ];
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $active = \Drupal::config('mcapi.misc')->get('active_transitions');
     //reset the form fresh
     $form = [];
     $form['plugins'] = [
@@ -111,13 +140,22 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
           'group' => 'weight',
         ],
       ],
+      //@todo Attribute doesn't work according to the documentation https://api.drupal.org/api/drupal/core!includes!common.inc/function/drupal_attach_tabledrag/8
+      '#attributes' => new Attribute(['style' => 'width:100%', 'id' => 'transitions-table']),
+      '#attributes' => [
+        'id' => 'transitions-table',
+        'style' => 'width:100%'
+      ]
     ];
-    foreach (\Drupal::service('mcapi.transitions')->all() as $id => $plugin) {
+    foreach ($this->transitionManager->all() as $id => $plugin) {
       if ($id == 'create') {
         continue;
       }
 
-      $form['plugins'][$id] = $this->buildRow($plugin, $active[$id]);
+      $form['plugins'][$id] = $this->buildRow(
+        $plugin,
+        $this->config->get('active_transitions')[$id]
+      );
 
     }
 
@@ -131,8 +169,11 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     return $form;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   function validateForm(array &$form, FormStateInterface $form_state) {
-
+    //this is required by the interface
   }
 
   /**
@@ -142,7 +183,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     $values = $form_state->getValues();
     //initiate the config factory
     $this->config('mcapi.misc');
-    
+
     foreach ($values['plugins'] as $id => $value) {
       $this->configFactory->getEditable('mcapi.transition.'.$id)
         ->set('weight', $value['weight'])
@@ -150,6 +191,9 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public function getFormId() {
     return 'workflow_draggable_plugin_list';
   }
@@ -160,6 +204,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     }
     $renderable['types'] = [
       '#type' => 'container',
+      //@todo replace with Attributes
       '#attributes' => ['style' => 'display:inline-block; vertical-align:top;'],
       'title' => [
         '#markup' => "<h4>".t('Transaction types')."</h4>"
@@ -183,4 +228,5 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     ];
     return $renderable;
   }
+
 }

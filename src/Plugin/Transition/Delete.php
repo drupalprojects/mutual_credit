@@ -12,7 +12,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\mcapi\Entity\State;
-use Drupal\mcapi\Plugin\Transition2Step;
+use Drupal\mcapi\Plugin\TransitionBase;
 
 /**
  * Undo transition
@@ -21,7 +21,7 @@ use Drupal\mcapi\Plugin\Transition2Step;
  *   id = "delete"
  * )
  */
-class Delete extends Transition2Step {
+class Delete extends TransitionBase {
 
   /**
    * @see \Drupal\mcapi\TransitionBase::buildConfigurationForm()

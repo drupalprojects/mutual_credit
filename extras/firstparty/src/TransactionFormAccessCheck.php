@@ -4,9 +4,9 @@
  * @file
  * Contains \Drupal\mcapi_1stparty\TransactionFormAccessCheck.
  * Custom Access control handler for Designed transaction forms
- * 
+ *
  * @see extras/firstparty/src/FirstPartyRoutes.php
- * 
+ *
  * @todo deprecate this in favour of 'use' op on the Designed form entity
  */
 
@@ -36,13 +36,13 @@ class TransactionFormAccessCheck extends EntityAccessCheck {
    *
    */
   public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
-  
-    $result = AccessResult::forbidden();//TODO when to invalidate this?
+
+    $result = AccessResult::forbidden();//@todo when to invalidate this?
     $user = User::load($account->id());
     if ($wids = \Drupal::entityManager()->getStorage('mcapi_wallet')
       ->getOwnedIds($user)) {
       $editform = FirstPartyFormDesign::load($route->getOption('parameters')['1stparty_editform']);
-      //TODO the caching
+      //@todo the caching
       if ($account->hasPermission('configure mcapi')) {
         $result = AccessResult::allowed();
       }

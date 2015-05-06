@@ -13,7 +13,7 @@ use Drupal\mcapi\WalletInterface;
 use Drupal\mcapi\Exchange;
 use Drupal\Core\Entity\EntityInterface;
 
-class WalletStorage extends SqlContentEntityStorage implements WalletStorageInterface {
+class WalletStorage extends SqlContentEntityStorage {
 
   /**
    * {@inheritdoc}
@@ -21,35 +21,34 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
    * @see Drupal\user\UserStorage::mapFromStorageRecords
    */
   function mapFromStorageRecords(array $records, $load_from_revision = false) {
-    //add the access settings to each wallet
+    $entities = parent::mapFromStorageRecords($records);
+    //populate the access property with the single char values
+    foreach(array_keys(Exchange::walletOps()) as $op) {
+      foreach ($records as $key => $record) {
+        if (!in_array($record->{$op}, [WALLET_ACCESS_OWNER, WALLET_ACCESS_USERS])) {
+          $entities[$key]->access[$op] = $record->{$op};
+        }
+      }
+    }
+    //populate the access property with the specific user values
     $q = $this->database->select('mcapi_wallets_access', 'a')
       ->fields('a', array('wid', 'operation', 'uid'))
       ->condition('wid', array_keys($records), 'IN');
-
-    foreach(array_keys(Exchange::walletOps()) as $op) {
-      foreach ($records as $key => $record) {
-        //the zero values will be replaced by an array of user ids from the access table.
-        //if all goes according to plan...
-        $accesses[$key][$op] = $record->{$op} ? : [];
-      }
-    }
-    $entities = parent::mapFromStorageRecords($records);
-    //now populate the arrays where specific users have been specified
-    foreach ($accesses as $key => $ops) {
-      $entities[$key]->access = $ops;
-    }
-
     foreach ($q->execute() as $row) {
       $entities[$row->wid]->access[$row->operation][] = $row->uid;
     }
+    //hopefully by now there is a string or array for each of the 4 access operations
     return $entities;
   }
 
   /**
-   * @see \Drupal\mcapi\Storage\WalletStorageInterface::getOwnedIds()
+   * @deprecated
    */
   static function getOwnedIds(ContentEntityInterface $entity, $intertrading = FALSE) {
-    //This is functionality equivalent to, but faster than entity_load_multiple_by_properties()
+
+    return Self::filter(['owner' => $entity, 'intertrading' => $intertrading]);
+
+    //This is faster than entity_load_multiple_by_properties()
     $q = db_select('mcapi_wallet', 'w')
       ->fields('w', array('wid'))
       ->condition('entity_type', $entity->getEntityTypeId())
@@ -63,9 +62,9 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
 
   /**
    * write the wallet's access settings and the index table
-   * @todo this must also run when an entity joins an exchange
    */
   function doSave($wid, EntityInterface $wallet) {
+
     parent::doSave($wid, $wallet);
     $this->reIndex(array($wallet->id() => $wallet));
   }
@@ -78,28 +77,22 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
     parent::doDelete($entities);
     $this->dropIndex($entities);
   }
-  
+
   /**
-   * 
+   *
    * @param array \Drupal\mcapi\Entity\Wallet[]
    *   keyed by wallet id
    */
-  public function reIndex(array $wallets) {
+  private function reIndex(array $wallets) {
     $this->dropIndex($wallets);
     $query = $this->database->insert('mcapi_wallets_access')
-      ->fields(array('wid', 'permission', 'value'));
-    
+      ->fields(array('wid', 'operation', 'uid'));
     foreach ($wallets as $wid => $wallet) {
       foreach (array_keys(Exchange::walletOps()) as $op) {
-        if (is_array($wallet->{$op})) {
-          foreach ($wallet->$op as $value) {
-            $values = array(
-              'wid' => $wid(),
-              'permission' => $op,
-              'value' => $value
-            );
-            $access_query->values($values);
-          }
+        if (!is_array($wallet->access[$op])) continue;
+        foreach ($wallet->access[$op] as $value) {
+          $values = [$wid, $op, $value];
+          $query->values($values);
         }
       }
     }
@@ -107,9 +100,9 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
       $query->execute();
     }
   }
-  
+
   /**
-   * 
+   *
    * @param array $wids
    */
   private function dropIndex(array $wallets) {
@@ -119,8 +112,8 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
         ->execute();
     }
   }
-  
-  
+
+
   /**
    * get the wallets the given user can do the operation on
    * @param string $operation
@@ -141,7 +134,6 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
     if ($account->id()) {
       $or->condition($operation, 2);
     }
-    //TODO make this work for anyone in the same exchange
     $w1 = $this->database->select('mcapi_wallet', 'w')
       ->fields('w', array('wid'))
       ->condition($or)
@@ -153,8 +145,8 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
       ->execute();
     return array_unique(array_merge($w1->fetchCol(), $w2->fetchCol()));
   }
-  
-  
+
+
   /**
    * get a selection of wallets, according to $conditions
    *
@@ -165,6 +157,7 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
    *   string fragment, part of the name of the wallet or parent entity
    *   wids, wallet->id()s to restrict the results to
    *   owner, a ContentEntity of a type which according to wallet settings, could have children
+   *   intertrading, a boolean indicating whether to include or exclude _intertrading wallets
    *
    * @param $boolean $offset
    *
@@ -191,6 +184,10 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
     if (array_key_exists('orphaned', $conditions)) {
       $query->condition('w.orphaned', $conditions['orphaned']);
     }
+    if (array_key_exists('intertrading', $conditions)) {
+      $operator = $conditions['intertrading'] ? '=' : '<>';
+      $query->condition('w.name', '_intertrading', $operator);
+    }
 
     if (array_key_exists('owner', $conditions)) {
       $query->condition('entity_type', $conditions['owner']->getEntityTypeId())
@@ -212,7 +209,7 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
         $conditions['entity_types'] = array_keys(Exchange::walletableBundles());
       }
       //we need to identify the base table and 'name' field for each entity type
-      //we are searching against. Hopefully this will work for all well-formed 
+      //we are searching against. Hopefully this will work for all well-formed
       //entityTypes!
       foreach ($conditions['entity_types'] as $entity_type_id) {
         //might be better practice to get the EntityType object from the entity than the Definition from the entityManager
@@ -221,11 +218,18 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
         $alias = $entity_type_id;
         $entity_table = $entity_info->getDataTable() ? : $entity_info->getBaseTable();
 
-        $query->leftjoin($entity_table, $alias, "w.pid = $alias.uid");
-        if ($label_key = $entity_info->getKey('label')) {
+        //@see mcapi_entity_type_alter()
+        if ($entity_type_id == 'user') {
+          $label_key = 'name';
+        }
+        else {
+          $label_key = $entity_info->getKey('label');
+        }
+
+        if ($label_key) {
+          $query->leftjoin($entity_table, $alias, "w.pid = $alias.uid");
           $namelike->condition($alias.'.'.$label_key, $string, 'LIKE');
         }
-        debug('Need to rewrite this query with  EXCHANGE_OG_REF');
         /*
         //We are joining both to the entity table and to its exchanges reference
         //and to the exchanges table itself to check the exchange is enabled.
@@ -245,15 +249,16 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
     if ($like) {
       $query->condition($namelike);
     }
+
     if ($limit) {
       //passing $limit = NULL gets converted to limit = 0, which is bad
       //however it is safe to say that if there is no limit there is no offset, right?
       $query->range($offset, $limit);
     }
-    //the tag allows the query to be altered
-    return $query->addTag('wallet_filter')->execute()->fetchcol();
+    //the tag allows the query to be altered, can't remember specifically why
+    return $query->addTag('walletFilter')->execute()->fetchcol();
   }
 
-  
+
 }
 

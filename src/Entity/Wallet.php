@@ -37,7 +37,10 @@ use Drupal\mcapi\WalletInterface;
  *     "form" = {
  *       "edit" = "Drupal\mcapi\Form\WalletForm",
  *     },
- *     "views_data" = "Drupal\mcapi\Views\WalletViewsData"
+ *     "views_data" = "Drupal\mcapi\Views\WalletViewsData",
+ *     "route_provider" = {
+ *       "html" = "Drupal\mcapi\Entity\WalletRouteProvider",
+ *     },
  *   },
  *   admin_permission = "configure mcapi",
  *   base_table = "mcapi_wallet",
@@ -47,8 +50,9 @@ use Drupal\mcapi\WalletInterface;
  *   },
  *   translatable = FALSE,
  *   links = {
- *     "canonical" = "entity.mcapi_wallet.canonical",
- *     "log" = "mcapi.wallet_log"
+ *     "canonical" = "wallet/{mcapi_wallet}",
+ *     "log" = "wallet/{mcapi_wallet}/log",
+ *     "inex" = "wallet/{mcapi_wallet}/inex"
  *   },
  *   field_ui_base_route = "mcapi.admin_wallets"
  * )
@@ -57,16 +61,6 @@ class Wallet extends ContentEntityBase implements WalletInterface {
 
   private $owner;
   private $stats = [];
-
-  /**
-   * {@inheritdoc}
-   * @todo update this in line with https://drupal.org/node/2221879
-   */
-  public function uri() {
-    return array(
-      'path' => 'wallet/' . $this->id()
-    );
-  }
 
   /**
    * get the wallet's owner, as determined by the wallet's own properties.
@@ -129,7 +123,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     $values += array('name' => '', 'orphaned' => 0);
     //put the default values for the access here
     $access_settings = \Drupal::config('mcapi.wallets')->getRawData();
-    foreach (Exchange::walletOps() as $op => $description) {
+    foreach (Exchange::walletOps() as $op => $blurb) {
       if (!array_key_exists($op, $values)) {
         $values[$op] = key(array_filter($access_settings[$op]));
       }
@@ -193,21 +187,21 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       }
     }
     foreach ($defaults as $key => $info) {
-      $fields[$key] = BaseFieldDefinition::create('integer')
+      $fields[$key] = BaseFieldDefinition::create('string')
         ->setLabel($info[0])
         ->setDescription($info[1])
-        ->setSetting('default_value', array($defaults[$key][2]));
+        ->setSetting('default_value', array($defaults[$key][2]))
+        ->setSetting('length', 1);
     }
-
     $fields['orphaned'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Orphaned'))
       ->setSetting('default_value', array(0 => '0'));
 
-    //TODO in beta2, this field is required by views. Delete if pos
-    $fields['langcode'] = BaseFieldDefinition::create('language')
-      ->setLabel(t('Language code'))
-      ->setDescription(t('language code.'))
-      ->setSettings(array('default_value' => 'und'));
+    //@todo in beta2, this field is required by views. Delete if pos
+    //$fields['langcode'] = BaseFieldDefinition::create('language')
+     // ->setLabel(t('Language code'))
+     // ->setDescription(t('language code.'))
+     // ->setSettings(array('default_value' => 'und'));
 
     return $fields;
   }
@@ -316,16 +310,17 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       $criteria = ['involving' => $wallet->id()];
       if (Self::entityManager()->getStorage('mcapi_transaction')->filter($criteria)) {
 
-        $new_name = t(
+        $new_name = $this->t(
           "Formerly !name's wallet: !label", ['!name' => $wallet->label(), '!label' => $wallet->label(NULL, FALSE)]
         );
         $wallet->set('name', $new_name)
           ->set('entity_type', $new_owner_entity->getEntityTypeId())
           ->set('pid', $new_owner_entity->id())
           ->save();
-        //TODO make the number of wallets an exchange can own to be unlimited.
-        drupal_set_message(t(
-            "!name's wallets are now owned by exchange !exchange", [
+        //@todo this implies the number of wallets an exchange can own to be unlimited.
+        //or more likely that this max isn't checked during orphaning
+        drupal_set_message($this->t(
+          "!name's wallets are now owned by exchange !exchange", [
           '!name' => $wallet->label(),
           '!exchange' => \Drupal::l($new_owner_entity->label(), $exchange->url())
             ]

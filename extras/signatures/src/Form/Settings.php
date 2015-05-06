@@ -25,7 +25,7 @@ class Settings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    //TODO This would look really tidy in a grid - but forms in tables are tricky
+    //@todo This would look really tidy in a grid - but forms in tables are tricky
     //this prefix could go in hook_help, but is quite important to understand in more complex setups
     $form['#prefix'] = implode(' ', array(
       t('Each transaction type saves new transaction in an initial workflow state.'),
@@ -74,7 +74,7 @@ class Settings extends ConfigFormBase {
 
     $form_state->setRedirect('mcapi.admin.transactions');
   }
-  
+
   /**
    * {@inheritdoc}
    */

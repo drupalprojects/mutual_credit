@@ -17,7 +17,7 @@ use Drupal\views\Plugin\views\field\FieldPluginBase;
 /**
  * Field handler to provide simple renderer that allows linking to a transaction.
  * Definition terms:
- * - link_to_transaction default: //TODO Should this field have the checkbox "link to transaction" enabled by default.
+ * - link_to_transaction default: //@todo beta 11 Should this field have the checkbox "link to transaction" enabled by default.
  *
  * @ingroup views_field_handlers
  *

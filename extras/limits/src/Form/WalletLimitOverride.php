@@ -38,12 +38,12 @@ class WalletLimitOverride extends FormBase {
     //to do that we have to know all the currencies in the all the active exchanges the wallets parent is in.
     $wallet = $this->wallet;
 
-    //TODO put some inline css here when drupal_process_attached no longer uses deprecated _drupal_add_html_head
+    //@todo put some inline css here when drupal_process_attached no longer uses deprecated _drupal_add_html_head
     //see https://api.drupal.org/api/drupal/core!includes!common.inc/function/drupal_process_attached/8
     //$form['#attached']['html_head']
 
     $overridden = mcapi_limits($wallet)->saved_overrides();
-    //TODO can we refactor this so we don't need to call on Exchanges?
+    //@todo can we refactor this so we don't need to call on Exchanges?
     foreach (Exchange::currenciesAvailable($wallet) as $curr_id => $currency) {
       $config = $currency->getThirdPartySettings('mcapi_limits');
       if (!$config || $config['plugin'] == 'none')
@@ -84,7 +84,7 @@ class WalletLimitOverride extends FormBase {
         );
       }
     }
-    //TODO the currencies could be sorted by weight; v low priority!
+    //@todo the currencies could be sorted by weight; v low priority!
 
     if (\Drupal\Core\Render\Element::children($form)) {
       $form['help'] = array(
@@ -150,7 +150,7 @@ class WalletLimitOverride extends FormBase {
       //are there security concerns about showing the user this message?
       drupal_set_message('Failed to save limit overrides: ' . $e->getMessage(), 'error');
     }
-    //TODO clear the wallet cache???
+    //@todo clear the wallet cache???
     $form_state->setRedirect('entity.mcapi_wallet.canonical', array('mcapi_wallet' => $this->wallet->id()));
   }
 

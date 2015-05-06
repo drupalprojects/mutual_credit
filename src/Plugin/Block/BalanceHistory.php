@@ -39,10 +39,16 @@ class BalanceHistory extends McapiBlockBase {
     );
     return $form;
   }
-  //TODO: How do we calculate the block title?
-  //This needs to be singular or plural, for example
+  /**
+   * {@inheritdoc}
+   * How do we calculate the block title? Could be singular or plural, for example
+   */
   public function getTitle() {
-    return t('Balance over time');
+    return $this->formatPlural(
+      $this->configuration['curr_ids'],
+      'Balance over time',
+      'Balances over time'
+    );
   }
 
   /**

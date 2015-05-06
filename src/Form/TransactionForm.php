@@ -23,12 +23,12 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class TransactionForm extends ContentEntityForm {
 
   private $tempstore;
-  
+
   public function __construct(EntityManagerInterface $entity_manager, $tempstore) {
     parent::__construct($entity_manager);
     $this->tempStore = $tempstore;
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -38,12 +38,11 @@ class TransactionForm extends ContentEntityForm {
       $container->get('user.private_tempstore')
     );
   }
-  
+
   /**
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
   public function form(array $form, FormStateInterface $form_state) {
-
     //the masspay form doesn't provide a transaction via the router or the paramConverter
     $transaction = $this->entity->getEntityTypeId() == 'mcapi_transaction'
       ? $this->entity
@@ -66,31 +65,21 @@ class TransactionForm extends ContentEntityForm {
       '#type' => 'textfield',
       '#title' => t('Description'),
       '#default_value' => $transaction->description->value,
-      '#weight' => 3,
-      '#attributes' => new Attribute(
-        ['style' => "width:100%", 'class' => []]
-      ),
-      //TODO TEMP
-      '#attributes' => [
-        'style' => "width:100%",
-        'class' => []
-      ]
+      '#weight' => 3
     ];
-
-    //lists all the wallets in the exchange
     $form['payer'] = [
       '#title' => t('Wallet to be debited'),
       '#type' => 'select_wallet',
       '#role' => 'payer',
-      '#default_value' => $transaction->get('payer')->target_id,
+      '#default_value' => $transaction->get('payer')->entity,
       '#weight' => 9,
     ];
     $form['payee'] = [
       '#title' => t('Wallet to be credited'),
       '#type' => 'select_wallet',
       '#role' => 'payee',
-      '#default_value' => $transaction->get('payee')->target_id,
-      '#weight' => 9,
+      '#default_value' => $transaction->get('payee')->entity,
+      '#weight' => 10,
     ];
     $form['type'] = [
       '#title' => t('Transaction type'),
@@ -120,21 +109,16 @@ class TransactionForm extends ContentEntityForm {
    * this is unusual because normally build a temp object
    */
   public function validate(array $form, FormStateInterface $form_state) {
-    //runs the form validation handlers and 
-    //runs datatype->validate() on all shown fields.
-    $violations = parent::validate($form, $form_state);//TODO deal with these
-    $this->typedDataValidated = TRUE;//temp flag
-    
-    $transaction = $this->buildEntity($form, $form_state);
-    //TODO this better see nodeForm & display
-    foreach ($transaction->validate() as $violation) {
-      $form_state->setErrorByName(
-        $mcapi_exception->getField(), 
-        $mcapi_exception->getMessage()
-      );
+    //handles constraintValidation on all entity fields
+    parent::validate($form, $form_state);
+    $this->typedDataValidated = TRUE;//@todo remove this flag when entity validation set up
+
+    $this->entity = $this->buildEntity($form, $form_state);
+    //@todo improve transaction validation compare with nodeForm & display
+    foreach ($this->entity->validate() as $violation) {
+      $form_state->setErrorByName('', $violation->getMessage());
     }
     //now validated, this is what will go in the tempstore
-    $this->entity = $transaction;
     $form_state->set('mcapi_validated', TRUE);
 
   }
@@ -146,26 +130,25 @@ class TransactionForm extends ContentEntityForm {
    * @param FormStateInterface $form_state
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    //TODO inject this
     $this->tempStore
       ->get('TransactionForm')
       ->set('entity', $this->entity);
     //Drupal\mcapi\ParamConverter\TransactionSerialConverter
     //then
     //Drupal\mcapi\Plugin\Transition\Create
-    
+
     $this->logger('mcapi')->notice(
-      'User @uid created transaction @serial', 
+      'User @uid created transaction @serial',
       [
-        '@uid' => $this->currentUser()->id(), 
+        '@uid' => $this->currentUser()->id(),
         '@serial' => $this->entity->serial->value
       ]
     );
-    debug('Check this transaction is in the dblog');
+    drupal_set_message('Check this transaction is in the dblog');
 
     //now we divert to the transition confirm form
     $form_state->setRedirect(
-      'mcapi.transaction.op', 
+      'mcapi.transaction.op',
       ['mcapi_transaction' => 0, 'transition' => 'create']);
   }
 
@@ -174,7 +157,7 @@ class TransactionForm extends ContentEntityForm {
    */
   public function buildEntity(array $form, FormStateInterface $form_state) {
     $entity = parent::buildEntity($form, $form_state);
-    
+
     $values = $form_state->getValues();
     //if a valid creator uid was submitted then use that
     if (array_key_exists('creator', $values) && $account = User::load($values['creator'])) {

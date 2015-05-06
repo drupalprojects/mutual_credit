@@ -22,7 +22,7 @@ use Drupal\mcapi\Plugin\Block\McapiBlockBase;
  */
 class Greco extends McapiBlockBase {
 
-  //TODO: How do we calculate the block title?
+  //@todo: How do we calculate the block title?
   //This needs to be singular or plural, for example
   public function getTitle() {
     return $this->label();

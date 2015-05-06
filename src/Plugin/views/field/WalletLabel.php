@@ -7,16 +7,12 @@
 
 namespace Drupal\mcapi\Plugin\views\field;
 
-use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\Plugin\views\field\Standard;
-use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ResultRow;
-use Drupal\Component\Annotation\PluginID;
-use Drupal\mcapi\Entity\Wallet;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Virtual field handler to show the wallet's name
- * @todo make the wallet link into an option
  *
  * @ingroup views_field_handlers
  *
@@ -24,20 +20,39 @@ use Drupal\mcapi\Entity\Wallet;
  */
 class WalletLabel extends Standard {
 
+    /**
+   * {@inheritdoc}
+   */
+  protected function defineOptions() {
+    $options = parent::defineOptions();
+    $options['link'] = array('default' => TRUE);
+    return $options;
+  }
 
   /**
    * {@inheritdoc}
    */
-  public function query() {}
+  public function buildOptionsForm(&$form, FormStateInterface $form_state) {
+     $form['link'] = array(
+      '#title' => $this->t("Link to wallet"),
+      '#type' => 'checkbox',
+      '#default_value' => !empty($this->options['link']),
+    );
+    parent::buildOptionsForm($form, $form_state);
+  }
+
+  public function query() {
+    $this->ensureMyTable();
+  }
 
   /**
    * {@inheritdoc}
    */
   function render(ResultRow $values) {
     $wallet = $this->getEntity($values);
-    //TODO wait until https://www.drupal.org/node/2320989 is fixed
-    if (!$wallet) return 'Bug in D8 alpha14';
-    return $wallet->link();
+    return $this->options['link']
+      ? $wallet->link()
+      : $wallet->label();
   }
 
 }

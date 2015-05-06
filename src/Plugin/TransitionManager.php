@@ -7,17 +7,17 @@
 namespace Drupal\mcapi\Plugin;
 
 use Drupal\Core\Cache\CacheBackendInterface;
-use Drupal\Core\Language\LanguageManager;
 use Drupal\Core\Plugin\DefaultPluginManager;
 use Drupal\Core\Extension\ModuleHandlerInterface;
-use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Config\ConfigFactory;
-use Drupal\Core\Form\FormBuilder;
-use Drupal\mcapi\Entity\State;
+use Drupal\Core\Template\Attribute;
+use Drupal\Core\Url;
 
 class TransitionManager extends DefaultPluginManager {
 
   private $config_factory;
+
+  private $redirecter;
 
   private $plugins;
 
@@ -45,6 +45,8 @@ class TransitionManager extends DefaultPluginManager {
     $this->setCacheBackend($cache_backend, 'transaction_transitions');
     $this->config_factory = $config_factory;
     $this->plugins = [];
+    //@todo can this be injected?
+    $this->redirecter = \Drupal::service('redirect.destination');
   }
 
   /*
@@ -123,6 +125,77 @@ class TransitionManager extends DefaultPluginManager {
       $names[] = 'mcapi.transition.'.$name;
     }
     return $names;
+  }
+
+  /**
+   *
+   * @param TransactionInterface $transaction
+   * @param string $view_mode
+   * @param string $dest_type
+   *   whether the links should go to a new page, a modal box, or an ajax refresh
+   *
+   * @return array
+   *   A renderable array
+   */
+  function getLinks(TransactionInterface $transaction, $view_mode = 'certificate') {
+    $renderable = [];
+    //child transactions and unsaved transactions never show links
+    if (!$transaction->parent->value && $transaction->serial->value) {
+      $exclude = ['create'];
+      //ideally we would remove view when the current url is NOT the canonical url
+      //OR we need to NOT render links when the transaction is being previewed
+      if ($view_mode == 'certificate') {
+        $exclude[] = 'view';
+      }
+
+      foreach ($this->active($exclude, $transaction->worth) as $transition => $plugin) {
+        if ($transaction->access($transition)->isAllowed()) {
+          $route_name = $transition == 'view' ?
+            'entity.mcapi_transaction.canonical' :
+            'mcapi.transaction.op';
+          $renderable['#links'][$transition] = [
+            'title' => $plugin->getConfiguration('title'),
+            'url' => Url::fromRoute($route_name, [
+              'mcapi_transaction' => $transaction->serial->value,
+              'transition' => $transition
+            ])
+          ];
+          if ($plugin->display != TRANSITION_DISPLAY_NORMAL) {
+
+            if ($plugin->display == TRANSITION_DISPLAY_MODAL) {
+              $renderable['#attached']['library'][] = 'core/drupal.ajax';
+              $renderable['#links'][$transition]['attributes'] = [
+                'class' => ['use-ajax'],
+                'data-accepts' => 'application/vnd.drupal-modal',
+                'data-dialog-options' => Json::encode(['width' => 500])
+              ];
+            }
+            //@todo make ajax work
+            elseif($plugin->display == TRANSITION_DISPLAY_AJAX) {
+              drupal_set_message('ajax mode needs work...');
+              $renderable['#attached']['library'][] = 'core/drupal.ajax';
+              $renderable['#links'][$transition]['attributes'] = $attr;
+            }
+          }
+          if(!$plugin->getConfiguration('redirect') && $transition != 'view'){
+            $path = $this->redirecter->get();
+            //@todo stop removing leading slash when the redirect service does it properly
+            $renderable['#links'][$transition]['query'] = substr($path, 1);
+          }
+        }
+      }
+      if (array_key_exists('#links', $renderable)) {
+        $renderable += [
+          '#theme' => 'links',
+          '#attributes' => new Attribute(
+            ['class' => ['transaction-transitions']]
+          ),
+          '#cache' => [
+          ]
+        ];
+      }
+    }
+    return $renderable;
   }
 
 }

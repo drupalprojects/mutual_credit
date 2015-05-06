@@ -12,14 +12,14 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 //I don't know if it is a good idea to extend the confirm form if we want ajax.
 class TransitionForm extends EntityConfirmFormBase {
 
-  private $op;
+  private $transitionId;
   private $transition;
   private $request;
 
   function __construct($request, $route_match, $transitionManager) {
     $this->request = $request;
-    $this->op = $route_match->getparameter('transition') ? : 'view';
-    $this->transition = $transitionManager->getPlugin($this->op);
+    $this->transitionId = $route_match->getparameter('transition') ? : 'view';
+    $this->transition = $transitionManager->getPlugin($this->transitionId);
   }
 
   /**
@@ -28,6 +28,7 @@ class TransitionForm extends EntityConfirmFormBase {
    */
   private function getDestinationPath() {
     if ($this->request->getCurrentRequest()->query->has('destination')) {
+      //@todo test the transition destination
       $path = $request->query->get('destination');
       $request->query->remove('destination');//can't remember why
     }
@@ -64,7 +65,7 @@ class TransitionForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getFormID() {
-    return 'transaction_transition_form_id';
+    return 'transaction_transition_'.$this->transitionId.'form';
   }
 
   /**
@@ -105,10 +106,12 @@ class TransitionForm extends EntityConfirmFormBase {
     //this provides the transaction_view part of the form as defined in the transition settings
     switch($this->transition->getConfiguration('format')) {
       case 'twig':
-        return render_twig_transaction(
-          $this->transition->getConfiguration('twig'),
-          $this->entity
-        );
+        module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');
+        return [
+          '#type' => 'inline_template',
+          '#template' => $this->transition->getConfiguration('twig'),
+          '#context' => get_transaction_vars($this->entity)
+        ];
       default://certificate or even sentence, but without the links
         //$renderable = Transaction::view(
         $renderable = \Drupal::entityManager()->getViewBuilder('mcapi_transaction')->view(
@@ -124,29 +127,30 @@ class TransitionForm extends EntityConfirmFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildForm($form, $form_state);
+    //remane the confirmForm description field so it can't clash with the transaction field
+    //see Edit transition
+    $form['transaction'] = $form['description'];unset($form['description']);
     //no form elements yet have a #weight
     //this may be an entity form but we don't want the FieldAPI fields showing up.
     foreach (\Drupal\Core\Render\Element::children($form) as $fieldname) {
       if (array_key_exists('#type', $form[$fieldname]) && $form[$fieldname]['#type'] == 'container') {
-        unset($form[$fieldname]); //should do it;
+       unset($form[$fieldname]); //should do it;
       }
     }
-
     //add any extra form elements as defined in the transition plugin.
-    $form += $this->transition->form($this->entity);
+    $form = $this->transition->form($this->entity) + $form;
 
-    if ($this->op == 'view') {
+    if ($this->transitionId == 'view') {
       unset($form['actions']);
     }
-    //TODO test without this, Its not being added somehow by the TransactionViewBuilder in this case
+
+    //not sure why this is sometimes not included from TransactionViewBuilder
     $form['#attached']['library'][] = 'mcapi/mcapi.transaction';
     return $form;
 
-
-    //this form will submit and expect ajax
-    //TODO this doesn't work in D8
-    debug('Try it without the attached libraries');
-    $form['#attached']['library'] = ['jquery.form', 'drupal.ajax'];
+    //this form may submit and expect ajax
+    $form['#attached']['library'][] = 'core/jquery.form';
+    $form['#attached']['library'][] = 'core/drupal.ajax';
 
     //Left over from d7
     //when the button is clicked replace the whole transaction div with the results.
@@ -199,13 +203,9 @@ class TransitionForm extends EntityConfirmFormBase {
 
   /**
    * wouldn't expect to need this here, copied from ContentEntityForm
-   * but otherwise the verion in EntityForm doesn't checkhasfield
-   * //TODO check EntityForm->copyFormValuesToEntity()
+   * but otherwise the version in EntityForm doesn't check hasfield
    */
   protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
-    // Then extract the values of fields that are not rendered through widgets,
-    // by simply copying from top-level form values. This leaves the fields
-    // that are not being edited within this form untouched.
     foreach ($form_state->getValues() as $name => $values) {
       if ($entity->hasField($name)) {
         $entity->set($name, $values);

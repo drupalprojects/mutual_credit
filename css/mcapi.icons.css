@@ -12,3 +12,8 @@
 .no-svg .toolbar-icon-mcapi-admin.active:before {
   background-image: url("balance.000000.png");
 }
+
+/* indent these settings fields */
+#wallet-form #edit-access div.form-type-textfield {
+  margin-left: 2em
+}

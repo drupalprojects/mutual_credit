@@ -2,7 +2,7 @@
 
 namespace Drupal\mcapi\Plugin\Block;
 
-use Drupal\block\BlockBase;
+use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Currency;
@@ -29,7 +29,7 @@ class McapiBlockBase extends BlockBase {
   /**
    * in profile mode, hide the block if we are not on a profile page
    */
-  public function access(AccountInterface $account) {
+  public function access(AccountInterface $account, $return_as_object = false) {
     $account = \Drupal::routeMatch()->getParameter('user');
     //don't we need to call the parent?  See blockbase::access after alpha14
     debug($this->getPluginDefinition(), 'check that block access is working');

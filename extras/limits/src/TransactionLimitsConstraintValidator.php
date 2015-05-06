@@ -4,13 +4,13 @@
  * @file
  * Contains \Drupal\mcapi_limits\TransactionLimitsConstraint.
  *
- * takes the transaction and makes a projection of the sum of these plus all 
- * saved transactions in a positive state against the balance limits for each 
+ * takes the transaction and makes a projection of the sum of these plus all
+ * saved transactions in a positive state against the balance limits for each
  * affected account,
  * NB. this event is only run when a transaction is inserted:
- * It only checks against transactions in a POSITIVE state 
+ * It only checks against transactions in a POSITIVE state
  * i.e. counted transaction.
- * 
+ *
  */
 
 namespace Drupal\mcapi_limits;
@@ -19,10 +19,10 @@ use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Constraint;
 
 class TransactionLimitsConstraintValidator extends ConstraintValidator {
-  
+
   private $replacements = [];
   private $skip = FALSE;
-  
+
   /**
    * validate a transaction entity including $transaction->children[]
    * check that none of the wallets involved goes over its limits
@@ -30,7 +30,7 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator {
    *
    * @param Transaction $transaction
    * @param Constraint $transaction
-   * 
+   *
    * @throws McapiException
    */
   public function validate($transaction, Constraint $constraint) {
@@ -60,44 +60,44 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator {
         elseif ($config['skip']['mass'] && $transaction->type->target_id == 'mass') {
           $this->watchdog("Skipped balance limit checks for @currency.");
         }
-        
+
         if ($this->skip) return;
-        
+
         $diff = array_sum($diffs);
         $projected = $wallet->getStats($curr_id)['balance'] + $diff;
-        //$min and 
+        //$min and
         //$max are derived by
         extract(mcapi_limits($wallet)->limits($curr_id));
         $this->replacements = [
-          '!wallet' => $wallet->label(), 
+          '!wallet' => $wallet->label(),
           '!excess' => $currency->format($excess),
           '!limit' => $currency->format($limit),
         ];
-        
+
         if ($diff > 0 && $projected > 0 && is_numeric($max) && $projected > $max) {
           $this->context->addViolation(
-            //todo ensure this is picked up by the translation system
-            "The transaction would take wallet '!wallet' !excess above the maximum limit of !limit.", 
+            //@todo ensure this is picked up by the translation system
+            "The transaction would take wallet '!wallet' !excess above the maximum limit of !limit.",
             $this->replacements
           );
         }
         elseif ($diff < 0 && $projected < 0 && is_numeric($min) && $projected < $min) {
           $this->context->addViolation(
-            //todo ensure this is picked up by the translation system
-            "The transaction would take wallet '!wallet' !excess below the minimum limit of !limit.", 
+            //@todo ensure this is picked up by the translation system
+            "The transaction would take wallet '!wallet' !excess below the minimum limit of !limit.",
             $this->replacements
           );
         }
       }
     }
   }
-  
+
   private function watchdog($message) {
     $this->skip = TRUE;
-    //todo need some document on the $possible values of 'severity'
-    //todo inject the logger
+    //@todo need some document on the $possible values of 'severity'
+    //@todo inject the logger
     \Drupal::logger('mcapi_limits')->log('notice', $message, $this->replacements);
 
   }
-  
+
 }

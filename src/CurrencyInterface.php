@@ -69,18 +69,17 @@ interface CurrencyInterface extends ConfigEntityInterface {
    *   the value stored in the worth field 'value' column
    *
    * @return string
-   *   plaintext #markup containing the formatted value. Hopefully 90 mins, normally formatted
-   *   say as '1 1/2 hours' would come out of this function '1.30'.
+   *   plaintext #markup containing the formatted value. Hopefully 90 mins,
+   * normally formatted say as '1 1/2 hours' would come out of this function '1.30'.
    */
   public function faux_format($raw_num, $format = []);
 
 
   /**
-   * Check whether it is allowed to deleted this currency, which means deleting all transactions in it
+   * Check whether it is allowed to deleted this currency, which means deleting
+   * all transactions in it
    *
    * @return boolean
-   *
-   * @todo there could be a setting 'delete currencies with undeleted transactions';
    */
   public function deletable();
 

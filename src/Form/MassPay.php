@@ -36,7 +36,7 @@ class MassPay extends TransactionForm {
       //$this->exchange_id = $this->entity;
 
       //we have to mimic some part of the normal entity form preparation.
-      //TODO on the rebuilt form we need to make a default entity.
+      //@todo on the rebuilt form we need to make a default entity.
       //But how to get the submitted values from $form_state?
       //$form_state['input'] means before processing and
       //$form_state['values'] hasn't been calculated yet
@@ -76,7 +76,7 @@ class MassPay extends TransactionForm {
       	'#title' => t('Mode'),
         '#description' => t('Determine how this form will work'),
         '#type' => 'radios',
-        //TODO start with nothing selected to force the user to choose something.
+        //@todo start with nothing selected to force the user to choose something.
         '#options' => $mode_options,
       );
       $form['one'] = $form['payer'];
@@ -85,7 +85,7 @@ class MassPay extends TransactionForm {
       $form['direction'] = array(
         '#title' => t('Direction'),
         '#type' => 'radios',
-        //TODO start with nothing selected to force the user to choose something.
+        //@todo start with nothing selected to force the user to choose something.
         '#options' => array(
           'one2many' => t('One wallet pays many wallets'),
           'many2one' => t('One wallet charges many wallets')
@@ -107,10 +107,10 @@ class MassPay extends TransactionForm {
       $form['type']['#type'] = 'value';
       $form['type']['#value'] = 'mass';
 
-      //TODO
+//@todo
       $form['notification'] = array(
         '#title' => 'Notify everybody',
-        //TODO decide whether to put rules in a different module
+        //@todo decide whether to put rules in a different module
         '#description' => \Drupal::moduleHandler()->moduleExists('rules') ?
           $this->t('Ensure this mail does not clash with mails sent by the rules module.') : '',
       	'#type' => 'fieldset',
@@ -118,7 +118,7 @@ class MassPay extends TransactionForm {
         '#weight' => 20,
         'body' => array(
       	  '#title' => $this->t('Message'),
-          //TODO the tokens?
+          //@todo the tokens?
           //'#description' => $this->t('The following tokens are available:') .' [user:name]',
           '#type' => 'textarea',
           //this needs to be stored per-exchange. What's the best way?
@@ -161,16 +161,16 @@ class MassPay extends TransactionForm {
           $transactions[] = $next;
         }
       }
-      //TODO after alpha12: handle transaction violations
+      //@todo after alpha12: handle transaction violations
       foreach ($transactions as $transaction) {
         $violations = $transaction->validate();
         foreach ($violations as $field => $message) {
           $form_state->setErrorByName($field, $message);
         }
       }
-      //TODO update to d8
+      //@todo update to d8
       //drupal_set_title(t('Are you sure?'));
-      //TODO Should these / do these go in the temp store?
+      //@todo Should these / do these go in the temp store?
       $form_state->set('validated_transactions', $transactions);
       $form_state->set('wallets', array_unique(array_merge($payers, $payees)));
     }
@@ -179,7 +179,7 @@ class MassPay extends TransactionForm {
 
   public function submit(array $form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
-    //TODO how do we inject stuff into forms?
+    //@todo how do we inject stuff into forms?
     \Drupal::service('user.data')
       ->set('mcapi', $this->currentUser()->id(), 'masspay', $values['notification']['body']);
 
@@ -200,7 +200,7 @@ class MassPay extends TransactionForm {
       foreach (User::loadMultiple(array_unique($uids)) as $account) {
         $to[] = $account->getEmail();
       }
-      //TODO make sure this is queueing
+      //@todo make sure this is queueing
       //the mail body has been saved against the currentUser
       \Drupal::service('plugin.manager.mail')->mail('mcapi', 'mass', $to);
 
@@ -211,11 +211,11 @@ class MassPay extends TransactionForm {
           'mcapi_transaction' => $main_transaction->serial->value
         )
       );
-      
+
       $this->logger('mcapi')->notice(
-        'User @uid created @num mass transactions @serial', 
+        'User @uid created @num mass transactions @serial',
         [
-          '@uid' => $this->currentUser()->id(), 
+          '@uid' => $this->currentUser()->id(),
           '@count' => count($form_state->get('validated_transactions')),
           '@serial' => $this->entity->serial->value
         ]

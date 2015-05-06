@@ -4,6 +4,7 @@
  * @file
  * Definition of Drupal\mcapi_1stparty\FirstPartyTransactionForm.
  * Generate a Transaction form using the FirstParty_editform entity.
+ * @todo inject the configFactory
  */
 
 namespace Drupal\mcapi_1stparty;
@@ -26,7 +27,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     parent::__construct($entity_manager);
 
     if (!$form_name) {
-      //TODO is there a more elegant way to get the route options parameters
+      //@todo is there a more elegant way to get the route options parameters
       //see \Drupal\mcapi_1stparty\FirstPartyRoutes
       $form_name = $this->getRouteMatch()
         ->getRouteObject()
@@ -55,7 +56,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     //and generate $this->entity from it before building the base transaction form.
     //have to wait and how that might work in panels & blocks in d8
     $config = $this->config;
-    //TODO caching according to $config->get('cache')
+    //@todo caching according to $config->get('cache')
     $form = parent::form($form, $form_state);
 
     //sort out the payer and payee, for the secondparty and direction
@@ -109,7 +110,7 @@ class FirstPartyTransactionForm extends TransactionForm {
 
     //the fieldAPI fields are in place already, but we need to add the default values from the Designed form.
     $fieldapi_presets = $config->get('fieldapi_presets');
-    foreach (mcapi_1stparty_fieldAPI() as $field_name => $data) {//visible fields according to the default view mode
+    foreach (mcapi_default_display_fields() as $field_name => $data) {//visible fields according to the default view mode
       if (array_key_exists($field_name, $fieldapi_presets)) {
         $form[$field_name]['widget']['#default_value'] = $fieldapi_presets[$field_name];
       }
@@ -129,7 +130,7 @@ class FirstPartyTransactionForm extends TransactionForm {
 
     //hide the state & type
     $form['state']['#type'] = 'value';
-    //TODO get the first state of this workflow
+    //@todo get the first state of this workflow
     $form['state']['#value'] = TRANSACTION_STATE_FINISHED;
     $form['type']['#type'] = 'value';
     $form['type']['#default_value'] = $config->type;
@@ -148,7 +149,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     $form['#twig_tokens'][] = 'actions';
     $form['#theme'] = '1stpartyform';
 
-    //TODO contextual_links would be nice to jump straight to the edit form
+    //@todo contextual_links would be nice to jump straight to the edit form
     //pretty hard because it is designed to work only with templated themes, not theme functions
     //instead we'll probably just put a link in the menu
     return $form;
@@ -174,13 +175,13 @@ class FirstPartyTransactionForm extends TransactionForm {
 
   /**
    * Returns an array of supported actions for the current entity form.
-   * //TODO Might be ok to delete this now
+   * //@todo Might be ok to delete this now
    */
   protected function actions(array $form, FormStateInterface $form_state) {
     $actions = parent::actions($form, $form_state);
     if ($this->config->experience['preview'] == 'ajax') {
       $actions['submit']['#attributes'] = new Attribute(array('class' => 'use-ajax'));
-      //TODO TEMP Attribute isn't working at all...
+      //@todo TEMP Attribute isn't working at all...
       $actions['submit']['#attributes'] = array('class' => 'use-ajax');
       $actions['submit']['#attached']['library'][] = array('views_ui', 'drupal.ajax');
     }

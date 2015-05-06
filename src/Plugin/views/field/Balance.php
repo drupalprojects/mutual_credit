@@ -7,20 +7,14 @@
 
 namespace Drupal\mcapi\Plugin\views\field;
 
-//TODO which of these are actually needed?
 use Drupal\views\Plugin\views\area\Result;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
-use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
-use Drupal\Component\Annotation\PluginID;
-use Drupal\mcapi\Entity\Currency;
 
 /**
  * Field handler to provide running balance for a given transaction
- * in the index table
- *
- * @todo This handler should use entities directly.
+ * @note reads from the transaction index table
  *
  * @ingroup views_field_handlers
  *
@@ -52,28 +46,23 @@ class Balance extends FieldPluginBase {
    * {@inheritdoc}
    */
   public function render(ResultRow $values) {
-
-    $curr_id = &$values->{$this->aliases['curr_id']};
-
     $transaction = $this->getEntity($values);
-    //the running balance depends the order of the transactions
-    //order or creation is not enough if they were created at the same time
-    //created date is not necessarily unique per transaction, so needs a secondary sort.
-    $quantity = db_query(
-      "SELECT SUM(diff) FROM {mcapi_transactions_index}
-        WHERE wallet_id = :wallet_id
-        AND created <= :created
-        AND xid <= :xid
-        AND curr_id = :curr_id",
-      array(
-        ':created' => $transaction->created->value,
-        ':wallet_id' => $this->wallet_id,
-        ':xid' => $transaction->xid->value,
-        ':curr_id' => $curr_id
-      )
-    )->fetchField();
-    //TODO I'm not sure how this is supposed to work...
-    return Currency::load($curr_id)->format($quantity);
+    $worth_field = $transaction->worth;
+    foreach ($worth_field->currencies() as $curr_id) {
+
+      //the running balance depends the order of the transactions
+      //we will assume the order of creation is what's wanted because that
+      //corresponds to the order of the xid
+      //note that it is possible to change the apparent creation date.
+      $raw = \Drupal::entityManager()->getStorage('mcapi_transaction')->runningBalance(
+        $this->wallet_id,
+        $transaction->xid->value,
+        $curr_id
+      );
+      $vals[] = ['curr_id' => $curr_id, 'value' => $raw];
+    }
+    $worth_field->setValue($vals);
+    return $worth_field->view();
   }
 
 }

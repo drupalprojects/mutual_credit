@@ -6,6 +6,7 @@ states:
 page_title: 'Edit transaction?'
 format: certificate
 twig: ''
+display: 2
 button: Save
 cancel_button: Cancel
 format2: certificate

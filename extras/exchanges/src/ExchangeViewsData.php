@@ -85,7 +85,7 @@ class ExchangeViewsData implements EntityViewsDataInterface {
     $data['mcapi_exchange']['visibility'] = array(
       'title' => t('Visibility'),
       'help' => t("See, private, restricted and public exchanges, according to current user's access"),
-      //TODO can't we use booleans for this?
+      //@todo can't we use booleans for this?
       'field' => array(
         'id' => 'exchange_visibility',
       ),

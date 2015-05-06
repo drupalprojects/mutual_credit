@@ -49,15 +49,14 @@ class TransactionViewBuilder extends EntityViewBuilder {
     if ($view_mode == 'full') {
       $view_mode = $this->config->get('format');
     }
-    $build = [];
-    //most entity types would build the render array for theming here.
-    //however the sentence and twig view modes don't need the theming flexibility
-    //even the certificate is rarely used..
+    $build = parent::getBuildDefaults($entity, $view_mode, $langcode);
+
     switch($view_mode) {
       case 'certificate':
         $build['#theme'] = 'certificate';
         break;
       case 'sentence':
+       //unusually, we can add #markup here, maybe later eh?
         $build['#markup'] = \Drupal::Token()->replace(
           \Drupal::config('mcapi.misc')->get('sentence_template'),
           ['mcapi' => $entity],
@@ -65,109 +64,34 @@ class TransactionViewBuilder extends EntityViewBuilder {
         );
         break;
       default:
-        $build['#markup'] = render_twig_transaction(
-          $view_config->get('twig'),
-          $entity
-        );
+        module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');
+        $build['transaction'] = [
+          '#type' => 'inline_template',
+          '#template' => $this->config->get('twig'),
+          '#context' => get_transaction_vars($entity)
+        ];
     }
-    $build += array(
-      '#view_mode' => $view_mode,
-      '#theme_wrappers' => ['mcapi_transaction'],
-      '#langcode' => $langcode,
-      '#mcapi_transaction' => $entity,
-      '#attached' => ['library' => ['mcapi/mcapi.transaction']]
-    );
+    $build['#theme_wrappers'] = ['mcapi_transaction'];
+    //for some reason in Renderer::updatestack, this bubbles up twice
+    $build['#attached']['library'][] = 'mcapi/mcapi.transaction';
 
-    if ($this->isViewModeCacheable($view_mode) && !$entity->isNew()) {
-      $build['#cache'] = [
-        'bin' => 'render',
-        'tags' => Cache::mergeTags(
-            ['mcapi_transaction_view'],//$this->getCacheTags()
-            $entity->getCacheTags()
-        ),
-        'contexts' => [],//TODO what contexts are appropriate?
-        'keys' => [
-          'entity_view',
-          'mcapi_transaction',
-          $entity->serial->value,
-          $view_mode,
-          'cache_context.theme',
-          'cache_context.language',
-          'cache_context.user',
-        ],
-      ];
-    }
+    //2 reasons for NOT caching transactions:
+    //- it was caching twice with different contexts I couldn't find out why
+    //- it was tricky separating the certificate caching from the links in the #theme_wrapper
+    //- transactions are not viewed very often, more usually with views
+    unset($build['#cache']);
+
     return $build;
   }
 
+
+
   /**
-   *
-   * @param TransactionInterface $transaction
-   * @param string $view_mode
-   * @param string $dest_type
-   *   whether the links should go to a new page, a modal box, or an ajax refresh
-   *
-   * @return array
-   *   An array that can be processed by drupal_pre_render_links().
+   * {@inheritdoc}
    */
-  function renderLinks(TransactionInterface $transaction, $view_mode = 'certificate', $dest_type = NULL) {
-    $renderable = [];
-    //child transactions and unsaved transactions never show links
-    if (!$transaction->parent->value && $transaction->serial->value) {
-      $exclude = ['create'];
-      //TODO this is inelegant. We need to remove view when the current url is NOT the canonical url
-      //OR we need to NOT render links when the transaction is being previewed
-      if ($view_mode == 'certificate') {
-        $exclude[] = 'view';
-      }
-      $active = $this->transitionManager->active($exclude, $transaction->worth);
-
-      foreach ($active as $transition => $plugin) {
-        if ($transaction->access($transition)->isAllowed()) {
-          $route_name = $transition == 'view' ?
-            'entity.mcapi_transaction.canonical' :
-            'mcapi.transaction.op';
-          $renderable['#links'][$transition] = [
-            'title' => $plugin->getConfiguration('title'),
-            'url' => Url::fromRoute($route_name, [
-              'mcapi_transaction' => $transaction->serial->value,
-              'transition' => $transition
-            ])
-          ];
-          if ($dest_type == 'modal') {
-            $attr = new Attribute([
-              'data-accepts' => 'application/vnd.drupal-modal',
-              'class' => ['use-ajax']
-            ]);
-            $renderable['#links'][$transition]['attributes'] = $attr;
-          }
-          elseif($dest_type == 'ajax') {
-            debug('ajax mode needs work...');
-            $renderable['#attached']['library'][] = 'drupal.ajax';
-            //$renderable['#links'][$op]['attributes'] = new Attribute(array('class' => array('use-ajax')));
-          }
-          elseif(!$plugin->getConfiguration('redirect')){
-            if ($transition != 'view') {
-              $path = \Drupal::service('redirect.destination')->get();
-//@todo stop removing leading slash when the redirect service does it properly
-              $renderable['#links'][$transition]['query'] = substr($path, 1);
-            }
-          }
-        }
-      }
-      if (array_key_exists('#links', $renderable)) {
-        $renderable += [
-          '#theme' => 'links',
-          '#attached' => ['library' => ['mcapi/mcapi.transaction']],
-          '#attributes' => new Attribute(['class' => ['transaction-transitions']]),
-          //'#attributes' => ['class' => ['transaction-transitions']],
-          '#cache' => []//TODO think carefully about caching per user per transaction
-        ];
-      }
-    }
-    return $renderable;
+  public function getCacheTags() {
+    return ['mcapi_transaction_view'];
   }
-
 }
 
 

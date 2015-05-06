@@ -20,6 +20,9 @@ use Drupal\Core\Form\FormStateInterface;
  */
 class Transitions extends FieldPluginBase {
 
+  /**
+   * {@inheritdoc}
+   */
   protected function defineOptions() {
     $options = parent::defineOptions();
     $options['mode'] = array('default' => 'page');
@@ -28,7 +31,7 @@ class Transitions extends FieldPluginBase {
   }
 
   /**
-   * Provide link to taxonomy option
+   * {@inheritdoc}
    */
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
      $form['mode'] = array(

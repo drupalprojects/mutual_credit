@@ -13,21 +13,23 @@ use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
 use Drupal\Core\Routing\RouteProviderInterface;
 use Drupal\Component\Plugin\Derivative\DeriverBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Url;
 
 /**
  * Provides local action definitions to create a wallet for all entities of types configured.
  */
 class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface {
 
-  var $config;
-  
+  var $walletConfig;
+
   var $derivatives = [];
 
   /**
    * {@inheritDoc}
+   *
    */
   public function __construct($configFactory) {
-    $this->config = $configFactory->get('mcapi.wallets');
+    $this->walletConfig = $configFactory->get('mcapi.wallets');
   }
 
   /**
@@ -41,32 +43,25 @@ class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface
 
   /**
    * {@inheritdoc}
-   * @todo tidy up once the user entity links are routes not paths
    */
   public function getDerivativeDefinitions($base_plugin_definition) {
     //add wallet links can go in three locations
-    if ($this->config->get('add_link_location') != 'summaries') {
-      foreach (RouteSubscriber::walletOwningEntityRoutes() as $canonical_route_name => $bundle) {
-        $this->derivatives["mcapi.wallet.add.".$bundle.'.action'] = array(
-          'id' => "mcapi.wallet.add.".$bundle.'.action',
-          'route_name' => "mcapi.wallet.add.$bundle",//taken from the routesubscriber
+    if ($this->walletConfig->get('add_link_location') != 'summaries') {
+      foreach($this->walletConfig->get('entity_types') as $entity_type_bundle => $max) {
+        if (!$max) continue;
+        list($entity_type, $bundle_name) = explode(':', $entity_type_bundle);
+        $key = "mcapi.wallet.add.{$bundle_name}.action";
+        //assumes bundle names don't clash!
+        $this->derivatives[$key] = [
+          'id' => "mcapi.wallet.add.".$bundle_name.'.action',
+          'route_name' => "mcapi.wallet.add.$bundle_name",//taken from the routesubscriber
           'title' => t('Add Wallet'),
-          'appears_on' => [$canonical_route_name]
-        );
-      }
-      foreach ($this->derivatives as &$entry) {
-        //don't know if this is needed
-        $entry += $base_plugin_definition;
+          //assumes this pattern for the canonical route name
+          //otherwise we have to derive it somehow, and I'm not sure how.
+          'appears_on' => 'entity.'.$entity_type.'.canonical'
+        ] + $base_plugin_definition;
       }
     }
     return $this->derivatives;
   }
 }
-
-/* which gives us things like */
-//mcapi.wallet.add.user.action:
-//  id: mcapi.wallet.add.user.action
-//  route_name: mcapi.wallet.add.user
-//  title: Add Wallet
-//  appears_on:
-//    - user.page

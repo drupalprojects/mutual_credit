@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Element;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
+use Drupal\Core\Render\Element\Checkboxes;
 
 /**
  * Provides a widget to select currencies
@@ -65,7 +66,7 @@ class Currency extends FormElement {
       //have to do some of the checkbox processing manually coz we missed it
       $element['#type'] = 'checkboxes';
       $element['#value'] = array_filter($element['#default_value']);
-      $element = form_process_checkboxes($element);
+      $element = Checkboxes::processCheckboxes($element);
     }
     else {
       $element['#theme'] = 'select';

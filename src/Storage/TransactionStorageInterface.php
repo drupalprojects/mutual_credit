@@ -36,10 +36,21 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * this is especially needed should views not be available, but is used in any case.
    *
    * @param array $conditions
-   *   keyed by transaction entity properties, values must match.
-   *   Except in the case of state. If state is NULL, no filter will be applied,
-   *   if state is not in the $conditions, a filter for positive states will be added.
-   *   note that 'value' refers to the raw value of the worth field.
+   *   The possible values for conditions are:
+   * - value, a raw integer in which case a curr_id would be expected as well
+   * - min: a raw integer greater than which the transaction must be
+   * - max: a raw integer les than which the transaction must be
+   * - curr_id the short code for a currency
+   * - xid[]: the unique code from the transaction entity table
+   * - state[]: the string id of the transaction state
+   * - serial[]: the serial number
+   * - payer[]: a wallet id
+   * - payee[]: a wallet id
+   * - creator[]: creator user id
+   * - type[]: string id of the transaction type config entity
+   * - involving[]: a wallet id
+   * - since: a unix time after which transactions were created
+   * - until: a unix time before which transactions were created
    *   Also note 'including' and 'involving' conditions will filter inclusively and
    *   exclusively respectively on the wallet ids passed. Actually I think those are the same
    *   because wallets can ONLY trade with other wallets in the same exchange, unless they have moved
@@ -85,11 +96,11 @@ interface TransactionStorageInterface extends EntityStorageInterface {
   public function count($curr_id = '', $conditions = [], $serial = FALSE);
 
   /**
-   * get the total transaction volume of a currency
+   * get the total transaction volume of a currency.
    *
    * @param integer $curr_id
+   *
    * @param array $conditions
-   *   keyed by transaction entity properties, values must match.
    *   Except in the case of state. If state is NULL, no filter will be applied,
    *   if state is not in the $conditions, a filter for positive states will be added.
    * @return integerstring
@@ -118,5 +129,30 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * @param type $conditions
    */
   public function wallets($curr_id, $conditions = []);
+
+  /**
+   * get all the balances for a given currency
+   *
+   * @param string $curr_id
+   *
+   * @return integer[]
+   *   keyed by wallet id
+   *
+   */
+  public function balances($curr_id);
+
+
+  /**
+   * get the balance of a given wallet, up to a given transaction id, for a
+   * given currency
+   *
+   * @param integer wallet id
+   * @param integer transaction id
+   * @param string currency id
+   *
+   * @return integer raw currency value
+   *
+   */
+  public function runningBalance($wid, $xid, $curr_id);
 
 }

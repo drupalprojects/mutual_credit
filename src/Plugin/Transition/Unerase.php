@@ -13,7 +13,7 @@ use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\mcapi\Entity\State;
 use Drupal\mcapi\Entity\Transaction;
-use Drupal\mcapi\Plugin\Transition2Step;
+use Drupal\mcapi\Plugin\TransitionBase;
 use Drupal\Core\Session\AccountInterface;
 
 /**
@@ -23,7 +23,7 @@ use Drupal\Core\Session\AccountInterface;
  *   id = "unerase"
  * )
  */
-class Unerase extends Transition2Step {
+class Unerase extends TransitionBase {
 
   /**
    * @see \Drupal\mcapi\TransitionBase::buildConfigurationForm()

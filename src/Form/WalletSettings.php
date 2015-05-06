@@ -5,6 +5,7 @@ namespace Drupal\mcapi\Form;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Url;
 use Drupal\mcapi\Exchange;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -20,19 +21,19 @@ class WalletSettings extends ConfigFormBase {
   public function getFormID() {
     return 'mcapi_wallet_settings_form';
   }
-    
+
   public function __construct(ConfigFactoryInterface $configFactory, $entityManager) {
     $this->setConfigFactory($configFactory);
     $this->entityManager = $entityManager;
   }
-  
+
   static public function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
       $container->get('entity.manager')
     );
-  }    
-  
+  }
+
 
   /**
    * {@inheritdoc}
@@ -40,37 +41,40 @@ class WalletSettings extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->configFactory()->get('mcapi.wallets');
 
-    $form['add_link_location'] = array(
+    $form['add_link_location'] = [
       '#title' => t("Location of 'new wallet' link"),
-      '#type' => 'radios',
-      '#options' => array(//TODO change this to 2 checkboxes
-        'local_action' => t("Local action on the owner's display page"),
-        'summaries' => t('In the wallet summaries block'),
-        'both' => t('Both')
+      '#type' => 'checkboxes',
+      '#options' => array(
+        'local_action' => $this->t("Local action on the owner's display page"),
+        'summaries' => $this->t('In the wallet summaries block'),
       ),
       '#default_value' => $config->get('add_link_location'),
+      '#required' => TRUE,
       '#weight' => 1,
-    );
+    ];
     //A wallet can be attached to any entity with an entity reference field pointing towards the exchange entity
     //OR to an exchange entity itself
     $link = \Drupal::l(
       'EntityOwnerInterface',
       Url::fromUri('https://api.drupal.org/api/drupal/core!modules!user!src!EntityOwnerInterface.php/interface/EntityOwnerInterface/8')
     );
-    $form['entity_types'] = array(
+    $form['entity_types'] = [
       '#title' => t('Max number of wallets'),
-      '#description' => t(
-        "Wallets can be owned by any entity type which implements !interface and has an entity_references field to 'exchange' entities.", 
+      '#description' => $this->t(
+        "Wallets can be owned by any entity type which implements !interface and has an entity_references field to 'exchange' entities.",
         ['!interface' => $link]
       ),
       '#type' => 'fieldset',
       '#weight' => 2,
       '#tree' => TRUE
-    );
+    ];
 
     foreach ($this->entityManager->getDefinitions() as $entity_type_id => $entity_type) {
       //tricky to know which entities to show here.
-      if ($entity_type->isSubclassOf('\Drupal\Core\Entity\FieldableEntityInterface') && ($entity_type->isSubclassOf('\Drupal\User\EntityOwnerInterface') || in_array($entity_type_id, array('user')))) {
+      if ($entity_type->isSubclassOf('\Drupal\Core\Entity\FieldableEntityInterface')
+        && ($entity_type->isSubclassOf('\Drupal\User\EntityOwnerInterface') || $entity_type_id == 'user')
+        && $entity_type->getLinkTemplate('canonical')//otherwise where to put the wallet!
+        ) {
         $bundles = $this->entityManager->getBundleInfo($entity_type_id);
         $entity_label = (count($bundles) > 1)
           ? $entity_type->getLabel() .': '
@@ -106,29 +110,29 @@ class WalletSettings extends ConfigFormBase {
     ];
     $w = 0;
     /*
-     * [
+    $permissions = [
       [details] => View transaction log
       [summary] => View summary
       [payin] => Pay into this wallet
       [payout] => Pay out of this wallet
-     */
-    foreach (Exchange::walletOps() as $key => $description) {
+    ]*/
+    foreach (Exchange::walletOps() as $key => $blurb) {
       $form['wallet_access'][$key] = [
-        '#title' => $description,
+        '#title' => $blurb[0],
+        '#title' => $blurb[1],
         '#type' => 'checkboxes',
         '#options' => $permissions,
         '#default_value' => $config->get($key),
         '#weight' => $w++,
       ];
-      //TODO debug why these aren't working
-      //should we remove the owner checkbox and let access control grant
-      //all permissions to owner?
-      //$form['wallet_access'][WALLET_ACCESS_OWNER]['#default_value'] = TRUE;
-      //$form['wallet_access'][WALLET_ACCESS_OWNER]['#disabled'] = TRUE;
     }
-    //unset($form['wallet_access']['payin']['#options'][WALLET_ACCESS_ANY]);
-    //unset($form['wallet_access']['payout']['#options'][WALLET_ACCESS_ANY]);
-    //unset($form['wallet_access']['edit']['#options'][WALLET_ACCESS_ANY]);
+
+    $form['wallet_access']['details'][WALLET_ACCESS_OWNER]['#default_value'] = TRUE;
+    $form['wallet_access']['details'][WALLET_ACCESS_OWNER]['#disabled'] = TRUE;
+    $form['wallet_access']['summary'][WALLET_ACCESS_OWNER]['#default_value'] = TRUE;
+    $form['wallet_access']['summary'][WALLET_ACCESS_OWNER]['#disabled'] = TRUE;
+    unset($form['wallet_access']['payin']['#options'][WALLET_ACCESS_ANY]);
+    unset($form['wallet_access']['payout']['#options'][WALLET_ACCESS_ANY]);
     return parent::buildForm($form, $form_state);
   }
 
@@ -137,11 +141,9 @@ class WalletSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    //TODO check that none of the access is set to 'users' only
-    //this would be very awkward for new wallets
     $values = $form_state->getValues();
-    foreach (array_keys(Exchange::walletOps()) as $op_name) {
-      if (array_filter($values[$op_name]) == array('WALLET_ACCESS_USERS' => 'WALLET_ACCESS_USERS')) {
+    foreach (array_keys(Exchange::walletOps()) as $op_name => $blurb) {
+      if (array_filter($values[$op_name]) == [WALLET_ACCESS_USERS => WALLET_ACCESS_USERS]) {
         $form_state->setErrorByName($op_name, t("'Named users' cannot be selected by itself"));
       }
     }
@@ -165,16 +167,15 @@ class WalletSettings extends ConfigFormBase {
 
     parent::submitForm($form, $form_state);
 
-    //TODO
-    //Clear the FieldDefinitions cache for wallet entity, which uses these values as defaults
+    Cache::invalidateTags(['mcapi_wallet_values', 'mcapi_wallet_view']);
 
     $form_state->setRedirect('mcapi.admin');
   }
-  
+
   protected function getEditableConfigNames() {
     return ['mcapi.wallets'];
   }
-  
+
 }
 
 

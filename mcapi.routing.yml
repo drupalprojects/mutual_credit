@@ -19,14 +19,6 @@ mcapi.admin_misc:
     _admin_route: TRUE
 
 #currencies
-entity.mcapi_currency.canonical:
-  path: '/currency/{mcapi_currency}'
-  defaults:
-    _entity_view: 'mcapi_currency.default'
-    _title_callback: 'Drupal\mcapi\Controller\CurrencyController::pageTitle'
-  requirements:
-    _permission: 'access content'
-  
 mcapi.admin_currency_list:
   path: '/admin/accounting/currencies'
   defaults:
@@ -66,29 +58,6 @@ entity.mcapi_currency.delete_form:
   options:
     _admin_route: TRUE
 
-mcapi.transaction_log:
-  path: '/transaction/log'
-  defaults:
-    _entity_form: 'mcapi_transaction.admin'
-    _title: 'Log transaction'
-  requirements:
-    _custom_access: 'Drupal\mcapi\Access\TransactionAccessControlHandler::enoughWallets'
-    _permission: 'manage mcapi'
-  options:
-    _admin_route: TRUE
-
-entity.mcapi_transaction.canonical:
-  path: '/transaction/{mcapi_transaction}'
-  defaults:
-    #full means defer to the view transition settings
-    _entity_view: 'mcapi_transaction.full' 
-    _title_callback: 'Drupal\mcapi\Controller\TransactionController::pageTitle'
-  requirements:
-    _entity_access: 'mcapi_transaction.view'
-  options:
-    parameters:
-      mcapi_transaction:
-        serial: true
 
 mcapi.admin.transactions:
   path: '/admin/accounting/transactions'
@@ -120,44 +89,6 @@ mcapi.workflow_settings:
   options:
     _admin_route: TRUE
 
-#transitions
-mcapi.transaction.op:
-  path: '/transaction/{mcapi_transaction}/{transition}'
-  defaults:
-    _entity_form: 'mcapi_transaction.transition'
-  requirements:
-    _entity_access: 'mcapi_transaction.transition'
-  options:
-    parameters:
-      mcapi_transaction:
-        serial: true
-
-
-#wallets
-entity.mcapi_wallet.canonical:
-  path: '/wallet/{mcapi_wallet}'
-  defaults:
-    _entity_view: 'mcapi_wallet.default'
-    _title_callback: 'Drupal\mcapi\Controller\WalletController::pageTitle'
-  requirements:
-    _entity_access: 'mcapi_wallet.summary'
-
-mcapi.wallet_log:
-  path: '/wallet/{mcapi_wallet}/log'
-  defaults:
-    _controller: 'Drupal\mcapi\Controller\WalletController::Templog'
-    _title_callback: 'Drupal\mcapi\Controller\WalletController::pageTitle'
-  requirements:
-    _entity_access: 'mcapi_wallet.details'
-
-mcapi.wallet_edit:
-  path: '/wallet/{mcapi_wallet}/edit'
-  defaults:
-    _entity_form: 'mcapi_wallet.edit'
-    _title: Modify wallet
-  requirements:
-    _entity_access: 'mcapi_wallet.edit'
-
 mcapi.admin_wallets:
   path: '/admin/accounting/wallets'
   defaults:
@@ -176,7 +107,7 @@ mcapi.wallets.autocomplete:
 
 #this is replaced by the mcapi_exchanges module
 mcapi.masspay:
-  path: '/transact/masspay'
+  path: '/transaction/masspay'
   defaults:
     _entity_form: 'mcapi_transaction.masspay'
     _title: 'Mass payment'

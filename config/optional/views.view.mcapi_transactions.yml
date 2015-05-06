@@ -1,15 +1,17 @@
 langcode: en
 status: true
 dependencies:
+  config:
+    - field.storage.mcapi_transaction.worth
+    - system.menu.main
   module:
-    - field
     - mcapi
     - user
-id: 'mcapi_transactions'
-label: ''
+id: mcapi_transactions
+label: 'Transactions'
 module: views
 description: 'A list of all transactions'
-tag: ''
+tag: 'mcapi'
 base_table: mcapi_transaction
 base_field: xid
 core: 8.x
@@ -37,7 +39,7 @@ display:
           disable_sql_rewrite: false
           distinct: false
           replica: false
-          query_comment: false
+          query_comment: ''
           query_tags: {  }
         provider: views
         dependencies: {  }
@@ -123,7 +125,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -185,7 +187,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -238,7 +240,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -269,10 +271,7 @@ display:
           relationship: payer
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - mcapi
-          label: Between
+          label: ''
           exclude: false
           alter:
             alter_text: true
@@ -291,7 +290,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -305,7 +304,7 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: true
+          element_label_colon: false
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -313,6 +312,9 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
+          dependencies:
+            module:
+              - mcapi
           plugin_id: mcapi_wallet_label
           provider: mcapi
         description:
@@ -344,7 +346,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -376,11 +378,6 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            config:
-              - field.storage.mcapi_transaction.worth
-            module:
-              - field
           label: Value(s)
           exclude: false
           alter:
@@ -400,7 +397,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -423,18 +420,23 @@ display:
           empty_zero: false
           hide_alter_empty: true
           click_sort_column: value
-          type: worth
+          type: worth_raw
           settings: {  }
           group_column: value
           group_columns: {  }
           group_rows: true
-          delta_limit: all
-          delta_offset: '0'
+          delta_limit: 0
+          delta_offset: 0
           delta_reversed: false
           delta_first_last: false
           multi_type: separator
           separator: ', '
           field_api_classes: false
+          dependencies:
+            config:
+              - field.storage.mcapi_transaction.worth
+            module:
+              - field
           plugin_id: field
           provider: field
         created:
@@ -466,7 +468,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -522,7 +524,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -575,7 +577,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -628,7 +630,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -708,13 +710,6 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - user
-              - views
-              - views
-              - views
-              - views
           operator: in
           value: ''
           group: 1
@@ -750,6 +745,13 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
+          dependencies:
+            module:
+              - user
+              - views
+              - views
+              - views
+              - views
           plugin_id: user_name
           provider: user
         payer:
@@ -759,12 +761,7 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - views
-              - views
-              - views
-          operator: '='
+          operator: 'in'
           value: ''
           group: 1
           exposed: true
@@ -798,6 +795,11 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
+          dependencies:
+            module:
+              - views
+              - views
+              - views
           plugin_id: user_name
           provider: user
         creator:
@@ -1034,6 +1036,13 @@ display:
         operator: AND
         groups:
           1: AND
+      display_extenders: {  }
+    cache_metadata:
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+      cacheable: false
   admin:
     display_plugin: page
     id: admin
@@ -1043,7 +1052,7 @@ display:
     display_options:
       field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
-      path: admin/accounting/transactions/filter
+      path: transactions/admin
       menu:
         type: normal
         title: Filter
@@ -1069,6 +1078,13 @@ display:
         exposed_form_options: false
       exposed_form_options: null
       display_description: ''
+      display_extenders: {  }
+    cache_metadata:
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+      cacheable: false
   simple:
     display_plugin: page
     id: simple
@@ -1116,7 +1132,7 @@ display:
           exposed: true
           expose:
             operator_id: description_op
-            label: Filter by
+            label: 'Filter by'
             description: 'a phrase from the transaction description'
             use_operator: false
             operator: description_op
@@ -1223,7 +1239,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1276,7 +1292,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1329,7 +1345,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1382,7 +1398,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1438,7 +1454,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1466,8 +1482,8 @@ display:
           group_column: value
           group_columns: {  }
           group_rows: true
-          delta_limit: all
-          delta_offset: '0'
+          delta_limit: 0
+          delta_offset: 0
           delta_reversed: false
           delta_first_last: false
           multi_type: separator
@@ -1504,7 +1520,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1560,7 +1576,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1586,5 +1602,16 @@ display:
           view: 1
           plugin_id: transaction_transitions
           provider: mcapi
+        worth_1:
+          id: worth_1
+          table: mcapi_transaction__worth
+          field: worth
+          plugin_id: field
       display_description: ''
-
+      display_extenders: {  }
+    cache_metadata:
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+      cacheable: false
