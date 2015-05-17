@@ -9,6 +9,7 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\ContentEntityForm;
+use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Datetime\DrupalDateTime;
@@ -43,23 +44,11 @@ class TransactionForm extends ContentEntityForm {
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
   public function form(array $form, FormStateInterface $form_state) {
+
     //the masspay form doesn't provide a transaction via the router or the paramConverter
     $transaction = $this->entity->getEntityTypeId() == 'mcapi_transaction'
       ? $this->entity
       : Transaction::Create();
-
-    //borrowed from NodeForm::prepareEntity in alpha14
-    $transaction->date = format_date($transaction->created->value, 'custom', 'Y-m-d H:i:s O');
-    //but this looks better to me
-    //$transaction->date = DrupalDateTime::createFromTimestamp($transaction->created->value);
-
-    //the actual exchange that the transaction takes place in
-    //will be determined automatically, once we know who is involved and what currencies.
-    //in most use cases only one will be possible or likely
-    //until then we offer a choice of users and currencies
-    //from all the exchanges the current user is a member of
-
-    unset($form['langcode']); //No language so we remove it.
 
     $form['description'] = [
       '#type' => 'textfield',
@@ -89,30 +78,47 @@ class TransactionForm extends ContentEntityForm {
       '#required' => TRUE,
       '#weight' => 18,
     ];
-    return parent::form($form, $form_state);
+    $form['creator'] = [
+      '#title' => t('Creator'),
+      '#description' => t("The user who logged this transaction"),
+      '#type' => 'entity_autocomplete',
+      '#target_type' => 'user',
+      '#selection_handler' => 'default:user',
+      '#selection_settings' => [],
+      '#tags' => FALSE,
+      '#default_value' => User::load(\Drupal::currentUser()->id()),
+      '#weight' => 20
+    ];
+    $form = parent::form($form, $form_state);
+
+    return $form;
   }
 
   /**
-   * Returns the action form element for the current entity form.
+   * {@inheritdoc}
+   * @note we are overriding here because this form is neither for saving nor deleting
+   * and because previewing is compulsory. The created entitiy is passed to the
+   * 'create' transition form where it is saved.
    */
-  protected function actionsElement(array $form, FormStateInterface $form_state) {
-    $actions = parent::actionsElement($form, $form_state);
-    $actions['submit']['#submit'] = ['::submitForm'];
-    return $actions;
+  protected function actions(array $form, FormStateInterface $form_state) {
+    return [
+      'submit' => [
+        '#type' => 'submit',
+        '#value' => $this->t('Preview'),
+        '#validate' => ['::validate'],
+        '#submit' => ['::submitForm'],
+      ]
+    ];
   }
 
   /**
    * form validation callback
-   * I can't imagine why, but this is called twice when the form is submitted
-   * since validation is an intensive process, perhaps we need a #mcapi_validated flag?
-   *
-   * this is unusual because normally build a temp object
+   * @todo remove typedDataValidated flag after beta10
    */
-  public function validate(array $form, FormStateInterface $form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
     //handles constraintValidation on all entity fields
-    parent::validate($form, $form_state);
+    //parent::validate($form, $form_state);
     $this->typedDataValidated = TRUE;//@todo remove this flag when entity validation set up
-
     $this->entity = $this->buildEntity($form, $form_state);
     //@todo improve transaction validation compare with nodeForm & display
     foreach ($this->entity->validate() as $violation) {
@@ -124,10 +130,12 @@ class TransactionForm extends ContentEntityForm {
   }
 
   /**
-   * submit handler specified in EntityForm::actions
-   * does NOT call parent
+   * {@inheritdoc}
+   *
    * @param array $form
    * @param FormStateInterface $form_state
+   *
+   * @note does NOT call parent
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->tempStore
@@ -160,14 +168,12 @@ class TransactionForm extends ContentEntityForm {
 
     $values = $form_state->getValues();
     //if a valid creator uid was submitted then use that
+    //is this the best place to be putting defaults? not in Transaction::precreate?
     if (array_key_exists('creator', $values) && $account = User::load($values['creator'])) {
       $entity->creator->target_id = $account->id();
     }
     else {
       $entity->creator->target_id = $this->currentUser()->id();//MUST be a logged in user!
-    }
-    if (!empty($values['created'])) {
-      //$entity->set('created', $values['created']);
     }
     return $entity;
   }

@@ -15,7 +15,6 @@ use Drupal\mcapi\Access\WalletAccessControlHandler;
 use Drupal\mcapi\Entity\State;
 use Drupal\mcapi\McapiEvents;
 use Drupal\mcapi\TransactionSaveEvents;
-use Drupal\mcapi\McapiTransactionException;
 use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
 use Drupal\user\Entity\User;
 use Drupal\Core\Entity\ContentEntityBase;
@@ -23,7 +22,6 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Cache\Cache;
-use Symfony\Component\EventDispatcher\EventDispatcher;
 
 /**
  * Defines the Transaction entity.
@@ -69,30 +67,21 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 class Transaction extends ContentEntityBase implements TransactionInterface {
 
   /**
-   * these objects have a method getMessage which is used for a form error
-   *
-   * @var array
-   *
-   * @todo remove this in beta10
-   */
-  public $violations = [];
-
-  /**
-   * These are the secondary transactions in the cluster. Identical to the $this
-   * but they will have no children
+   * These are the secondary transactions in the cluster. Note that children are
+   * not recursive
    *
    * @var Transaction[]
    */
   private $children = [];
 
-  private $eventDispatcher;
   private $mailPluginManager;
+  private $moduleHandler;
 
   //this is called from ContentEntityStorage::mapFromStorageRecords() so without create function
   public function __construct(array $values, $entity_type, $bundle = FALSE, $translations = array()) {
     parent::__construct($values, $entity_type, $bundle, $translations);
-    $this->eventDispatcher = \Drupal::service('event_dispatcher');
     $this->mailPluginManager = \Drupal::service('plugin.manager.mail');
+    //$this->moduleHandler = \Drupal::moduleHandler();//only used in transaction prevalidate alter hook
   }
 
   /**
@@ -157,12 +146,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $this->entityManager()->getStorage('mcapi_transaction')->save($this);
   }
 
+
   /**
    * work on the transaction prior to validation
    *
    * @return NULL
-   *
-   * @throws McapiException
    */
   public function prevalidate() {
     //ensure the transaction is in the right starting state
@@ -175,9 +163,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       new TransactionSaveEvents(clone($this), $context)
     );
     array_merge($this->children, $new_children);
-
-    //Alter hooks should throw an McapiException
-    \Drupal::moduleHandler()->alter('mcapi_transaction', $this);
+    //moduleHandler hasn't been initiated - why?
+    //$this->moduleHandler->alter('mcapi_transaction', $this);
   }
 
   /**
@@ -194,56 +181,43 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   function validate() {
     //if this is coming from transactionForm then all the entiry fields are validated
     $violations = [];
-    $this->errors = [];
     if ($this->validated) {
       return [];
     }
-    try{
-      $this->preValidate();
-      if (!$this->typedDataValidated) {
-        foreach ($this->flatten() as $entity) {
-          $violations = array_merge(
-            $violations,
-            $entity->validateTypedData()
-          );
-        }
-      }
-    }
-    catch(\Exception $e) {
-      if ($settings['mail_user1']){
-        foreach ($this->errors as $line) {
-          $message[] = $line;
-        }
-        $message[] = print_r($this, 1);
-        //should this be done using the drupal mail system?
-        //my life is too short for such a rigmarol
-        $context = [
-          'subject' =>  t(
-            'Transaction error on !site',
-            ['!site' => \Drupal::config('system.site')->get('name')]
-          ),
-          'message' => implode('\n', $message)
-        ];
-
-        $this->mailPluginManager->mail(
-          'system',
-          'action_send_email',
-          User::load(1)->mail,
-          $langcode,
-          ['context' => $context]
+    $this->preValidate();
+    if (!$this->typedDataValidated) {
+      foreach ($this->flatten() as $entity) {
+        $violations = array_merge(
+          $violations,
+          $entity->validateTypedData()
         );
       }
-      //TEMP
-      drupal_set_message($e->getMessage(), 'error');
+    }
+    if ($violations && $settings['mail_user1']) {
+      foreach ($this->violations as $v) {
+        $message[] = $v->getMessage();
+      }
+      //should this be done using the drupal mail system?
+      //my life is too short for such a rigmarol
+      $context = [
+        'subject' =>  t(
+          'Transaction error on !site',
+          ['!site' => \Drupal::config('system.site')->get('name')]
+        ),
+        'message' => implode('\n', $message)
+      ];
 
-      //@todo sort out the McapiExceptions
-      throw new McapiException('', $e->getMessage());
+      $this->mailPluginManager->mail(
+        'system',
+        'action_send_email',
+        User::load(1)->mail,
+        $langcode,
+        ['context' => $context]
+      );
     }
 
     $this->validated = TRUE;
-    //we're actually supposed only to return violations,
-    //but the Exceptions also have the same getMessage method
-    return array_merge($this->violations);
+    return $this->violations;
   }
 
   /**
@@ -252,15 +226,15 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * @see EntityFormDisplay::validateFormValues
    */
   private function validateTypedData() {
-    $violations = [];
     foreach ($this as $field_name => $items) {
-      foreach ($items->validate() as $violation) {echo 'Transaction::validateTypedData-'.$field_name;
-        $violations[] = $violation;
-      }
+      $violationList = $items->validate();
+      //@todo there's no example yet in Drupal of what to do with this ViolationList at the entity level
     }
     $this->typedDataValidated = TRUE;//temp flag
-    return $violations;
+    return [];
   }
+
+//          $widget->flagErrors($items, $violations, $form, $form_state);
 
 
   /**
@@ -271,7 +245,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'serial' => 0,
       'type' => 'default',
       'description' => '',
-      'created' => REQUEST_TIME,
+      //'created' => REQUEST_TIME,
       'creator' => \Drupal::currentUser()->id(),//uid of 0 means drush must have created it
       'parent' => 0,
     ];
@@ -320,37 +294,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         $transaction->children = [];
       }
     }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function transition($transition, array $values) {
-    $context = [
-      'values' => $values,
-      'old_state' => $this->get('state')->value,
-      'transition' => $transition,
-    ];
-
-    $renderable = (array)$transition->execute($this, $context)
-    or $renderable = 'transition returned nothing renderable';
-
-    //notify other modules, especially rules.
-    $renderable += \Drupal::moduleHandler()->invokeAll(
-      'mcapi_transition',
-      [$this, $transition, $context]
-    );
-
-    $event = new TransactionSaveEvents(clone($this), $context);
-    //@todo, how to the event handlers return anything,
-    //namely more $renderable items?
-    \Drupal::service('event_dispatcher')->dispatch(
-      McapiEvents::TRANSITION,
-      $event
-    );
-
-    $this->save();
-    return $renderable;
   }
 
   /**
@@ -424,6 +367,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setSetting('target_type', 'mcapi_state')
       ->setReadOnly(FALSE)
       ->setRequired(TRUE);
+
     $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Created on'))
       ->setDescription(t('The time that the transaction was created.'))

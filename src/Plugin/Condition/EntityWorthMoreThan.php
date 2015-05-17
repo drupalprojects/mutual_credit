@@ -11,52 +11,66 @@ namespace Drupal\mcapi\Plugin\Condition;
 
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Condition\ConditionPluginBase;
+use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a 'Worth field is more than' condition.
  *
  * @Condition(
- *   id = "mcapi_transaction_type",
- *   label = @Translation("Transaction is of type"),
+ *   id = "mcapi_worth_more_than",
+ *   label = @Translation("Entity is worth more than"),
  *   category = @Translation("Community Accounting"),
  *   context = {
  *     "entity" = @ContextDefinition("entity",
- *       label = @Translation("Transaction"),
+ *       label = @Translation("Entity"),
  *       description = @Translation("Specifies the entity with a worth field.")
  *     ),
  *     "fieldname" = @ContextDefinition("string",
  *       label = @Translation("Machine name of the worth field")
  *     ),
- *     "worth" = @ContextDefinition("entity:mcapi_type",
- *       label = @Translation("Types"),
- *       description = @Translation("All the possible transaction types"),
+ *     "worth" = @ContextDefinition("entity:worth",
+ *       label = @Translation("Worth"),
+ *       description = @Translation("the value of the worth field"),
  *     ),
  *   }
  * )
  *
  */
 
-class EntityWorthMoreThan extends ConditionPluginBase implements ContainerFactoryPluginInterface {
+class EntityWorthMoreThan extends ConditionPluginBase {
 
   private $worth;
-
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static(
-      $configuration,
-      $plugin_id,
-      $plugin_definition
-    );
-  }
 
   /**
    * {@inheritdoc}
    */
   public function summary() {
     return $this->t(
-      'Transaction is worth at least !value',
+      'Entity is worth at least !value',
       ['!value' => $this->worth->format()]
     );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function defaultConfiguration() {
+    return [
+      'worth' => [],
+    ] + parent::defaultConfiguration();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    $form['worth'] = [
+      '#description' => '@todo work out how this works with multiple values or whether to restrict it to one value',
+      '#type' => 'worth',
+      '#default_value' => $this->configuration['worth'],
+    ];
+    return parent::buildConfigurationForm($form, $form_state);
   }
 
   /**

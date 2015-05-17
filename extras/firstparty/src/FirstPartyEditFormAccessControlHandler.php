@@ -19,19 +19,18 @@ use Drupal\mcapi\Exchanges;
  *
  */
 class FirstPartyEditFormAccessControlHandler extends EntityAccessControlHandler {
-  
+
   /**
    * {@inheritdoc}
    */
   public function createAccess($entity_bundle = NULL, AccountInterface $account = NULL, array $context = [], $return_as_object = FALSE) {
     return AccessResult::allowedIfHasPermission($account, 'configure mcapi');
   }
-  
+
   /**
    * {@inheritdoc}
    */
   protected function checkAccess(EntityInterface $entity, $op, $langcode, AccountInterface $account) {
-    debug('how is access controlled without this FirstPartyEditFormAccessControlHandler?');
-    return AccessResult::allowedIfHasPermission($account, 'configure mcapi'); 
+    return AccessResult::allowedIfHasPermission($account, 'configure mcapi');
   }
 }

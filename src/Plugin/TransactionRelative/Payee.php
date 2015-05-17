@@ -37,4 +37,12 @@ class Payee extends PluginBase implements TransactionRelativeInterface {//does i
   public function condition(QueryInterface $query) {
 
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getUsers(TransactionInterface $transaction) {
+    return $transaction->payee->entity->getOwnerid();
+  }
+
 }

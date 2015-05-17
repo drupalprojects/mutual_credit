@@ -49,8 +49,8 @@ class WorthWidget extends WidgetBase {
    * @todo test this errorElement
    */
   public function errorElement(array $element, ConstraintViolationInterface $violation, array $form, FormStateInterface $form_state) {
-    print_R($violation);
-    print_R($element);
+    mdump($violation);
+    mdump($element);
     //might want to return a sub element if we can pinpoint the error
     die('Worth::errorElement()');
 

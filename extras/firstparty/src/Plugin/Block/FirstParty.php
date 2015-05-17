@@ -3,16 +3,19 @@
 /**
  * @file
  * Contains \Drupal\mcapi_1stparty\Plugin\Block\FirstParty
- * @todo I don't know how to call up the entity form with out using the router
+ * @todo I don't know how to call up the entity form without using the router
  */
 
 namespace Drupal\mcapi_1stparty\Plugin\Block;
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Block\BlockBase;
-use Drupal\Core\Session\AccountInterface;
-use Drupal\mcapi_1stparty\Form\FirstPartyTransactionForm;
-use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Form\FormState;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi_1stparty\FirstPartyTransactionForm;
+use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
 
 
 /**
@@ -26,74 +29,60 @@ use Drupal\Core\Form\FormStateInterface;
  */
 class FirstParty extends BlockBase {
 
-  /**
-   * {@inheritdoc}
-   */
-  public function build() {
-    return \Drupal::formBuilder()->getForm(
-      new FirstPartyTransactionForm(Drupal::EntityManager(), $this->configuration['editform_id'])
-    );
+  function build() {
+    return \Drupal::service('entity.form_builder')
+      ->getForm(
+        Transaction::create(),
+        $this->configuration['editform_id']
+      );
   }
 
   /**
    * {@inheritdoc}
    */
   public function access(AccountInterface $account, $return_as_object = false) {
-    $this->editform = FirstPartyFormDesign::load($this->configuration['editform_id']);
-
-    //@todo get the route name from \Drupal::route() instead
-    $route_name = \Drupal::request()->attributes->get('_route');
-    //the block is available if the main page is not already a transaction form
-    if (substr($route_name, 0, 6) == 'mcapi.') {
-      if (substr($route_name, 6, 8) == '1stparty') {
-        return FALSE;
+    $access = parent::access($account, TRUE);
+    if ($access->allowed()) {
+      $route_name = \Drupal::service('current_route_match')->getRouteName();
+      //the block is available if the main page is not already a transaction form
+      if (substr($route_name, 0, 14) == 'mcapi.1stparty') {
+        $access = AccessResult::forbidden();
       }
+      //or a transition form (including 'view' which is a transition)
       elseif($route_name == 'mcapi.transaction.op') {
-        return FALSE;
+        $access = AccessResult::forbidden();
       }
+      //@todo check access settings of the form itself
+      //$this->editform = FirstPartyFormDesign::load($this->configuration['editform_id']);
     }
-    return mcapi_1stparty_access($this->editform);
+    return $return_as_object ? $access : $access->isAllowed();
   }
 
+
   /**
-   *
-   * @param array $form
-   * @param array $form_state
-   * @return array
-   *   the form elements
+   * {@inheritdoc}
    */
   function blockForm($form, FormStateInterface $form_state) {
     $options = [];
-    //entity_load_multiple_by_properties doesn't seem to work on empty values
-    //do we'll have to iterate though
     foreach (FirstPartyFormDesign::loadMultiple() as $id => $editform) {
-      if ($editform->exchange) continue;
       $options[$id] = $editform->label();
     }
-    //die($this->configuration['editform_id']);
-    $form = array(
-      'editform_id' => array(
-         '#title' => t('Form to use'),
-        '#description' => t('Choose from all the firstparty forms which are not specific to one exchange'),
-        '#type' => 'select',
-        '#options' => $options,
-        //@ prevents warning coz I can't see how to prepopulate this value before the block is ever saved
-        '#default' => @$this->configuration['editform_id']
-      )
-    );
-    if (!$options) {
-      $this->errorHandler()->setErrorByName('editform_id', $form_state, t('No 1st party forms are available for all exchanges'));
-    }
+    $form['editform_id'] = [
+      '#title' => t('Form to use'),
+      '#description' => t('Choose from all the firstparty forms which are not specific to one exchange'),
+      '#type' => 'select',
+      '#options' => $options,
+      '#default' => $this->configuration['editform_id']
+    ];
     return $form;
   }
 
+
   /**
-   * Overrides \Drupal\block\BlockBase::blockSubmit().
+   * {@inheritdoc}
    */
   public function blockSubmit($form, FormStateInterface $form_state) {
-    parent::blockSubmit($form, $form_state);
-    $values = $form_state->getValues();
-    $this->configuration['editform_id'] = $values['editform_id'];
+    $this->configuration['editform_id'] = $form_state->getValues()['editform_id'];
   }
 
 }

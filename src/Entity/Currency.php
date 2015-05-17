@@ -327,5 +327,3 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
 
 
 }
-
-

@@ -19,13 +19,13 @@ class AccountingAdmin extends SystemController {
 
   function systemAdminMenuBlockPage() {
     $renderable[] = parent::systemAdminMenuBlockPage();
-    if (TransactionAccessControlHandler::enoughWallets()->isForbidden()) {
-      $usermax = \Drupal::config('mcapi.wallets')->get('entity_types')['user:user'];
+    if (TransactionAccessControlHandler::enoughWallets($this->currentUser())->isForbidden()) {
+      $usermax = $this->config('mcapi.wallets')->get('entity_types')['user:user'];
       $message[] = $this->t("There aren't enough wallets for you to create a transaction.");
       if ($usermax > 1) {
         $message[] = $this->l(
           $this->t("Give yourself a(nother) wallet."),
-          Url::fromRoute('mcapi.wallet.add.user', ['user' => \Drupal::currentUser()->id()])
+          Url::fromRoute('mcapi.wallet.add.user', ['user' => $this->currentUser()->id()])
         );
       }
       else {
@@ -41,7 +41,7 @@ class AccountingAdmin extends SystemController {
       );
       $renderable['warning'] = ['#markup' => implode(' ', $message), '#weight' => -1];
     }
-    
+
     return $renderable;
   }
 

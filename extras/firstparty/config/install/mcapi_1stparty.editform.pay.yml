@@ -9,16 +9,20 @@ status: 1
 type: default
 mywallet:
   widget: select
+  stripped: true
 partner:
   preset: ''
+  stripped: true
 direction:
   preset: outgoing
   widget: radios
   incoming: Incoming
   outgoing: Outgoing
+  stripped: true
 description:
   preset: ''
   placeholder: ''
+  stripped: true
 fieldapi_presets:
   worth:
 other:
@@ -27,7 +31,6 @@ experience:
   twig: "From {{ mywallet }}\r\nPay: {{ partner }}\r\n{{ worth }}\r\nfor {{ description }}"
   button: Preview
   preview: page
-cache: ''
 langcode: en
 dependencies: {  }
 third_party_settings: { }

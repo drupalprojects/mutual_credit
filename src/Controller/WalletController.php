@@ -3,18 +3,17 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Controller\WalletController.
+ *
  */
 
 namespace Drupal\mcapi\Controller;
 
-use Drupal\Component\Utility\String;
-use Drupal\Core\Controller\ControllerBase;
 use Drupal\mcapi\WalletInterface;
 
 /**
  * Returns responses for Wallet routes.
  */
-class WalletController extends ControllerBase {
+class WalletController {
 
   /**
    * The _content callback for the entity.mcapi_wallet.canonical route.

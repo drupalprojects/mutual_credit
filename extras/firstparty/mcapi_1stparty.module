@@ -2,8 +2,8 @@
 
 use Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi\Exchange;
-use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
+use \Drupal\Core\Render\Element;
 
 /**
  * implements hook_help().
@@ -13,21 +13,32 @@ function mcapi_1stparty_help($route_name) {
     $help[] = t('Design your own forms for users to start transactions on their workflow paths.');
     $help[] = t('Each form has access control and can be presented as a block, page or panel.');
     $help[] = t('Each form can have presets and hidden fields.');
-    //@todo might want to put some more detail here or at the top of the form editor page
     return implode(' ', $help);
   }
 }
 
 /**
  * implements hook_entity_type_alter().
- * adds a form controller to the transaction entity
- * @deprecated
+ *
+ * adds one form controller to the transaction entity for every designed form
  */
 function mcapi_1stparty_entity_type_alter(array &$entity_types) {
-  $entity_types['mcapi_transaction']
-    ->setFormClass('1stparty', 'Drupal\mcapi_1stparty\FirstPartyTransactionForm');
+  //there's a recursive problem doing loadMultiple configEntities during entity_type_alter
+  //So this is a direct db query
+  $template = 'mcapi_1stparty.editform.';
+  $ids = db_select('config', 'c')
+    ->fields('c', ['name'])
+    ->condition('name', $template.'%', 'LIKE')
+    ->execute()->fetchCol();
+  //foreach (FirstPartyFormDesign::loadMultiple() as $id => $configEntity) {
+  foreach ($ids as $id) {
+    $entity_types['mcapi_transaction']
+      ->setFormClass(
+        substr($id, strlen($template)),
+        'Drupal\mcapi_1stparty\FirstPartyTransactionForm'
+      );
+  }
 }
-
 
 /**
  * implements hook_theme().
@@ -46,20 +57,34 @@ function mcapi_1stparty_theme() {
  */
 function template_preprocess_1stpartyform(&$vars) {
   $form = &$vars['element'];
-  //add the buttons if they weren't  in the twig template already
+  //add the buttons at the end if they weren't in the twig template already
   if (strpos($form['#twig'], '{{ actions }}') === FALSE) {
     $form['#twig'] .= "\n{{ actions }}";
   }
+  if (isset($form['direction']['#value']) && $form['direction']['#value'] == 'outgoing') {
+    $replacements = [
+      '{{ partner }}' => '{{ payee }}',
+      '{{ mywallet }}' => '{{ payer }}',
+    ];
+  }
+  else {
+    $replacements = [
+      '{{ partner }}' => '{{ payer }}',
+      '{{ mywallet }}' => '{{ payee }}',
+    ];
+  }
+  $form['#twig'] = strtr($form['#twig'], $replacements);
 }
 
 /**
  * theme implementation of callback 1stpartyform
  * this must be a function, because we are taking a twig string instead of using a template file
+ * @todo put this in another file for performance reasons
  */
 function theme_1stpartyform($vars) {
   $form = $vars['element'];
   $tokens = [];
-  foreach (element_children($form) as $fieldname) {
+  foreach (Element::children($form) as $fieldname) {
     if (strpos($form['#twig'], '{{ '.$fieldname.' }}') !== FALSE) {
       $tokens[$fieldname] = mcapi_render_stripped($form[$fieldname]);
     }
@@ -72,6 +97,7 @@ function theme_1stpartyform($vars) {
       }
     }
   }
+
   $last = key($tokens);
   //adjustments for intertrade mode
   if (array_key_exists('intertrade', $tokens)) {// && array_key_exists('partner_all', $form)) {
@@ -83,12 +109,14 @@ function theme_1stpartyform($vars) {
       $tokens[$last] .= $checkbox;
     }
   }
-
   //append everything not rendered onto the last rendered thing.
   //$tokens['hidden_elements'] = $form;
   $form['#twig'] .= '{{ hidden_elements }}';
 
-  return \Drupal::service('twig')->renderInline(_filter_autop($form['#twig']), $tokens);
+  return \Drupal::service('twig')->renderInline(
+    _filter_autop($form['#twig']),
+    $tokens
+  );
 }
 
 /**
@@ -99,6 +127,8 @@ function theme_1stpartyform($vars) {
  *
  * @return string
  *   HTML
+ *
+ * @todo put this in another file for performance reasons
  */
 function mcapi_render_stripped(&$element) {
   if (array_key_exists('#type',  $element)) {
@@ -130,53 +160,10 @@ function mcapi_1stparty_transaction_tokens() {
   unset($tokens[array_search('state', $tokens)]);
   unset($tokens[array_search('serial', $tokens)]);
   unset($tokens[array_search('creator', $tokens)]);
-  //@todo remove this if it isn't required. @see Transaction::baseFieldDefinitions()
-  unset($tokens[array_search('langcode', $tokens)]);
   unset($tokens[array_search('mcapi_exchange_og_ref', $tokens)]);
   //replace payer and payee with partner and direction
-  $tokens[array_search('payer', $tokens)] = 'partner';
-  $tokens[array_search('payee', $tokens)] = 'mywallet';
   $tokens[] = 'direction';
   return $tokens;
-}
-
-/**
- * Check whether the current user can access a given 1stparty form.
- * used by the router and by the block controller
- *
- * @param FirstPartyFormDesign $editform
- *
- * @param AccountInterface $account
- *
- * @return boolean
- *   TRUE if the current user can access the given form
- */
-function mcapi_1stparty_access(FirstPartyFormDesign $editform, AccountInterface $account) {
-  die('mcapi_1stparty_access');
-}
-
-/**
- * Make a transaction entity loaded up with the defaults from the Designed form
- * @param object $configEntity
- * @return mcapi_transaction
- *   a partially populated transaction entity
- */
-function mcapi_1stparty_make_template($configEntity) {
-  $props = [];
-  $props['type'] = $configEntity->get('type');
-  $props['description'] = $configEntity->get('description.preset');
-  //we can't set a default for mywallet because it is differnet for every user
-  if ($configEntity->get('direction.preset') == 'outgoing') {
-    $props['payee'] = $configEntity->get('partner.preset');
-  }
-  else {
-    $props['payer'] = $configEntity->get('partner.preset');
-  }
-  foreach ($configEntity->get('fieldapi_presets') as $fieldname => $value) {
-    $props[$fieldname] = $value;
-  }
-  //so the worth defaults have been copied right out of the saved entity
-  return Transaction::Create($props);
 }
 
 /**
@@ -198,8 +185,12 @@ function mcapi_1stparty_form_field_ui_form_display_overview_form_alter(&$form, $
 /**
  * implements hook_menu_links_discovered_alter().
  * adds menu links where the firstparty forms specify them
- * adding/Altering menu links, local tasks and local actions are all veyr different...
+ *
  * @param unknown $definitions
+ *
+ * @note adding/Altering menu links, local tasks and local actions are all very different...
+ *
+ * @todo test this
  */
 function mcapi_1stparty_menu_links_discovered_alter(&$definitions) {
   foreach (FirstPartyFormDesign::loadMultiple() as $id => $first_party_form) {
@@ -210,9 +201,8 @@ function mcapi_1stparty_menu_links_discovered_alter(&$definitions) {
     $definitions[$route_name.'.link'] = array(
       'title' => $first_party_form->title,
       'route_name' => $route_name,
-      //@todo currently the entity doesn't support nested menu items
-//      'parent' => '',
       'provider' => 'mcapi_1stparty',
+      //'parent' => '',// currently the entity doesn't support nested menu items
     );
   }
 }

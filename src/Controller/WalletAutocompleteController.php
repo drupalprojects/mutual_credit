@@ -7,35 +7,30 @@
 
 namespace Drupal\mcapi\Controller;
 
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Controller\ControllerBase;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Returns responses for wallet autocomplete fields on the transaction form
  */
-class WalletAutocompleteController implements ContainerInjectionInterface{
+class WalletAutocompleteController extends ControllerBase{
 
   use DependencySerializationTrait;
 
-  private $entitymanager;
-  private $currentUser;
-  private $role;
+  private $action;
 
-  function __construct(EntityManagerInterface $entityManager, $account, $routeMatch) {
-    $this->entityManager = $entityManager;
-    $this->currentUser = $account;
-    $this->role = $routeMatch->getParameter('role');
+  function __construct($routeMatch) {
+    $this->action = $routeMatch->getParameter('role');
   }
 
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity.manager'),
-      $container->get('current_user'),
       $container->get('current_route_match')
     );
   }
@@ -68,13 +63,13 @@ class WalletAutocompleteController implements ContainerInjectionInterface{
     else {
       $conditions['fragment'] = $string;
     }
+    $walletStorage = $this->entityManger()->getStorage('mcapi_wallet');
     //return only the wallets which are both permitted and meet the filter criteria
-    $walletStorage =  $this->entityManager->getStorage('mcapi_wallet');
     $results = $walletStorage->filter($conditions);
     if ($this->role != 'null') {
       $results = array_intersect(
         $results,
-        $walletStorage->walletsUserCanTransit($this->role, $this->currentUser)
+        $walletStorage->walletsUserCanActOn($this->action, $this->currentUser())
       );
     }
     return $results;

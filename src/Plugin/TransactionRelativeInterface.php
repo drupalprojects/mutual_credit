@@ -25,4 +25,10 @@ interface TransactionRelativeInterface {
    */
   public function condition(QueryInterface $query);
 
+  /**
+   *
+   * @param array $plugin_names
+   */
+  public function getUsers(TransactionInterface $transaction);
+
 }

@@ -22,7 +22,17 @@ use Drupal\mcapi\Entity\Currency;
  *   description = @Translation("One or more values, each denominated in a currency"),
  *   default_widget = "worth",
  *   default_formatter = "worth",
- *   list_class = "\Drupal\mcapi\Plugin\Field\FieldType\WorthFieldItemList"
+ *   list_class = "\Drupal\mcapi\Plugin\Field\FieldType\WorthFieldItemList",
+ *   constraints = {
+ *     "ComplexData" = {
+ *       "value" = {
+ *         "Range" = {
+ *           "min" = "0",
+ *           "max" = "2147483648",
+ *         }
+ *       }
+ *     }
+ *   }
  * )
  */
 class WorthItem extends FieldItemBase {
@@ -43,7 +53,7 @@ class WorthItem extends FieldItemBase {
       'columns' => [
         'curr_id' => [
           'description' => 'The currency ID',
-          'type' => 'varchar',//when to use varchar and when string?
+          'type' => 'varchar',
           'length' => '8',
         ],
         'value' => [

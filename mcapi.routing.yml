@@ -104,8 +104,6 @@ mcapi.wallets.autocomplete:
   requirements:
     _custom_access: 'Drupal\mcapi\Access\TransactionAccessControlHandler::enoughWallets'
     
-
-#this is replaced by the mcapi_exchanges module
 mcapi.masspay:
   path: '/transaction/masspay'
   defaults:

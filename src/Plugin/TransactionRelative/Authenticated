@@ -37,4 +37,11 @@ class Authenticated extends PluginBase implements TransactionRelativeInterface {
   public function condition(QueryInterface $query) {
 
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getUsers(TransactionInterface $transaction) {
+    return [0];
+  }
 }

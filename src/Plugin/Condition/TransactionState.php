@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\Condition\TransactionState.
@@ -8,6 +9,7 @@ namespace Drupal\mcapi\Plugin\Condition;
 
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Condition\ConditionPluginBase;
+use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -31,23 +33,39 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  *
  */
-class TransactionState extends ConditionPluginBase implements ContainerFactoryPluginInterface {
+class TransactionState extends ConditionPluginBase {
 
-  static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static(
-      $configuration,
-      $plugin_id,
-      $plugin_definition
+  /**
+   * {@inheritdoc}
+   */
+  public function summary() {
+    //hopefully the state names are translated
+    $states = array_filter($this->configuration['states']);
+    return $this->t(
+      'Transaction state is @states',
+      ['@states' => implode(',', $states)]
     );
   }
 
   /**
    * {@inheritdoc}
    */
-  public function summary() {
-    return $this->t('Transaction is in state');
+  public function defaultConfiguration() {
+    return [
+      'states' => [],
+    ] + parent::defaultConfiguration();
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    $form['states'] = [
+      '#type' => 'mcapi_states',
+      '#default_value' => $this->configuration['states'],
+    ];
+    return parent::buildConfigurationForm($form, $form_state);
+  }
   /**
    * {@inheritdoc}
    */

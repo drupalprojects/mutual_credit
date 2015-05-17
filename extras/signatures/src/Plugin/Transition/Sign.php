@@ -64,7 +64,7 @@ class Sign extends TransitionBase {
   */
   public function accessOp(TransactionInterface $transaction, AccountInterface $account) {
     //Must be a valid transaction relative AND a named signatory.
-    return parent::accessOp()
+    return parent::accessOp($transaction, $account)
       && isset($transaction->signatures)
       && is_array($transaction->signatures)// signatures property is populated
       && array_key_exists(\Drupal::currentUser()->id(), $transaction->signatures)//the current user is a signatory

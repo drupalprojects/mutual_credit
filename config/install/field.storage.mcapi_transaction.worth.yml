@@ -10,7 +10,7 @@ type: worth
 settings: {  }
 module: mcapi
 locked: true
-cardinality: 1
+cardinality: -1
 translatable: false
 indexes: {  }
 persist_with_no_fields: true

@@ -3,6 +3,7 @@
 /**
  * @file
  * Contains \Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign.
+ * @todo need to find a way to limit access to these forms
  */
 
 namespace Drupal\mcapi_1stparty\Entity;
@@ -64,57 +65,62 @@ class FirstPartyFormDesign extends ConfigEntityBase {
   public $other;
   public $experience;
   public $message;
-  public $cache; //@todo per-user cache?
 
   /**
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageInterface $storage, array &$values) {
-    $values += array(
+    $values += [
       'id' => '',
       'title' => '',
       'path' => '',
       'status' => 1,
       'type' => 'default',
-      'partner' => array(
+      'mywallet' => [
+        'stripped' => TRUE
+      ],
+      'partner' => [
         //@todo fill in the selection with something the entity_reference widget would understand
         'selection' => '',
-        'preset' => ''
-      ),
-      'direction' => array(
+        'preset' => '',
+        'stripped' => TRUE
+      ],
+      'direction' => [
         'preset' => 'outgoing',
         'widget' => 'radios',
         'incoming' => 'I request',
-        'outgoing' => 'I am paying'
-      ),
-      'description' => array(
+        'outgoing' => 'I am paying',
+        'stripped' => TRUE
+      ],
+      'description' => [
         'preset' => '',
-        'placeholder' => ''
-      ),
-      'fieldapi_presets' => array(
+        'placeholder' => '',
+        'stripped' => TRUE
+      ],
+      'fieldapi_presets' => [
         'worth' => [],//and there are likely others
-      ),
-      'other' => array(
+      ],
+      'other' => [
         'intertrade' => FALSE
-      ),
-      'step1' => array(
+      ],
+      'step1' => [
         'twig1' => 'Partner: [mcapiform:secondperson]
 Direction: [mcapiform:direction]
 [mcapiform:worth]',
         'next1' => 'page',
         'button1' => t('Preview'), //each transaction type should have an initial state
-      ),
-      'step2' => array(
+      ],
+      'step2' => [
         'title2' => t('Are you sure?'),
         'format2' => 'certificate',
         'twig2' => '',
         'next2' => 'page',
         'button2' => t('Confirm'),
         'redirect' => ''
-      ),
+      ],
       'message' => '',
       'cache' => NULL
-    );
+    ];
 
   }
 

@@ -22,10 +22,8 @@ use Drupal\Core\Url;
  */
 class TransactionViewBuilder extends EntityViewBuilder {
 
-  private $transitionManager;
 
   public function __construct(EntityTypeInterface $entity_type, EntityManagerInterface $entity_manager, LanguageManagerInterface $language_manager) {
-    $this->transitionManager = \Drupal::service('mcapi.transitions');
     $this->config = \Drupal::config('mcapi.transition.view');
     parent::__construct($entity_type, $entity_manager, $language_manager);
   }
@@ -71,11 +69,22 @@ class TransactionViewBuilder extends EntityViewBuilder {
           '#context' => get_transaction_vars($entity)
         ];
     }
-    $build['#theme_wrappers'] = ['mcapi_transaction'];
-    //for some reason in Renderer::updatestack, this bubbles up twice
-    $build['#attached']['library'][] = 'mcapi/mcapi.transaction';
-
-    //2 reasons for NOT caching transactions:
+    $build += [
+      '#theme_wrappers' => ['mcapi_transaction'],
+      '#attributes' => [
+        'class' => [
+          'transaction',
+          'type-'.$entity->type->target_id,
+          'state-' . $entity->state->target_id
+        ],
+        'id' => 'transaction-'. ($entity->serial->value ? : 0),
+      ],
+      '#attached' => [
+        //for some reason in Renderer::updatestack, this bubbles up twice
+        'library' => ['mcapi/mcapi.transaction']
+      ]
+    ];
+    //3 reasons for NOT caching transactions:
     //- it was caching twice with different contexts I couldn't find out why
     //- it was tricky separating the certificate caching from the links in the #theme_wrapper
     //- transactions are not viewed very often, more usually with views

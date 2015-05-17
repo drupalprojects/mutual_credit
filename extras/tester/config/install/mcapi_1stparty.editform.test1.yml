@@ -1,29 +1,38 @@
-id: test1
-exchange: '1'
-path: transact/test1
-title: 'Add transaction in exchange 1'
+id: pay
+path: 'transact/exchange1'
+menu:
+  title: 'Pay someone in exchange 1'
+  menu_name: Tools
+  weight: 5
+title: 'Pay someone in exchange 1'
 status: 1
 type: default
+mywallet:
+  widget: select
+  stripped: true
 partner:
-  preset: 
-direction:
   preset: ''
+  stripped: true
+direction:
+  preset: outgoing
   widget: radios
-  incoming: Request
-  outgoing: Pay
+  incoming: Incoming
+  outgoing: Outgoing
+  stripped: true
 description:
-  preset: 'Something that happened in exchange 1!'
-  placeholder: 'What was this payment for?'
-worth:
-  preset:
-    0:
-      curr_id: cc
-      value: 0
-created:
-  show: false
+  preset: ''
+  placeholder: ''
+  stripped: true
+fieldapi_presets:
+  worth:
+other:
+  intertrade: false
 experience:
-  twig: "Description {{ description }}\r\nValue {{ worth }}\r\n{{ direction }} \r\nPartner {{ partner }}\r\n{{ field_categories }}\r\ndefault categories are Transport, Food, Care, Learning, Home, Leisure"
-  button: 'Log transaction'
+  twig: "From {{ mywallet }}\r\nPay: {{ partner }}\r\n{{ worth }}\r\nfor {{ description }}"
+  button: Preview
   preview: page
-message: 'Transaction Logged'
 langcode: en
+dependencies: {  }
+third_party_settings: 
+  exchange: 1
+

@@ -37,4 +37,14 @@ class Signatory extends PluginBase implements TransactionRelativeInterface {
   public function condition(QueryInterface $query) {
 
   }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function getUsers(TransactionInterface $transaction) {
+    return db_select('mcapi_signatures', 's')->fields('s', ['uid'])
+      ->condition('serial', $transaction->serial->value)
+      ->execute()->fetchCol();
+  }
+
 }

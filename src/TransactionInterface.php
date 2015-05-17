@@ -14,19 +14,6 @@ use Drupal\Core\Entity\EntityTypeInterface;
 interface TransactionInterface extends ContentEntityInterface {
 
   /**
-   * Perform a transition on the transaction
-   *
-   * @param string $transition_name
-   *
-   * @param array $values
-   *   the form state values from the transition form
-   *
-   * @return array
-   *   a renderable array
-   */
-  public function transition($transition_name, array $values);
-
-  /**
    * load many transactions and key them by serial number instead of xid
    * @param mixed
    *   a serial number or array of serial numbers

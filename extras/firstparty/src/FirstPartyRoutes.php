@@ -20,19 +20,20 @@ class FirstPartyRoutes {
     $route_collection = new RouteCollection();
     foreach (entity_load_multiple('1stparty_editform') as $id => $editform) {
       $route = new Route($editform->path);
-      $route->setDefaults(array(
+      $route->setDefaults([
         //see mcapi_1stparty_entity_type_alter
-        '_entity_form' => 'mcapi_transaction.1stparty',
+        '_entity_form' => 'mcapi_transaction.'.$id,
         '_title_callback' => '\Drupal\mcapi_1stparty\FirstPartyTransactionForm::title'
-      ));
-      $route->setRequirements(array(
-        '_custom_access' => '\Drupal\mcapi_1stparty\TransactionFormAccessCheck::access'
-      ));
-      $route->setOptions(array(
-        'parameters' => array(
+      ]);
+      $route->setRequirements([
+        '_custom_access' => '\Drupal\mcapi_1stparty\TransactionFormAccessCheck::access',
+        '_permission' => 'design 1stparty forms'
+      ]);
+      $route->setOptions([
+        'parameters' => [
           '1stparty_editform' => $id,
-        )
-      ));
+        ]
+      ]);
       $route_collection->add('mcapi.1stparty.'.$id, $route);
     }
     return $route_collection;

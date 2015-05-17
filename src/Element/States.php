@@ -25,12 +25,14 @@ class States extends Radios {
   public function getInfo() {
     $class = get_class($this);
     return [
+      '#input' => TRUE,
+      '#title_display' => 'before',
       '#process' => [
-        array(get_class($this), 'mcapi_process_states'),
+        [get_class($this), 'mcapi_process_states'],
       ],
       '#multiple' => FALSE,
       '#pre_render' => [
-        array($class, 'preRenderCompositeFormElement'),
+        [$class, 'preRenderCompositeFormElement'],
       ]
     ];
   }
@@ -38,12 +40,12 @@ class States extends Radios {
   public static function mcapi_process_states(&$element, FormStateInterface $form_state, &$complete_form) {
     $element['#options'] = mcapi_entity_label_list('mcapi_state');
     if ($element['#multiple']) {
-      $element['#theme_wrappers'] = array('checkboxes');
+      $element['#theme_wrappers'] = ['checkboxes'];
      // $element['theme_wrappers'] = array('checkboxes');
       return Checkboxes::processCheckboxes($element, $form_state, $complete_form);
     }
     else {
-      $element['#theme_wrappers'] = array('radios');
+      $element['#theme_wrappers'] = ['radios'];
       return Radios::processRadios($element, $form_state, $complete_form);
     }
   }

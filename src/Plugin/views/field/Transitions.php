@@ -10,6 +10,9 @@ namespace Drupal\mcapi\Plugin\views\field;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\mcapi\Plugin\TransitionManager;
+use Drupal\views\Plugin\views\display\DisplayPluginBase;
+use Drupal\views\ViewExecutable;
 
 /**
  * Field handler to show transaction transitions according to context
@@ -28,6 +31,11 @@ class Transitions extends FieldPluginBase {
     $options['mode'] = array('default' => 'page');
     $options['view'] = array('default' => TRUE);
     return $options;
+  }
+
+  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+    parent::init($view, $display, $options);
+    $this->transitionManager = \Drupal::service('mcapi.transition_manager');
   }
 
   /**
@@ -61,10 +69,9 @@ class Transitions extends FieldPluginBase {
   }
 
   function render(ResultRow $values) {
-    return $this->viewBuilder->renderLinks(
-      $this->getEntity($values),
-      $this->options['view'] ? 'sentence' : 'certificate'
-    );
+    //second param can be anything except certificate.
+    return $this->transitionManager
+      ->getLinks($this->getEntity($values, '-'));
   }
 
 }

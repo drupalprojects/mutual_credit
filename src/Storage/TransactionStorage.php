@@ -38,9 +38,12 @@ class TransactionStorage extends TransactionIndexStorage {
     //and in fact be several records
     //NB currently transactions are NOT revisionable
     if ($is_new = $entity->isNew()) {
-      $entity->serial->value = $this->database->nextId($this->database->query(
+      $last = $this->database->query(
         "SELECT MAX(serial) FROM {mcapi_transaction}"
-      )->fetchField());
+      )->fetchField();
+      drupal_set_message('Last database id for transaction is'.$last);
+      $entity->serial->value = $this->database->nextId($last);
+      drupal_set_message('Next database id for transaction is'.$entity->serial->value);
     }
 
     $parent = 0;

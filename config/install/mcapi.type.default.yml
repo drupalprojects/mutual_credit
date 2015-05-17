@@ -2,4 +2,10 @@ id: default
 label: Default
 description: Simplest transaction type
 start_state: done
-module: mcapi
+status: true
+dependencies: { }
+third_party_settings:
+  mcapi_signatures:
+    signatures:
+      payer: payer
+      payee: payee

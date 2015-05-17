@@ -52,6 +52,8 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
   /**
    * {@inheritdoc}
    * $ops are details, summary, payin, payout
+   *
+   * @todo this should be called during transaction validation
    */
   public function checkAccess(EntityInterface $entity, $op, $langcode, AccountInterface $account) {
     if ($result = $this->initialChecks($entity, $op, $account)) {

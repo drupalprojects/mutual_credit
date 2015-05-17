@@ -39,4 +39,15 @@ class Anon extends PluginBase implements TransactionRelativeInterface {
   }
 
   public function access(){}
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getUsers(TransactionInterface $transaction) {
+    return db_select('users_field_data', 'd')
+      ->fields('d', ['uid'])
+      ->condition('status', 1)
+      ->execute()->fetchCol();
+  }
 }

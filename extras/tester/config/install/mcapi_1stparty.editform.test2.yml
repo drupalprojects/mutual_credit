@@ -1,29 +1,38 @@
-id: test2
-exchange: '2'
-title: Add transaction in exchange 2
+id: pay
+path: 'transact/exchange2'
+menu:
+  title: 'Pay someone in exchange 2'
+  menu_name: Tools
+  weight: 5
+title: 'Pay someone in exchange 2'
 status: 1
 type: default
+mywallet:
+  widget: select
+  stripped: true
 partner:
   preset: ''
+  stripped: true
 direction:
   preset: outgoing
   widget: radios
-  incoming: 'I request'
-  outgoing: 'I am paying'
+  incoming: Incoming
+  outgoing: Outgoing
+  stripped: true
 description:
   preset: ''
   placeholder: ''
-worth:
-  preset:
-    0:
-      curr_id: veur
-      value: 0
-created:
-  show: false
+  stripped: true
+fieldapi_presets:
+  worth:
+other:
+  intertrade: false
 experience:
-  twig: "my wallet {{ mywallet }}\r\ndescription {{ description }}\r\nworths {{ worth }}\r\npartner {{ partner }}\r\ndirection {{ direction }}\r\ncreated {{ created }}\r\ncategories {{ field_categories }}\r\ndefault categories are Transport, Food, Care, Learning, Home, Leisure"
-  button: 'do it now!'
-  preview: modal
-message: 'You did it!'
+  twig: "From {{ mywallet }}\r\nPay: {{ partner }}\r\n{{ worth }}\r\nfor {{ description }}"
+  button: Preview
+  preview: page
 langcode: en
-path: transact/testexchange2
+dependencies: {  }
+third_party_settings: 
+  exchange: 2
+

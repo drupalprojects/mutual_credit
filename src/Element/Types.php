@@ -21,15 +21,17 @@ class Types extends Radios {
    */
   public function getInfo() {
     $class = get_class($this);
-    return array(
+    return [
       '#input' => TRUE,
       '#title_display' => 'before',
-      '#process' => array(
-        array($class, 'mcapi_process_types'),
-      ),
-      '#theme_wrappers' => array('form_element'),
-      '#theme' => 'select'
-    );
+      '#process' => [
+        [$class, 'mcapi_process_types'],
+      ],
+      '#pre_render' => [
+        [$class, 'preRenderCompositeFormElement'],
+      ],
+      '#multiple' => FALSE,
+    ];
   }
 
   /**
@@ -40,6 +42,15 @@ class Types extends Radios {
    */
   static function mcapi_process_types($element) {
     $element['#options'] = mcapi_entity_label_list('mcapi_type');
+    if ($element['#multiple']) {
+      $element['#theme_wrappers'] = ['checkboxes'];
+     // $element['theme_wrappers'] = array('checkboxes');
+      return Checkboxes::processCheckboxes($element, $form_state, $complete_form);
+    }
+    else {
+      $element['#theme_wrappers'] = ['select'];
+      return Radios::processRadios($element, $form_state, $complete_form);
+    }
     return $element;
   }
 

@@ -28,16 +28,16 @@ const CURRENCY_TYPE_EXCHANGE = 'exchange';
 const CURRENCY_TYPE_COMMODITY = 'commodity';
 
 //
-const WALLET_ACCESS_OWNER =  'o';//this is replaced with a named user
-const WALLET_ACCESS_AUTH = '2';//this is the role id
 const WALLET_ACCESS_ANY = '1';//this is the role id
+const WALLET_ACCESS_AUTH = '2';//this is the role id
 const WALLET_ACCESS_USERS = 'u';//user id is in the wallet access table
+const WALLET_ACCESS_OWNER =  'o';//this is replaced with a named user MAYBE NOT NEEDED?
 
 const MCAPI_MAX_DESCRIPTION = 255;
 
-const TRANSITION_DISPLAY_NORMAL = 0;
-const TRANSITION_DISPLAY_AJAX = 1;
-const TRANSITION_DISPLAY_MODAL = 2;
+const MCAPI_CONFIRM_NORMAL = 0;
+const MCAPI_CONFIRM_AJAX = 1;
+const MCAPI_CONFIRM_MODAL = 2;
 
 /**
  * implements hook_requirements().
@@ -173,7 +173,7 @@ function mcapi_entity_label_list($entity_type_id, array $data = []) {
     $entities = \Drupal::entityManager()->getStorage($entity_type_id)->loadMultiple($data);
   }
   else $entities = $data;
-  if (property_exists($entity, 'weight') && count($entities) > 1) {
+  if (property_exists(current($entities), 'weight') && count($entities) > 1) {
     uasort($list, 'mcapi_uasort_weight');
   }
   $list = [];
@@ -390,9 +390,9 @@ function mcapi_theme() {
       'view_mode' => ''
     ]
   ] + $file;
-  $items['wallet_wrapper'] = [
-     'render element' => 'element'
-  ];
+  //$items['wallet_wrapper'] = [
+  //'render element' => 'element'
+  //];
   $items['wallet_balances'] = [
     'variables' => [
       'wallet' => NULL,
@@ -501,19 +501,12 @@ function mcapi_default_display_fields() {
 }
 
 /**
- * implements hook_form_FORM_ID_alter().
- * @todo remove this when https://www.drupal.org/node/2480277 is addressed
- */
-function mcapi_form_mcapi_transaction_form_alter(&$form, $form_state) {
-  $form['payer']['widget'][0]['target_id']['#type'] = 'select_wallet';
-  $form['payee']['widget'][0]['target_id']['#type'] = 'select_wallet';
-}
-
-/**
  * implements hook_entity_type_alter().
  * helps the wallet autocomplete to find the username
- * @todo see if the user & node 'entity keys' have a label after beta 9 or if entity_keys is alterable
+ * @note I'm not sure why the label key was removed from the user entityType
  */
 function mcapi_entity_type_alter(array &$entity_types) {
-  //$entity_types['user']->entity_keys['label'] = 'name';
+  $keys = $entity_types['user']->get('entity_keys');
+  $keys['label'] = 'name';
+  $keys = $entity_types['user']->set('entity_keys', $keys);
 }

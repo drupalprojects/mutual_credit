@@ -12,6 +12,7 @@ use Drupal\Core\Form\FormInterface;
 use Drupal\Core\Url;
 use Drupal\mcapi_exchanges\Entity\Exchange;//only if enabled!
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
+use Drupal\Core\Access\AccessManager;
 
 /**
  * Provides a listing of contact categories.
@@ -32,10 +33,10 @@ class FirstPartyEditFormListBuilder extends ConfigEntityListBuilder{
    */
   public function buildRow(EntityInterface $entity) {
       $style = array('style' => $entity->status ? '' : 'color:#999');
-      //$class = array('style' => $entity->status ? 'enabled' : 'disabled');
-      //@todo make a link out of this
-      $name = $entity->access('blah') ?
-        \Drupal::l($entity->label(), Url::fromRoute('mcapi.1stparty.'.$entity->id())) :
+      $route_name = 'mcapi.1stparty.'.$entity->id;
+      $accessManager = \Drupal::service('access_manager');
+      $name = $accessManager->checkNamedRoute($route_name) ?
+        \Drupal::l($entity->label(), Url::fromRoute($route_name)) :
         $entity->label();
       $row['title'] = $style + array(
         'data' => $name
@@ -43,9 +44,6 @@ class FirstPartyEditFormListBuilder extends ConfigEntityListBuilder{
       $row['transaction_type'] = $style + array(
         'data' => array('#markup' => $entity->type)
       );
-
-      //@todo load mcapi.css somehow to show the disabled forms in gray using ths class above.
-      //Also see the McapiForm listBuilder.
       return $row + parent::buildRow($entity);
 
   }

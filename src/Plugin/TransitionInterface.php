@@ -22,12 +22,25 @@ interface TransitionInterface extends ConfigurablePluginInterface, PluginFormInt
    * inject something into the transition form
    * the values will be passed into the transition execute function
    *
+   * @param array $form
    * @param TransactionInterface $transaction
    *
    * @return array
    *   Renderable FormAPI elements
    */
- function form(TransactionInterface $transaction);
+ function form(array &$form, TransactionInterface $transaction);
+
+  /**
+   * inject something into the transition form
+   * the values will be passed into the transition execute function
+   *
+   * @param array $form
+   * @param TransactionInterface $transaction
+   *
+   * @return array
+   *   Renderable FormAPI elements
+   */
+ function validateForm(array $form, FormStateInterface $form_state);
 
 	/**
 	 * Access control function to determine whether this

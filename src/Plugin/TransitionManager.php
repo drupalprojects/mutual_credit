@@ -2,16 +2,20 @@
 
 /**
  * @file
+ * Definition of Drupal\mcapi\Plugin\TransitionManager.
  */
 
 namespace Drupal\mcapi\Plugin;
 
+use Drupal\mcapi\TransactionInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Url;
+use Drupal\Component\Serialization\Json;
+//use Drupal\Core\Ajax\ReplaceCommand;
 
 class TransitionManager extends DefaultPluginManager {
 
@@ -160,9 +164,10 @@ class TransitionManager extends DefaultPluginManager {
               'transition' => $transition
             ])
           ];
-          if ($plugin->display != TRANSITION_DISPLAY_NORMAL) {
-
-            if ($plugin->display == TRANSITION_DISPLAY_MODAL) {
+          //@todo consider abstracting the funky link_building so it works in buttons too.
+          $display = $plugin->getConfiguration('display');
+          if ($display != MCAPI_CONFIRM_NORMAL) {
+            if ($display == MCAPI_CONFIRM_MODAL) {
               $renderable['#attached']['library'][] = 'core/drupal.ajax';
               $renderable['#links'][$transition]['attributes'] = [
                 'class' => ['use-ajax'],
@@ -170,11 +175,13 @@ class TransitionManager extends DefaultPluginManager {
                 'data-dialog-options' => Json::encode(['width' => 500])
               ];
             }
-            //@todo make ajax work
-            elseif($plugin->display == TRANSITION_DISPLAY_AJAX) {
-              drupal_set_message('ajax mode needs work...');
-              $renderable['#attached']['library'][] = 'core/drupal.ajax';
-              $renderable['#links'][$transition]['attributes'] = $attr;
+            elseif($display == MCAPI_CONFIRM_AJAX) {
+              //curious how, to make a ajax link it seems necessary to put the url in 2 places
+              $renderable['#links'][$transition]['ajax'] = [
+                'wrapper' => 'transaction-'.$transaction->serial->value,
+                'method' => 'replace',
+                'url' => $renderable['#links'][$transition]['url']
+              ];
             }
           }
           if(!$plugin->getConfiguration('redirect') && $transition != 'view'){
@@ -190,8 +197,7 @@ class TransitionManager extends DefaultPluginManager {
           '#attributes' => new Attribute(
             ['class' => ['transaction-transitions']]
           ),
-          '#cache' => [
-          ]
+          '#cache' => []
         ];
       }
     }

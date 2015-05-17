@@ -670,11 +670,33 @@ function mcapi_exchanges_preprocess_mcapi_currency(&$vars) {
 }
 
 function mcapi_exchanges_form_transaction_transition_edit_form(&$form, &$form_state) {
-    //payer and payee wallets MUST be limited to the same exchange as the transaction
-    foreach (['payer', 'payee'] as $wallet) {
-      if (array_key_exists($wallet, $form)) {
-        //in fact this might all be done with entity_autocomplete
-        $form[$wallet]['#exchanges'] = [$transaction->exchange->target_id];
-      }
+  //payer and payee wallets MUST be limited to the same exchange as the transaction
+  foreach (['payer', 'payee'] as $wallet) {
+    if (array_key_exists($wallet, $form)) {
+      //in fact this might all be done with entity_autocomplete
+      $form[$wallet]['#exchanges'] = [$transaction->exchange->target_id];
     }
+  }
+}
+
+function mcapi_exchanges_form_first_party_editform_alter($form, $form_state) {
+  
+  $configEntity = $form_state->getFormObject()->entity;
+  //ensure the worth field is showing all possible currencies ()
+  $exchange = $configEntity->exchange ?
+    entity_load('mcapi_exchange', $configEntity->exchange) :
+    NULL;
+
+  if ($exchange) {//for the exchange
+    foreach($exchange->currencies->referencedEntities() as $entity) {
+      $form['fieldapi_presets']['worth']['preset']['#allowed_curr_ids'][] = $entity->id();
+    }
+    $form['partner']['preset']['#description'] = $this->t("Wallet owner must be, or be in, exchange '!name'.", ['!name' => $exchange->label]),
+  }
+  $form['menu']['#states'] = [
+    'visible' => [
+      ':input[name="exchange"]' => ['value' => ''],
+    ]
+  ];
+
 }

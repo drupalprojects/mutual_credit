@@ -8,6 +8,8 @@
 
 namespace Drupal\mcapi_1stparty\Form;
 
+use Drupal\mcapi\Entity\Transaction;
+use Drupal\Core\Render\Element;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
@@ -27,14 +29,18 @@ class FirstPartyFormDesigner extends EntityForm {
     $form = parent::form($form, $form_state);
     //widgetBase::Form expects this
     $form['#parents'] = [];
+    $element = ['#required' => FALSE];
+
+    $default_fields = mcapi_default_display_fields();
+    unset($default_fields['payer'], $default_fields['payee']);
 
     $configEntity = $this->entity;
     $configEntity->set('fieldapi_presets', []);
-    $template_transaction = mcapi_1stparty_make_template($configEntity);
+    $transaction = $this->makeTemplate($configEntity);
 
     $form['#tree'] = TRUE;
     $w = 0;
-    $form['title'] = array(
+    $form['title'] = [
       '#type' => 'textfield',
       '#title' => t('Title of the form'),
       '#default_value' => $configEntity->title,
@@ -42,311 +48,289 @@ class FirstPartyFormDesigner extends EntityForm {
       '#maxlength' => 80,
       '#required' => TRUE,
       '#weight' => $w++,
-    );
+    ];
 
-    $form['id'] = array(
+    $form['id'] = [
       '#type' => 'machine_name',
       '#default_value' => $configEntity->id(),
-      '#machine_name' => array(
+      '#machine_name' => [
         'exists' => 'mcapi_editform_load',
-        'source' => array('title'),
-      ),
+        'source' => ['title'],
+      ],
       '#maxlength' => 12,
       '#disabled' => !$configEntity->isNew(),
-    );
+    ];
 
-    $exchange = $configEntity->exchange ?
-      entity_load('mcapi_exchange', $configEntity->exchange) :
-      NULL;
-
-    $form['path'] = array(
-      '#title' => t('Path'),
-      '#description' => t('The url path at which this form will appear. Must be unique. E.g. myexchange/payme'),
+    $form['path'] = [
+      '#title' => $this->t('Path'),
+      '#description' => t('The url path at which this form will appear. Must be unique.'),
       '#type' => 'textfield',
       '#weight' => $w++,
-      '#element_validate' => array(
-        array(get_class($this), 'unique_path')
-      ),
+      '#element_validate' => [
+        [get_class($this), 'unique_path']
+      ],
       '#default_value' => $configEntity->path,
+      '#placeholder' => $this->t('internal/path'),
       '#required' => TRUE
-    );
+    ];
 
-    $form['menu'] = array(
+    $form['menu'] = [
       '#title' => $this->t('Menu link'),
       '#type' => 'details',
       '#weight' => $w++,
-      'title' => array(
+      'title' => [
         '#title' => $this->t('Link title'),
         '#type' => 'textfield',
         '#default_value' => $configEntity->menu['title'],
         '#weight' => 1
-      ),
-      'weight' => array(
+      ],
+      'weight' => [
         '#title' => $this->t('Weight'),
         '#type' => 'textfield',
         '#default_value' => $configEntity->menu['weight'],
         '#description' => $this->t('In the menu, the heavier links will sink and the lighter links will be positioned nearer the top.'),
         '#weight' => 2
-      ),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="exchange"]' => array('value' => ''),
-        )
-      )
-    );
+      ]
+    ];
 
     foreach (\Drupal\system\Entity\Menu::loadMultiple() as $menu_name => $menu) {
       $custom_menus[$menu_name] = $menu->label();
     }
-    $form['menu']['menu_name'] = array(
-      '#title' => t('Menu'),
+    $form['menu']['menu_name'] = [
+      '#title' => $this->t('Menu'),
       '#type' => 'select',
       '#options' =>  $custom_menus,
       '#required' => FALSE,
       '#empty_value' => '',
       '#default_value' => $configEntity->menu['menu_name'],
       '#weight' => 2
-    );
+    ];
 
-    $form['type'] =  array(
-      '#title' => t('Transaction type'),
+    $form['type'] =  [
+      '#title' => $this->t('Transaction type'),
       '#type' => 'mcapi_types',
       '#default_value' => $configEntity->type,
       '#weight' => $w++,
-    );
-    $form['cache'] =  array(
-      '#title' => t('Caching'),
-      '#description' => 'Not yet implemented',
-      '#type' => 'select',
-      '#options' => array(
-        '' => t('-- none --'),
-        'global' => t('Global'),
-      ),
-      '#default_value' => '',
-      '#weight' => $w++,
-    );
+    ];
 
     //following section of the form allows the admin to handle the individual fields of the transaction form.
     //the fields are handled here one in each tab, each field having some shared settings and some specific ones.
-    $form['steps'] = array(
-      '#title' => t('Field settings'),
-      '#description' => t('Missing fields?'),
+    $form['steps'] = [
+      '#title' => $this->t('Field settings'),
       '#type' => 'vertical_tabs',
       '#weight' => $w++,
-      '#attributes' => new Attribute(array('id' => array('field-display-overview-wrapper'))),
-      //'#attributes' => array('id' => array('field-display-overview-wrapper'))
-    );
+      '#attributes' => new Attribute(['id' => ['field-display-overview-wrapper']]),
+      //'#attributes' => ['id' => ['field-display-overview-wrapper'))
+    ];
 
-    $form['mywallet'] = array(
-      '#title' => t('My wallets settings'),
-      '#description' => t("Choose from the current user's wallets."),
+    $form['mywallet'] = [
+      '#title' => $this->t('My wallets settings'),
+      '#description' => $this->t("Choose from the current user's wallets."),
       '#type' => 'details',
       '#group' => 'steps',
       '#weight' => $w++
-    );
-    $form['mywallet']['widget'] = array(
-      '#title' => t('Widget'),
-      '#description' => t('Only for users with more than one wallet.'),
+    ];
+    $form['mywallet']['widget'] = [
+      '#title' => $this->t('Widget'),
+      '#description' => $this->t('Only for users with more than one wallet.'),
       '#type' => 'radios',
-      '#options' => array(
-        'select' => t('Dropdown'),
-        'radios' => t('Radio buttons'),
-      ),
+      '#options' => [
+        'select' => $this->t('Dropdown'),
+        'radios' => $this->t('Radio buttons'),
+      ],
       '#default_value' => $configEntity->mywallet['widget'],
-    );
-    $form['mywallet']['unused'] = array(
-      '#title' => t('Unused behaviour'),
-      '#description' => t('What to do when the user has just one wallet?'),
+    ];
+    $form['mywallet']['unused'] = [
+      '#title' => $this->t('Unused behaviour'),
+      '#description' => $this->t('What to do when the user has just one wallet?'),
       '#type' => 'radios',
-      '#options' => array(
-        'disabled' => t('Greyed out'),
-        'hidden' => t('Disappeared'),
-      ),
+      '#options' => [
+        'disabled' => $this->t('Greyed out'),
+        'hidden' => $this->t('Disappeared'),
+      ],
       '#default_value' => intval($configEntity->mywallet['unused']),
-    );
+    ];
 
-    $form['partner'] = array(
-      '#title' => t('@fieldname settings', array('@fieldname' => t('Partner'))),
-      '#descriptions' => t('In complex sites, it may be possible to choose a user who cannot use the currency'),
+    $form['partner'] = [
+      '#title' => $this->t('@fieldname settings', ['@fieldname' => $this->t('Partner')]),
+      '#description' => $this->t('In complex sites, it may be possible to choose a user who cannot use the currency'),
       '#type' => 'details',
       '#group' => 'steps',
       '#weight' => $w++
-    );
-    //if this form belongs to an exchange we can use the local_wallets autocomplete widget
-    $form['partner']['preset'] = array(
-      '#title' => t('Preset'),
-      '#description' => $exchange ? t("Wallet owner must be, or be in, exchange '!name'.", array('!name' => $exchange->label())) : '',
+    ];
+    $form['partner']['preset'] = [
+      '#title' => $this->t('Preset'),
       '#type' => 'select_wallet',
-      '#local' => (bool)$exchange,
       '#default_value' => $configEntity->partner['preset'],
       '#multiple' => FALSE,
       '#required' => FALSE
-    );
+    ];
 
-    $form['direction']= array(
-      '#title' => t('@fieldname settings', array('@fieldname' => t('Direction'))),
-      '#description' => t('Direction relative to the current user'),
+
+    $form['direction'] = [
+      '#title' => $this->t('@fieldname settings', ['@fieldname' => t('Direction')]),
+      '#description' => $this->t('Direction relative to the current user'),
       '#type' => 'details',
       '#group' => 'steps',
-      'preset' => array(
-        '#title' => t('Preset'),
-        '#description' => t("Either 'incoming' or 'outgoing' relative to the logged in user"),
+      'preset' => [
+        '#title' => $this->t('Preset'),
+        '#description' => $this->t("Either 'incoming' or 'outgoing' relative to the logged in user"),
         '#type' => $configEntity->direction['widget'],
-        //ideally these options labels would be live updated from the fields below
-        '#options' => array(
-          '' => t('Neither'),
-          'incoming' => empty($configEntity->direction['incoming']) ? t('Incoming') : $configEntity->direction['incoming'],
-          'outgoing' => empty($configEntity->direction['outgoing']) ? t('Outgoing') : $configEntity->direction['outgoing'],
-        ),
+        //ideally these options labels wod be live updated from the fields below
+        '#options' => [
+          '' => $this->t('Neither'),
+          'incoming' => empty($configEntity->direction['incoming']) ? $this->t('Incoming') : $configEntity->direction['incoming'],
+          'outgoing' => empty($configEntity->direction['outgoing']) ? $this->t('Outgoing') : $configEntity->direction['outgoing'],
+        ],
         '#default_value' => $configEntity->direction['preset'],
         '#required' => TRUE
-      ),
-      'widget' => array(
-        '#title' => t('Widget'),
+      ],
+      'widget' => [
+        '#title' => $this->t('Widget'),
         '#type' => 'radios',
-        '#options' => array(
-          'select' => t('Dropdown select box'),
-          'radios' => t('Radio buttons')
-        ),
+        '#options' => [
+          'select' => $this->t('Dropdown select box'),
+          'radios' => $this->t('Radio buttons')
+        ],
         '#default_value' => $configEntity->direction['widget'],
         '#required' => TRUE,
         '#weight' => 1,
-      ),
-      'incoming' => array(
-        '#title' => t("@label option label", array('@label' => t('Incoming'))),
+      ],
+      'incoming' => [
+        '#title' => $this->t("@label option label", ['@label' => $this->t('Incoming')]),
         '#type' => 'textfield',
         '#default_value' => $configEntity->direction['incoming'],
-        '#placeholder' => t('Pay'),
+        '#placeholder' => $this->t('Pay'),
         '#required' => TRUE,
         '#weight' => 2
-      ),
-      'outgoing' => array(
-        '#title' => t("@label option label",  array('@label' => t('Outgoing'))),
+      ],
+      'outgoing' => [
+        '#title' => $this->t("@label option label",  ['@label' => $this->t('Outgoing')]),
         '#type' => 'textfield',
         '#default_value' => $configEntity->direction['outgoing'],
-        '#placeholder' => t('Request'),
+        '#placeholder' => $this->t('Request'),
         '#required' => TRUE,
         '#weight' => 3
-      ),
+      ],
       '#weight' => $w++
-    );
+    ];
 
-    $form['description']= array(
-      '#title' => t('@fieldname settings', array('@fieldname' => t('Description'))),
-      '#description' => t('Direction relative to the current user'),
+    $preset = $default_fields['description']['widget']
+      ->formElement($transaction->description, 0, $element, $form, $form_state);
+    $form['description'] = [
+      '#title' => $this->t('@fieldname settings', ['@fieldname' => $this->t('Description')]),
+      '#description' => $this->t('Direction relative to the current user'),
       '#type' => 'details',
       '#group' => 'steps',
-      'preset' => array(
-        '#title' => t('Preset'),
-        '#type' => 'textfield',
-        '#default_value' => $configEntity->description['preset'],
-        '#required' => FALSE,
-      ),
-      'placeholder' => array(
-        '#title' => t('Placeholder'),
+      'placeholder' => [
+        '#title' => $this->t('Placeholder'),
         '#type' => 'textfield',
         '#default_value' => $configEntity->description['placeholder'],
         '#required' => FALSE,
-      ),
+      ],
+      'preset' => $preset['value'] + ['#title' => $this->t('Preset')],
       '#weight' => $w++
-    );
-    //@todo inject the module handler
+    ];
     if ($this->moduleHandler->moduleExists('field_ui')) {
       //iterate through the field api fields adding a vertical tab for each
-      foreach (mcapi_default_display_fields() as $field_name => $data) {
+
+      $moreInfo = $this->t(
+        'For more field configuration options, see !link',
+        ['!link' => $this->l(
+          'admin/accounting/transactions/form-display',
+          Url::fromRoute('entity.entity_form_display.mcapi_transaction.default')
+        )]
+      );
+
+      unset($default_fields['description']);
+      //created, categories, worth
+      foreach ($default_fields as $field_name => $data) {
         //$data is an array with 'definition' and 'widget'
+        extract($data);
         //this element will contain the default value ONLY for the fieldAPI element
         //assumes a cardinality of 1!
-        $element = [];
-        $element['#required'] = FALSE;
-        $form['fieldapi_presets'][$field_name] = array(
-          '#title' => $this->t('@fieldname preset', array('@fieldname' => $data['definition']->getLabel())),
-          '#description' => $this->t(
-            'For more field configuration options, see !link',
-            array('!link' => $this->l(
-              'admin/accounting/transactions/form-display',
-              Url::fromRoute('entity.entity_form_display.mcapi_transaction.default')
-            ))
+        $form[$field_name] = [
+          '#title' => $this->t(
+            '@fieldname preset',
+            ['@fieldname' => $data['definition']->getLabel()]
           ),
-          '#description_display' => 'below',//not working
+          '#description' => $moreInfo,
           '#type' => 'details',
           '#group' => 'steps',
-          'preset' => $data['widget']->formElement($template_transaction->{$field_name}, 0, $element, $form, $form_state),
+          'preset' => $data['widget']->formElement($transaction->$field_name, 0, $element, $form, $form_state),
           '#weight' => $w++
-        );
+        ];
+      }
+    }
+    foreach (Element::children($form) as $child) {
+      //@todo test these are saved and retrieved, then make the strip work.
+      if (isset($form[$child]['#group'])) {
+        $form[$child]['stripped'] = [
+          '#title' => $this->t('Remove the outer div with the title and description.'),
+          '#type' => 'checkbox',
+          '#default_value' => FALSE,
+          '#weight' => 5
+        ];
       }
     }
 
-    //ensure the worth field is showing all possible currencies ()
-    if ($exchange) {//for the exchange
-      foreach($exchange->currencies->referencedEntities() as $entity) {
-        $curr_ids[] = $entity->id();
-      }
-    }
-    else {//or for the whole system
-      $curr_ids = array_keys(entity_load_multiple('mcapi_currency'));
-    }
-    $form['fieldapi_presets']['worth']['preset']['#allowed_curr_ids'] = $curr_ids;
+    $form['fieldapi_presets']['worth']['preset']['#allowed_curr_ids'] = array_keys(entity_load_multiple('mcapi_currency'));
     //other modifications to the worth widget before it is processed
     $form['fieldapi_presets']['worth']['preset']['#config'] = TRUE;
     $form['fieldapi_presets']['worth']['preset']['#description'] = t('Currencies with blank in the left-most field will not appear on the form.') .' '.t('Leave every row blank to let the system decide which ones to show.');
 
-    $form['fieldapi_presets_help'] = array(
-      '#markup' => 'blah',
-      '#weight' => $w++
-    );
-    //@todo check in 8.0 whether form elements can have rich text descriptions
-    $help = $this->l(
-      t('What is twig?'),
-      Url::fromUri('http://twig.sensiolabs.org/doc/templates.html')
-    );
-    $tokens = ' {{ '. implode(' }}, {{ ', mcapi_1stparty_transaction_tokens()) .' }}';
-    //@todo workout what the tokens are and write them in template1['#description']
-    $form['experience'] = array(
-      '#title' => t('User experience'),
+    $form['experience'] = [
+      '#title' => $this->t('User experience'),
       '#type' => 'details',
       '#open' => TRUE,
-      'twig' => array(
-        '#title' => t('Main form'),
-        '#description' => t('Use the following twig tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically.')
-          . $tokens .' '. $help,
+      'twig' => [
+        '#title' => $this->t('Main form'),
+        '#description' => implode(' ', [
+          $this->t('Use the following twig tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically.'),
+          ' {{ '. implode(' }}, {{ ', mcapi_1stparty_transaction_tokens()) .' }}',
+          $this->l(
+            $this->t('What is twig?'),
+            Url::fromUri('http://twig.sensiolabs.org/doc/templates.html')
+          )
+        ]),
         '#type' => 'textarea',
         '#rows' => 6,
         '#default_value' => $configEntity->experience['twig'],
-        '#element_validate' => array(
-          array(get_class($this), 'validate_twig_template')
-        ),
+        '#element_validate' => [
+          [get_class($this), 'validate_twig_template']
+        ],
         '#weight' => 1,
         '#required' => TRUE
-      ),
-      'button' => array(
-        '#title' => t('Button label'),
-        '#description' => t("The text to appear on the 'save' button, or the absolute url of an image."),
+      ],
+      'button' => [
+        '#title' => $this->t('Button label'),
+        '#description' => $this->t("The text to appear on the 'save' button, or the absolute url of an image."),
         '#type' => 'textfield',
         '#default_value' => $configEntity->experience['button'],
         '#required' => TRUE,
         '#weight' => 2,
-      ),
-      'preview' => array(
-        '#title' => t('Preview mode'),
+      ],
+      'preview' => [
+        '#title' => $this->t('Preview mode'),
         '#type' => 'radios',
-        '#options' => array(
-          'page' => t('Basic - Go to a fresh page'),
-          'ajax' => t('Ajax - Replace the transaction form'),
-          'modal' => t('Modal - Confirm in a dialogue box')
-        ),
+        '#options' => [
+          MCAPI_CONFIRM_NORMAL => $this->t('Basic - Go to a fresh page'),
+          MCAPI_CONFIRM_AJAX => $this->t('Ajax - Replace the form'),
+          MCAPI_CONFIRM_MODAL => $this->t('Modal - Confirm in a dialogue box')
+        ],
         '#default_value' => $configEntity->experience['preview'],
         '#weight' => 3,
         '#required' => TRUE
-      ),
+      ],
       '#weight' => $w++,
-    );
-    $form['#suffix'] = t(
+    ];
+
+    $form['#suffix'] = $this->t(
       "N.B The confirmation page is configured separately, at !link",
-      array('!link' => $this->l(
+      ['!link' => $this->l(
         'admin/accounting/workflow/create',
-        Url::fromRoute('mcapi.workflow_settings', array('transition' => 'create'))
-      ))
+        Url::fromRoute('mcapi.workflow_settings', ['transition' => 'create'])
+      )]
     );
 
     return $form;
@@ -358,7 +342,7 @@ class FirstPartyFormDesigner extends EntityForm {
   public function validateForm(array &$form, FormStateInterface $form_state) {
     $max = $this->config('mcapi.wallets')->get('entity_types')['user:user'];
     $text = $form_state->getValue('experience')['twig'];
-    $mywallet = !is_boolean(strpos($txt, "{{ mywallet }}"));
+    $mywallet = !is_bool(strpos($txt, "{{ mywallet }}"));
     if ($max > 1 && !$mywallet) {
       $message = $this->t(
         '@token token is required in template',
@@ -420,9 +404,8 @@ class FirstPartyFormDesigner extends EntityForm {
       $values['fieldapi_presets'][$field_name] = $data['preset'];
     }
     $form_state->setValue('fieldapi_presets', $values['fieldapi_presets']);
-
     foreach ($values as $name => $value) {
-      if (!in_array($value, array('actions', 'langcode'))) {
+      if (!in_array($value, ['actions', 'langcode'])) {
         $this->entity->set($name, $value);
       }
     }
@@ -430,10 +413,10 @@ class FirstPartyFormDesigner extends EntityForm {
     \Drupal::service('router.builder')->rebuild();
 
     if ($status == SAVED_UPDATED) {
-      drupal_set_message(t("Form '%label' has been updated.", array('%label' => $this->entity->get('title'))));
+      drupal_set_message(t("Form '%label' has been updated.", ['%label' => $this->entity->get('title')]));
     }
     else {
-      drupal_set_message(t("Form '%label' has been added.", array('%label' => $this->entity->get('title'))));
+      drupal_set_message(t("Form '%label' has been added.", ['%label' => $this->entity->get('title')]));
     }
     $form_state->setRedirect('mcapi.admin_1stparty_editform_list');
   }
@@ -442,12 +425,38 @@ class FirstPartyFormDesigner extends EntityForm {
   public static function unique_path(&$element, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     $dupe = db_select('router', 'r')
-      ->fields('r', array('name'))
+      ->fields('r', ['name'])
       ->condition('name', 'mcapi.1stparty.'.$values['id'], '<>')
       ->condition('path', $values['path'])
       ->execute()->fetchField();
     if ($dupe) $form_state->setError('path', t('Path is already used.'));
   }
+
+  /**
+   * Make a transaction entity loaded up with the defaults from the Designed form
+   * @param object $configEntity
+   * @return mcapi_transaction
+   *   a partially populated transaction entity
+   */
+  private function makeTemplate($configEntity) {
+    $props = [
+      'type' => $configEntity->get('type'),
+      'description' => $configEntity->get('description')['preset']
+    ];
+    //we can't set a default for mywallet because it is differnet for every user
+    if ($configEntity->get('direction')['preset'] == 'outgoing') {
+      $props['payee'] = $configEntity->get('partner')['preset'];
+    }
+    else {
+      $props['payer'] = $configEntity->get('partner')['preset'];
+    }
+    foreach ($configEntity->get('fieldapi_presets') as $fieldname => $value) {
+      $props[$fieldname] = $value;
+    }
+    //so the worth defaults have been copied right out of the saved entity
+    return Transaction::Create($props);
+  }
+
 }
 
 

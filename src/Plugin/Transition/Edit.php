@@ -36,39 +36,36 @@ class Edit extends TransitionBase {
     if ($transaction->created->value + 86400*$days < REQUEST_TIME) {
       return FALSE;
     }
-    //because children responding to parent edits is too much of a headache
-    if ($transaction->children) return FALSE;
     return parent::accessOp($transaction, $account);
   }
 
   /**
    * {inheritdoc}
    */
-  public function form(TransactionInterface $transaction) {
-    //Test generating widgets for all fields.
-
-    $display = entity_get_form_display('mcapi_transaction', 'mcapi_transaction');
-    //$entityForm;
-    $form = [];
-    $form_state = new FormState();
-    //$transaction_form = $entityForm->setFormDisplay($display, $form_state)->form($form, $form_state);
-
-
-    $transaction_form = \Drupal::service('entity.form_builder')->getForm($transaction, 'admin');
-    $additional_fields = [];
-    foreach (array_filter($this->configuration['fields']) as $fieldname) {
-      $additional_fields[$fieldname] = $transaction_form[$fieldname];
+  public function form(array &$form, TransactionInterface $transaction) {
+    $display = EntityFormDisplay::collectRenderDisplay($transaction, 'admin');
+    $form['#parents'] = [];//this is needed otherwise the nested entity API fields collide
+    foreach (array_filter($this->configuration['fields']) as $name) {
+      //see EntityFormDisplay::bulidForm but we just want certain fields
+      if ($widget = $display->getRenderer($name)) {
+        $items = $transaction->get($name);
+        $items->filterEmptyItems();
+        $form[$name] = $widget->form($items, $form, new Formstate());
+        $form[$name]['#access'] = $items->access('edit');
+        $options = $display->getComponent($name);
+        $form[$name]['#weight'] = $options['weight'];
+      }
     }
-
-    return $additional_fields;
+    //assigns weights and hides extra fields.
+    $form['#process'][] = array($display, 'processForm');
   }
 
   /**
    * {inheritdoc}
    */
   public function transitionSettings(array $form, FormStateInterface $form_state) {
-    $fields = ['payer', 'payee', 'created', 'description'];
-    drupal_set_message("More work needs to be done to make the field API fields, including 'worth', editable");
+    $fields = ['payer', 'payee', 'created', 'description', 'worth'];
+    //drupal_set_message("More work needs to be done to make the field API fields, including 'worth', editable");
     $element['fields'] = [
       '#title' => t('Editable fields'),
       '#description' => t('select the fields which can be edited'),
@@ -87,42 +84,16 @@ class Edit extends TransitionBase {
     return $element;
   }
 
-
-
   /**
    * {@inheritdoc}
   */
-  public function execute(TransactionInterface $transaction, array $context) {
-    $values = &$context['values'];
-    if ($values['created']) {
-      $values['created'] = strtotime($values['created']);
-    }
-    foreach ($values as $fieldname => $value) {
-      $transaction->set($fieldname, $value);
-    }
-    return ['#markup' => 'The transaction has been modified!'];
+  public function execute(TransactionInterface $transaction, array $values) {
+
+    //run the hooks and save the transaction
+    $this->baseExecute($transaction, $values);
+
+    //@todo make this string configurable
+    return ['#markup' => 'The transaction has been re-saved!'];
   }
-  /*
-   * $values looks like this
-   * array (
-  'payer' => '6',
-  'payee' => '2',
-  'created' => '2014-08-30 19:34:59 +0200',
-  'categories' =>
-  array (
-    0 =>
-    array (
-      'target_id' => NULL,
-    ),
-  ),
-  'worth' =>
-  array (
-    0 =>
-    array (
-      'curr_id' => 'cc',
-      'value' => '80',
-    ),
-  ),
-)*/
 
 }

@@ -1,13 +1,13 @@
 mcapi.signall:
   path: '/user/{user}/signall'
   defaults:
-    _form: 'Drupal\mcapi\Form\AccountingAdminMiscForm'
+    _form: '\Drupal\mcapi_signatures\SignAllConfirm::form'
     _title: 'Sign all'
   requirements:
-    _permission: 'access administration pages'
+    _custom_access: '\Drupal\mcapi_signatures\SignAllConfirm::access'
 
 mcapi.admin.signatures:
-  path: /admin/accounting/transactions/signatures
+  path: /admin/accounting/signatures
   defaults:
     _form: 'Drupal\mcapi_signatures\Form\Settings'
     _title: 'Signatures'

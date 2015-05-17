@@ -7,7 +7,7 @@
  * - transaction: the rendered transaction
  * - links: The transaction transitions, formatted as a list which is never cached
 #}
-<div class = "{{ attributes.class }}">
+<div class = "{{ attributes.class }}" id = {{ attributes.id }}>
 {% if overlay %}<div class = "{{ overlay_class }}">{{ overlay }}</div>{% endif %}
  {{ transaction }}
  {{ links }}

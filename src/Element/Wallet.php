@@ -24,12 +24,11 @@ class Wallet extends EntityAutocomplete {
    * {@inheritdoc}
    */
   public function getInfo() {
-    $info = parent::getInfo();
-    $class = get_class($this);
-    $info['#autocomplete_route_name'] = 'mcapi.wallets.autocomplete';
-    $info['#autocomplete_route_parameters']['role'] = 'null';
-    $info['#required'] = TRUE;
-    return $info;
+    return [
+      '#autocomplete_route_name' => 'mcapi.wallets.autocomplete',
+      '#autocomplete_route_parameters' => ['role' => 'null'],
+      '#required' => TRUE
+    ] + parent::getInfo();
   }
 
   /**
@@ -65,7 +64,7 @@ class Wallet extends EntityAutocomplete {
               // Try to get a match from the input string
               $form_state->setError(
                 $element,
-                $this->t('Unable to identify wallet: @string', ['@string' => $string])
+                t('Unable to identify wallet: @string', ['@string' => $string])
               );
             }
             else {
@@ -114,51 +113,20 @@ class Wallet extends EntityAutocomplete {
   public static function extractEntityIdFromAutocompleteInput($input) {
     $match = NULL;
     // Take "label (#entity id)', match the ID from # when it's a number
-    if (preg_match("/.+\#(\d+)/", $input, $matches)) {
+    if (preg_match("/.*\#(\d+)/", $input, $matches)) {
       $match = $matches[1];
     }
     return $match;
   }
 
   /**
-   * Converts an array of entity objects into a string of entity labels.
-   *
-   * This method is also responsible for checking the 'view' access on the
-   * passed-in entities.
-   *
-   * @param \Drupal\Core\Entity\EntityInterface[] $entities
-   *   An array of entity objects.
-   *
-   * @return string
-   *   A string of entity labels separated by commas.
-   */
-  public static function walletNames(array $wids) {
-    $entity_labels = array();
-    $entities = \Drupal\mcapi\Entity\Wallet::load($wids);
-    foreach ($entities as $entity) {
-      if ($entity->access('view')) {
-        // Labels containing commas or quotes must be wrapped in quotes.
-        $entity_labels[] = Tags::encode($entity->label());
-      }
-    }
-
-    return implode(', ', $entity_labels);
-  }
-
-
-  /**
    * {@inheritdoc}
    */
   public static function getEntityLabels(array $entities) {
-    $entity_labels = array();
+    $entity_labels = [];
     foreach ($entities as $entity) {
       $label = ($entity->access('view')) ? $entity->label() : t('- Restricted access -');
-
-      // Take into account "autocreated" entities.
-      if (!$entity->isNew()) {
-        $label .= ' #' . $entity->id();
-      }
-
+      $label .= ' #' . $entity->id();
       // Labels containing commas or quotes must be wrapped in quotes.
       $entity_labels[] = Tags::encode($label);
     }

@@ -4,8 +4,21 @@ use \Drupal\mcapi\WalletInterface;
 use \Drupal\mcapi\TransactionInterface;
 use \Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Entity\Type;
 use Drupal\Core\Template\Attribute;
 
+
+function _mcapi_add_signatures($transaction) {
+  $relatives = Type::load($transaction->type->target_id)
+    ->getThirdPartySetting('mcapi_signatures', 'signatures');
+  $user_ids = \Drupal::service('mcapi.transaction_relative_manager')
+    ->getUsers($transaction, $relatives);
+  foreach ($user_ids as $uid) {
+    $transaction->signatures[$uid] = 0;
+  }
+  //sign for the current user
+  transaction_sign($transaction, \Drupal::currentUser());
+}
 
 /**
  * sign a transaction

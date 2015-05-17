@@ -2,4 +2,10 @@ id: test
 label: Testing
 description: Created by the tester module
 start_state: done
-module: mcapi
+status: true
+dependencies: { }
+third_party_settings:
+  mcapi_signatures:
+    signatures:
+      payer: payer
+      payee: payee

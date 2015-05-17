@@ -175,22 +175,22 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     $fields['pid'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Owner entity ID'));
 
-    $defaults = array(
-      'details' => array(t('Details'), t('Access code for viewing transaction details'), 'e'),
-      'summary' => array(t('Summary'), t('Access code for viewing wallet summary'), '2'),
-      'payout' => array(t('Pay out'), t('Access code for paying in'), 'o'),
-      'payin' => array(t('Pay in'), t('Access code for paying out'), 'e'),
-    );
+    $defaults = [
+      'details' => 'o',
+      'summary' => '2',
+      'payout' => 'o',
+      'payin' => '2',
+    ];
     if ($access_settings = \Drupal::config('mcapi.wallets')->getRawData()) {
       foreach (array_keys($defaults) as $key) {
         $defaults[$key][2] = current(array_filter($access_settings[$key]));
       }
     }
-    foreach ($defaults as $key => $info) {
+    foreach (Exchange::walletOps() as $key => $info) {
       $fields[$key] = BaseFieldDefinition::create('string')
         ->setLabel($info[0])
         ->setDescription($info[1])
-        ->setSetting('default_value', array($defaults[$key][2]))
+        ->setSetting('default_value', array($defaults[$key]))
         ->setSetting('length', 1);
     }
     $fields['orphaned'] = BaseFieldDefinition::create('boolean')

@@ -22,10 +22,11 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
 
   private $routeMatch;
   private $transitionManager;
+  static $result;
 
   public function __construct() {
     $this->routeMatch = \Drupal::RouteMatch();
-    $this->transitionManager = \Drupal::Service('mcapi.transitions');
+    $this->transitionManager = \Drupal::Service('mcapi.transition_manager');
   }
 
   /**
@@ -55,15 +56,19 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
    *
    * @return AccessResult
    */
-  public static function enoughWallets() {
-    $account = \Drupal::currentUser();
-    $walletStorage = \Drupal::entitymanager()->getStorage('mcapi_wallet');
-    $payin = $walletStorage->walletsUserCanTransit('payin', $account);
-    $payout = $walletStorage->walletsUserCanTransit('payout', $account);
-    //there must be at least one wallet in each and they must be different
-    return ($payin && $payout && count(array_unique(array_merge($payin, $payout))) > 1) ?
-      \Drupal\Core\Access\AccessResult::allowed()->cachePerUser() :
-      \Drupal\Core\Access\AccessResult::forbidden()->cachePerUser();
+  public static function enoughWallets($account = NULL) {
+    Self::$result;
+    if (!Self::$result) {
+      if (!$account)$account = \Drupal::currentUser();
+      $walletStorage = \Drupal::entitymanager()->getStorage('mcapi_wallet');
+      $payin = $walletStorage->walletsUserCanActOn('payin', $account);
+      $payout = $walletStorage->walletsUserCanActOn('payout', $account);
+      //there must be at least one wallet in each (and they must be different!)
+      Self::$result = ($payin && $payout && count(array_unique(array_merge($payin, $payout))) > 1) ?
+        AccessResult::allowed()->cachePerUser() :
+        AccessResult::forbidden()->cachePerUser();
+    }
+    return Self::$result;
   }
 
 

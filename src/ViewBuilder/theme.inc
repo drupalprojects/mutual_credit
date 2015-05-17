@@ -319,11 +319,6 @@ function template_preprocess_mcapi_transaction(&$vars) {
   $transaction = $element['#mcapi_transaction'];
   //don't know if this is needed in d8
   Element::setAttributes($element, ['class', 'id']);
-  $vars['attributes']['class'] = [
-    'transaction',
-    'type-'.$transaction->type->target_id,
-    'state-' . $transaction->state->target_id
-  ];
   //if the view mode is not itself a template (matslats improvisation), include it as a class
   if (!strpos($element['#view_mode'], ' ')) {
     $vars['attributes']['class'][] = 'mode-'.$element['#view_mode'];
@@ -337,7 +332,7 @@ function template_preprocess_mcapi_transaction(&$vars) {
   }
   //@todo consider other approaches rather than the noLinks undeclared variable
   if (!$transaction->noLinks) {
-    $vars['links'] = \Drupal::service('mcapi.transitions')
+    $vars['links'] = \Drupal::service('mcapi.transition_manager')
       ->getLinks($transaction, $element['#view_mode']);
   }
 }

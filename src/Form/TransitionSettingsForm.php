@@ -27,7 +27,7 @@ class TransitionSettingsForm extends ConfigFormBase {
   static public function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
-      $container->get('mcapi.transitions'),
+      $container->get('mcapi.transition_manager'),
       $container->get('current_route_match')
     );
   }

@@ -12,7 +12,6 @@ use Drupal\Core\Render\Element\FormElement;
 use Drupal\Core\Render\Element;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Currency;
-//use Drupal\mcapi\Entity\Currency; some wierd problem with this loading twice
 use Drupal\Core\Template\Attribute;
 
 /**
@@ -40,47 +39,45 @@ class Worth extends FormElement {
       '#attached' => ['library' => ['mcapi/mcapi.worth.element']],
       '#minus' => FALSE,
       '#config' => FALSE,
-      '#allowed_curr_ids' => []
+      '#allowed_curr_ids' => array_keys(Currency::loadMultiple())
     ];
-    debug('mcapi.worth.element', 'library');
   }
 
   /**
    * helper function to ensure the worth field is showing the right subset of currencies
    * the #default_value is then used to build the widget
+   * its difficult to decide when to show which currencies:
+   * - currencies available to the current user
+   * - currencies used in the saved value
+   * - currencies available to both wallets
    */
   public static function process_defaults($element, FormStateInterface $form_state, $form) {
-    $blank = $element['#config'] ? '' : 0;
+
     if ($element['#value']) {
       $element['#default_value'] = $element['#value'];
     }
     else {
-      if (empty($element['#allowed_curr_ids'])) {
-        $element['#allowed_curr_ids'] = array_keys(Currency::loadMultiple());
+      $map = Self::curr_map($element['#default_value']);
+      //restrict the defaults according to the allowed currencies
+      if ($not_allowed = array_diff(array_keys($map), $element['#allowed_curr_ids'])) {
+        //message only shows the FIRST not allowed currency
+        drupal_set_message(
+          t(
+            'Passed default @currency is not one of the allowed currencies',
+            array('@currency' => Currency::load(reset($not_allowed))->label())
+          ),
+          'warning'
+        );
       }
-
-      //change the all_available array to a worths value array populated by zeros
-      if ($element['#allowed_curr_ids']) {
-        $existing_curr_ids = [];
-        foreach ((array)$element['#default_value'] as $item) {
-          if (!$item['curr_id']) continue; //means the widget was unpopulated
-          $existing_curr_ids[] = $item['curr_id'];
-        }
-        unset($element['#default_value']);
-        //restrict the defaults according to the allowed currencies
-        if ($not_allowed = array_diff($existing_curr_ids, $element['#allowed_curr_ids'])) {
-          //message only shows the FIRST not allowed currency
-          drupal_set_message(
-            t(
-              'Passed default @currency is not one of the allowed currencies',
-              array('@currency' => Currency::load(reset($not_allowed))->label())
-            ),
-            'warning'
-          );
-        }
-        //ensure each allowed currencies has a default value, which is used for building the widget
-        foreach (array_diff($element['#allowed_curr_ids'], $existing_curr_ids) as $curr_id) {
-          $element['#default_value'][] = array('curr_id' => $curr_id, 'value' => $blank);
+      $blank = $element['#config'] ? '' : 0;
+      //ensure each allowed currencies has a default value, which is used for building the widget
+      foreach (array_diff($element['#allowed_curr_ids'], array_keys($map)) as $curr_id) {
+        if (array_search($curr_id, array_keys($map)) === FALSE) {
+          $val = intval($element['#default_value'][$map[$curr_id]]['value']);
+          $element['#default_value'][] = [
+            'curr_id' => $curr_id,
+            'value' => is_null($val) ? $blank : $val
+          ];
         }
       }
     }
@@ -217,9 +214,13 @@ class Worth extends FormElement {
       }
     }
     else {
-      //@todo see how worth element works when #default_value is already set
+      //return the given #default_value plus allowed curr ids
+      $map = Self::curr_map($element['#default_value']);
       foreach ($element['#allowed_curr_ids'] as $curr_id) {
-        $output[] = ['curr_id' => $curr_id, 'value' => 0];
+        $output[] = [
+          'curr_id' => $curr_id,
+          'value' => intval($element['#default_value'][$map[$curr_id]]['value'])
+        ];
       }
     }
     return $output;
@@ -277,7 +278,7 @@ class Worth extends FormElement {
    * @param array $options
    * @todo make this sorting more efficient
    */
-  private function sort(array &$options) {
+  private static function sort(array &$options) {
     $new_options = $helper = [];
     //the currency keys are nested i the options and we need the whole currency object
     //we're going to extract the currencies keys, load the config entities, sort them
@@ -295,5 +296,12 @@ class Worth extends FormElement {
       $new_options[] = $temp_options[$curr_id];
     }
     $options = $new_options;
+  }
+
+  private function curr_map($value) {
+    foreach ($value as $key => $item) {
+      $map[$item['curr_id']] = $key;
+    }
+    return $map;
   }
 }

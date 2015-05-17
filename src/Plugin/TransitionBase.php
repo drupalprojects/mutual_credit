@@ -9,6 +9,8 @@ namespace Drupal\mcapi\Plugin;
 use Drupal\mcapi\Exchange;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\McapiEvents;
+use Drupal\mcapi\TransactionSaveEvents;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
@@ -19,13 +21,11 @@ use Drupal\Core\Session\AccountInterface;
  */
 abstract class TransitionBase extends PluginBase implements TransitionInterface {
 
-
-  const TRANSITION_DISPLAY_NORMAL = 0;
-  const TRANSITION_DISPLAY_AJAX = 1;
-  const TRANSITION_DISPLAY_MODAL = 2;
-
   private $transactionRelativeManager;
   private $relatives;
+  private $eventDispatcher;
+  protected $entityFormBuilder;
+  protected $moduleHandler;
 
   /**
    * {@inheritdoc}
@@ -34,8 +34,12 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->configuration += $this->defaultConfiguration();
     //can't work out how to inject this
-    $this->transactionRelativeManager = \Drupal::service('mcapi.transaction.relatives');
+    $this->transactionRelativeManager = \Drupal::service('mcapi.transaction_relative_manager');
     $this->relatives = $this->transactionRelativeManager->active();
+    //todo how to inject all these things into a plugin?
+    $this->entityFormBuilder = \Drupal::service('entity.form_builder');
+    $this->eventDispatcher = \Drupal::service('event_dispatcher');
+    $this->moduleHandler = \Drupal::service('module_handler');
   }
   /**
    * {@inheritdoc}
@@ -134,9 +138,9 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
       '#title' => $this->t('Display'),
       '#type' => 'radios',
       '#options' => [
-        TRANSITION_DISPLAY_NORMAL => $this->t('Next page'),
-        TRANSITION_DISPLAY_AJAX => $this->t('Ajax replacement'),
-        TRANSITION_DISPLAY_MODAL => $this->t('Modal dialogue box'),
+        MCAPI_CONFIRM_NORMAL => $this->t('Basic - Go to a fresh page'),
+        MCAPI_CONFIRM_AJAX => $this->t('Ajax - Replace the form'),
+        MCAPI_CONFIRM_MODAL => $this->t('Modal - Confirm in a dialogue box')
       ],
       '#default_value' => $this->configuration['display'],
       '#weight' => 10
@@ -193,6 +197,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
       ]),
       '#type' => 'textfield',
       '#default_value' => $this->configuration['redirect'],
+      '#placeholder' => 'transaction/[serial]',//@todo check this works
       '#states' => [
         'visible' => [
           ':input[name="format2"]' => [
@@ -257,10 +262,9 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
   }
 
   /**
-   * this method is for plugins which don't have a form, like view and create
-   * @see \Drupal\mcapi\TransitionInterface::form($transaction)
+   * {@inheritdoc}
    */
-  public function form(TransactionInterface $transaction) {
+  public function form(array &$form, TransactionInterface $transaction) {
     return [];
   }
 
@@ -306,6 +310,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    * {@inheritdoc}
    */
   function ajax_submit(FormStateInterface $form_state) {
+die('ajax_submit');
     $renderable = $this->execute(
       $form_state->get('transaction_transition'),
       Transaction::load($form_state->getValue(['serial'])),
@@ -348,6 +353,10 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    * @return boolean
    */
   public function accessOp(TransactionInterface $transaction, AccountInterface $account) {
+    //children can't be edited that would be too messy
+    if ($transaction->parent->value) {
+      return FALSE;
+    }
     foreach (array_filter($this->configuration['access']) as $relative) {
       //$check if the $acocunt is this relative to the transaction
       $relative = $this->relatives[$relative];
@@ -362,6 +371,56 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     return [
       'module' => ['mcapi']
     ];
+  }
+
+
+  /**
+   * Perform a transition on the transaction and save it.
+   *
+   * @param TransactionInterface $transaction
+   *
+   * @param array $values
+   *   the form state values from the transition form
+   *
+   * @return array
+   *   a renderable array
+   *
+   * @todo make a drush command for doing transitions
+   * E.g. drush mcapi-transition [serial] edit -v description blabla
+   */
+  protected function baseExecute(TransactionInterface $transaction, array $values) {
+
+    $context = [
+      'values' => $values,
+      'old_state' => $transaction->state->value,
+    ];
+
+    $context['transition'] = $this;
+    //notify other modules, especially rules.
+    //the moduleHandler isn't loaded because__construct didn't run in beta10
+    /*
+    $renderable = $this->moduleHandler->invokeAll(
+      'mcapi_transition',
+      [$transaction, $context]
+    );*/
+
+    //@todo, need to get an $output from event handlers i.e. hooks
+    //namely more $renderable items?
+    $this->eventDispatcher->dispatch(
+      McapiEvents::TRANSITION,
+      new TransactionSaveEvents(clone($transaction), $context)
+    );
+
+    $transaction->save();
+
+    if(!$renderable) {
+      $renderable = ['#markup' => 'transition returned nothing renderable'];
+    }
+    return $renderable;
+  }
+
+  function validateForm(array $form, FormStateInterface $form_state) {
+
   }
 
 }

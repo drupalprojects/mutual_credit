@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Plugin\Condition;
 
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Condition\ConditionPluginBase;
+use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -32,13 +33,38 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  *
  */
-class TransactionType extends ConditionPluginBase implements ContainerFactoryPluginInterface {
+class TransactionType extends ConditionPluginBase {
 
   /**
    * {@inheritdoc}
    */
   public function summary() {
-    return $this->t('Transaction is of type');
+    //hopefully the type names are translated
+    $states = array_filter($this->configuration['states']);
+    return $this->t(
+      'Transaction type is @types',
+      ['@types' => implode(', ', $this->configuration['types'])]
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function defaultConfiguration() {
+    return [
+      'types' => [],
+    ] + parent::defaultConfiguration();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    $form['types'] = [
+      '#type' => 'mcapi_types',
+      '#default_value' => $this->configuration['types'],
+    ];
+    return parent::buildConfigurationForm($form, $form_state);
   }
 
   /**

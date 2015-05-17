@@ -1,29 +1,38 @@
-id: test3
-exchange: '3'
-title: Add transaction in exchange 3
+id: pay
+path: 'transact/exchange3'
+menu:
+  title: 'Pay someone in exchange 3'
+  menu_name: Tools
+  weight: 5
+title: 'Pay someone in exchange 3'
 status: 1
 type: default
+mywallet:
+  widget: select
+  stripped: true
 partner:
   preset: ''
+  stripped: true
 direction:
   preset: outgoing
   widget: radios
-  incoming: 'I request'
-  outgoing: 'I am paying'
+  incoming: Incoming
+  outgoing: Outgoing
+  stripped: true
 description:
   preset: ''
   placeholder: ''
-worth:
-  preset:
-    0:
-      curr_id: hhrs
-      value: 0
-created:
-  show: false
+  stripped: true
+fieldapi_presets:
+  worth:
+other:
+  intertrade: false
 experience:
-  twig: "{{ mywallet }}\r\n{{ description }}\r\n{{ worth }}\r\n{{ partner }}\r\n{{ direction }}\r\n{{ created }}\r\n{{ field_categories }}\r\ndefault categories are Transport, Food, Care, Learning, Home, Leisure"
-  button: 'Create'
-  preview: modal
-message: 'Your transaction was created'
+  twig: "From {{ mywallet }}\r\nPay: {{ partner }}\r\n{{ worth }}\r\nfor {{ description }}"
+  button: Preview
+  preview: page
 langcode: en
-path: transact/testexchange3
+dependencies: {  }
+third_party_settings: 
+  exchange: 3
+

@@ -120,24 +120,25 @@ class WalletStorage extends SqlContentEntityStorage {
    * @param AccountInterface $account
    * @return []
    */
-  function walletsUserCanTransit($operation, $account) {
+  function walletsUserCanActOn($operation, $account) {
     $wallets = [];
     $or = db_or();
     //wallets the user owns
     $or->condition(db_and()
-      ->condition($operation, 0)
       ->condition('entity_type', 'user')
       ->condition('pid', $account->id()));
-    //wallets which can be seen by all, including anon
+    //or wallets which can be acted on by all, including anon
     $or->condition($operation, 1);
-    //wallets which can be seen by authenticated users
+    //wallets which can be acted on by authenticated users
     if ($account->id()) {
       $or->condition($operation, 2);
     }
+    //query to get all the
     $w1 = $this->database->select('mcapi_wallet', 'w')
-      ->fields('w', array('wid'))
+      ->fields('w', ['wid'])
       ->condition($or)
       ->execute();
+    //query to get all the named users.
     $w2 = $this->database->select('mcapi_wallets_access', 'w')
       ->fields('w', ['wid'])
       ->condition('operation', $operation)

@@ -30,7 +30,8 @@ class Erase extends TransitionBase {
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildConfigurationForm($form, $form_state);
-    unset($form['access'][TRANSACTION_STATE_ERASED]);
+    $form['states'][TRANSACTION_STATE_ERASED]['#disabled'] = TRUE;
+    $form['states'][TRANSACTION_STATE_ERASED]['#checked'] = TRUE;
     return $form;
   }
   /**

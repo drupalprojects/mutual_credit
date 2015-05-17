@@ -28,7 +28,6 @@ class Manager extends PluginBase implements TransactionRelativeInterface {
    * {@inheritdoc}
    */
   public function isRelative(TransactionInterface $transaction, AccountInterface $account) {
-    if (!$account) mtrace();
     return $account->hasPermission('manage mcapi');
   }
 
@@ -38,4 +37,20 @@ class Manager extends PluginBase implements TransactionRelativeInterface {
   public function condition(QueryInterface $query) {
 
   }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getUsers(TransactionInterface $transaction) {
+    //get all the users with permission to manage the site
+    $roles = user_roles(TRUE, 'manage mcapi');
+    //there should be a better way to do this...
+    return db_select('user__roles', 'ur')
+      ->fields('ur', ['uid'])
+      ->condition('roles_target_id', array_keys($roles))
+      ->execute()->fetchCol();
+
+  }
+
 }

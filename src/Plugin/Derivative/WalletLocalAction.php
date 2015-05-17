@@ -58,7 +58,7 @@ class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface
           'title' => t('Add Wallet'),
           //assumes this pattern for the canonical route name
           //otherwise we have to derive it somehow, and I'm not sure how.
-          'appears_on' => 'entity.'.$entity_type.'.canonical'
+          'appears_on' => ['entity.'.$entity_type.'.canonical']
         ] + $base_plugin_definition;
       }
     }

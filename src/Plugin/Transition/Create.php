@@ -28,7 +28,6 @@ class Create extends TransitionBase {
    */
   public function accessOp(TransactionInterface $transaction, AccountInterface $acount) {
     //@todo check that the user is allowed to pay in to payee wallet AND out from payer_wallet.
-    mtrace();
     return empty($transaction->get('xid')->value);
   }
 
@@ -36,6 +35,7 @@ class Create extends TransitionBase {
    * {@inheritdoc}
    */
   public function execute(TransactionInterface $transaction, array $context) {
+    $this->baseExecute($transaction, $context);
     //the save operation takes place elsewhere
     return ['#markup' => t('Transaction created')];
   }
