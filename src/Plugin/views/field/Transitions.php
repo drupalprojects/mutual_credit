@@ -71,7 +71,7 @@ class Transitions extends FieldPluginBase {
   function render(ResultRow $values) {
     //second param can be anything except certificate.
     return $this->transitionManager
-      ->getLinks($this->getEntity($values, '-'));
+      ->getLinks($this->getEntity($values, TRUE));
   }
 
 }

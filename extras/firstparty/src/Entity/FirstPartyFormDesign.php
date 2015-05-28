@@ -59,7 +59,7 @@ class FirstPartyFormDesign extends ConfigEntityBase {
   //especially because we need to include unknown field API fields as well
   public $mywallet;
   public $partner;
-  public $direction;
+  public $incoming;
   public $description;
   public $fieldapi_presets;
   public $other;
@@ -76,20 +76,13 @@ class FirstPartyFormDesign extends ConfigEntityBase {
       'path' => '',
       'status' => 1,
       'type' => 'default',
+      'incoming' => FALSE,
       'mywallet' => [
         'stripped' => TRUE
       ],
       'partner' => [
-        //@todo fill in the selection with something the entity_reference widget would understand
         'selection' => '',
         'preset' => '',
-        'stripped' => TRUE
-      ],
-      'direction' => [
-        'preset' => 'outgoing',
-        'widget' => 'radios',
-        'incoming' => 'I request',
-        'outgoing' => 'I am paying',
         'stripped' => TRUE
       ],
       'description' => [

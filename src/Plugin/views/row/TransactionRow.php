@@ -10,7 +10,7 @@ namespace Drupal\mcapi\Plugin\views\row;
 use Drupal\views\Plugin\views\row\EntityRow;
 
 /**
- * Plugin which performs a entity_view on the resulting object.
+ * Plugin which performs an entity_view on the resulting object.
  *
  * Most of the code on this object is in the theme function.
  *

@@ -30,6 +30,9 @@ mcapi_1stparty.editform.*:
     type:
       type: string
       label: 'Transaction type'
+    incoming:
+      type: boolean
+      label: 'Direction of payment relative to the current user'
     mywallet:
       type: mapping
       label: 'My Wallet'
@@ -37,9 +40,6 @@ mcapi_1stparty.editform.*:
         widget:
           type: string
           label: 'Widget'
-        stripped:
-          type: boolean
-          label: 'Strip'
     partner:
       type: mapping
       label: 'Settings for partner field'
@@ -50,19 +50,6 @@ mcapi_1stparty.editform.*:
         preset:
           type: integer
           label: 'Preset trading partner'
-        stripped:
-          type: boolean
-          label: 'Strip'
-    direction:
-      type: mapping
-      label: 'Direction of payment'
-      mapping:
-        preset:
-          type: string
-          label: 'Preset direction'
-        stripped:
-          type: boolean
-          label: 'Strip'
     description:
       type: mapping
       label: 'Reason for payment'
@@ -73,9 +60,6 @@ mcapi_1stparty.editform.*:
         placeholder:
           type: string
           label: 'Placeholder'
-        stripped:
-          type: boolean
-          label: 'Strip'
     fieldapi_presets:
       type: mapping
       label: 'Other presets'

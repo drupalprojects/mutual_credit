@@ -16,13 +16,18 @@ use Symfony\Component\Routing\Route;
  */
 class FirstPartyRoutes {
 
+  /**
+   *
+   * @return RouteCollection
+   *
+   * @see mcapi_1stparty_entity_type_alter which declares new _entity_forms
+   */
   public function routes() {
     $route_collection = new RouteCollection();
     foreach (entity_load_multiple('1stparty_editform') as $id => $editform) {
       $route = new Route($editform->path);
       $route->setDefaults([
-        //see mcapi_1stparty_entity_type_alter
-        '_entity_form' => 'mcapi_transaction.'.$id,
+        '_controller' => '\Drupal\mcapi_1stparty\FirstPartyTransactionForm::loadForm',
         '_title_callback' => '\Drupal\mcapi_1stparty\FirstPartyTransactionForm::title'
       ]);
       $route->setRequirements([

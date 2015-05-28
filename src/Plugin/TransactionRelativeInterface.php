@@ -28,6 +28,8 @@ interface TransactionRelativeInterface {
   /**
    *
    * @param array $plugin_names
+   *
+   * @return integer[]
    */
   public function getUsers(TransactionInterface $transaction);
 

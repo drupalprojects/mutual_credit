@@ -7,22 +7,14 @@ menu:
 title: 'Pay someone'
 status: 1
 type: default
+incoming: 0
 mywallet:
   widget: select
-  stripped: true
 partner:
   preset: ''
-  stripped: true
-direction:
-  preset: outgoing
-  widget: radios
-  incoming: Incoming
-  outgoing: Outgoing
-  stripped: true
 description:
   preset: ''
   placeholder: ''
-  stripped: true
 fieldapi_presets:
   worth:
 other:

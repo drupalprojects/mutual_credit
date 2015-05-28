@@ -158,11 +158,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       $start_state_id = $this->type->entity->start_state;
       $this->state->setValue($start_state_id);
     }
+
     $new_children = \Drupal::service('event_dispatcher')->dispatch(
       McapiEvents::CHILDREN,
-      new TransactionSaveEvents(clone($this), $context)
+      new TransactionSaveEvents(clone($this))
     );
-    array_merge($this->children, $new_children);
+    //@todo get an array from Event Dispatcher, or some other hook
+    array_merge($this->children, (array)$new_children);
     //moduleHandler hasn't been initiated - why?
     //$this->moduleHandler->alter('mcapi_transaction', $this);
   }
@@ -316,7 +318,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setLabel(t('Description'))
       ->setDescription(t('A one line description of what was exchanged.'))
       ->setRequired(TRUE)
-      ->setSettings(array('default_value' => '', 'max_length' => MCAPI_MAX_DESCRIPTION))
+      ->setSettings(array('default_value' => '', 'max_length' => 255))//this could be a setting.
       ->setDisplayConfigurable('form', TRUE);
 
     $fields['serial'] = BaseFieldDefinition::create('integer')
@@ -380,7 +382,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         'form',
         ['type' => 'datetime_timestamp', 'weight' => 10]
       )
-      ->setDisplayConfigurable('form', TRUE);
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
 
     $fields['changed'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))

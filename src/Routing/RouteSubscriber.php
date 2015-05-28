@@ -12,6 +12,7 @@ use Drupal\Core\Routing\RouteSubscriberBase;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Routing\RoutingEvents;
 
 /**
  * Subscriber for walletadd routes on specified entities
@@ -51,9 +52,6 @@ class RouteSubscriber extends RouteSubscriberBase {
         }
       }
     }
-    //would be nice to delete these but local actions depend on them
-    //$collection->remove('entity.entity_view_display.mcapi_transaction.default');
-    //$collection->remove('entity.entity_view_display.$bundle_entity_type.view_mode');
   }
 
   /**
@@ -74,6 +72,15 @@ class RouteSubscriber extends RouteSubscriberBase {
       }
     }
     return $routes;
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getSubscribedEvents() {
+    $events[RoutingEvents::ALTER][] = array('onAlterRoutes', -1100);
+    return $events;
   }
 
 }

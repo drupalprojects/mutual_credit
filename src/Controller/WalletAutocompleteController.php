@@ -63,10 +63,10 @@ class WalletAutocompleteController extends ControllerBase{
     else {
       $conditions['fragment'] = $string;
     }
-    $walletStorage = $this->entityManger()->getStorage('mcapi_wallet');
+    $walletStorage = $this->entityManager()->getStorage('mcapi_wallet');
     //return only the wallets which are both permitted and meet the filter criteria
     $results = $walletStorage->filter($conditions);
-    if ($this->role != 'null') {
+    if ($this->action != 'null') {
       $results = array_intersect(
         $results,
         $walletStorage->walletsUserCanActOn($this->action, $this->currentUser())

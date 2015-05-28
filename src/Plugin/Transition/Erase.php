@@ -8,13 +8,12 @@
 
 namespace Drupal\mcapi\Plugin\Transition;
 
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\mcapi\Entity\State;
-use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Plugin\TransitionBase;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Config\ImmutableConfig;
 
 /**
  * Undo transition
@@ -28,19 +27,18 @@ class Erase extends TransitionBase {
   /**
    * @see \Drupal\mcapi\TransitionBase::buildConfigurationForm()
    */
-  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    $form = parent::buildConfigurationForm($form, $form_state);
-    $form['states'][TRANSACTION_STATE_ERASED]['#disabled'] = TRUE;
-    $form['states'][TRANSACTION_STATE_ERASED]['#checked'] = TRUE;
-    return $form;
+  static function settingsFormTweak(array &$form, FormStateInterface $form_state, ImmutableConfig $config) {
+    $form['states'][TRANSACTION_STATE_ERASED] = [
+      '#disabled' => TRUE,//setting #default value seems to have no effect
+    ];
   }
   /**
    *  access callback for transaction transition 'erase'
    *  @return boolean
   */
-  public function accessOp(TransactionInterface $transaction, AccountInterface $account) {
-    if ($transaction->state->target_id != TRANSACTION_STATE_ERASED) {
-      return parent::accessOp($transaction, $account);
+  public function accessOp(AccountInterface $account) {
+    if ($this->transaction->state->target_id != TRANSACTION_STATE_ERASED) {
+      return parent::accessOp($this->transaction, $account);
     }
     return FALSE;
   }
@@ -48,13 +46,13 @@ class Erase extends TransitionBase {
   /**
    * {@inheritdoc}
   */
-  public function execute(TransactionInterface $transaction, array $context) {
+  public function execute(array $context) {
 
     $key_value_store = \Drupal::service('keyvalue.database')
       ->get('mcapi_erased')
-      ->set($transaction->serial->value, $transaction->state->target_id);
+      ->set($this->transaction->serial->value, $this->transaction->state->target_id);
 
-    $transaction->set('state', TRANSACTION_STATE_ERASED);//will be saved later
+    $this->transaction->set('state', TRANSACTION_STATE_ERASED);//will be saved later
 
     return ['#markup' => $this->t('The transaction is erased.')];
   }

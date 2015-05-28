@@ -6,100 +6,92 @@
 function mcapi_signatures_views_data() {
 
   //@todo in alpha12, judging by node revisions, I don't see a way for secondary table to conjure up entities, except as a field
-  $data['mcapi_signatures']['table'] = array(
+  $data['mcapi_signatures']['table'] = [
     'group'  => t('Signatures'),
     //'entity type' => 'mcapi_transaction',//This adds xid to the field list for the current table, so we don't want it
     'access query tag' => 'mcapi_views_access',
-    'base' => array(
+    'base' => [
       'field' => 'serial',
       'title' => t('Signatures'),
       'help' => t('Signatures needed on pending transactions'),
-      'defaults' => array(
+      'defaults' => [
         'field' => 'serial',
-      ),
-    ),
-    'join' => array(
-      'mcapi_transaction' => array(
+      ],
+    ],
+    'join' => [
+      'mcapi_transaction' => [
         'left_field' => 'serial',
         'field' => 'serial',
-      ),
-    )
-  );
+      ],
+    ]
+  ];
 
-  $data['mcapi_signatures']['serial'] = array(
+  $data['mcapi_signatures']['serial'] = [
     'title' => t('Serial'),
     'help' => t("The serial number of the transaction"),
-    'field' => array(
+    'field' => [
       'id' => 'standard'
-    ),
-    'argument' => array(
+    ],
+    'argument' => [
       'id' => 'standard',
-    )
-  );
+    ],
+    'relationship' => [
+      'id' => 'standard',
+      'base' => 'mcapi_transaction',
+      'base field' => 'serial',
+      'field' => 'serial',
+      'label' => t('Transaction'),
+      'relationship field' => 'serial'
+    ],
+  ];
 
-  //some of these are a bit confused - need more time!
-  $data['mcapi_signatures']['uid'] = array(
+  $data['mcapi_signatures']['uid'] = [
     'title' => t('Signatory'),
     'help' => t("The user whose signature is required"),
-    'field' => array(
+    'field' => [
       'id' => 'standard'
-    ),
-    'filter' => array(
-      'title' => t('User is /is not a signatory'),
+    ],
+    'filter' => [
+      'title' => t('User is a signatory'),
       'help' => t('transactions on which the current user is / is not a signatory'),
       'id' => 'user_current'
-    ),
-    'argument' => array(
-      'title' => t('User is /is not a signatory'),
+    ],
+    'argument' => [
+      'title' => t('User is a signatory'),
       'id' => 'user_uid',
-    ),
-    'relationship' => array(
+    ],
+    'relationship' => [
       'id' => 'standard',
       'base' => 'users',
       'field' => 'uid',
       'label' => t('Signatory'),
       'relationship field' => 'uid'
-    ),
-  );
-  $data['mcapi_signatures']['signed'] = array(
+    ],
+  ];
+  $data['mcapi_signatures']['signed'] = [
     'title' => t('Date of signature'),
     'help' => t('The date the transaction was signed'),
-    'field' => array(
+    'field' => [
       'id' => 'signed_date',
-    ),
-    'sort' => array(
+    ],
+    'sort' => [
       'id' => 'date'
-    ),
-    'filter' => array(
+    ],
+    'filter' => [
       'id' => 'date',
-    ),
-  );
-
-  //@todo this is temp I hope until we can reference the transaction entity sentence display mode via the view style
-  $data['mcapi_signatures']['entity'] = array(
-    'title' => t('Transaction sentence (workaround)'),
-    'help' => t('Virtual field to render a transaction sentence from the serial number'),
-    'field' => array(
-      'id' => 'sentence',
-    )
-  );
+    ],
+  ];
   return $data;
 }
 
 
 function mcapi_signatures_views_data_alter(&$data) {
+  return;
   // For other base tables, explain how we join
-  $data['mcapi_transaction']['table']['join']['mcapi_signatures'] = array(
+  $data['mcapi_transaction']['table']['join']['mcapi_signatures'] = [
     'left_table' => 'mcapi_signatures',
     'left_field' => 'serial',
     'field' => 'serial',
-  );
-  /* This would involve joining with a subquery
-  $data['mcapi_transaction']['last_signature'] = array(
-    'title' => t('Latest signature date'),
-    'field' => array(
-      'id' => 'last_signature_date'
-    )
-    //would be great to have a sort as well
-  */
+  ];
+
 }

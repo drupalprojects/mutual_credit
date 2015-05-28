@@ -3,7 +3,6 @@
 use Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi\Exchange;
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
-use \Drupal\Core\Render\Element;
 
 /**
  * implements hook_help().
@@ -41,107 +40,6 @@ function mcapi_1stparty_entity_type_alter(array &$entity_types) {
 }
 
 /**
- * implements hook_theme().
- */
-function mcapi_1stparty_theme() {
-  return array(
-    '1stpartyform'=> array(
-      'function' => 'theme_1stpartyform',//no template is possible here
-      'render element' => 'element',
-    ),
-  );
-}
-
-/**
- * theme preprocessor
- */
-function template_preprocess_1stpartyform(&$vars) {
-  $form = &$vars['element'];
-  //add the buttons at the end if they weren't in the twig template already
-  if (strpos($form['#twig'], '{{ actions }}') === FALSE) {
-    $form['#twig'] .= "\n{{ actions }}";
-  }
-  if (isset($form['direction']['#value']) && $form['direction']['#value'] == 'outgoing') {
-    $replacements = [
-      '{{ partner }}' => '{{ payee }}',
-      '{{ mywallet }}' => '{{ payer }}',
-    ];
-  }
-  else {
-    $replacements = [
-      '{{ partner }}' => '{{ payer }}',
-      '{{ mywallet }}' => '{{ payee }}',
-    ];
-  }
-  $form['#twig'] = strtr($form['#twig'], $replacements);
-}
-
-/**
- * theme implementation of callback 1stpartyform
- * this must be a function, because we are taking a twig string instead of using a template file
- * @todo put this in another file for performance reasons
- */
-function theme_1stpartyform($vars) {
-  $form = $vars['element'];
-  $tokens = [];
-  foreach (Element::children($form) as $fieldname) {
-    if (strpos($form['#twig'], '{{ '.$fieldname.' }}') !== FALSE) {
-      $tokens[$fieldname] = mcapi_render_stripped($form[$fieldname]);
-    }
-    else {
-      if (@$form[$fieldname]['#default_value'] || @$form[$fieldname]['#value']) {
-        $tokens['hidden_elements'][$fieldname] = $form[$fieldname];
-      }
-      elseif ($form[$fieldname]['#required']) {
-        drupal_set_message(t('No default value for required hidden element @name', array('@name' => $fieldname)));
-      }
-    }
-  }
-
-  $last = key($tokens);
-  //adjustments for intertrade mode
-  if (array_key_exists('intertrade', $tokens)) {// && array_key_exists('partner_all', $form)) {
-    $checkbox = mcapi_render_stripped($form['partner_all']);
-    if (array_key_exists('partner', $tokens)) {
-      $tokens['partner'] .= $checkbox;
-    }
-    else {
-      $tokens[$last] .= $checkbox;
-    }
-  }
-  //append everything not rendered onto the last rendered thing.
-  //$tokens['hidden_elements'] = $form;
-  $form['#twig'] .= '{{ hidden_elements }}';
-
-  return \Drupal::service('twig')->renderInline(
-    _filter_autop($form['#twig']),
-    $tokens
-  );
-}
-
-/**
- * callback to render form elements without their theme_wrappers
- * simply stripping the theme_wrappers is cleaner but prevents the #states from working.
- *
- * @param array $element
- *
- * @return string
- *   HTML
- *
- * @todo put this in another file for performance reasons
- */
-function mcapi_render_stripped(&$element) {
-  if (array_key_exists('#type',  $element)) {
-    if (!in_array($element['#type'], array('checkbox', 'checkboxes', 'radios', 'actions', 'value'))) {
-      $element['#prefix'] = '<span class = "form-item">';
-      $element['#suffix'] = '</span>';
-      unset($element['#theme_wrappers']);
-    }
-  }
-  return \Drupal::service('renderer')->render($element);
-}
-
-/**
  * machine_name callback
  * @param unknown $id
  */
@@ -151,18 +49,24 @@ function mcapi_editform_load($id) {
 
 /**
  * get all the tokens which apply in the transaction form
- * @return array
+ * @param boolean $natural
+ *   TRUE if the transaction entities fields are wanted, FALSE if the form fields
+ * @return string[]
  *   the token names, without the 'type:'
  */
-function mcapi_1stparty_transaction_tokens() {
+function mcapi_1stparty_transaction_tokens($natural = FALSE) {
   $tokens = Exchange::transactionTokens(FALSE);
 
   unset($tokens[array_search('state', $tokens)]);
   unset($tokens[array_search('serial', $tokens)]);
   unset($tokens[array_search('creator', $tokens)]);
-  unset($tokens[array_search('mcapi_exchange_og_ref', $tokens)]);
-  //replace payer and payee with partner and direction
-  $tokens[] = 'direction';
+//  unset($tokens[array_search('mcapi_exchange_og_ref', $tokens)]);
+  if (!$natural) {
+    unset($tokens[array_search('payer', $tokens)]);
+    unset($tokens[array_search('payee', $tokens)]);
+    $tokens[] = 'partner';
+    $tokens[] = 'mywallet';
+  }
   return $tokens;
 }
 
@@ -225,4 +129,23 @@ function mcapi_1stparty_entity_base_field_info_alter(&$fields, \Drupal\Core\Enti
       ['type' => $datewidget, 'weight' => 10]
     );
   }
+}
+
+
+/**
+ * implements hook_theme().
+ */
+function mcapi_1stparty_theme() {
+  return [
+    '1stpartyform'=> [
+      'function' => 'theme_1stpartyform',//no template is possible in this case
+      'variables' => [
+        'form' => [],
+        'twig_tokens' => [],
+        'twig_template' => '',
+        'incoming' => 0
+      ],
+      'file' => '/mcapi_1stparty.inc',
+    ]
+  ];
 }

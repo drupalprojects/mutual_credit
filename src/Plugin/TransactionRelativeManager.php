@@ -64,6 +64,7 @@ class TransactionRelativeManager extends DefaultPluginManager {
    */
   public function getUsers(TransactionInterface $transaction, array $plugin_names) {
     //get the plugins
+    $user_ids = [];
     $plugin_ids = array_intersect_key($plugin_names, $this->active());
     foreach ($plugin_ids as $plugin_id) {
       $user_ids = array_merge($user_ids, $this->active[$plugin_id]->getUsers($transaction));

@@ -25,6 +25,8 @@ class TransitionManager extends DefaultPluginManager {
 
   private $plugins;
 
+  private $config;
+
   /**
    * Constructs the TransitionManager object
    *
@@ -49,23 +51,9 @@ class TransitionManager extends DefaultPluginManager {
     $this->setCacheBackend($cache_backend, 'transaction_transitions');
     $this->config_factory = $config_factory;
     $this->plugins = [];
+    $this->config = [];
     //@todo can this be injected?
     $this->redirecter = \Drupal::service('redirect.destination');
-  }
-
-  /*
-   * retrieve all the transition plugins
-   *
-   * @param bool $editable
-   *   whether to get the configuration as immutable or editable.
-   *
-   * @todo use a collection?
-   */
-  public function all($editable = FALSE) {
-    foreach ($this->getDefinitions() as $id => $def) {
-      $this->getPlugin($id, $editable);
-    }
-    return $this->plugins;
   }
 
   /*
@@ -79,16 +67,16 @@ class TransitionManager extends DefaultPluginManager {
    *
    * @todo use a collection?
    */
-  public function active(array $exclude = [], $worth = NULL) {
+  public function active($transaction, array $exclude = []) {
     //no need to put this in a static coz should be used once only
-    if ($worth) {
+    if ($transaction->worth) {
       //some deleteModes are not available for some currencies
-      $exclude = array_merge($exclude, $this->deletemodes($worth->currencies(TRUE)));
+      $exclude = array_merge($exclude, $this->deletemodes($transaction->worth->currencies(TRUE)));
     }
     $active = $this->config_factory->get('mcapi.misc')->get('active_transitions');
-    foreach ($this->all(FALSE) as $id => $plugin) {
+    foreach ($this->getDefinitions() as $id => $definition) {
       if (!in_array($id, $exclude) and $active[$id]) {
-        $output[$id] = $plugin;
+        $output[$id] = $this->getPlugin($id, $transaction);
       }
     }
     return $output;
@@ -102,14 +90,34 @@ class TransitionManager extends DefaultPluginManager {
    *
    * @return type
    */
-  public function getPlugin($id, $editable = FALSE) {
+  public function getPlugin($id, $transaction) {
     if (!array_key_exists($id, $this->plugins)) {
-      $config = $this->config_factory->get('mcapi.transition.'. $id)->getRawData();
-      $this->plugins[$id] = $this->createInstance($id, $config);
+      $this->plugins[$id] = $this->createInstance($id, $this->getConfig($id)->getRawData());
+      $this->plugins[$id]->setTransaction($transaction);
     }
     return $this->plugins[$id];
   }
 
+  /**
+   *
+   * @param type $id
+   * @param type $editable
+   *
+   * @return Config
+   *   editable or immutable
+   */
+  public function getConfig($id, $editable = FALSE) {
+    return $editable ?
+      $this->config_factory->getEditable('mcapi.transition.'. $id) :
+      $this->config_factory->get('mcapi.transition.'. $id);
+  }
+
+  /**
+   * get the delete modes which are common to all the given currencies
+   *
+   * @param array $currencies
+   * @return type
+   */
   private function deletemodes(array $currencies) {
     $modes = array(
     	'1' => 'erase',
@@ -123,7 +131,12 @@ class TransitionManager extends DefaultPluginManager {
     return array_slice($modes, $deletemode);
   }
 
-  //return the names of the config items
+  /**
+   * return the names of the config items
+   *
+   * @return string[]
+   *   the config names of all the transition settings
+   */
   public function getNames() {
     foreach ($this->getDefinitions() as $name => $info) {
       $names[] = 'mcapi.transition.'.$name;
@@ -141,18 +154,18 @@ class TransitionManager extends DefaultPluginManager {
    * @return array
    *   A renderable array
    */
-  function getLinks(TransactionInterface $transaction, $view_mode = 'certificate') {
+  function getLinks(TransactionInterface $transaction, $show_view = TRUE) {
     $renderable = [];
     //child transactions and unsaved transactions never show links
     if (!$transaction->parent->value && $transaction->serial->value) {
       $exclude = ['create'];
       //ideally we would remove view when the current url is NOT the canonical url
       //OR we need to NOT render links when the transaction is being previewed
-      if ($view_mode == 'certificate') {
+      if (!$show_view) {
         $exclude[] = 'view';
       }
 
-      foreach ($this->active($exclude, $transaction->worth) as $transition => $plugin) {
+      foreach ($this->active($transaction, $exclude) as $transition => $plugin) {
         if ($transaction->access($transition)->isAllowed()) {
           $route_name = $transition == 'view' ?
             'entity.mcapi_transaction.canonical' :

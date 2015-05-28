@@ -1,36 +1,40 @@
-base_field: serial
-base_table: mcapi_signatures
+id: mcapi_pending_signatures
+label: 'Pending transactions'
+description: ''
+tag: ''
+module: views
 core: 8.x
-description: 'This view shows signatures. Be aware that you may need a view based on the transaction entity table.'
+langcode: null
 status: true
+dependencies:
+  config:
+    - core.entity_view_mode.mcapi_transaction.sentence
+  module:
+    - mcapi
+    - user
+base_table: mcapi_transaction
+base_field: xid
 display:
   default:
     display_plugin: default
     id: default
     display_title: Master
     position: 0
-    provider: views
     display_options:
       access:
         type: none
         options: {  }
-        provider: views
-        dependencies: {  }
       cache:
         type: none
         options: {  }
-        provider: views
-        dependencies: {  }
       query:
         type: views_query
         options:
           disable_sql_rewrite: false
           distinct: false
-          slave: false
-          query_comment: false
+          replica: false
+          query_comment: ''
           query_tags: {  }
-        provider: views
-        dependencies: {  }
       exposed_form:
         type: basic
         options:
@@ -41,81 +45,29 @@ display:
           expose_sort_order: true
           sort_asc_label: Asc
           sort_desc_label: Desc
-        provider: views
-        dependencies: {  }
       pager:
         type: none
         options:
+          items_per_page: 0
           offset: 0
-        provider: views
       style:
-        type: html_list
+        type: default
       row:
-        type: fields
+        type: 'entity:mcapi_transaction'
+        options:
+          relationship: none
+          view_mode: sentence
       fields:
-        serial:
-          id: serial
-          table: mcapi_signatures
-          field: serial
+        xid:
+          table: mcapi_transaction
+          field: xid
+          id: xid
+          entity_type: null
+          entity_field: null
+          plugin_id: mcapi_entity
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - views
-          label: ''
-          exclude: true
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: ''
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          plugin_id: standard
-          provider: views
-        entity_2:
-          id: entity_2
-          table: mcapi_signatures
-          field: entity
-          relationship: none
-          group_type: group
-          admin_label: ''
-          dependencies:
-            module:
-              - mcapi_signatures
           label: ''
           exclude: false
           alter:
@@ -135,7 +87,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -149,7 +101,7 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: false
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -157,53 +109,8 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          plugin_id: sentence
-          provider: mcapi_signatures
+          link_to_transaction: true
       filters:
-        signed:
-          id: signed
-          table: mcapi_signatures
-          field: signed
-          relationship: none
-          group_type: group
-          admin_label: ''
-          dependencies:
-            module:
-              - views
-          operator: '<'
-          value:
-            min: ''
-            max: ''
-            value: '1971-01-01 12:00:00'
-            type: date
-          group: 1
-          exposed: false
-          expose:
-            operator_id: ''
-            label: ''
-            description: ''
-            use_operator: false
-            operator: ''
-            identifier: ''
-            required: false
-            remember: false
-            multiple: false
-            remember_roles:
-              authenticated: authenticated
-          is_grouped: false
-          group_info:
-            label: ''
-            description: ''
-            identifier: ''
-            optional: true
-            widget: select
-            multiple: false
-            remember: false
-            default_group: All
-            default_group_multiple: {  }
-            group_items: {  }
-          plugin_id: date
-          provider: views
         state:
           id: state
           table: mcapi_transaction
@@ -211,9 +118,6 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - mcapi
           operator: in
           value:
             pending: pending
@@ -244,26 +148,25 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
-          plugin_id: mcapi_state
-          provider: mcapi
+          entity_type: mcapi_transaction
+          plugin_id: in_operator
       sorts:
-        serial:
-          id: serial
+        created:
+          id: created
           table: mcapi_transaction
-          field: serial
+          field: created
+          order: ASC
+          entity_type: mcapi_transaction
+          entity_field: null
+          plugin_id: date
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - views
-          order: ASC
           exposed: false
           expose:
             label: ''
-          plugin_id: standard
-          provider: views
-      title: Signatures
+          granularity: second
+      title: 'Pending transactions 2'
       header: {  }
       footer: {  }
       empty:
@@ -274,18 +177,22 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - views
           empty: true
           tokenize: false
-          content: 
+          content:
             value: 'No pending transactions'
             format: plain_text
-          format: plain_text
           plugin_id: text
-          provider: views
-      relationships: {  }
+      relationships:
+        serial:
+          id: serial
+          table: mcapi_signatures
+          field: serial
+          relationship: none
+          group_type: group
+          admin_label: Transaction
+          required: true
+          plugin_id: standard
       arguments:
         uid:
           id: uid
@@ -294,9 +201,6 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - user
           default_action: 'not found'
           exception:
             value: all
@@ -325,167 +229,37 @@ display:
           break_phrase: false
           not: false
           plugin_id: user_uid
-          provider: user
-  block_1:
+      display_extenders: {  }
+    cache_metadata:
+      contexts:
+        - 'languages:language_interface'
+        - url
+      cacheable: false
+  my_pending:
     display_plugin: block
-    id: block_1
-    display_title: 'I must sign block'
-    position: 1
-    provider: block
+    id: my_pending
+    display_title: 'My pending'
+    position: 3
     display_options:
-      block_description: 'My signature needed'
-      block_category: 'Community Accounting'
-      display_comment: ''
-      display_description: 'Transactions waiting for the current user to sign'
-      arguments: {  }
-      defaults:
-        arguments: false
+      display_extenders: {  }
+      display_description: ''
+      block_description: 'Pending transactions'
+      block_category: CommunityAccounting
+    cache_metadata:
+      contexts:
+        - 'languages:language_interface'
+        - url
+      cacheable: false
   my_sig_needed:
     display_plugin: block
     id: my_sig_needed
-    display_title: 'user must sign block'
+    display_title: 'I must sign'
     position: 1
-    provider: block
     display_options:
-      block_description: 'My signature needed'
+      display_extenders: {  }
       block_category: 'Community Accounting'
-      display_comment: ''
-      display_description: 'Transactions waiting for the viewed user to sign'
-      arguments:
-        uid:
-          id: uid
-          table: mcapi_signatures
-          field: uid
-          relationship: none
-          group_type: group
-          admin_label: ''
-          dependencies:
-            module:
-              - user
-          default_action: 'not found'
-          exception:
-            value: all
-            title_enable: false
-            title: All
-          title_enable: false
-          title: ''
-          default_argument_type: user
-          default_argument_options:
-            user: false
-          default_argument_skip_url: false
-          summary_options:
-            base_path: ''
-            count: true
-            items_per_page: 25
-            override: false
-          summary:
-            sort_order: asc
-            number_of_records: 0
-            format: default_summary
-          specify_validation: false
-          validate:
-            type: none
-            fail: 'not found'
-          validate_options: {  }
-          break_phrase: false
-          not: false
-          plugin_id: user_uid
-          provider: user
-      defaults:
-        arguments: false
-  block_2:
-    display_plugin: block
-    id: block_2
-    display_title: 'I wait for block'
-    position: 2
-    provider: views
-    display_options:
+      display_description: 'Transactions that the user (in arg 1) must sign'
       filters:
-        uid:
-          id: uid
-          table: mcapi_signatures
-          field: uid
-          relationship: none
-          group_type: group
-          admin_label: ''
-          dependencies:
-            module:
-              - user
-          operator: '='
-          value: '1'
-          group: 1
-          exposed: false
-          expose:
-            operator_id: ''
-            label: ''
-            description: ''
-            use_operator: false
-            operator: ''
-            identifier: ''
-            required: false
-            remember: false
-            multiple: false
-            remember_roles:
-              authenticated: authenticated
-          is_grouped: false
-          group_info:
-            label: ''
-            description: ''
-            identifier: ''
-            optional: true
-            widget: select
-            multiple: false
-            remember: false
-            default_group: All
-            default_group_multiple: {  }
-            group_items: {  }
-          plugin_id: user_current
-          provider: user
-        signed:
-          id: signed
-          table: mcapi_signatures
-          field: signed
-          relationship: none
-          group_type: group
-          admin_label: ''
-          dependencies:
-            module:
-              - views
-              - views
-          operator: '>'
-          value:
-            min: ''
-            max: ''
-            value: '1971-01-01 12:00:00'
-            type: date
-          group: 1
-          exposed: false
-          expose:
-            operator_id: ''
-            label: ''
-            description: ''
-            use_operator: false
-            operator: ''
-            identifier: ''
-            required: false
-            remember: false
-            multiple: false
-            remember_roles:
-              authenticated: authenticated
-          is_grouped: false
-          group_info:
-            label: ''
-            description: ''
-            identifier: ''
-            optional: true
-            widget: select
-            multiple: false
-            remember: false
-            default_group: All
-            default_group_multiple: {  }
-            group_items: {  }
-          plugin_id: date
-          provider: views
         state:
           id: state
           table: mcapi_transaction
@@ -493,9 +267,6 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - mcapi
           operator: in
           value:
             pending: pending
@@ -526,8 +297,48 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
-          plugin_id: mcapi_state
-          provider: mcapi
+          entity_type: mcapi_transaction
+          plugin_id: in_operator
+        signed:
+          id: signed
+          table: mcapi_signatures
+          field: signed
+          relationship: none
+          group_type: group
+          admin_label: ''
+          operator: '<'
+          value:
+            min: ''
+            max: ''
+            value: '1970:01:02 00:00:00'
+            type: date
+          group: 1
+          exposed: false
+          expose:
+            operator_id: ''
+            label: ''
+            description: ''
+            use_operator: false
+            operator: ''
+            identifier: ''
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          plugin_id: date
       defaults:
         filters: false
         filter_groups: false
@@ -535,62 +346,22 @@ display:
         operator: AND
         groups:
           1: AND
-      block_description: 'I have signed'
-      block_category: 'Community Accounting'
-      display_description: 'Transactions signed by the current user but still pending'
+      block_description: 'My signature needed'
+    cache_metadata:
+      contexts:
+        - 'languages:language_interface'
+        - url
+      cacheable: false
   other_sig_needed:
     display_plugin: block
     id: other_sig_needed
-    display_title: 'I wait for block'
-    position: 2
-    provider: views
+    display_title: 'I wait for'
+    position: 1
     display_options:
+      display_extenders: {  }
+      block_category: 'Community Accounting'
+      display_description: 'Transactions that the user (in arg 1) must sign'
       filters:
-        signed:
-          id: signed
-          table: mcapi_signatures
-          field: signed
-          relationship: none
-          group_type: group
-          admin_label: ''
-          dependencies:
-            module:
-              - views
-              - views
-          operator: '>'
-          value:
-            min: ''
-            max: ''
-            value: '1971-01-01 12:00:00'
-            type: date
-          group: 1
-          exposed: false
-          expose:
-            operator_id: ''
-            label: ''
-            description: ''
-            use_operator: false
-            operator: ''
-            identifier: ''
-            required: false
-            remember: false
-            multiple: false
-            remember_roles:
-              authenticated: authenticated
-          is_grouped: false
-          group_info:
-            label: ''
-            description: ''
-            identifier: ''
-            optional: true
-            widget: select
-            multiple: false
-            remember: false
-            default_group: All
-            default_group_multiple: {  }
-            group_items: {  }
-          plugin_id: date
-          provider: views
         state:
           id: state
           table: mcapi_transaction
@@ -598,9 +369,6 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - mcapi
           operator: in
           value:
             pending: pending
@@ -631,8 +399,48 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
-          plugin_id: mcapi_state
-          provider: mcapi
+          entity_type: mcapi_transaction
+          plugin_id: in_operator
+        signed:
+          id: signed
+          table: mcapi_signatures
+          field: signed
+          relationship: none
+          group_type: group
+          admin_label: ''
+          operator: '>'
+          value:
+            min: ''
+            max: ''
+            value: '1970:01:02 00:00:00'
+            type: date
+          group: 1
+          exposed: false
+          expose:
+            operator_id: ''
+            label: ''
+            description: ''
+            use_operator: false
+            operator: ''
+            identifier: ''
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          plugin_id: date
       defaults:
         filters: false
         filter_groups: false
@@ -640,18 +448,9 @@ display:
         operator: AND
         groups:
           1: AND
-      block_description: 'I have signed'
-      block_category: 'Community Accounting'
-      display_description: 'Transactions signed by the current user but still pending'
-label: 'Pending transactions'
-module: views
-id: signatures
-tag: mcapi
-uuid: 3954b187-4178-4d99-8d00-d4c6aa4d6861
-langcode: en
-dependencies:
-  module:
-    - mcapi
-    - mcapi_signatures
-    - user
-
+      block_description: 'My signature needed'
+    cache_metadata:
+      contexts:
+        - 'languages:language_interface'
+        - url
+      cacheable: false

@@ -109,7 +109,6 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     elseif ($name) {
       $output .= $name;
     }
-
     return $output . ' #' . $this->wid->value;
   }
 

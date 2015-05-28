@@ -25,7 +25,7 @@ class TransitionToggle extends ConfirmFormBase {
     $this->setConfigFactory($configFactory);
     $this->id = $route_match->getParameter('transition');
     if ($this->id) {
-      $this->transition = $transition_manager->getPlugin($this->id)->getConfiguration();
+      $this->transition = $transition_manager->getDefinition($this->id)->getConfiguration();
     }
     $this->config = $this->configFactory->getEditable('mcapi.misc');
   }

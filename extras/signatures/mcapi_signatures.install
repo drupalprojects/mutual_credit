@@ -12,104 +12,94 @@ function mcapi_signatures_modules_installed($modules) {
   if (in_array('mcapi_signatures', $modules) && !in_array('mcapi', $modules)) {
     drupal_set_message(t(
       "Workflow settings should be reviewed to take account of transaction signing. !link",
-      array('!link' => \Drupal::l('admin/accounting/workflow', Url::fromRoute('mcapi.admin.transactions')))
+      ['!link' => \Drupal::l(
+        'admin/accounting/workflow',
+        Url::fromRoute('mcapi.admin.transactions')
+      )]
     ));
   }
 }
 
 /*
- * implements hook_uninstall
+ * implements hook_uninstall().
  * @todo ideally we would prevent this module from uninstalling if ANY transactions
  * were in pending state. Ideally any module providing a transaction state in use
  * would not be uninstallable.
  */
 function mcapi_signatures_uninstall() {
   drupal_set_message("This uninstall shouldn't have been possible if any transactions are pending");
-
+  db_update('mcapi_transactions')
+    ->values(['state' => 'done'])
+    ->condition('state', 'pending')
+    ->execute();//this isn't actually tested
+  \Drupal::entityManager()->getStorage('mcapi_transaction')
+    ->indexRebuild();
+  drupal_set_message("All pending transactions have been set to 'done'");
 }
+
 /**
- * Implementation of hook_schema)().
+ * Implementation of hook_schema().
  * creates a table for storing signatures needed on pending transactions
  */
 function mcapi_signatures_schema() {
-  $schema['mcapi_signatures'] = array(
+  $schema['mcapi_signatures'] = [
     'description' => 'signatories needed on pending transactions',
-    'fields' => array(
-      'serial' => array(
+    'fields' => [
+      'serial' => [
         'description' => t('the transaction to which this entry is attached'),
         'type' => 'varchar',
         'length' => 16,
-      ),
-      'uid' => array(
+      ],
+      'uid' => [
         'description' => t('the uid of the signatory'),
         'type' => 'int',
         'size' => 'normal',
-      ),
-      'signed' => array(
+      ],
+      'signed' => [
         'description' => t('when the signature was added'),
         'type' => 'int',
         'size' => 'normal',
         'not null' => FALSE,
-      )
-    ),
-    'primary key' => array('serial', 'uid')
-  );
+      ]
+    ],
+    'primary key' => ['serial', 'uid']
+  ];
   return $schema;
 }
 
 
-//@todo migrate these into whatever the notification framework will look like
+//@todo migrate notification mails from d7
 /*
- $mcapi_signed_off_notify_template = array(
+ $mcapi_signed_off_notify_template = [
      'subject' =>  t('Transaction signed off'),
-     'body' => t('The following transaction has been signed off: @token', array('@token' => '[transaction:url]'))
+     'body' => t('The following transaction has been signed off: @token', ['@token' => '[transaction:url]'))
  );
 variable_set('mcapi_signed_off_notify_template', $mcapi_signed_off_notify_template);
-$mcapi_sign_notify_template = array(
+$mcapi_sign_notify_template = [
     'subject' =>  t('Your signature is required'),
-    'body' => t('Your signature is required on @token', array('@token' => '[transaction:url]'))
+    'body' => t('Your signature is required on @token', ['@token' => '[transaction:url]'))
 );
 variable_set('mcapi_sign_notify_template', $mcapi_sign_notify_template);
 */
 
-function mcapi_signatures_update_8000() {
-  //replace the db pending field with the new signed field.
-  $table = mcapi_signatures_schema();
-  $field = $table['fields']['signed'];
-  db_add_field('mcapi_signatures', 'signed', $field);
-
-  //borrows the created date from the transaction table to put some more reasonable signature dates in
-  //I suspect there is a quicker way to do this, but is it possible with the drupal dbAPI?
-  $createds = db_select('mcapi_signatures', 's')
-    ->leftjoin('mcapi_transaction', 't', 's.serial = t.serial');
-  $createds->fields(array('s.serial', 't.created'))->execute();
-  foreach ($createds->fetchAllKeyed(0) as $serial => $created) {
-    //this really needs to be faster, or batched
-    db_update('mcapi_signatures')
-    ->field(array('signed' => $created + $day))
-    ->condition('serial', $serial)
-    ->condition('signed', 0)->execute();
-  }
-  //so that leaves every pending 1 as signed 0, and every pending 0 as transaction created
-  db_drop_field('mcapi_signatures', 'pending');
-}
-
-
 /*
  * utility
  * only works with the default database schema
+ * @todo make this into a drush command
  */
-function signature_integrity_check() {
+function signature_integrity_check($modify = FALSE) {
   //set all pending transactions to completed
-  db_update('mcapi_transaction')->fields(array('state' => 1))->condition('state', TRANSACTION_STATE_PENDING)->execute();
+  db_update('mcapi_transaction')
+    ->fields(['state' => 1])
+    ->condition('state', TRANSACTION_STATE_PENDING)->execute();
   //any transactions with pending signatures should be set back to pending state
   $pending_serials = db_select('mcapi_signatures', 's')
-    ->fields('s', array('serial'))
+    ->fields('s', ['serial'])
     ->condition('pending', 1)
     ->execute()->fetchCol();
   if (empty($pending_serials)) return;
   db_update('mcapi_transaction')
-    ->fields(array('state' => TRANSACTION_STATE_PENDING))
+    ->fields(['state' => TRANSACTION_STATE_PENDING])
     ->condition('serial', $pending_serials)
     ->execute();
 }

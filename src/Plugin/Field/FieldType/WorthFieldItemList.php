@@ -64,7 +64,7 @@ class WorthFieldItemList extends FieldItemList {
     if (count($values) > 1) {
       $delimiter = \Drupal::config('mcapi.misc')->get('worths_delimiter');
     }
-    return implode($delimiter, $values);
+    return ['#markup' => implode($delimiter, $values)];
   }
 
 

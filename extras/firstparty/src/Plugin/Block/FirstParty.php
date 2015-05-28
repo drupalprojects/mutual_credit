@@ -3,7 +3,6 @@
 /**
  * @file
  * Contains \Drupal\mcapi_1stparty\Plugin\Block\FirstParty
- * @todo I don't know how to call up the entity form without using the router
  */
 
 namespace Drupal\mcapi_1stparty\Plugin\Block;

@@ -63,6 +63,7 @@ class TransactionType extends ConditionPluginBase {
     $form['types'] = [
       '#type' => 'mcapi_types',
       '#default_value' => $this->configuration['types'],
+      '#multiple' => TRUE
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

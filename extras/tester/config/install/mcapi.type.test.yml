@@ -6,6 +6,4 @@ status: true
 dependencies: { }
 third_party_settings:
   mcapi_signatures:
-    signatures:
-      payer: payer
-      payee: payee
+    signatures: { }

@@ -63,6 +63,7 @@ class TransactionState extends ConditionPluginBase {
     $form['states'] = [
       '#type' => 'mcapi_states',
       '#default_value' => $this->configuration['states'],
+      '#multiple' => TRUE
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }

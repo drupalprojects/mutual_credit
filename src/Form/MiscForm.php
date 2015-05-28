@@ -33,7 +33,7 @@ class MiscForm extends ConfigFormBase {
       $container->get('config.factory'),
       $container->get('module_handler'),
       $container->get('entity.manager'),
-      $container->get(' mcapi.transaction_relative_manager')
+      $container->get('mcapi.transaction_relative_manager')
     );
   }
 

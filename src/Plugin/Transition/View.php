@@ -9,11 +9,11 @@
 
 namespace Drupal\mcapi\Plugin\Transition;
 
-use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
+use Drupal\mcapi\Plugin\TransitionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\mcapi\Plugin\TransitionBase;
+use Drupal\Core\Config\ImmutableConfig;
 
 /**
  * Links to the transaction certificate
@@ -31,9 +31,7 @@ class View extends TransitionBase {//does it go without saying that this impleme
       $this->configuration['button'],
       $this->configuration['cancel_button'],
       $this->configuration['access'],
-      $this->configuration['format2'],
       $this->configuration['redirect'],
-      $this->configuration['twig2'],
       $this->configuration['message']
     );
   }
@@ -41,28 +39,29 @@ class View extends TransitionBase {//does it go without saying that this impleme
   /*
    * {@inheritdoc}
    */
-  public function accessOp(TransactionInterface $transaction, AccountInterface $account) {
+  public function accessOp(AccountInterface $account) {
     //you can view a transaction if you can view either the payer OR payee wallets
-    return $transaction->payer->entity->access('details', $account)
-    || $transaction->payee->entity->access('details', $account);
+    return $this->transaction->payer->entity->access('details', $account)
+    || $this->transaction->payee->entity->access('details', $account);
   }
-
 
   /*
    * {@inheritdoc}
   */
-  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    $form = parent::buildConfigurationForm($form, $form_state);
+  static function settingsFormTweak(array &$form, FormStateInterface $form_state, ImmutableConfig $config) {
     $form['sure']['#title'] = t('Display page');
     //because the view transition isn't a transaction and doesn't have any buttons
-    unset($form['sure']['button'], $form['sure']['cancel_button']);
-    //because there is no second step
-    unset($form['feedback']);
-    //because transaction view access is handled according to wallet access functions
-    unset($form['access']);
-    return $form;
+    unset(
+      $form['sure']['button'],
+      $form['sure']['cancel_button'],
+      $form['sure']['display'],
+      $form['feedback'],
+      $form['access']
+    );
   }
 
-  public function execute(TransactionInterface $transaction, array $context){}
+  public function execute(array $context){
+    //no execution for this special transition
+  }
 
 }

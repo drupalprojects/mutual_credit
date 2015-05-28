@@ -37,11 +37,11 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
       $transition = $this->routeMatch->getParameter('transition');
     }
     //the decision is taken by the plugin for the given transition operation
-    if ($plugin = $this->transitionManager->getPlugin($transition)) {
+    if ($plugin = $this->transitionManager->getPlugin($transition, $transaction)) {
       //check the states this $op can appear on
       $user = $this->prepareUser($account);
-      if ($plugin->accessState($transaction, $user)) {
-        if ($plugin->accessOp($transaction, $user)) {
+      if ($plugin->accessState($user)) {
+        if ($plugin->accessOp($user)) {
           return AccessResult::allowed()->cachePerUser();
         }
       }

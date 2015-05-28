@@ -53,8 +53,7 @@ class TransitionForm extends EntityConfirmFormBase {
       $path = $request->query->get('destination');
       $request->query->remove('destination');//can't remember why
     }
-    elseif (($this->transition->getConfiguration('format2') == 'redirect') &&
-      ($redirect = $this->transition->getConfiguration('redirect'))) {
+    elseif ($redirect = $this->transition->getConfiguration('redirect')) {
       $path = strtr($redirect, [
         '[uid]' => $this->currentUser()->id(),
         '[serial]' => $this->entity->serial->value

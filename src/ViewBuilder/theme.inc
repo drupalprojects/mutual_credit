@@ -331,9 +331,12 @@ function template_preprocess_mcapi_transaction(&$vars) {
     }
   }
   //@todo consider other approaches rather than the noLinks undeclared variable
+  //these should never be cached, but seem nonetheless to be cached!
   if (!$transaction->noLinks) {
+    $view_link = \Drupal::routeMatch()->getRouteName() != 'entity.mcapi_transaction.canonical';
     $vars['links'] = \Drupal::service('mcapi.transition_manager')
-      ->getLinks($transaction, $element['#view_mode']);
+      ->getLinks($transaction, $view_link);
+    $transaction->noLinks = TRUE;//arghh this function is running twice
   }
 }
 

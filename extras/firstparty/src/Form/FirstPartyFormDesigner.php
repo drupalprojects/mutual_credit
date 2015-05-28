@@ -8,6 +8,7 @@
 
 namespace Drupal\mcapi_1stparty\Form;
 
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Entity\EntityForm;
@@ -112,6 +113,17 @@ class FirstPartyFormDesigner extends EntityForm {
       '#default_value' => $configEntity->type,
       '#weight' => $w++,
     ];
+    $form['incoming'] = [
+      '#title' => $this->t('Direction'),
+      '#description' => $this->t('Direction of payment relative to the current user'),
+      '#type' => 'radios',
+      '#options' => [
+        '0' => $this->t('Outgoing'),
+        '1' => $this->t('Incoming')
+      ],
+      '#default_value' => $configEntity->direction,
+      '#weight' => $w++
+    ];
 
     //following section of the form allows the admin to handle the individual fields of the transaction form.
     //the fields are handled here one in each tab, each field having some shared settings and some specific ones.
@@ -161,58 +173,10 @@ class FirstPartyFormDesigner extends EntityForm {
     $form['partner']['preset'] = [
       '#title' => $this->t('Preset'),
       '#type' => 'select_wallet',
-      '#default_value' => $configEntity->partner['preset'],
+      '#role' => 'null',
+      '#default_value' => $configEntity->partner['preset'] ? Wallet::load($configEntity->partner['preset']) : NULL,
       '#multiple' => FALSE,
       '#required' => FALSE
-    ];
-
-
-    $form['direction'] = [
-      '#title' => $this->t('@fieldname settings', ['@fieldname' => t('Direction')]),
-      '#description' => $this->t('Direction relative to the current user'),
-      '#type' => 'details',
-      '#group' => 'steps',
-      'preset' => [
-        '#title' => $this->t('Preset'),
-        '#description' => $this->t("Either 'incoming' or 'outgoing' relative to the logged in user"),
-        '#type' => $configEntity->direction['widget'],
-        //ideally these options labels wod be live updated from the fields below
-        '#options' => [
-          '' => $this->t('Neither'),
-          'incoming' => empty($configEntity->direction['incoming']) ? $this->t('Incoming') : $configEntity->direction['incoming'],
-          'outgoing' => empty($configEntity->direction['outgoing']) ? $this->t('Outgoing') : $configEntity->direction['outgoing'],
-        ],
-        '#default_value' => $configEntity->direction['preset'],
-        '#required' => TRUE
-      ],
-      'widget' => [
-        '#title' => $this->t('Widget'),
-        '#type' => 'radios',
-        '#options' => [
-          'select' => $this->t('Dropdown select box'),
-          'radios' => $this->t('Radio buttons')
-        ],
-        '#default_value' => $configEntity->direction['widget'],
-        '#required' => TRUE,
-        '#weight' => 1,
-      ],
-      'incoming' => [
-        '#title' => $this->t("@label option label", ['@label' => $this->t('Incoming')]),
-        '#type' => 'textfield',
-        '#default_value' => $configEntity->direction['incoming'],
-        '#placeholder' => $this->t('Pay'),
-        '#required' => TRUE,
-        '#weight' => 2
-      ],
-      'outgoing' => [
-        '#title' => $this->t("@label option label",  ['@label' => $this->t('Outgoing')]),
-        '#type' => 'textfield',
-        '#default_value' => $configEntity->direction['outgoing'],
-        '#placeholder' => $this->t('Request'),
-        '#required' => TRUE,
-        '#weight' => 3
-      ],
-      '#weight' => $w++
     ];
 
     $preset = $default_fields['description']['widget']
@@ -259,17 +223,6 @@ class FirstPartyFormDesigner extends EntityForm {
           '#group' => 'steps',
           'preset' => $data['widget']->formElement($transaction->$field_name, 0, $element, $form, $form_state),
           '#weight' => $w++
-        ];
-      }
-    }
-    foreach (Element::children($form) as $child) {
-      //@todo test these are saved and retrieved, then make the strip work.
-      if (isset($form[$child]['#group'])) {
-        $form[$child]['stripped'] = [
-          '#title' => $this->t('Remove the outer div with the title and description.'),
-          '#type' => 'checkbox',
-          '#default_value' => FALSE,
-          '#weight' => 5
         ];
       }
     }
@@ -444,11 +397,11 @@ class FirstPartyFormDesigner extends EntityForm {
       'description' => $configEntity->get('description')['preset']
     ];
     //we can't set a default for mywallet because it is differnet for every user
-    if ($configEntity->get('direction')['preset'] == 'outgoing') {
-      $props['payee'] = $configEntity->get('partner')['preset'];
+    if ($configEntity->get('incoming')) {
+      $props['payer'] = $configEntity->get('partner')['preset'];
     }
     else {
-      $props['payer'] = $configEntity->get('partner')['preset'];
+      $props['payee'] = $configEntity->get('partner')['preset'];
     }
     foreach ($configEntity->get('fieldapi_presets') as $fieldname => $value) {
       $props[$fieldname] = $value;

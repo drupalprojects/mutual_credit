@@ -74,18 +74,6 @@ class TransactionIntegrityContraintValidator extends ConstraintValidator {
         $this->t('You are not allowed to pay into this wallet.')
       );
     }
-    //check that the description isn't too long
-    //Move to description field
-    $length = strlen($entity->description->value);
-    if ($length > MCAPI_MAX_DESCRIPTION) {
-      $errors[] = new \Exception(
-        'description',
-        $this->t(
-          'The description field is @num chars longer than the @max maximum',
-          ['@num' => $length-MCAPI_MAX_DESCRIPTION, '@max' => MCAPI_MAX_DESCRIPTION]
-        )
-      );
-    }
     return $errors;
   }
 

@@ -42,13 +42,13 @@ class Payer extends PluginBase implements TransactionRelativeInterface {
    * {@inheritdoc}
    */
   public function access(){}
-  
+
 
   /**
    * {@inheritdoc}
    */
   public function getUsers(TransactionInterface $transaction) {
-    return $transaction->payer->entity->getOwnerid();
+    return [$transaction->payer->entity->ownerUserId()];
   }
 
 

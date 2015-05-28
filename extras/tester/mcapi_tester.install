@@ -35,6 +35,18 @@ function mcapi_tester_install() {
   //make some transactions within the exchanges.
   mcapi_tester_make_transactions(200);
   echo "\n200 transactions created";
+
+  \Drupal::configFactory()
+    ->getEditable('system.site')
+    ->set('front', 'exchanges')->save();
+
+  \Drupal::configFactory()
+    ->getEditable('views.settings')
+    ->set('ui.show.sql_query.enabled', 1)
+    ->set('ui.always_live_preview', 1)
+    ->set('ui.show.advanced_column', 1)
+    ->set('ui.show.master_display', 1)
+    ->save();
 }
 
 function mcapi_tester_modules_installed($modules) {
@@ -69,7 +81,25 @@ return;
  *
   FieldStorageConfig::load('mcapi_transaction.categories')->delete();
  *
- db_delete('config')->condition('name', ['block.block.stark_admin', 'block.block.stark_tools', 'core.entity_form_display.mcapi_transaction.mcapi_transaction.default', 'mcapi_1stparty.editform.pay', 'system.site', 'taxonomy.settings', 'views.settings', 'block.block.systemhelp', 'field.storage.mcapi_transaction.categories', 'mcapi.type.test', 'mcapi_1stparty.editform.test1', 'mcapi_1stparty.editform.test2', 'mcapi_1stparty.editform.test3', 'taxonomy.vocabulary.categories', 'user.role.admin', 'field.field.mcapi_transaction.mcapi_transaction.categories', 'user.role.helper', 'user.role.ladmin', 'user.role.manager', 'user.role.member'], 'IN')->execute();
+ db_delete('config')->condition(
+   'name',
+   [
+     'block.block.systemhelp',
+     'field.storage.mcapi_transaction.categories',
+     'mcapi.type.test',
+     'mcapi_1stparty.editform.test1',
+     'mcapi_1stparty.editform.test2',
+     'mcapi_1stparty.editform.test3',
+     'taxonomy.vocabulary.categories',
+     'user.role.admin',
+     'field.field.mcapi_transaction.mcapi_transaction.categories',
+     'user.role.helper',
+     'user.role.ladmin',
+     'user.role.manager',
+     'user.role.member'
+   ],
+   'IN'
+ )->execute();
  \Drupal::configFactory()->getEditable('core.extension')
   ->clear("module.mcapi_tester")
   ->save();

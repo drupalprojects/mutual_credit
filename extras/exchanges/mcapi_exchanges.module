@@ -520,6 +520,25 @@ debug($maxes);
   }
 }
 
+function mcapi_exchanges_theme_registry_alter(&$items) {
+  $items['1stpartyform']['preprocess functions'][] = 'mcapi_exchanges_1stparty_preprocess';
+}
+
+function mcapi_exchanges_1stparty_preprocess(&$vars) {
+  //adjustments for intertrade mode
+  //@todo move this to the exchanges module
+  if (array_key_exists('intertrade', $tokens)) {// && array_key_exists('partner_all', $form)) {
+    $checkbox = mcapi_render_stripped($form['partner_all']);
+    $last = key($tokens);//we just iterated through the tokens array
+    if (array_key_exists('partner', $tokens)) {
+      $tokens['partner'] .= $checkbox;
+    }
+    else {
+      $tokens[$last] .= $checkbox;
+    }
+  }
+}
+
 
 
 /**
@@ -680,7 +699,7 @@ function mcapi_exchanges_form_transaction_transition_edit_form(&$form, &$form_st
 }
 
 function mcapi_exchanges_form_first_party_editform_alter($form, $form_state) {
-  
+
   $configEntity = $form_state->getFormObject()->entity;
   //ensure the worth field is showing all possible currencies ()
   $exchange = $configEntity->exchange ?

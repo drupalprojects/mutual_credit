@@ -22,7 +22,7 @@ use Drupal\mcapi\Exchange;
 const TRANSACTION_STATE_FINISHED = 'done';
 const TRANSACTION_STATE_ERASED = 'erased';
 
-//we could maybe do without these
+//these are hardly used - probably only for visualisation
 const CURRENCY_TYPE_ACKNOWLEDGEMENT = 'acknowledgement';
 const CURRENCY_TYPE_EXCHANGE = 'exchange';
 const CURRENCY_TYPE_COMMODITY = 'commodity';
@@ -31,9 +31,7 @@ const CURRENCY_TYPE_COMMODITY = 'commodity';
 const WALLET_ACCESS_ANY = '1';//this is the role id
 const WALLET_ACCESS_AUTH = '2';//this is the role id
 const WALLET_ACCESS_USERS = 'u';//user id is in the wallet access table
-const WALLET_ACCESS_OWNER =  'o';//this is replaced with a named user MAYBE NOT NEEDED?
-
-const MCAPI_MAX_DESCRIPTION = 255;
+const WALLET_ACCESS_OWNER =  'o';//this is replaced with a named user MAYBE NOT NEEDED
 
 const MCAPI_CONFIRM_NORMAL = 0;
 const MCAPI_CONFIRM_AJAX = 1;
@@ -44,9 +42,9 @@ const MCAPI_CONFIRM_MODAL = 2;
  */
 function mcapi_requirements($phase) {
   if ($phase == 'runtime') {
-    $result = array(
+    $result = [
       'title' => t('Transaction index table'),
-    );
+    ];
     //check that the index table is integral
     if (\Drupal::entityManager()->getStorage('mcapi_transaction')->indexCheck()) {
       $result['severity'] = REQUIREMENT_OK;
@@ -56,7 +54,7 @@ function mcapi_requirements($phase) {
       $result['severity'] = REQUIREMENT_ERROR;
       $result['description'] = t(
         'Index table does not add up. Try rebuilding it at !link',
-        array('!link' => \Drupal::l('admin/accounting/misc', Url::fromRoute('mcapi.admin_misc')))
+        ['!link' => \Drupal::l('admin/accounting/misc', Url::fromRoute('mcapi.admin_misc'))]
       );
     }
     return array($result);
@@ -69,17 +67,17 @@ function mcapi_requirements($phase) {
 function mcapi_help($route_name, $route_match) {
   switch ($route_name) {
     case 'mcapi.admin_currency_list':
-      return implode(' ', array(
+      return implode(' ', [
         t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.'),
         t('Retired currencies can no longer be used, but transactions are still visible.'),
         t('Only unused currencies can be deleted.'),
-      ));
+      ]);
     case 'mcapi.admin.transactions':
-      return implode(' ', array(
+      return implode(' ', [
         t('Workflow transitions move transactions of various types between states.'),
         t('Modules can add more states and types'),
         t('Each transition presents the user with confirmation form, which is configured on this page.')
-      ));
+      ]);
     case 'entity.mcapi_transaction.field_ui_fields':
       $settings_url = Url::fromRoute('mcapi.admin_misc');
       $transitions_url = Url::fromRoute('mcapi.admin.transactions');
@@ -274,25 +272,22 @@ function mcapi_module_implements_alter(&$implementations, $hook) {
  * implements hook_local_tasks_alter().
  *
  * prevent the three fixed transaction display modes from being edited
- *
  */
 function mcapi_local_tasks_alter(&$tasks) {
-  foreach (['certificate', 'twig', 'sentence'] as $mode) {
+  foreach (['default', 'certificate', 'twig', 'sentence'] as $mode) {
     unset($tasks["field_ui.fields:field_display_{$mode}_mcapi_transaction"]);
   }
+  //remove the parent tab as well.
+  unset($tasks['field_ui.fields:display_overview_mcapi_transaction']);
 }
+
 
 /**
  * implements hook_entity_operation_alter().
  * prevent the transaction view modes from being tampered with
  */
 function mcapi_entity_operation_alter(&$operations, $entity) {
-  $ids = array(
-    'mcapi_transaction.certificate',
-    'mcapi_transaction.twig',
-    'mcapi_transaction.sentence'
-  );
-  if (in_array($entity->id(), $ids)) {
+  if (in_array('mcapi_transaction.'.$entity->id(), ['certificate', 'twig', 'sentence'])) {
     $operations = [];
   }
 }
@@ -325,38 +320,33 @@ function mcapi_entity_extra_field_info() {
   foreach((array)$types as $entity_bundle => $max) {
     //if (!$max) continue; //don't show wallets on bundles with maximum of 0 wallets
     list($entity_type, $bundle) = explode(':', $entity_bundle);
-    $extra[$entity_type] = array(
-      $bundle => array(
-        'display' => array(
-          'wallets_summaries' => array(
+    $extra[$entity_type] = [
+      $bundle => [
+        'display' => [
+          'wallets_summaries' => [
             'label' => t('Wallets summaries'),
             'description' => t("Statistics from the user's wallets"),
             'weight' => 5,
-          ),
-        )
-      )
-    );
+          ],
+        ]
+      ]
+    ];
   }
   $w = 0;
   foreach (\Drupal::entityManager()->getViewBuilder('mcapi_wallet')->extraFields() as $id => $props) {
     $w++;
-    $extra['mcapi_wallet']['mcapi_wallet']['display'][$id] = $props + array('weight' => $w);
+    $extra['mcapi_wallet']['mcapi_wallet']['display'][$id] = $props + ['weight' => $w];
   }
 
   $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
-  $fields = array('payer', 'payee', 'description', 'state', 'type');
+  $fields = ['payer', 'payee', 'description', 'state', 'type'];
   foreach ($fields as $weight => $fieldname) {
-    $extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = array(
+    $extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = [
       'label' => $props[$fieldname]['label'],
       'description' => $props[$fieldname]['description'],
       'weight' => $weight,
-    );
+    ];
   }
-  $extra['mcapi_transaction']['mcapi_transaction']['display']['transitions'] = array(
-    'label' => t('Transitions'),
-    'description' => t('Links to transitions between workflow states'),
-    'weight' => 20,
-  );
   return $extra;
 }
 
@@ -491,10 +481,10 @@ function mcapi_default_display_fields() {
     ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
   foreach($definitions as $field_name => $definition) {
     if ($widget = $entity_display->getRenderer($field_name)) {
-      $fieldAPI[$field_name] = array(
+      $fieldAPI[$field_name] = [
         'definition' => $definition,
         'widget' => $widget
-      );
+      ];
     }
   }
   return $fieldAPI;
@@ -503,6 +493,7 @@ function mcapi_default_display_fields() {
 /**
  * implements hook_entity_type_alter().
  * helps the wallet autocomplete to find the username
+ *
  * @note I'm not sure why the label key was removed from the user entityType
  */
 function mcapi_entity_type_alter(array &$entity_types) {
@@ -510,3 +501,14 @@ function mcapi_entity_type_alter(array &$entity_types) {
   $keys['label'] = 'name';
   $keys = $entity_types['user']->set('entity_keys', $keys);
 }
+
+/**
+ * implements hook_form_FORM_ID_alter().
+ *
+ * @todo remove this when https://www.drupal.org/node/2480277 is addressed
+ */
+function mcapi_form_mcapi_transaction_form_alter(&$form, $form_state) {
+  $form['payer']['widget'][0]['target_id']['#type'] = 'select_wallet';
+  $form['payee']['widget'][0]['target_id']['#type'] = 'select_wallet';
+}
+

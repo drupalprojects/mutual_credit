@@ -1,16 +1,13 @@
 id: sign_off
 title: Sign off
 tooltip: Sign on behalf of all remaining signatories
-states: 
-  pending: pending
 page_title: 'Are you sure you want to complete this transaction?'
 format: certificate
 twig: ''
+display: 2
 button: 'I''m sure!'
 cancel_button: Oops
-format2: certificate
 redirect: ''
-twig2: ''
 message: 'Transaction was completed'
 access:
   creator: creator

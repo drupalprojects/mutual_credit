@@ -29,7 +29,11 @@ class TransactionViewBuilder extends EntityViewBuilder {
   }
 
   /**
-   * Provides entity-specific defaults to the build process.
+   * Provides entity-specific defaults to the build process.\
+   * 3 reasons for NOT caching transactions:
+   * - it was caching twice with different contexts I couldn't find out why
+   * - it was tricky separating the certificate caching from the links in the #theme_wrapper
+   * - transactions are not viewed very often, more usually with views
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity for which the defaults should be provided.
@@ -48,15 +52,14 @@ class TransactionViewBuilder extends EntityViewBuilder {
       $view_mode = $this->config->get('format');
     }
     $build = parent::getBuildDefaults($entity, $view_mode, $langcode);
-
     switch($view_mode) {
       case 'certificate':
         $build['#theme'] = 'certificate';
         break;
       case 'sentence':
-       //unusually, we can add #markup here, maybe later eh?
-        $build['#markup'] = \Drupal::Token()->replace(
-          \Drupal::config('mcapi.misc')->get('sentence_template'),
+        $template = \Drupal::config('mcapi.misc')->get('sentence_template');
+        $build['transaction']['#markup'] = \Drupal::Token()->replace(
+          $template,
           ['mcapi' => $entity],
           ['sanitize' => TRUE]
         );
@@ -65,7 +68,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
         module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');
         $build['transaction'] = [
           '#type' => 'inline_template',
-          '#template' => $this->config->get('twig'),
+          '#template' => _filter_autop($this->config->get('twig')),
           '#context' => get_transaction_vars($entity)
         ];
     }
@@ -84,12 +87,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
         'library' => ['mcapi/mcapi.transaction']
       ]
     ];
-    //3 reasons for NOT caching transactions:
-    //- it was caching twice with different contexts I couldn't find out why
-    //- it was tricky separating the certificate caching from the links in the #theme_wrapper
-    //- transactions are not viewed very often, more usually with views
     unset($build['#cache']);
-
     return $build;
   }
 
@@ -99,6 +97,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
    * {@inheritdoc}
    */
   public function getCacheTags() {
+    return[];
     return ['mcapi_transaction_view'];
   }
 }

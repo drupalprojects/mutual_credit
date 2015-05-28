@@ -9,6 +9,7 @@
 namespace Drupal\mcapi_signatures\Plugin\Transition;
 
 use Drupal\mcapi\Plugin\TransitionBase;
+use Drupal\mcapi_signatures\Signatures;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -22,18 +23,19 @@ use Drupal\Core\Form\FormStateInterface;
  *   id = "sign_off"
  * )
  */
-class SignOff extends TransitionBase {
+class SignOff extends Sign {
 
   /*
    * {@inheritdoc}
   */
-  public function execute(TransactionInterface $transaction, array $values) {
+  public function execute(array $values) {
 
     foreach ($transaction->signatures as $uid => $signed) {
       if ($signed) continue;
-      transaction_sign($transaction, User::load($uid));
+      $this->sign($this->transaction, User::load($uid));
     }
-    return [
+    $renderable = $this->baseExecute($this->transaction, $values);
+    return $renderable + [
       '#markup' => t(
         '@transaction is signed off',
         ['@transaction' => $transaction->label()]
@@ -47,23 +49,26 @@ class SignOff extends TransitionBase {
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildConfigurationForm($form, $form_state);
-    $form['states'][TRANSACTION_STATE_PENDING]['#value'] = TRUE;
-    $form['states'][TRANSACTION_STATE_PENDING]['#disabled'] = TRUE;
-    $form['states'][TRANSACTION_STATE_FINISHED]['#value'] = FALSE;
-    $form['states'][TRANSACTION_STATE_FINISHED]['#disabled'] = TRUE;
+    unset($form['states']);
     return $form;
   }
-
-  /*
+    /*
    * {@inheritdoc}
   */
-  public function accessOp(TransactionInterface $transaction, AccountInterface $account) {
+  public function accessOp(AccountInterface $account) {
     //Must be a valid transaction relative AND a named signatory.
-    return parent::accessOp($transaction, $account)
-      && isset($transaction->signatures)
-      && is_array($transaction->signatures)// signatures property is populated
-      && array_key_exists(\Drupal::currentUser()->id(), $transaction->signatures)//the current user is a signatory
-      && !$transaction->signatures[\Drupal::currentUser()->id()];//the currency user hasn't signed
+    return parent::accessOp($account)
+      && isset($this->transaction->signatures)
+      && is_array($this->transaction->signatures)// signatures property is populated
+      && array_key_exists(\Drupal::currentUser()->id(), $this->transaction->signatures)//the current user is a signatory
+      && !$this->transaction->signatures[\Drupal::currentUser()->id()];//the currency user hasn't signed
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function accessState(AccountInterface $account) {
+    return $this->transaction->state->target_id == 'pending';
   }
 
 }

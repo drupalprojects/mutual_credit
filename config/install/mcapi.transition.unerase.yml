@@ -14,6 +14,5 @@ format2: certificate
 redirect: ''
 twig2: ''
 access:
-  creator: creator
   manager: manager
 message: 'Transaction was restored'

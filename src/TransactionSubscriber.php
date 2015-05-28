@@ -12,7 +12,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Drupal\mcapi\Entity\Transaction;
 
 /**
- * 
+ *
  */
 class TransactionSubscriber implements EventSubscriberInterface {
 
@@ -25,19 +25,19 @@ class TransactionSubscriber implements EventSubscriberInterface {
       McapiEvents::TRANSITION => ['onTransactionTransition']
     ];
   }
-  
+
   /**
    * @throws McapiException
    */
   function onMakeChildren() {
-    debug('running hook '.McapiEvents::CHILDREN);
+    //debug('running hook '.McapiEvents::CHILDREN);
   }
-  
+
   /**
    * @throws McapiException
    */
   function onTransactionTransition() {
     debug('running hook '.McapiEvents::TRANSITION);
   }
-  
+
 }

@@ -64,11 +64,10 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
   /**
    * {@inheritDoc}
    */
-  public function buildRow($transition, $active) {
-    $id = $transition->getPluginId();
-    $config = $transition->getConfiguration();
-    $row = $this->disabledRow($transition, $config);
-    if ($active) {
+  public function buildRow($id) {
+    $row = $this->disabledRow($id);
+
+    if ($this->config->get('active_transitions')[$id]) {
       $row['operations'] = [
         '#markup' => $this->l(
           $this->t('Settings'),
@@ -89,17 +88,19 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
   /**
    * {@inheritDoc}
    */
-  private function disabledRow($transition, $config) {
+  private function disabledRow($id) {
+    $config = $this->transitionManager->getConfig($id);
+    $weight = $config->get('weight');
     return [
-      '#weight' => $config['weight'],
+      '#weight' => $weight,
       '#attributes' => new Attribute(['class' => ['draggable']]),
       //@todo wait for the \Drupal\Core\Config\Entity\DraggableListBuilder::buildrow to recognise Attribute object
       '#attributes' => ['class' => ['draggable']],
       'name' => [
-        '#markup' => $config['title']
+        '#markup' => $config->get('title')
       ],
       'description' => [
-        '#markup' => $config['tooltip']
+        '#markup' => $config->get('tooltip')
       ],
       'operations' => [
         '#markup' => $this->t('Disabled'),
@@ -109,16 +110,17 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
           t('Enable'),
           Url::fromRoute(
             'mcapi.admin.workflow.toggle',
-            ['transition' => $transition->getPluginId()]
+            ['transition' => $id]
           )
         )
       ],
       'weight' => [
         '#type' => 'weight',
-        '#title' => t('Weight for @title', ['@title' => $config['title']]),
+        '#title' => t('Weight for @title', ['@title' => $config->get('title')]),
         '#title_display' => 'invisible',
-        '#default_value' => 100,
+        '#default_value' => $weight,
         '#attributes' => new Attribute(['class' => ['weight']]),
+        //@todo replace with Attributes
         '#attributes' => ['class' => ['weight']]
       ],
     ];
@@ -147,16 +149,8 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
         'style' => 'width:100%'
       ]
     ];
-    foreach ($this->transitionManager->all() as $id => $plugin) {
-      if ($id == 'create') {
-        continue;
-      }
-
-      $form['plugins'][$id] = $this->buildRow(
-        $plugin,
-        $this->config->get('active_transitions')[$id]
-      );
-
+    foreach ($this->transitionManager->getDefinitions() as $id => $definition) {
+      $form['plugins'][$id] = $this->buildRow($id);
     }
 
     uasort($form['plugins'], ['\Drupal\Component\Utility\SortArray', 'sortByWeightProperty']);
@@ -180,12 +174,8 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $values = $form_state->getValues();
-    //initiate the config factory
-    $this->config('mcapi.misc');
-
-    foreach ($values['plugins'] as $id => $value) {
-      $this->configFactory->getEditable('mcapi.transition.'.$id)
+    foreach ($form_state->getValues()['plugins'] as $id => $value) {
+      $this->transitionManager->getConfig($id, TRUE)
         ->set('weight', $value['weight'])
         ->save();
     }
@@ -204,8 +194,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     }
     $renderable['types'] = [
       '#type' => 'container',
-      //@todo replace with Attributes
-      '#attributes' => ['style' => 'display:inline-block; vertical-align:top;'],
+      '#attributes' => new Attribute(['style' => 'display:inline-block; vertical-align:top;']),
       'title' => [
         '#markup' => "<h4>".t('Transaction types')."</h4>"
       ],
@@ -218,7 +207,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     }
     $renderable['states'] = [
       '#type' => 'container',
-      '#attributes' => ['style' => 'display:inline-block; margin-left:5em; vertical-align:top;'],
+      '#attributes' => new Attribute(['style' => 'display:inline-block; margin-left:5em; vertical-align:top;']),
       'title' => [
         '#markup' => "<h4>".t('Workflow states')."</h4>"
       ],

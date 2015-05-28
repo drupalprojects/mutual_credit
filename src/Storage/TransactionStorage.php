@@ -41,9 +41,7 @@ class TransactionStorage extends TransactionIndexStorage {
       $last = $this->database->query(
         "SELECT MAX(serial) FROM {mcapi_transaction}"
       )->fetchField();
-      drupal_set_message('Last database id for transaction is'.$last);
       $entity->serial->value = $this->database->nextId($last);
-      drupal_set_message('Next database id for transaction is'.$entity->serial->value);
     }
 
     $parent = 0;

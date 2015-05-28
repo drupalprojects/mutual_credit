@@ -1,4 +1,4 @@
-id: pay
+id: test1
 path: 'transact/exchange1'
 menu:
   title: 'Pay someone in exchange 1'
@@ -7,17 +7,12 @@ menu:
 title: 'Pay someone in exchange 1'
 status: 1
 type: default
+outgoing: true
 mywallet:
   widget: select
   stripped: true
 partner:
   preset: ''
-  stripped: true
-direction:
-  preset: outgoing
-  widget: radios
-  incoming: Incoming
-  outgoing: Outgoing
   stripped: true
 description:
   preset: ''

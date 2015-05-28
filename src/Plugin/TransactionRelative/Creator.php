@@ -43,6 +43,6 @@ class Creator extends PluginBase implements TransactionRelativeInterface {//does
    * {@inheritdoc}
    */
   public function getUsers(TransactionInterface $transaction) {
-    return $transaction->creator->entity->getOwnerid();
+    return [$transaction->creator->entity->getOwnerid()];
   }
 }

@@ -52,7 +52,6 @@ class Worth extends FormElement {
    * - currencies available to both wallets
    */
   public static function process_defaults($element, FormStateInterface $form_state, $form) {
-
     if ($element['#value']) {
       $element['#default_value'] = $element['#value'];
     }
@@ -107,6 +106,7 @@ class Worth extends FormElement {
       $element[$delta]['#type'] = 'container';
       $element[$delta]['#prefix'] = "<div class = \"$worth_cardinality\">";
       $element[$delta]['#suffix'] = '</div>';
+
       foreach ($currency->format as $i => $component) {
         if ($i % 2) { //an odd number so render a field
           $step = 1;
@@ -253,7 +253,9 @@ class Worth extends FormElement {
             unset($element['#value'][$delta]);
           }
           elseif (empty($currency->zero)) {
-            $form_state->setError($element[$worth['curr_id']], t('Zero value not allowed for this currency.'));
+            //error already says:
+            //- This value should not be null.
+            //$form_state->setError($element[$worth['curr_id']], t('Zero value not allowed.'));
           }
         }
         else {

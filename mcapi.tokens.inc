@@ -10,11 +10,11 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
 
   $replacements = [];
   $transaction = $data['mcapi'];
+  module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');
   $replaced = get_transaction_vars($transaction);
   foreach ($tokens as $name => $original) {
     $replacements[$original] = $replaced[$name];
   }
-
   drupal_set_message('rendering worth in mcapi.tokens.inc');
   //why do we need to render this and nothing else?
   $replacements['[mcapi:worth]'] = \Drupal::service('renderer')
@@ -26,7 +26,7 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
     $replacements += $token_service->generate(
       'user',
       $payer_tokens,
-      array('user' => $transaction->payer->target_id),
+      ['user' => $transaction->payer->target_id],
       $options
     );
   }
@@ -34,7 +34,7 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
     $replacements += $token_service->generate(
       'user',
       $payee_tokens,
-      array('user' => $transaction->payee->target_id),
+      ['user' => $transaction->payee->target_ids],
       $options
     );
   }
@@ -42,7 +42,7 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
     $replacements += $token_service->generate(
       'user',
       $creator_tokens,
-      array('user' => $transaction->creator->target_id),
+      ['user' => $transaction->creator->target_id],
       $options
     );
   }
@@ -50,7 +50,7 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
     $replacements += $token_service->generate(
       'created',
       $created_tokens,
-      array('created' => $transaction->created->value),
+      ['created' => $transaction->created->value],
       $options
     );
   }

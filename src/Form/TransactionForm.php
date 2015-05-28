@@ -90,7 +90,6 @@ class TransactionForm extends ContentEntityForm {
       '#weight' => 20
     ];
     $form = parent::form($form, $form_state);
-
     return $form;
   }
 

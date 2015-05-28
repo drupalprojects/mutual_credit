@@ -1,6 +1,7 @@
 <?php
 
 use \Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi_signatures\Signatures;
 
 define ('TRANSACTION_STATE_PENDING', 'pending');
 
@@ -36,8 +37,15 @@ function mcapi_signatures_mcapi_type_load($entities) {
 function mcapi_signatures_mcapi_transaction_presave($transaction) {
   //the start state has already been set in transaction::validate
   if ($transaction->state->target_id == 'pending' && $transaction->isNew()) {
-    module_load_include('inc', 'mcapi_signatures');
-    _mcapi_add_signatures($transaction);
+    $relatives = Type::load($transaction->type->target_id)
+      ->getThirdPartySetting('mcapi_signatures', 'signatures');
+    $user_ids = \Drupal::service('mcapi.transaction_relative_manager')
+      ->getUsers($transaction, $relatives);
+    foreach ($user_ids as $uid) {
+      $transaction->signatures[$uid] = 0;
+    }
+    //sign for the current user
+    mcapi_sign($transaction, \Drupal::currentUser());
   }
 }
 
@@ -57,11 +65,10 @@ function mcapi_signatures_mcapi_transaction_load($entities) {
   //no matter everything will be cached
   $signatures = db_select('mcapi_signatures', 's')
     ->fields('s', ['serial', 'uid', 'signed'])
-    ->condition('serial', array_keys($serials))
+    ->condition('serial', array_keys($serials), 'IN')
     ->execute()->fetchAll();
   foreach ($signatures as $sig) {
-    $entities[$sig->serial]->signatures[$sig->uid] = $sig->signed;
-    drupal_st_message('adding signature to loaded transaction '.$sig->serial);
+    $entities[$serials[$sig->serial]]->signatures[$sig->uid] = $sig->signed;
   }
 }
 
@@ -100,7 +107,6 @@ function mcapi_signatures_mcapi_transaction_insert($transaction) {
 function mcapi_signatures_mcapi_transaction_update($transaction) {
   if (!isset($transaction->signatures)) return;
   if (empty($transaction->parent)) return;
-  debug($transaction->signatures);
   foreach ($transaction->signatures as $uid => $signed) {
     $q = db_merge('mcapi_signatures')
       ->keys([
@@ -179,11 +185,64 @@ function mcapi_signatures_entity_extra_field_info() {
  */
 function mcapi_signatures_user_view(array &$build, \Drupal\user\UserInterface $account, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display) {
   if ($display->getComponent('mcapi_signatures')) {
-    //@todo check if the extra field is visible
-    module_load_include('inc', 'mcapi_signatures');
-    $serials = list_pending($build['#user']);
-    foreach (Transaction::loadBySerials($serials) as $transaction) {
-      $build['mcapi_signatures'][] = entity_view($transaction, 'sentence');
-    }
+    $build['mcapi_signatures'][] = views_embed_view(
+      'mcapi_pending_signatures',
+      'my_pending',
+      [$account->id()]
+    );
+  }
+}
+
+
+function mcapi_signall($form, $form_state, $account) {
+  $serials = Signatures::transactionsNeedingSigOfUser($account);
+  $form['preview'][] = \Drupal::entityManager()
+    ->getViewBuilder('mcapi_transaction')
+    ->viewMultiple(Transaction::loadBySerials($serials), 'sentence');
+
+  $form['account'] = array(
+    '#type' => 'value',
+    '#value' => $account
+  );
+  $form['buttons']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Sign all')
+  );
+  return $form;
+}
+
+function mcapi_signall_submit($form, $form_state) {
+  $values = $form_state->getValues();
+  foreach (Signatures::transactionsNeedingSigOfUser($values['account']) as $serial) {
+    $transaction = current(Transaction::loadBySerials(array($serial)));
+    Self::sign($transaction, $values['account']);
+  }
+  $transaction->save();
+  drupal_set_message($message);
+  $form_state->setRedirect('user.page');
+}
+
+
+function transactionsNeedingSigOfUser($uid) {
+  //assumes data integrity that all transactions referenced are in pending state
+  return db_select("mcapi_signatures", 's')
+    ->fields('s', array('serial'))
+    ->condition('uid', $uid)
+    ->condition('signed', '')
+    ->execute()
+    ->fetchCol();
+}
+
+/**
+ * implements template_preprocess_THEMEHOOK
+ */
+function template_preprocess_mcapi_signatures(&$vars) {
+  foreach ($vars['transaction']->signatures as $uid => $signed) {
+    $account = User::load($uid);
+    $vars['signatures'][$uid] = array(
+      'account' => $account,
+      'class' => 'signature '. (empty($signed) ? 'pending' : 'signed'),
+      'name' =>  $account->getUsername(),
+    );
   }
 }
