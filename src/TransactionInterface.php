@@ -24,12 +24,6 @@ interface TransactionInterface extends ContentEntityInterface {
   public static function loadBySerials($serials);
 
   /**
-   *
-   * @throws mcapiTransactionException
-   */
-  public function validate();
-
-  /**
    * returns a clone of the transaction as an array with the children next to the parent
    *
    * @return Transaction[]

@@ -8,7 +8,7 @@
 
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
-use \Drupal\mcapi\WalletInterface;
+use Drupal\mcapi\WalletInterface;
 use Drupal\Core\Form\FormStateInterface;
 Use Drupal\mcapi_limits\Plugin\McapiLimitsInterface;
 Use Drupal\mcapi_limits\Plugin\McapiLimitsBase;
@@ -21,9 +21,8 @@ Use Drupal\mcapi_limits\Plugin\McapiLimitsBase;
  *   label = @Translation("Explicit"),
  *   description = @Translation("Explicit limits")
  * )
- *
  */
-class Explicit extends McapiLimitsBase implements McapiLimitsInterface {
+class Explicit extends McapiLimitsBase {
 
   /**
    * {@inheritdoc}
@@ -31,37 +30,35 @@ class Explicit extends McapiLimitsBase implements McapiLimitsInterface {
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $args = func_get_args();
     $conf = $this->configuration['minmax'];
-    $subform['minmax'] =  array(
+    $subform['minmax'] =  [
       '#type' => 'minmax',
-      '#default_value' => array(
+      '#default_value' => [
         'min' => $conf['min'] ? $conf['min'][0]['value'] : '',
         'max' => $conf['max'] ? $conf['max'][0]['value'] : ''
-      ),
+      ],
       '#curr_id' => array_pop($args)->id()
-    );
-    
+    ];
+
     $subform += parent::buildConfigurationForm($form, $form_state);
     return $subform;
   }
 
   /**
-   * @see \Drupal\mcapi_limits\McapiLimitsBase::getLimits()
+   * {@inheritdoc}
    */
   public function getLimits(WalletInterface $wallet) {
     $curr_id = $this->currency->id();
     //the format is a bit inelegant because it is saved directly from the minmax widget
     $min_item = reset($this->configuration['minmax']['min']);
     $max_item = reset($this->configuration['minmax']['max']);
-    return array(
+    return [
       'min' => $min_item['value'],
       'max' => $max_item['value']
-    );
+    ];
   }
 
-
   /**
-   * (non-PHPdoc)
-   * @see \Drupal\mcapi_limits\Plugin\Limits\McapiLimitsBase::defaultConfiguration()
+   * {@inheritdoc}
    */
   public function defaultConfiguration() {
     $defaults = parent::defaultConfiguration();

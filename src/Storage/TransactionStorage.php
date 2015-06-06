@@ -128,11 +128,11 @@ class TransactionStorage extends TransactionIndexStorage {
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::filter()
    * @note the parent function is very similar but works on the index table and doesn't know payer and payee conditions.
    */
-  public static function filter(array $conditions = [], $offset = 0, $limit = 0) {
-    $query = db_select('mcapi_transaction', 'x')
+  public function filter(array $conditions = [], $offset = 0, $limit = 0) {
+    $query = $this->database->select('mcapi_transaction', 'x')
       ->fields('x', array('xid', 'serial'))
       ->orderby('created', 'DESC');
-    Self::processConditions($query, $conditions);
+    $this->parseConditions($query, $conditions);
     if ($limit) {
       //assume that nobody would ask for unlimited offset results
       $query->range($offset, $limit);
@@ -140,15 +140,12 @@ class TransactionStorage extends TransactionIndexStorage {
     return $query->execute()->fetchAllKeyed();
   }
 
-  private static function processConditions($query, $conditions) {
-
+  private function parseConditions($query, $conditions) {
     //take account for the worth table.
     if (array_key_exists('value', $conditions) || array_key_exists('curr_id', $conditions)) {
       $query->join('mcapi_transaction__worth', 'w', 'x.xid = w.entity_id');
     }
-    $conditions += [
-      'state' => array_filter(\Drupal::config('mcapi.misc')->get('counted'))
-    ];
+    $conditions += ['state' => Self::countedStates()];
     foreach($conditions as $field => $value) {
       if (!$value) continue;
       switch($field) {
@@ -158,12 +155,10 @@ class TransactionStorage extends TransactionIndexStorage {
       	case 'payer':
       	case 'payee':
       	case 'creator':
+      	case 'state':
       	case 'type':
-          $query->condition($field, (array)$value, 'IN');
+            $query->condition($field, $value, is_array($value) ? 'IN' : NULL);
       	  break;
-      	case 'curr_id':
-          $query->condition('w.worth_curr_id', (array)$value, 'IN');
-          break;
       	case 'involving':
       	  $value = (array)$value;
       	  $cond_group = count($value) == 1 ? db_or() : db_and();
@@ -171,6 +166,9 @@ class TransactionStorage extends TransactionIndexStorage {
     	      ->condition('payer', $value, 'IN')
     	      ->condition('payee', $value, 'IN')
       	  );
+          break;
+      	case 'curr_id':
+          $query->condition('w.worth_curr_id', (array)$value, 'IN');
           break;
       	case 'since':
           $query->condition('created', $value, '>');

@@ -2,6 +2,7 @@
 
 use \Drupal\Core\Render\Element;
 use \Drupal\Core\Form\FormBuilder;
+use \Drupal\Core\Config\Entity\ConfigEntityInterface;
 
 /**
  * theme implementation of callback 1stpartyform
@@ -107,3 +108,45 @@ function mcapi_render_stripped($element) {
   }
   return \Drupal::service('renderer')->render($element);
 }
+
+/**
+ * Make a transaction entity loaded up with the defaults from the Designed form
+ *
+ * @param Drupal\Core\Config\Entity\ConfigEntityInterface $config
+ *
+ * @return Transaction
+ *   a partially populated transaction entity
+ */
+function mcapi_forms_default_transaction(ConfigEntityInterface $config) {
+  //the partner is either the holder of the current page's entity, under certain circumstances
+  //or is taken from the form preset.
+  //or is yet to be determined.
+  if (0) {//no notion of context has been introduced yet
+    //infer the partner wallet from the the node ower or something like that
+  }
+  elseif($config->partner['preset']) {
+    $partner = $config->partner['preset'];
+  }
+  else {
+    $partner = '';
+  }
+
+  //prepare a transaction using the defaults here
+  $vars = ['type' => $config->type];
+
+  //now handle the payer and payee, based on partner and direction
+  if ($config->incoming) {
+    $vars['payee'] = \Drupal::currentUser()->id();
+    $vars['payer'] = $partner;
+  }
+  else {
+    $vars['payer'] = \Drupal::currentUser()->id();
+    $vars['payee'] = $partner;
+  }
+  foreach ($config->fieldapi_presets as $fieldname => $setting) {
+    $vars[$fieldname] = $setting['preset'];
+  }
+
+  return \Drupal\mcapi\Entity\Transaction::create($vars);
+}
+

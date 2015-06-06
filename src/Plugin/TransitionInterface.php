@@ -3,8 +3,6 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\TransitionInterface.
- *
- * @todo more consistent naming of the form injection functions and their validators
  */
 
 namespace Drupal\mcapi\Plugin;
@@ -75,21 +73,18 @@ interface TransitionInterface extends ConfigurablePluginInterface {
   function execute(array $context);
 
   /**
-   * Check whether this transition applicable for the currenct state of the transaction
+   * Check whether this transition applicable for the current state of the transaction
    *
    * @param AccountInterface $account
    */
   function accessState(AccountInterface $account);
 
   /**
-   * validate transitionSettings and AccessSettings
+   * Modify the access settings 'details' element
    *
-   * @param type $form
-   * @param type $form_state
-   *
-   * @todo separate validate for each injection access_State, access_settings, and transitionSettings
+   * @param array $element
    */
-  static function validateConfigurationForm($form, &$form_state);
+  static function accessSettingsElement(&$element, $default);
 
   /**
    * Let the plugin tweak the default pluginSettings form
@@ -99,4 +94,15 @@ interface TransitionInterface extends ConfigurablePluginInterface {
    * @param ImmutableConfig $config
    */
   static function settingsFormTweak(array &$form, FormStateInterface $form_state, ImmutableConfig $config);
+
+  /**
+   * validate AccessSettings and any other fields injected into the form
+   *
+   * @param type $form
+   * @param FormStateInterface $form_state
+   *
+   */
+  static function validateSettingsForm(array $form, FormStateInterface $form_state);
+
+
 }

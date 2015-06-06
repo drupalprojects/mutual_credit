@@ -15,15 +15,11 @@ use Drupal\Core\Form\FormStateInterface;
  * When we look at transaction index table, we need to view one worth at a time
  * deriving the currency from a separate field
  *
- *
- * @todo This handler should use entities directly.
- *
  * @ingroup views_field_handlers
  *
  * @ViewsField("worth")
  */
 class Worth extends FieldPluginBase {
-
 
   /**
    * {@inheritdoc}
@@ -52,10 +48,8 @@ class Worth extends FieldPluginBase {
     parent::buildOptionsForm($form, $form_state);
   }
 
-
-
   /**
-   * @todo aggregation may cause problems with formatting
+   * @note aggregation may cause problems with formatting
    */
   public function render(ResultRow $values) {
     return $this->getEntity($values)->worth->view($this->options['format']);

@@ -81,7 +81,7 @@ function mcapi_tester_make_transactions($num, $exchange = NULL) {
         'curr_id' => reset($currencies)->id()
       )
     );
-    mcapi_save_test_transaction($props);
+    $transaction = Transaction::create($props)->save();
   }
 }
 
@@ -123,24 +123,8 @@ function mcapi_tester_make_inter_transactions($num) {
         'curr_id' => reset($currencies)->id()
       )
     );
-    mcapi_save_test_transaction($props);
+    $transaction = Transaction::create($props)->save();
   }
-}
-
-function mcapi_save_test_transaction($props) {
-  try {
-    //there is no way to get the soft error messages out when a transaction is created in code.
-    $transaction = Transaction::create($props);
-    $transaction->save();
-  }
-  catch (\Exception $e) {
-    //@todo
-
-  }
-  catch(\Exception $e) {
-    throw new Exception($e->getMessage);
-  }
-
 }
 
 function mcapi_tester_1stparty_editform_load($entities) {

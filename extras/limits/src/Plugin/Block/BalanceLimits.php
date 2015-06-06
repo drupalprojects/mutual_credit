@@ -3,10 +3,14 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\Block\BalanceLimits
+ *
+ * @todo how to get the wallet or wallets from the block context?
+ * //from the entity being viewed? or how else?
  */
 
 namespace Drupal\mcapi_limits\Plugin\Block;
 
+use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Plugin\Block\McapiBlockBase;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -27,12 +31,6 @@ class BalanceLimits extends McapiBlockBase {
     return $parent && TRUE;//grant access IFF there are limits on the provided currencies
   }
 
-  public function defaultConfiguration() {
-    $conf = parent::defaultConfiguration();
-    $conf['absolute'] = 'absolute';
-    return $conf;
-  }
-
   /**
    * Overrides \Drupal\block\BlockBase::blockForm().
    */
@@ -40,20 +38,10 @@ class BalanceLimits extends McapiBlockBase {
     $form = parent::blockForm($form, $form_state);
     //reduce the list of currencies to those which don't have the 'none' plugin
     foreach ($form['curr_ids']['#options'] as $curr_id => $currname) {
-      if (mcapi_currency_load($curr_id)->limits_plugin == 'none') {
+      if (Currency::load($curr_id)->getThirdPartySetting('mcapi_limits', 'plugin', 'none') == 'none') {
         unset($form['curr_ids']['#options'][$curr_id]);
       }
     }
-    $form['absolute'] = array(
-      '#title' => t('Range'),
-      '#type' => 'radios',
-      '#options' => array(
-        'absolute' => t('Show min, max and current balance'),
-        'relative' => t('Show limits for earning and spending, relative to balance'),
-      ),
-      '#default_value' => $this->configuration['absolute'],
-      '#weight' => '5'
-    );
     return $form;
   }
 
@@ -61,12 +49,9 @@ class BalanceLimits extends McapiBlockBase {
    * {@inheritdoc}
    */
   public function build() {
-    parent::build();
-    return mcapi_view_limits(
-      $this->account,
-      $this->currencies,
-      $this->configuration['absolute'] == 'absolute'
-    );
+    module_load_include('inc', 'mcapi_limits');
+    //where do we get the $wallet from?
+    return mcapi_view_limits($wallet);
 
   }
 }

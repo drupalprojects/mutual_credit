@@ -60,7 +60,7 @@ class CommandSettings extends ConfigFormBase {
       $form['requests']['match_fields']['#options']['w.name'] = t('Unique wallet name');
     }
     if (\Drupal::config()->get('mcapi.misc')->get('wallet_one')) {
-      $form['requests']['match_fields']['#options']['owner'] = t("Wallet owner's name");
+      $form['requests']['match_fields']['#options']['holder'] = t("Wallet holder's name");
     }
 
     $form['curr_id'] = array(

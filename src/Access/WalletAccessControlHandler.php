@@ -27,14 +27,14 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
    * @return AccessResult
    */
   public function createAccess($entity_bundle = NULL, AccountInterface $account = NULL, array $context = [], $return_as_object = FALSE) {
-    //this fetches the entity we are viewing - the would-be owner of the wallet we would add
+    //this fetches the entity we are viewing - the would-be holder of the wallet we would add
     $params = \Drupal::routeMatch()->getParameters()->all();//I would expect routematch to have been injected here
-    $owner = reset($params);
-    if (!is_object($owner)) {
-      $owner = entity_load(key($params), reset($params));
+    $holder = reset($params);
+    if (!is_object($holder)) {
+      $holder = entity_load(key($params), reset($params));
     }
     //quickcheck for users to add their own wallets
-    if ($account->hasPermission('create own wallets') && $owner->getEntityTypeId() == 'user' && $account->id() == $owner->id) {
+    if ($account->hasPermission('create own wallets') && $holder->getEntityTypeId() == 'user' && $account->id() == $owner->id) {
       $checkroom = TRUE;
     }
     //for exchange managers to add wallets to any entity of that exchange
@@ -42,7 +42,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
       $checkroom = TRUE;
     }
     if (isset($checkroom)) {
-      if ($this->walletRoom($owner)) {
+      if ($this->walletRoom($holder)) {
         return AccessResult::allowed()->cachePerUser();
       }
     }
@@ -53,7 +53,6 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
    * {@inheritdoc}
    * $ops are details, summary, payin, payout
    *
-   * @todo this should be called during transaction validation
    */
   public function checkAccess(EntityInterface $entity, $op, $langcode, AccountInterface $account) {
     if ($result = $this->initialChecks($entity, $op, $account)) {
@@ -83,8 +82,8 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
     }
     //case WALLET_ACCESS_OWNER
     elseif ($op == 'edit') {
-      //edit isn't a configurable operation. Only the owner can do it
-      $entity->access['edit'] = array($entity->ownerUserId());
+      //edit isn't a configurable operation. Only the holder can do it
+      $entity->access['edit'] = array($entity->getHolder()->id());
     }
 
     //special case WALLET_ACCESS_USERS where $op is an array
@@ -99,19 +98,21 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
    * determine whether a wallet can be added
    *
    * @return Boolean
-   *   TRUE if the $owner has less than the max wallets
+   *   TRUE if the $holder has less than the max wallets
    */
-  function walletRoom($owner) {
+  function walletRoom($holder) {
     $config = \Drupal::config('mcapi.wallets');
-    $entity_type = $owner->getEntityTypeId();
-    $bundle = $entity_type.':'.$owner->bundle();
+    $entity_type = $holder->getEntityTypeId();
+    $bundle = $entity_type.':'.$holder->bundle();
     $max = $config->get('entity_types.'. $bundle);
     //quick check first for this common scenario
     if ($entity_type == 'user' && $max == 1 && $config->get('autoadd_name')) {
       return TRUE;
     }
     else {
-      $owned_wallets = \Drupal\mcapi\Storage\WalletStorage::getOwnedIds($owner);
+      $owned_wallets = \Drupal::entityManager()
+        ->getStorage('mcapi_wallet')
+        ->filter(['holder' => $holder]);
       return count($owned_wallets) < $max;
     }
   }

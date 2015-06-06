@@ -6,11 +6,10 @@
  */
 namespace Drupal\mcapi\Form;
 
+use Drupal\mcapi\McapiEvents;
 use Drupal\mcapi\TransactionSaveEvents;
-use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Url;
-use Drupal\Core\Render\Element;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Entity\EntityInterface;
@@ -22,14 +21,17 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 //I don't know if it is a good idea to extend the confirm form if we want ajax.
 class TransitionForm extends EntityConfirmFormBase {
 
-  private $transeition;
+  private $transition;
 
   private $request;
 
-  function __construct($request, $route_match, $transitionManager) {
+  private $eventDispatcher;
+
+  function __construct($request, $route_match, $transitionManager, $event_dispatcher) {
     $this->request = $request;
     $transitionId = $route_match->getparameter('transition') ? : 'view';
     $this->transition = $transitionManager->getPlugin($transitionId);
+    $this->eventDispatcher = $event_dispatcher;
   }
 
   /**
@@ -39,7 +41,8 @@ class TransitionForm extends EntityConfirmFormBase {
     return new static(
       $container->get('request_stack'),
       $container->get('current_route_match'),
-      $container->get('mcapi.transition_manager')
+      $container->get('mcapi.transition_manager'),
+      $container->get('event_dispatcher')
     );
   }
 
@@ -105,7 +108,6 @@ class TransitionForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getDescription() {
-    //$this->entity->noLinks = FALSE;//this is a flag which ONLY speaks to template_preprocess_mcapi_transaction
     $this->entity->noLinks = TRUE;
     //this provides the transaction_view part of the form as defined in the transition settings
     switch($this->transition->getConfiguration('format')) {
@@ -117,8 +119,7 @@ class TransitionForm extends EntityConfirmFormBase {
           '#context' => get_transaction_vars($this->entity)
         ];
         break;
-      default://certificate or even sentence, but without the links
-        //$renderable = Transaction::view(
+      default:
         $renderable = $this->entityManager->getViewBuilder('mcapi_transaction')->view(
           $this->entity,
           $this->transition->getConfiguration('format')
@@ -139,7 +140,8 @@ class TransitionForm extends EntityConfirmFormBase {
     }
     //rename the confirmForm description field so it can't clash with the transaction field
     //see Edit transition
-    $form['preview'] = $form['description'];unset($form['description']);
+    $form['preview'] = $form['description'];
+    unset($form['description']);
 
     //add any extra form elements as defined in the transition plugin.
     $this->transition->form($form, $this->entity);
@@ -163,32 +165,63 @@ class TransitionForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    //sets this->entity based on $form_state
     parent::submitForm($form, $form_state);
+    $values = $form_state->getValues();
 
     //copy any fields from the form directly onto the transaction
-    $display = EntityFormDisplay::collectRenderDisplay(
-      $this->entity, 'admin'
-    );
-    $display->extractFormValues($this->entity, $form, $form_state);
+    //EntityFormDisplay::collectRenderDisplay(
+    //  $this->entity, 'admin'
+    //)->extractFormValues($this->entity, $form, $form_state);
+    $this->transition->setTransaction($this->entity);
     try {
       //the op might have injected values into the form, so it needs to be able to access them
-      $values = $form_state->getValues();
-//      unset($values['confirm']);
-      $renderable = $this->transition->execute($this->entity, $values);
+      $renderable = $this->transition->execute($values);
+
+      $events = new TransactionSaveEvents(
+        clone($this->entity),
+        [
+          'values' => $values,
+          'old_state' => $this->entity->state->value,
+          'transition' => $this->transition
+        ]
+      );
+      //namely more $renderable items?
+      $this->eventDispatcher->dispatch(
+        McapiEvents::TRANSITION,
+        $events
+      );
+      if(!$renderable) {
+        $renderable = ['#markup' => 'transition returned nothing renderable'];
+      }
     }
     catch (\Exception $e) {
-      $mess = t(
+      drupal_set_message($this->t(
         "Error performing @transition transition:",
         ['@transition' => $this->transition->label]
-      );
+      ), 'error');
+      return;
+    }
+    if ($message = $events->getMessage()) {
+      drupal_set_message($message);
     }
     $form_state->setRedirectUrl($this->getDestinationPath());
-    return $renderable;
   }
 
 
   protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
-    //we are managing this function directly and only in $this->submitForm()
+    //parent::copyFormValuesToEntity($entity, $form_state);
+    //we are managing this function with $display->extractFormValues in $this->submitForm()
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __setEntity(EntityInterface $entity) {
+    $this->entity = $entity;
+    $this->transition->setTransaction($entity);
+    return $this;
   }
 
 }

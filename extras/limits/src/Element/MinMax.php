@@ -24,14 +24,14 @@ class MinMax extends FormElement {
    * {@inheritdoc}
    */
   public function getInfo() {
-    return array(
+    return [
       '#input' => TRUE,
       '#tree' => TRUE,
-      '#process' => array(
-        array(get_class($this), 'process_minmax'),
-      ),
+      '#process' => [
+        [get_class($this), 'process_minmax'],
+      ],
       '#minus' => FALSE
-    );
+    ];
   }
 
 
@@ -40,44 +40,46 @@ class MinMax extends FormElement {
    */
   public static function process_minmax($element) {
     $currency = Currency::load($element['#curr_id']);
-    $element += array(
-      '#title' => t('!currencyname allowed balances', array('!currencyname' => $currency->label())),
+    $element += [
+      '#title' => t('!currencyname allowed balances', ['!currencyname' => $currency->label()]),
       '#description' => array_key_exists('#description', $element) ? $element['#description'] : '',
       '#description_display' => 'before',
       '#type' => 'fieldset',
       //'#tree' => TRUE,
-      'min' => array(
+      'min' => [
         '#title' => t('Minimum'),
         '#description' => t('Must be less than or equal to zero'),
         '#type' => 'worth',
         '#config' => TRUE,
-        '#default_value' => array(
-          array(
+        '#default_value' => [
+          [
             'curr_id' => $element['#curr_id'],
             'value' => $element['#default_value']['min']
-          )
-        ),
-        '#placeholder' => array(@$element['#placeholder']['min']
-        ),
+          ]
+        ],
+        '#allowed_curr_ids' => [$element['#curr_id']],
+        '#placeholder' => [@$element['#placeholder']['min']
+        ],
         '#minus' => TRUE
-      ),
-      'max' => array(
+      ],
+      'max' => [
         '#title' => t('Maximum'),
         '#description' => t('Must be greater than 1.'),
         '#type' => 'worth',
         '#config' => TRUE,
         //we key the default value with the curr_id to make the saved settings easier to read
-        '#default_value' => array(
-          array(
+        '#default_value' => [
+          [
             'curr_id' => $element['#curr_id'],
             'value' => $element['#default_value']['max']
-          )
-        ),
-        '#placeholder' => array(@$element['#placeholder']['max']),
+          ]
+        ],
+        '#allowed_curr_ids' => [$element['#curr_id']],
+        '#placeholder' => [@$element['#placeholder']['max']],
         '#weight' => 1,
         '#min' => 1
-      )
-    );
+      ]
+    ];
     return $element;
   }
 
@@ -87,7 +89,7 @@ class MinMax extends FormElement {
    */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
     if (is_null($input))return;
-    foreach (array('min', 'max') as $limit) {
+    foreach (['min', 'max'] as $limit) {
       $result[$limit] = is_numeric($input[$limit]) ? Worth::valueCallback($element[$limit], $input[$limit], $form_state) : NULL;
     }
     return $result;

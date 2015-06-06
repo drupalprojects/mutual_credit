@@ -14,6 +14,7 @@ use Drupal\views\ViewExecutable;
 
 /**
  * Field handler for the name of the transaction state
+ * I would hope for a generic filter to come along to render list key/values
  *
  * @ingroup views_field_handlers
  *

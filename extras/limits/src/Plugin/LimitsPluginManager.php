@@ -10,33 +10,49 @@ use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Language\LanguageManager;
 use Drupal\Core\Plugin\DefaultPluginManager;
 use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\mcapi\Entity\Currency;
 
 class LimitsPluginManager extends DefaultPluginManager {
 
+  private $plugins;
+
   /**
-   * Constructs the TransitionManager object
-   * really I've got no idea what this function does
+   * Constructs the LimitsPluginManager object
    *
    * @param \Traversable $namespaces
-   *   An object that implements \Traversable which contains the root paths
-   *   keyed by the corresponding namespace to look for plugin implementations.
+   *
    * @param CacheBackendInterface $cache_backend
-   *   Dunno
-   * @param ModuleHandlerInterface $module_handler
-   *   Dunno
-   * @param LanguageManager $language_manager
-   *   Dunno
    */
-  public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler) {
+  public function __construct(\Traversable $namespaces, ModuleHandlerInterface $moduleHandler, CacheBackendInterface $cache_backend) {
     parent::__construct(
       'Plugin/Limits',
       $namespaces,
-      $module_handler,
+      $moduleHandler,
       '\Drupal\mcapi_limits\Plugin\McapiLimitsInterface',
-      'Drupal\mcapi_limits\Annotation\Limits'
+      '\Drupal\mcapi_limits\Annotation\Limits'
     );
     $this->setCacheBackend($cache_backend, 'mcapi_limits');
   }
 
+
+  /**
+   * get the plugin for the given currency
+   *
+   * @param CurrencyInterface $currency
+   *
+   * @param string $name
+   *   the plugin to load, if not the currency's saved plugin.
+   */
+  function createInstanceCurrency(CurrencyInterface $currency, $plugin_id = NULL) {
+    $curr_id = $currency->id();
+    if (is_null($plugin_id)) {
+      $settings = $currency->getThirdpartySettings('mcapi_limits');
+      $plugin_id = isset($settings['plugin']) ? $settings['plugin'] : 'none';
+    }
+    return $this->createInstance(
+      $plugin_id,
+      ['currency' => $currency]//this should load the settings
+    );
+  }
 
 }

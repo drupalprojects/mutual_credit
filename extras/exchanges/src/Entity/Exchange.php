@@ -56,11 +56,11 @@ define('EXCHANGE_VISIBILITY_TRANSPARENT', 2);
  *     "status" = "status"
  *   }
  *   links = {
- *     "canonical" = "entity.mcapi_exchange.canonical",
- *     "edit-form" = "mcapi.exchange.edit",
- *     "delete-form" = "mcapi.exchange.delete_confirm",
- *     "enable" = "mcapi.exchange.enable_confirm",
- *     "disable" = "mcapi.exchange.disable_confirm"
+ *     "canonical" = "/exchange/{mcapi_exchange}",
+ *     "edit-form" = "/exchange/{mcapi_exchange}/edit",
+ *     "delete-form" = "/exchange/{mcapi_exchange}/delete",
+ *     "enable" = "/exchange/{mcapi_exchange}/enable",
+ *     "disable" = "/exchange/{mcapi_exchange}/disable"
  *   }
  * )
  */

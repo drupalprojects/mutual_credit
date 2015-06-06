@@ -5,43 +5,22 @@
  * Contains \Drupal\mcapi\Views\WalletViewsData.
  *
  */
-
 namespace Drupal\mcapi\Views;
 
-use Drupal\views\EntityViewsDataInterface;
+use Drupal\views\EntityViewsData;
 
-class WalletViewsData implements EntityViewsDataInterface {
+class WalletViewsData extends EntityViewsData {
 
   /**
    * {@inheritdoc}
    */
   public function getViewsData() {
-    $data = [];
+    $data = parent::getViewsData();
+    $data['mcapi_wallet']['wid']['field']['id'] = 'mcapi_entity';
+    unset($data['mcapi_wallet']['pid']);
 
-    $data['mcapi_wallet']['table'] = [
-      'group' => t('Wallets'),
-      'entity type' => 'mcapi_wallet',
-      'base' => [
-        'field' => 'wid',
-        'title' => t('Wallets'),
-        'help' => t('List of wallets'),
-        'weight' => 5,
-        'defaults' => [
-          'field' => 'wallet_label',
-        ]
-      ],
-      'entity revision' => ''//temp
-    ];
-    $data['mcapi_wallet']['wid'] = [
-      'title' => t('Wallet ID'),
-      'help' => t('the unique id of the wallet'),
-      'field' => [
-        'id' => 'mcapi_entity'
-      ],
-      'argument' => [
-        'id' => 'standard',
-      ]
-    ];
+    $data['mcapi_wallet']['table']['base']['defaults']['field'] = 'wallet_label';
+
     $data['mcapi_wallet']['wallet_label'] = [
       'title' => t('Label'),
       'help' => t('the name of the wallet'),
@@ -49,23 +28,14 @@ class WalletViewsData implements EntityViewsDataInterface {
         'id' => 'mcapi_wallet_label',
       ]
     ];
-    $data['mcapi_wallet']['owner'] = [
-      'title' => t('The wallet owner'),
+    $data['mcapi_wallet']['holder'] = [
+      'title' => t('The wallet holder'),
       'field' => [
-        'id' => 'mcapi_wallet_owner',
+        'id' => 'mcapi_wallet_holder',
       ],
     ];
-    $data['mcapi_wallet']['entity_type'] = [
-      'title' => t('Owner type'),
-      'help' => t('The entity type of the wallet owner. good for grouping by'),
-      'field' => [
-        'id' => 'mcapi_owner_type',
-      ],
-      'filter' => [
-        'id' => 'standard',
-      ]
-    ];
+    $data['mcapi_wallet']['entity_type']['field']['id'] = 'mcapi_holder_type';
+
     return $data;
   }
-
 }

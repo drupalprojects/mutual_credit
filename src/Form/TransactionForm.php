@@ -16,7 +16,6 @@ use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\action\Plugin\Action;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\ViewBuilder\TransactionViewBuilder;
-use Drupal\mcapi\McapiTransactionException;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Exchanges;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -49,13 +48,7 @@ class TransactionForm extends ContentEntityForm {
     $transaction = $this->entity->getEntityTypeId() == 'mcapi_transaction'
       ? $this->entity
       : Transaction::Create();
-
-    $form['description'] = [
-      '#type' => 'textfield',
-      '#title' => t('Description'),
-      '#default_value' => $transaction->description->value,
-      '#weight' => 3
-    ];
+/*
     $form['payer'] = [
       '#title' => t('Wallet to be debited'),
       '#type' => 'select_wallet',
@@ -70,6 +63,7 @@ class TransactionForm extends ContentEntityForm {
       '#default_value' => $transaction->get('payee')->entity,
       '#weight' => 10,
     ];
+    */
     $form['type'] = [
       '#title' => t('Transaction type'),
       '#options' => mcapi_entity_label_list('mcapi_type'),
@@ -78,6 +72,7 @@ class TransactionForm extends ContentEntityForm {
       '#required' => TRUE,
       '#weight' => 18,
     ];
+
     $form['creator'] = [
       '#title' => t('Creator'),
       '#description' => t("The user who logged this transaction"),
@@ -90,6 +85,7 @@ class TransactionForm extends ContentEntityForm {
       '#weight' => 20
     ];
     $form = parent::form($form, $form_state);
+
     return $form;
   }
 
@@ -114,18 +110,18 @@ class TransactionForm extends ContentEntityForm {
    * form validation callback
    * @todo remove typedDataValidated flag after beta10
    */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
+  public function validate(array $form, FormStateInterface $form_state) {
     //handles constraintValidation on all entity fields
-    //parent::validate($form, $form_state);
-    $this->typedDataValidated = TRUE;//@todo remove this flag when entity validation set up
-    $this->entity = $this->buildEntity($form, $form_state);
-    //@todo improve transaction validation compare with nodeForm & display
-    foreach ($this->entity->validate() as $violation) {
+    //marks form fields as appropriate
+    $this->entity = parent::validate($form, $form_state);
+    //we have validated the entity properties corresponding to form fields
+    //now we validate the whole entity
+    //unfortunately that means validating some properties twice
+    foreach ($this->entity->validate() as $violation) {echo $v->getMessage();
       $form_state->setErrorByName('', $violation->getMessage());
     }
     //now validated, this is what will go in the tempstore
     $form_state->set('mcapi_validated', TRUE);
-
   }
 
   /**
@@ -134,24 +130,16 @@ class TransactionForm extends ContentEntityForm {
    * @param array $form
    * @param FormStateInterface $form_state
    *
-   * @note does NOT call parent
+   * @note does NOT call parent. Does not save()
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->tempStore
       ->get('TransactionForm')
-      ->set('entity', $this->entity);
+      ->set('mcapi_transaction', $this->entity);
+
     //Drupal\mcapi\ParamConverter\TransactionSerialConverter
     //then
     //Drupal\mcapi\Plugin\Transition\Create
-
-    $this->logger('mcapi')->notice(
-      'User @uid created transaction @serial',
-      [
-        '@uid' => $this->currentUser()->id(),
-        '@serial' => $this->entity->serial->value
-      ]
-    );
-    drupal_set_message('Check this transaction is in the dblog');
 
     //now we divert to the transition confirm form
     $form_state->setRedirect(
@@ -161,6 +149,7 @@ class TransactionForm extends ContentEntityForm {
 
   /**
    * {@inheritdoc}
+   * @todo test creating a transaction with and without specifying the creator
    */
   public function buildEntity(array $form, FormStateInterface $form_state) {
     $entity = parent::buildEntity($form, $form_state);

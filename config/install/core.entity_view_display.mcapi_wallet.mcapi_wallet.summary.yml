@@ -25,7 +25,7 @@ content:
   mcapi_limits_absolute:
     weight: 3
 hidden:
-  owner: true
+  holder: true
   mcapi_limits_relative: true
   balance_bars: true
   histories: true

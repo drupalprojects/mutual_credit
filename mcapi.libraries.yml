@@ -19,7 +19,8 @@ mcapi.worth.element:
     component:
       css/worth-element.css: {}
 mcapi.gchart:
+  header: true
   js:
+    #why is this at the bottom of the page?
+    http://www.google.com/jsapi: { type: external }
     js/gchartstart.js: {}
-    #this isn't working because it needs to load first
-    #http://www.google.com/jsapi: { type: external }

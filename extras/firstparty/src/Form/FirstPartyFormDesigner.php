@@ -32,12 +32,7 @@ class FirstPartyFormDesigner extends EntityForm {
     $form['#parents'] = [];
     $element = ['#required' => FALSE];
 
-    $default_fields = mcapi_default_display_fields();
-    unset($default_fields['payer'], $default_fields['payee']);
-
     $configEntity = $this->entity;
-    $configEntity->set('fieldapi_presets', []);
-    $transaction = $this->makeTemplate($configEntity);
 
     $form['#tree'] = TRUE;
     $w = 0;
@@ -106,12 +101,12 @@ class FirstPartyFormDesigner extends EntityForm {
       '#default_value' => $configEntity->menu['menu_name'],
       '#weight' => 2
     ];
-
     $form['type'] =  [
       '#title' => $this->t('Transaction type'),
       '#type' => 'mcapi_types',
       '#default_value' => $configEntity->type,
       '#weight' => $w++,
+      '#required' => TRUE,
     ];
     $form['incoming'] = [
       '#title' => $this->t('Direction'),
@@ -122,13 +117,30 @@ class FirstPartyFormDesigner extends EntityForm {
         '1' => $this->t('Incoming')
       ],
       '#default_value' => $configEntity->direction,
+      '#required' => TRUE,
       '#weight' => $w++
     ];
-
+    //enable the field UI module so we can link to it.
+    if (!\Drupal::moduleHandler()->moduleExists('field_ui')) {
+      \Drupal::service('module_installer')->install(['field_ui']);
+      \Drupal::service('router.builder')->rebuild();
+    }
     //following section of the form allows the admin to handle the individual fields of the transaction form.
     //the fields are handled here one in each tab, each field having some shared settings and some specific ones.
     $form['steps'] = [
       '#title' => $this->t('Field settings'),
+      '#description' => '('.$this->t(
+        "You may need to enable fields at !link",
+        [
+          '!link' => $this->l(
+            $this->t('Manage form display'),
+            Url::fromRoute(
+              'entity.entity_form_display.mcapi_transaction.form_mode',
+              ['form_mode_name' => 'default']
+            )
+          )
+        ]
+      ).')',
       '#type' => 'vertical_tabs',
       '#weight' => $w++,
       '#attributes' => new Attribute(['id' => ['field-display-overview-wrapper']]),
@@ -151,6 +163,7 @@ class FirstPartyFormDesigner extends EntityForm {
         'radios' => $this->t('Radio buttons'),
       ],
       '#default_value' => $configEntity->mywallet['widget'],
+      '#required' => TRUE,
     ];
     $form['mywallet']['unused'] = [
       '#title' => $this->t('Unused behaviour'),
@@ -161,6 +174,7 @@ class FirstPartyFormDesigner extends EntityForm {
         'hidden' => $this->t('Disappeared'),
       ],
       '#default_value' => intval($configEntity->mywallet['unused']),
+      '#required' => TRUE,
     ];
 
     $form['partner'] = [
@@ -179,54 +193,37 @@ class FirstPartyFormDesigner extends EntityForm {
       '#required' => FALSE
     ];
 
-    $preset = $default_fields['description']['widget']
-      ->formElement($transaction->description, 0, $element, $form, $form_state);
-    $form['description'] = [
-      '#title' => $this->t('@fieldname settings', ['@fieldname' => $this->t('Description')]),
-      '#description' => $this->t('Direction relative to the current user'),
-      '#type' => 'details',
-      '#group' => 'steps',
-      'placeholder' => [
-        '#title' => $this->t('Placeholder'),
-        '#type' => 'textfield',
-        '#default_value' => $configEntity->description['placeholder'],
-        '#required' => FALSE,
-      ],
-      'preset' => $preset['value'] + ['#title' => $this->t('Preset')],
-      '#weight' => $w++
-    ];
-    if ($this->moduleHandler->moduleExists('field_ui')) {
-      //iterate through the field api fields adding a vertical tab for each
-
-      $moreInfo = $this->t(
-        'For more field configuration options, see !link',
-        ['!link' => $this->l(
-          'admin/accounting/transactions/form-display',
-          Url::fromRoute('entity.entity_form_display.mcapi_transaction.default')
-        )]
+    $moreInfo = $this->t(
+      'Put any default values here.') .' '.
+      $this->l(
+        $this->t('More field configuration options...'),
+        Url::fromRoute('entity.entity_form_display.mcapi_transaction.default')
       );
 
-      unset($default_fields['description']);
-      //created, categories, worth
-      foreach ($default_fields as $field_name => $data) {
-        //$data is an array with 'definition' and 'widget'
-        extract($data);
-        //this element will contain the default value ONLY for the fieldAPI element
-        //assumes a cardinality of 1!
-        $form[$field_name] = [
-          '#title' => $this->t(
-            '@fieldname preset',
-            ['@fieldname' => $data['definition']->getLabel()]
-          ),
-          '#description' => $moreInfo,
-          '#type' => 'details',
-          '#group' => 'steps',
-          'preset' => $data['widget']->formElement($transaction->$field_name, 0, $element, $form, $form_state),
-          '#weight' => $w++
-        ];
-      }
+    $definitions = \Drupal::entityManager()
+      ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
+    $display = \Drupal\Core\Entity\Entity\EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.default');
+
+    module_load_include('inc', 'mcapi_1stparty');
+    $transaction = mcapi_forms_default_transaction($configEntity);
+    $components = $display->getComponents();
+    unset($components['payer'], $components['payee']);
+    foreach (array_keys($components) as $field_name) {//created, categories, worth, description
+      if ($field_name === 'created') continue;
+      //assumes a cardinality of 1!
+      $form['fieldapi_presets'][$field_name] = [
+        '#title' => $definitions[$field_name]->getLabel(),
+        '#description' => $moreInfo,
+        '#type' => 'details',
+        '#group' => 'steps',
+        'preset' => $display->getRenderer($field_name)
+          ->formElement($transaction->$field_name, 0, $element, $form, $form_state),
+        '#weight' => $w++
+      ];
+      $form['fieldapi_presets'][$field_name]['preset']['#title'] = 'Preset value';
     }
 
+    $form['fieldapi_presets']['#tree'] = TRUE;
     $form['fieldapi_presets']['worth']['preset']['#allowed_curr_ids'] = array_keys(entity_load_multiple('mcapi_currency'));
     //other modifications to the worth widget before it is processed
     $form['fieldapi_presets']['worth']['preset']['#config'] = TRUE;
@@ -285,7 +282,6 @@ class FirstPartyFormDesigner extends EntityForm {
         Url::fromRoute('mcapi.workflow_settings', ['transition' => 'create'])
       )]
     );
-
     return $form;
   }
 
@@ -352,11 +348,7 @@ class FirstPartyFormDesigner extends EntityForm {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $form_state->cleanValues();
     $values = $form_state->getValues();
-    //we need to alter the structure a bit for the fieldAPI fields
-    foreach ($values['fieldapi_presets'] as $field_name => $data) {
-      $values['fieldapi_presets'][$field_name] = $data['preset'];
-    }
-    $form_state->setValue('fieldapi_presets', $values['fieldapi_presets']);
+    //$form_state->setValue('fieldapi_presets', $values['fieldapi_presets']);
     foreach ($values as $name => $value) {
       if (!in_array($value, ['actions', 'langcode'])) {
         $this->entity->set($name, $value);
@@ -385,31 +377,4 @@ class FirstPartyFormDesigner extends EntityForm {
     if ($dupe) $form_state->setError('path', t('Path is already used.'));
   }
 
-  /**
-   * Make a transaction entity loaded up with the defaults from the Designed form
-   * @param object $configEntity
-   * @return mcapi_transaction
-   *   a partially populated transaction entity
-   */
-  private function makeTemplate($configEntity) {
-    $props = [
-      'type' => $configEntity->get('type'),
-      'description' => $configEntity->get('description')['preset']
-    ];
-    //we can't set a default for mywallet because it is differnet for every user
-    if ($configEntity->get('incoming')) {
-      $props['payer'] = $configEntity->get('partner')['preset'];
-    }
-    else {
-      $props['payee'] = $configEntity->get('partner')['preset'];
-    }
-    foreach ($configEntity->get('fieldapi_presets') as $fieldname => $value) {
-      $props[$fieldname] = $value;
-    }
-    //so the worth defaults have been copied right out of the saved entity
-    return Transaction::Create($props);
-  }
-
 }
-
-

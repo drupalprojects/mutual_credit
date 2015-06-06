@@ -17,16 +17,6 @@ use Drupal\Core\Form\FormStateInterface;
  */
 class WorthFieldItemList extends FieldItemList {
 
-  /*
-  public function __construct(DataDefinitionInterface $definition, $name = NULL, TypedDataInterface $parent = NULL) {
-    parent::__construct($definition, $name, $parent);//which creates an empty first list item
-    $this->definition = $definition;
-    $this->parent = $parent;
-    $this->name = $name;
-  }
-   *
-   */
-
   /**
    * {@inheritdoc}
    */

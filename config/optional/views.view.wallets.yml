@@ -142,7 +142,7 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          label: 'Owner type'
+          label: 'Holder type'
           exclude: true
           alter:
             alter_text: false
@@ -183,7 +183,7 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          plugin_id: mcapi_owner_type
+          plugin_id: mcapi_holder_type
           provider: mcapi
       filters: {  }
       sorts: {  }

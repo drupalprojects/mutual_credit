@@ -1,4 +1,4 @@
-<?php
+llllll<?php
 
 /**
  * @file
@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Storage;
 
 use Drupal\Core\Entity\ContentEntityTypeInterface;
 use Drupal\Core\Entity\Sql\SqlContentEntityStorageSchema;
+use Drupal\mcapi\Storage\FieldStorageDefinitionInterface;
 
 /**
  * Defines the extra tablesr.
@@ -19,127 +20,129 @@ class TransactionStorageSchema extends SqlContentEntityStorageSchema {
    * {@inheritdoc}
    */
   protected function getEntitySchema(ContentEntityTypeInterface $entity_type, $reset = FALSE) {
-    $schema = parent::getEntitySchema($entity_type, $reset = FALSE);
-
-    $schema['mcapi_transaction'] += array(
-      'indexes' => array(
-        'parent' => array('parent'),
-      ),
-      //drupal doesn't actually do anything with these
-      'foreign keys' => array(
-        'payer' => array(
-          'table' => 'users',
-          'columns' => array('uid' => 'uid'),
-        ),
-        'payee' => array(
-          'table' => 'users',
-          'columns' => array('uid' => 'uid'),
-        )
-      )
-    );
-
-    //regardless of whether the TransactionStorage in on-site, the index is kept in Drupal
-    //this allows for views integration as long as the storage controller respects the index
-    $schema['mcapi_transactions_index'] = array(
+    return parent::getEntitySchema($entity_type, $reset = FALSE) +
+    ['mcapi_transactions_index' => [
+      //regardless of whether the TransactionStorage in on-site, the index is kept in Drupal
+      //this allows for views integration as long as the storage controller respects the index
       'description' => 'A more queryable way of storing transactions',
-      'fields' => array(
-        'serial' => array(
+      'fields' => [
+        'serial' => [
           'type' => 'int',
           'unsigned' => TRUE,
           'not null' => TRUE,
           'default' => 0,
           'description' => 'The serial number.',
-        ),
-        'xid' => array(
+        ],
+        'xid' => [
           'type' => 'int',
           'unsigned' => TRUE,
           'not null' => TRUE,
           'default' => 0,
           'description' => 'Primary Key: The xid of the term.'
-        ),
-        'wallet_id' => array(
+        ],
+        'wallet_id' => [
           'type' => 'int',
           'size' => 'normal',
           'not null' => TRUE,
           'description' => 'the main wallet ID'
-        ),
-        'partner_id' => array(
+        ],
+        'partner_id' => [
           'type' => 'int',
           'size' => 'normal',
           'not null' => TRUE,
           'description' => 'the partner wallet ID',
-        ),
-        'state' => array(
+        ],
+        'state' => [
           'type' => 'varchar',
           'not null' => TRUE,
           'default' => TRANSACTION_STATE_FINISHED,
           'length' => 15,
           'description' => 'The id of the mcapi_state config entity'
-        ),
-        'type' => array(
+        ],
+        'type' => [
           'type' => 'varchar',
           'not null' => TRUE,
           'default' => 'default',
           'length' => 15,
           'description' => 'The id of the mcapi_type config entity'
-        ),
-        'created' => array(
+        ],
+        'created' => [
           'type' => 'int',
           'not null' => TRUE,
           'default' => 0,
           'description' => 'The Unix timestamp when the transaction was created.'
-        ),
-        'changed' => array(
+        ],
+        'changed' => [
           'type' => 'int',
           'not null' => TRUE,
           'default' => 0,
           'description' => 'The Unix timestamp when the transaction was changed.'
-        ),
-        'incoming' => array(
+        ],
+        'incoming' => [
           'type' => 'int',
           'not null' => TRUE,
           'default'=> 0,
           'description' => 'Amount by which the wallet balance increased',
-        ),
-        'outgoing' => array(
+        ],
+        'outgoing' => [
           'type' => 'int',
           'not null' => TRUE,
           'default'=> 0,
           'description' => 'Amount by which the wallet balance decreased'
-        ),
-        'diff' => array(
+        ],
+        'diff' => [
           'type' => 'int',
           'not null' => TRUE,
           'default'=> 0,
           'description' => 'Change in the wallet balance'
-        ),
-        'volume' => array(
+        ],
+        'volume' => [
           'type' => 'int',
           'not null' => TRUE,
           'default'=> 0,
           'description' => 'Amount of the transaction'
-        ),
-        'curr_id' => array(
+        ],
+        'curr_id' => [
           'type' => 'varchar',
           'not null' => TRUE,
           'default' => 'cc',
           'length' => 8,
           'description' => 'The currency ID'
-        ),
-        'child' => array(
+        ],
+        'child' => [
           'description' => 'Boolean indicating whether the transation has a parent.',
           'type' => 'int',
           'not null' => FALSE,
           'default' => 0,
           'size' => 'tiny',
-        ),
-      ),
-      'primary key' => array('xid', 'wallet_id', 'curr_id'),
-      'indexes' => array(
-        'wallet_id' => array('wallet_id'),
-        'partner_id' => array('partner_id'),
-       )
-    );
-    return $schema;
+        ],
+      ],
+      'primary key' => ['xid', 'wallet_id', 'curr_id'],
+      'indexes' => [
+        'wallet_id' => ['wallet_id'],
+        'partner_id' => ['partner_id'],
+       ]
+    ]];
+  }
+
+    /**
+   * {@inheritdoc}
+   * @todo check that the keys are showing up in the data table
+   */
+  protected function processDataTable(ContentEntityTypeInterface $entity_type, array &$schema) {
+    if ($entity_type->id() == 'mcapi_transaction') {
+      $schema['mcapi_transaction']['indexes']['parent'] = ['parent'];
+      $schema['mcapi_transaction']['foreign keys'] = [
+        'payer' => [
+          'table' => 'mcapi_wallet',
+          'columns' => ['wid' => 'wid'],
+        ],
+        'payee' => [
+          'table' => 'mcapi_wallet',
+          'columns' => ['wid' => 'wid'],
+        ]
+      ];
+    }
   }
 }
+

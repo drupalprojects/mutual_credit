@@ -38,6 +38,3 @@ mcapi.currency.edit.tab:
   base_route: entity.mcapi_currency.edit_form
   weight: 0
 
-
-mcapi.fields:
-  deriver: \Drupal\mcapi\Plugin\Derivative\McapiLocalTask

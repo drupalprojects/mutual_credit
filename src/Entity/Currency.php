@@ -8,14 +8,15 @@
 
 namespace Drupal\mcapi\Entity;
 
-use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\mcapi\Plugin\Field\FieldType\Worth;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\mcapi\Exchanges;
+use Drupal\user\Entity\User;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\user\UserInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Config\Entity\ConfigEntityBase;
+use Drupal\Core\Entity\EntityStorageInterface;
 
 /**
  * Defines the Currency entity.
@@ -25,7 +26,7 @@ use Drupal\Core\Session\AccountInterface;
  *   label = @Translation("Currency"),
  *   handlers = {
  *     "access" = "Drupal\mcapi\Access\CurrencyAccessControlHandler",
- *     "view_builder" = "Drupal\mcapi\ViewBuilder\CurrencyViewBuilder",
+ *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
  *     "form" = {
  *       "add" = "Drupal\mcapi\Form\CurrencyForm",
  *       "edit" = "Drupal\mcapi\Form\CurrencyForm",
@@ -120,6 +121,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
 
   function __construct($values) {
     parent::__construct($values, 'mcapi_currency');
+
     $this->preformat();
   }
 
@@ -145,15 +147,12 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     return $this->name;
   }
 
-
   /**
    * {@inheritdoc}
    */
   public function transactions(array $conditions = [], $serial = FALSE) {
     $conditions += array('curr_id' => $this->id());
-    $serials = $this->entityManager()
-      ->getStorage('mcapi_transaction')
-      ->filter($conditions);
+    $serials = $this->getTransactionStorage()->filter($conditions);
     if ($serial) {
       return count(array_unique($serials));
     }
@@ -164,24 +163,21 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * {@inheritdoc}
    */
   public function volume(array $conditions = []) {
-    //get the transaction storage controller
-    return $this->entityManager()
-      ->getStorage('mcapi_transaction')
-      ->volume($this->id(), $conditions);
+    return $this->getTransactionStorage()->volume($this->id(), $conditions);
   }
 
   /**
    * {@inheritdoc}
    */
   public function getOwner() {
-    return $this->get('uid')->entity;
+    return User::load($this->uid);
   }
 
   /**
    * {@inheritdoc}
    */
   public function getOwnerId() {
-    return $this->get('uid');
+    return $this->uid;
   }
 
   /**
@@ -204,9 +200,12 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * {@inheritdoc}
    */
   function format($raw_num) {
-    if (!is_numeric($raw_num) || !is_integer($raw_num + 0)) {
-      //@todo log an watchdog warning
-      return '';
+    $raw_num += 0;
+    if (!is_integer($raw_num + 0)) {
+      \Drupal::logger('mcapi')->log(
+        LogLevel::ERROR,
+        'Attempting to format a currency value with a non-integer'
+      );
     }
     //if there is a minus sign this needs to go before everything
     $minus_sign = $raw_num < 0 ? '-' : '';
@@ -320,10 +319,17 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
 
   //I think this needed to render the canonical view, which is usually assumed
   //to be a contentEntity
-  function __isDefaultRevision() {
+  //called in EntityViewBuilder::getBuildDefaults()
+  function isDefaultRevision() {
     return TRUE;
   }
 
-
+  private function getTransactionStorage() {
+    //couldn't / shouldn't this be injected?
+    if (!$this->transactionStorage) {
+      $this->transactionStorage = \Drupal::entityManager()->getStorage('mcapi_transaction');
+    }
+    return $this->transactionStorage;
+  }
 
 }

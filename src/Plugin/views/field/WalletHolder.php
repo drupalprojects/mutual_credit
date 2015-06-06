@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Plugin\views\field\WalletOwner.
+ * Definition of Drupal\mcapi\Plugin\views\field\WalletHolder.
  */
 
 namespace Drupal\mcapi\Plugin\views\field;
@@ -17,9 +17,9 @@ use Drupal\views\ResultRow;
  *
  * @ingroup views_field_handlers
  *
- * @ViewsField("mcapi_wallet_owner")
+ * @ViewsField("mcapi_wallet_holder")
  */
-class WalletOwner extends Standard {
+class WalletHolder extends Standard {
 
 
   /**
@@ -33,9 +33,9 @@ class WalletOwner extends Standard {
    * {@inheritdoc}
    */
   function render(ResultRow $values) {
-    $owner = $this->getEntity($values)->getOwner();
-    if ($url = $owner->url()) {
-      return \Drupal::l($owner->label(), $url);
+    $holder = $this->getEntity($values)->getHolder();
+    if ($url = $holder->url()) {
+      return $this->l($holder->label(), $url);
     }
     else {
       return \Drupal::Config('system.site')->get('name');

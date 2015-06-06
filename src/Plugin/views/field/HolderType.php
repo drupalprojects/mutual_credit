@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Plugin\views\field\OwnerType.
+ * Definition of Drupal\mcapi\Plugin\views\field\HolderType.
  */
 
 namespace Drupal\mcapi\Plugin\views\field;
@@ -17,9 +17,9 @@ use Drupal\views\ResultRow;
  *
  * @ingroup views_field_handlers
  *
- * @ViewsField("mcapi_owner_type")
+ * @ViewsField("mcapi_holder_type")
  */
-class OwnerType extends Standard {
+class HolderType extends Standard {
 
   private $labels;
 

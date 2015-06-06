@@ -8,26 +8,32 @@
 namespace Drupal\mcapi;
 
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\user\EntityOwnerInterface;
 
 /**
  * Provides an interface defining an exchange entity.
  */
 interface WalletInterface extends ContentEntityInterface {
 
+  /**
+   * get the user who is responsible for this wallet, that means either the
+   * user-holder, or the owner of the holder. This deliberately echos the EntityOwnerInterface
+   */
+  public function getOwner();
 
   /**
    * return the parent entity if there is one, otherwise return the wallet itself
    * @return ContentEntityInterface
    *   The one entity to which this wallet belongs
    */
-  public function getOwner();
+  public function getHolder();
 
   /**
-   * Identify the user who controls this wallet, which may be different to the entity which owns this wallet
-   * @return integer
-   *   the user id.
+   * return the parent entity if there is one, otherwise return the wallet itself
+   * @return ContentEntityInterface
+   *   The one entity to which this wallet belongs
    */
-  public function ownerUserId();
+  public function setHolder(EntityOwnerInterface $entity);
 
   /**
    * get a list of the currencies held in the wallet
@@ -39,6 +45,7 @@ interface WalletInterface extends ContentEntityInterface {
 
   /**
    * get a list of the currencies used or available to this wallet
+   *
    * @return CurrencyInterface[]
    *   keyed by currency id
    */
@@ -46,8 +53,9 @@ interface WalletInterface extends ContentEntityInterface {
 
   /**
    * get the trading stats for all currencies allowed or used in the wallet
+   *
    * @return array
-   * @see $this->getStat()
+   *
    * @see \Drupal\mcapi\Storage\TransactionStorageInterface::summaryData().
    */
   function getSummaries();
@@ -78,10 +86,13 @@ interface WalletInterface extends ContentEntityInterface {
 
   /**
    * get all the transactions in a given period
+   *
    * @param integer $from
    *   a unix timestamp
+   *
    * @param integer $to
    *   a unix timestamp
+   *
    * @return array
    *   all transactions between the times given
    */
@@ -92,9 +103,9 @@ interface WalletInterface extends ContentEntityInterface {
    * If the wallet has no transactions it can be deleted
    * Otherwise make the passed exchange the parent, must be found.
    *
-   * @param ContentEntityInterface $owner
+   * @param ContentEntityInterface $holder
    */
-  static function orphan(ContentEntityInterface $owner);
+  static function orphan(ContentEntityInterface $holder);
 
   /**
    * get the ids of the wallets owned by the given entity
@@ -104,7 +115,7 @@ interface WalletInterface extends ContentEntityInterface {
    * @return array
    *   wallet ids belonging to the passed entity
    */
-  public static function ownedBy(ContentEntityInterface $entity);
-  
-  
+  public static function heldBy(ContentEntityInterface $entity);
+
+
 }

@@ -138,18 +138,6 @@ class CurrencyForm extends EntityForm {
       '#weight' => 4,
     ];
 
-    $unit_name = \Drupal::config('mcapi.misc')->get('ticks_name');
-    $form['ticks'] = [
-    	'#title' => t('Currency value, expressed in @units', ['@units' => $unit_name]),
-      '#description' => implode(' ', [
-        t('Exchange rates are not determined by a free market, but negotiated and fixed.'),
-        t('@units are the base units used to convert between currencies.', ['@units' => $unit_name]),
-        t('Leave blank if this currency cannot be intertraded.')]),
-      '#type' => 'number',
-      '#min' => 0,
-      '#default_value' => $currency->ticks,
-      '#weight' => 6
-    ];
     $serials = $this->entity->transactions(['curr_id' => $currency->id(), 'value' => 0]);
     $form['zero'] = [
       '#title' => t('Allow zero transactions'),

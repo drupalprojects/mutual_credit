@@ -45,7 +45,7 @@ class WalletSettings extends ConfigFormBase {
       '#title' => t("Location of 'new wallet' link"),
       '#type' => 'checkboxes',
       '#options' => array(
-        'local_action' => $this->t("Local action on the owner's display page"),
+        'local_action' => $this->t("Local action on the holder's display page"),
         'summaries' => $this->t('In the wallet summaries block'),
       ),
       '#default_value' => $config->get('add_link_location'),

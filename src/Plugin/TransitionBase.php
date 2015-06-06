@@ -7,8 +7,6 @@
 namespace Drupal\mcapi\Plugin;
 
 use Drupal\mcapi\TransactionInterface;
-use Drupal\mcapi\McapiEvents;
-use Drupal\mcapi\TransactionSaveEvents;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -21,7 +19,6 @@ use Drupal\Core\Config\ImmutableConfig;
 abstract class TransitionBase extends PluginBase implements TransitionInterface {
 
   private $relatives;
-  private $eventDispatcher;
   protected $transaction;
   protected $entityFormBuilder;
   protected $moduleHandler;
@@ -34,7 +31,6 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     $this->configuration += $this->defaultConfiguration();
     //can't work out how to inject these
     $this->entityFormBuilder = \Drupal::service('entity.form_builder');
-    $this->eventDispatcher = \Drupal::service('event_dispatcher');
     $this->moduleHandler = \Drupal::service('module_handler');
     $this->relatives = \Drupal::service('mcapi.transaction_relative_manager')->active();
   }
@@ -52,10 +48,6 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
       return $this->transaction;
     }
     throw new \Exception ('Transition plugin not properly initiated. Transaction not set');
-  }
-
-  static function transitionSettings(array $form, FormStateInterface $form_state, ImmutableConfig $config) {
-    return [];
   }
 
   /**
@@ -110,24 +102,14 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
   }
 
   /**
-   * The default plugin access allows selection of transaction relatives.
-   *
-   * @param array $element
+   * {@inheritdoc}
    */
-  static function accessSettingsForm(&$element, $default) {
+  public static function accessSettingsElement(&$element, $default) {
     $element['access'] = [
       '#type' => 'checkboxes',
       '#options' => \Drupal::service('mcapi.transaction_relative_manager')->options(),
       '#default_value' => $default,
     ];
-  }
-
-  /**
-   *
-   * {@inheritDoc}
-   */
-  static function validateConfigurationForm($form, &$form_state) {
-    //@todo validate the access checkboxes if we could be bothered
   }
 
   /**
@@ -143,8 +125,8 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     }
     foreach (array_filter($this->configuration['access']) as $relative) {
       //$check if the $acocunt is this relative to the transaction
-      $relative = $this->relatives[$relative];
-      if ($relative->isRelative($this->transaction, $account)) {
+      $plugin = $this->relatives[$relative];
+      if ($plugin->isRelative($this->transaction, $account)) {
         return TRUE;
       }
     }
@@ -157,58 +139,27 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     ];
   }
 
-
   /**
-   * Perform a transition on the transaction and save it.
-   *
-   * @param array $values
-   *   the form state values from the transition form
-   *
-   * @return array
-   *   a renderable array
-   *
-   * @todo make a drush command for doing transitions
-   * E.g. drush mcapi-transition [serial] edit -v description blabla
+   * {@inheritDoc}
    */
-  protected function baseExecute(array $values) {
-
-    $context = [
-      'values' => $values,
-      'old_state' => $this->transaction->state->value,
-    ];
-
-    $context['transition'] = $this;
-    //notify other modules, especially rules.
-    //the moduleHandler isn't loaded because__construct didn't run in beta10
-    /*
-    $renderable = $this->moduleHandler->invokeAll(
-      'mcapi_transition',
-      [$this->transaction, $context]
-    );*/
-
-    //@todo, need to get an $output from event handlers i.e. hooks
-    //namely more $renderable items?
-    $this->eventDispatcher->dispatch(
-      McapiEvents::TRANSITION,
-      new TransactionSaveEvents(clone($this->transaction), $context)
-    );
-
-    $this->transaction->save();
-
-    if(!$renderable) {
-      $renderable = ['#markup' => 'transition returned nothing renderable'];
-    }
-    return $renderable;
+  static function settingsFormTweak(array &$form, FormStateInterface $form_state, ImmutableConfig $config) {
+    //don't forget to validate
   }
-
-  static function settingsFormTweak(array &$form, FormStateInterface $form_state, ImmutableConfig $config) {}
 
   /**
    * {@inheritDoc}
    */
-  function validateForm(array $form, FormStateInterface $form_state) {}
+  public static function validateSettingsForm(array $form, FormStateInterface $form_state) {
+    //@todo validate the access checkboxes if we could be bothered
+  }
 
 
+  /**
+   * {@inheritDoc}
+   */
+  function validateForm(array $form, FormStateInterface $form_state) {
+
+  }
 
 }
 

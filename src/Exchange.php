@@ -93,9 +93,9 @@ class Exchange {
   /*
    * identify a new parent entity for a wallet
    */
-  public static function new_owner($owner) {
+  public static function FindNewHolder(EntityInterface $previous_holder) {
     if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-      return Exchanges::new_owner($owner);
+      return Exchanges::newHolder($previous_holder);
     }
     else {
       return ['user', 1];

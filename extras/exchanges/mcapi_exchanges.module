@@ -6,7 +6,6 @@ use Drupal\mcapi\Exchanges;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\WalletInterface;
-use Drupal\mcapi\McapiTransactionException;
 use Drupal\mcapi_exchanges\Entity\Exchange;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Form\FormStateInterface;
@@ -151,23 +150,23 @@ function mcapi_exchanges_form_mcapi_wallet_settings_form_alter(&$form, &$form_st
  * Ensure an entity's wallets are in the same exchange(s) as the entity
  */
 function mcapi_exchanges_entity_insert($entity) {
-  put_owned_wallets_in_exchanges($entity);
+  put_held_wallets_in_exchanges($entity);
 }
 /**
  * implements hook_entity_update();
  * Ensure an entity's wallets are in the same exchange(s) as the entity
  */
 function mcapi_exchanges_entity_update($entity) {
-  put_owned_wallets_in_exchanges($entity);
+  put_held_wallets_in_exchanges($entity);
 }
 
 /*
- * ensure that the wallets of every wallet-owning entity are in the same exchanges as their owner
+ * ensure that the wallets of every wallet-owning entity are in the same exchanges as their holder
  */
-function put_owned_wallets_in_exchanges($entity) {
+function put_held_wallets_in_exchanges($entity) {
   $count = 0;
   if (walletable($entity)) {
-    if ($wids = Wallet::ownedBy($entity)) {
+    if ($wids = Wallet::heldBy($entity)) {
       $belongsToExchanges = $entity->getEntityTypeId() == 'mcapi_exchange' ?
         [$entity] :
         $entity->get(EXCHANGE_OG_REF)->referencedEntities();
@@ -262,8 +261,10 @@ function mcapi_exchanges_mcapi_transaction_alter(TransactionInterface $transacti
   }
   $transaction_curr_ids = $transaction->worth->currencies();
   $my_exchange_ids = Exchanges::in();
-//@todo delete this
-if (!is_array($my_exchange_ids)){print_r($my_exchange_ids);die('mcapi_exchanges_mcapi_transaction_alter');}
+
+if (!is_array($my_exchange_ids)){
+  print_r($my_exchange_ids);die('mcapi_exchanges_mcapi_transaction_alter');
+}
   $payer_exchanges = Exchanges::walletExchanges($transaction->payer->entity, TRUE);
   $common = Exchange::loadMultiple(array_intersect($payer_exchanges, $my_exchange_ids));
   foreach ($common as $exchange) {
@@ -288,7 +289,8 @@ if (!is_array($my_exchange_ids)){print_r($my_exchange_ids);die('mcapi_exchanges_
   }
   $violations = [];
   if (!$source) {
-    throw new McapiTransactionException('worth', 'Neither party can access all the currencies in the transaction: '.implode(', ', $transaction_curr_ids));
+    //@todo, a more appropriate failure here
+    throw new \Exception('Neither party can access all the currencies in the transaction: '.implode(', ', $transaction_curr_ids));
   }
 
   //We have to check if a transaction is even possible.
@@ -316,7 +318,8 @@ if (!is_array($my_exchange_ids)){print_r($my_exchange_ids);die('mcapi_exchanges_
     //if there is no diff, we shouldn't be intertrading but doing a straight transaction
     $source_currency_id = key($diff);//do this now to ensure there is a value for the error
     if (!$diff) {
-      throw new McapiTransactionException('Intertrading calculation is running when worth currencies are all matched');
+    //@todo, a more appropriate failure here
+      throw new \Exception('Intertrading calculation is running when worth currencies are all matched');
     }
     if (count($diff) > 1) {
       continue;//we won't attempt to convert more than one currency in a transaction
@@ -636,14 +639,14 @@ function mcapi_default_exchange_id(ContentEntityInterface $entity, $field_defini
  * Get all the wallet ids in given exchanges.
  * this can also be done with Wallet::filter() but is quicker.
  * maybe not worth it if this is only used once, in any case the index table is needed for views.
- * Each wallet owner has a required entity reference field pointing to exchanges.
+ * Each wallet holder should have a required entity reference field pointing to exchanges.
  *
  * @param array $exchange_ids
  *
  * @param array $intertrading
  *   TRUE if _intertrading wallets are included
  *
- * @return array
+ * @return integer[]
  *   the non-orphaned wallet ids from the given exchanges
  *
  * @todo refactor this for OG
@@ -674,11 +677,11 @@ function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $
 
 /**
  * implement hook_form_FORM_ID_alter
- * in the unlikely event that a wallets owner is not in any exchanges
+ * in the unlikely event that a wallets holder is not in any exchanges
  * put a warning on the wallet limits form
  */
 function mcapi_exchanges_form_wallet_limits_form_alter(&$form, $form_state) {
-  if (!Exchanges::in($form_state->getFormObject()->wallet->getOwner();)) {
+  if (!Exchanges::in($form_state->getFormObject()->wallet->getHolder();)) {
     drupal_set_message(t("!name is not currently in any active exchange", array('!name' => $owner->label())));
   }
 }
@@ -710,7 +713,7 @@ function mcapi_exchanges_form_first_party_editform_alter($form, $form_state) {
     foreach($exchange->currencies->referencedEntities() as $entity) {
       $form['fieldapi_presets']['worth']['preset']['#allowed_curr_ids'][] = $entity->id();
     }
-    $form['partner']['preset']['#description'] = $this->t("Wallet owner must be, or be in, exchange '!name'.", ['!name' => $exchange->label]),
+    $form['partner']['preset']['#description'] = $this->t("Wallet holder must be in, or be, an exchange '!name'.", ['!name' => $exchange->label]),
   }
   $form['menu']['#states'] = [
     'visible' => [
@@ -718,4 +721,21 @@ function mcapi_exchanges_form_first_party_editform_alter($form, $form_state) {
     ]
   ];
 
+}
+
+function mcapi_exchanges_form_currency_form_alter(&$form, $form_state) {
+  mdump($form_state);//how to get the currency entity?
+
+  $unit_name = \Drupal::config('mcapi.misc')->get('ticks_name');//this assumes one base currency
+  $form['ticks'] = [
+    '#title' => t('Currency value, expressed in @units', ['@units' => $unit_name]),
+    '#description' => implode(' ', [
+      t('Exchange rates are not determined by a free market, but negotiated and fixed.'),
+      t('@units are the base units used to convert between currencies.', ['@units' => $unit_name]),
+      t('Leave blank if this currency cannot be intertraded.')]),
+    '#type' => 'number',
+    '#min' => 0,
+    '#default_value' => $currency->ticks,
+    '#weight' => 6
+  ];
 }

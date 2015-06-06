@@ -1,56 +1,17 @@
 <?php
 
-use Drupal\Core\Template\Attribute;
-use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
-use Drupal\mcapi_limits\WalletLimits;
 use Drupal\mcapi\WalletInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 
-
-
+/**
+ * implements hook_entity_type_alter().
+ */
 function mcapi_limits_entity_type_alter(array &$entity_types) {
   $constraints = $entity_types['mcapi_transaction']->getConstraints();
-  $constraints[] = '\Drupal\mcapi_limits\TransactionLimitsConstraint';
+  $constraints['Limits'] = [];
   $entity_types['mcapi_transaction']
     ->setConstraints($constraints);
-}
-
-/**
- * add the limits decorator to the wallet class
- * in fact its not a proper decorator class coz I couldn't get my head around it
- *
- * @return \Drupal\mcapi_limits\WalletLimitsDecorator
- *
- * @todo there must be a better way...
- */
-function mcapi_limits($wallet) {
-  return new WalletLimits($wallet);
-}
-
-/**
- * get the plugin for the given currency
- *
- * @param CurrencyInterface $currency
- * @param string $name
- *   the plugin to load, if not the currency's saved plugin.
- *
- * @todo expand this function to keep the Plugins in static
- */
-function mcapi_limits_saved_plugin(CurrencyInterface $currency, $name = '') {
-  $plugins = &drupal_static(__FUNCTION__, []);
-  $curr_id = $currency->id();
-  if (!array_key_exists($curr_id, $plugins)) {
-    $plugin_id = $name ? : @$currency->getThirdpartySettings('mcapi_limits')['plugin'];
-    $plugin= \Drupal::service('plugin.manager.mcapi_limits')
-      ->createInstance(
-        $plugin_id ? : 'none', 
-        ['currency' => $currency]
-      );
-    if ($name) return $plugin;
-    else $plugins[$curr_id] = $plugin;
-  }
-  return $plugins[$curr_id];
 }
 
 /**
@@ -62,112 +23,67 @@ function mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) {
   _mcapi_limits_form_mcapi_currency_edit_form_alter($form, $form_state);
 }
 
-
 /**
  * Implements hook_theme().
  */
 function mcapi_limits_theme($existing, $type, $theme, $path){
-  return array(
-    'mcapi_limits_absolute' => array(
+  return [
+    'mcapi_limits_absolute' => [
       'template' => 'mcapi_limits_absolute',
-      'variables' => array(
+      'variables' => [
         'currency' => NULL,
         'wallet' => NULL,
-      ),
+      ],
       'file' => 'mcapi_limits.inc'
-    ),
-    'mcapi_limits_relative' => array(
+    ],
+    'mcapi_limits_relative' => [
       'template' => 'mcapi_limits_relative',
-      'variables' => array(
+      'variables' => [
         'currency' => NULL,
         'wallet' => NULL,
-      ),
+      ],
       'file' => 'mcapi_limits.inc'
-    ),
+    ],
     //only for exchange currencies
-    'mcapi_limits_balanced' => array(
+    'mcapi_limits_balanced' => [
       'template' => 'mcapi_limits_balanced',
-      'variables' => array(
+      'variables' => [
         'currency' => NULL,
         'wallet' => NULL,
         'size' => '100%',
-      ),
+      ],
       'file' => 'mcapi_limits.inc'
-    ),
-  );
+    ]
+  ];
 }
 
 /**
  * implements hook_entity_extra_field_info().
- * @deprecated
 */
 function mcapi_limits_entity_extra_field_info() {
-  return array(
-    'mcapi_wallet' => array(
-      'mcapi_wallet' => array(
-        'form' => array(
-          'mcapi_limits' => array(
+  return [
+    'mcapi_wallet' => [
+      'mcapi_wallet' => [
+        'display' => [
+          //will display differently according to the limits settings.
+          'balance_limits' => [
             'label' => t('Balance limits'),
             'description' => t('Trading limits per currency'),
             'weight' => 0,
-          ),
-        ),
-        'display' => array(
-          //may show themes absolute or balanced depending on whether min and max are equal
-          'balance_limits' => array(
-            'label' => t('Balance limits'),
-            'description' => t('Trading limits per currency'),
-            'weight' => 0,
-          )
-        )
-      )
-    )
-  );
+          ]
+        ]
+      ]
+    ]
+  ];
 }
 
 /**
  * implement hook_ENTITY_TYPE_view().
- * adds the extra_fields to the wallet view
+ * adds the extra_fields to the wallet view according to the display settings
 */
 function mcapi_limits_mcapi_wallet_view(&$build, WalletInterface $wallet, EntityViewDisplayInterface $display, $view_mode, $langcode) {
   if ($display->getComponent('balance_limits')) {
+    module_load_include('inc', 'mcapi_limits');
     $build += mcapi_view_limits($wallet);
   }
-}
-
-/**
- * callback to build a render array
- * used in hook_wallet_view, views, & blocks
- *
- * @param WalletInterface $wallet
- *
- * $param boolean $relative
- */
-function mcapi_view_limits(WalletInterface $wallet) {
-  $renderable = [];
-  foreach ($wallet->currencies_all() as $currency) {
-    if ($currency->getThirdPartySetting('mcapi_limits', 'plugin', 'none') == 'none') continue;
-    if ( $currency->getThirdPartySetting('mcapi_limits', 'display_relative', 'absolute') == 'relative') {
-      $theme = 'mcapi_limits_relative';
-    }
-    else {
-      $limits = mcapi_limits($wallet)->limits($currency->id());
-      //special opportunity to show an alternative display when +ve & -ve limits are balanced
-      if ($limits['max'] && ($limits['max'] == -$limits['min'])) {
-        $theme = 'mcapi_limits_balanced';
-      }
-      else {
-        $theme = 'mcapi_limits_absolute';
-      }
-    }
-    $renderable[$currency->id()]['mcapi_limits'] = array(
-      '#theme' => $theme,
-      '#wallet' => $wallet,
-      '#currency' => $currency,
-      '#attached' => array(
-        'library' => array('mcapi/mcapi.wallets', 'mcapi/mcapi.gchart'),
-      )
-    );
-  }
-  return $renderable;
 }

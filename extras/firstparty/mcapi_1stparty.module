@@ -1,8 +1,9 @@
 <?php
 
-use Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi\Exchange;
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 
 /**
  * implements hook_help().
@@ -70,18 +71,6 @@ function mcapi_1stparty_transaction_tokens($natural = FALSE) {
   return $tokens;
 }
 
-/**
- * return the visible field definitions for any transaction field API fields
- * according to the default transaction entity_form_display
- * including worth, or course
- *
- * @return array
- *   field definitions and widgets keyed by field name
- */
-function mcapi_1stparty_fieldAPI() {
-  return mcapi_default_display_fields();
-}
-
 function mcapi_1stparty_form_field_ui_form_display_overview_form_alter(&$form, $form_state) {
   $form['#suffix'] = t('N.B. Disabled fields may cause problems with the transaction form editor');
 }
@@ -91,42 +80,40 @@ function mcapi_1stparty_form_field_ui_form_display_overview_form_alter(&$form, $
  * adds menu links where the firstparty forms specify them
  *
  * @param unknown $definitions
- *
- * @note adding/Altering menu links, local tasks and local actions are all very different...
- *
- * @todo test this
  */
-function mcapi_1stparty_menu_links_discovered_alter(&$definitions) {
+function mcapi_1stparty_menu_links_discovered_alter(&$links) {
   foreach (FirstPartyFormDesign::loadMultiple() as $id => $first_party_form) {
     if (empty($first_party_form->menu['menu_name'])) continue;
     $route_name = 'mcapi.1stparty.'.$id;
 
     $parent_path = substr($first_party_form->path, 0, strrpos($first_party_form->path, '/'));
-    $definitions[$route_name.'.link'] = array(
+    $links[$route_name.'.link'] = [
       'title' => $first_party_form->title,
       'route_name' => $route_name,
       'provider' => 'mcapi_1stparty',
       //'parent' => '',// currently the entity doesn't support nested menu items
-    );
+      //weight
+    ];
   }
 }
 
 /**
+ *
  * implement hook_entity_base_field_info_alter().
  *
  * change the default date widget for the created field
  *
  * @todo make this work with the date_popup widget, but in what module
  */
-function mcapi_1stparty_entity_base_field_info_alter(&$fields, \Drupal\Core\Entity\EntityTypeInterface $entity_type) {
-  $datewidget = \Drupal::moduleHandler()->moduleExists('datetime') ?
-    'datetime_timestamp' :
-    'datetime_timestamp';
-  return;
+function mcapi_1stparty_entity_base_field_info_alter(&$fields, EntityTypeInterface $entity_type) {
+  $dateTime = \Drupal::moduleHandler()->moduleExists('datetime');
   if ($entity_type->id() == 'mcapi_transaction') {
     $fields['created']->setDisplayOptions(
       'form',
-      ['type' => $datewidget, 'weight' => 10]
+      [
+        'type' => $dateTime ? 'datetime_timestamp' : 'datetime_timestamp',
+        'weight' => 10
+      ]
     );
   }
 }

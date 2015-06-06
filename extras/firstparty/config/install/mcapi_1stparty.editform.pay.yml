@@ -12,13 +12,9 @@ mywallet:
   widget: select
 partner:
   preset: ''
-description:
-  preset: ''
-  placeholder: ''
 fieldapi_presets:
-  worth:
-other:
-  intertrade: false
+  worth: { }
+  description: { }
 experience:
   twig: "From {{ mywallet }}\r\nPay: {{ partner }}\r\n{{ worth }}\r\nfor {{ description }}"
   button: Preview

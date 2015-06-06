@@ -39,7 +39,6 @@ class Worth extends FormElement {
       '#attached' => ['library' => ['mcapi/mcapi.worth.element']],
       '#minus' => FALSE,
       '#config' => FALSE,
-      '#allowed_curr_ids' => array_keys(Currency::loadMultiple())
     ];
   }
 
@@ -204,10 +203,14 @@ class Worth extends FormElement {
         $quant = \Drupal\mcapi\Entity\Currency::load($curr_id)->unformat($parts);
         if ($element['#config']) {
           //leaving the main value component blank in config mode means ignore the currency
-          if (empty($quant)) continue;
+          if ($parts[1] == '') {
+            continue;
+          }
         }
         else {
-          if (!empty($element['#minus'])) $quant = -$quant;
+          if (!empty($element['#minus'])) {
+            $quant = -$quant;
+          }
         }
         //this lets blank items through, to be cleared up during validation, after checking whether $currency->zero permits zero values
         $output[$curr_id] = ['curr_id' => $curr_id, 'value' => $quant];
@@ -215,11 +218,12 @@ class Worth extends FormElement {
     }
     else {
       //return the given #default_value plus allowed curr ids
-      $map = Self::curr_map($element['#default_value']);
+      $map = Self::curr_map((array)$element['#default_value']);
       foreach ($element['#allowed_curr_ids'] as $curr_id) {
+        $val = $element['#default_value'][$map[$curr_id]]['value'];
         $output[] = [
           'curr_id' => $curr_id,
-          'value' => intval($element['#default_value'][$map[$curr_id]]['value'])
+          'value' => $element['#config'] ? $val : intval($val)
         ];
       }
     }
@@ -300,7 +304,8 @@ class Worth extends FormElement {
     $options = $new_options;
   }
 
-  private function curr_map($value) {
+  private static function curr_map(array $value) {
+    $map = [];
     foreach ($value as $key => $item) {
       $map[$item['curr_id']] = $key;
     }

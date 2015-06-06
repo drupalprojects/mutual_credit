@@ -1,5 +1,8 @@
 services:
   plugin.manager.mcapi_limits:
     class: Drupal\mcapi_limits\Plugin\LimitsPluginManager
-    arguments: ['@container.namespaces', '@cache.entity', @module_handler]
+    arguments: ['@container.namespaces', '@module_handler', '@cache.default']
+  mcapi_limits.wallet_limiter:
+    class: Drupal\mcapi_limits\WalletLimiter
+    arguments: []
 

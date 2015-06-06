@@ -55,16 +55,12 @@ class FirstPartyFormDesign extends ConfigEntityBase {
   public $title;
   public $status;
   public $type;
-  //might group all of these into one array of presets
   //especially because we need to include unknown field API fields as well
   public $mywallet;
   public $partner;
   public $incoming;
-  public $description;
   public $fieldapi_presets;
-  public $other;
   public $experience;
-  public $message;
 
   /**
    * {@inheritdoc}
@@ -72,11 +68,11 @@ class FirstPartyFormDesign extends ConfigEntityBase {
   public static function preCreate(EntityStorageInterface $storage, array &$values) {
     $values += [
       'id' => '',
-      'title' => '',
       'path' => '',
+      'menu' => [],
+      'title' => '',
       'status' => 1,
       'type' => 'default',
-      'incoming' => FALSE,
       'mywallet' => [
         'stripped' => TRUE
       ],
@@ -85,34 +81,18 @@ class FirstPartyFormDesign extends ConfigEntityBase {
         'preset' => '',
         'stripped' => TRUE
       ],
-      'description' => [
-        'preset' => '',
-        'placeholder' => '',
-        'stripped' => TRUE
-      ],
+      'incoming' => FALSE,
       'fieldapi_presets' => [
-        'worth' => [],//and there are likely others
+        'worth' => [],
+        'description' => []
       ],
-      'other' => [
-        'intertrade' => FALSE
-      ],
-      'step1' => [
-        'twig1' => 'Partner: [mcapiform:secondperson]
+      'experience' => [
+        'twig' => 'Partner: [mcapiform:secondperson]
 Direction: [mcapiform:direction]
 [mcapiform:worth]',
-        'next1' => 'page',
-        'button1' => t('Preview'), //each transaction type should have an initial state
+        'button' => $this->t('Preview'),
+        'preview' => '',
       ],
-      'step2' => [
-        'title2' => t('Are you sure?'),
-        'format2' => 'certificate',
-        'twig2' => '',
-        'next2' => 'page',
-        'button2' => t('Confirm'),
-        'redirect' => ''
-      ],
-      'message' => '',
-      'cache' => NULL
     ];
 
   }

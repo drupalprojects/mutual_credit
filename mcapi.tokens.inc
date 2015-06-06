@@ -59,6 +59,9 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
 
 /**
  * implements hook_token_info().
+ *
+ * @todo entity token generation should be more automated
+ * @see https://api.drupal.org/api/drupal/modules!node!node.tokens.inc/function/node_token_info/7
  */
 function mcapi_token_info() {
   $info = array(
@@ -74,7 +77,6 @@ function mcapi_token_info() {
     ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
   //chance to remove some tokens here using unset($definitions['uuid']).
 
-  //@todo this really should be more automated in core, but its not so far,
   //see node_token_info();
   foreach ($definitions as $key => $def) {
     $info['tokens']['mcapi'][$key] = array(

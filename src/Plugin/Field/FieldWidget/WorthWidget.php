@@ -12,7 +12,6 @@ use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Drupal\Component\Utility\SafeMarkup;
-use Drupal\mcapi\Exchanges;
 
 /**
  * Plugin implementation of the 'worth' widget.
@@ -35,6 +34,8 @@ class WorthWidget extends WidgetBase {
    * @see \Drupal\Core\Field\WidgetInterface
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
+
+    //$element contains no meaningful information
     $element += array(
       '#title' => Safemarkup::checkPlain($this->fieldDefinition->label()),
       '#title_display' => 'attribute',

@@ -84,10 +84,10 @@ class WalletForm extends ContentEntityForm {
 
     $types = ['user' => t('User')];
     $form['transfer'] = [
-      '#title' => t('Change ownership'),
+      '#title' => t('Change holder'),
       '#type' => 'details',
       'entity_type' => [
-        '#title' => t('New owner type'),
+        '#title' => t('New holder type'),
         '#type' => 'select',
         '#options' => $types,
         '#default_value' => $this->entity->entity_type->value,
@@ -95,20 +95,6 @@ class WalletForm extends ContentEntityForm {
         '#access' => $this->currentUser()->haspermission('manage exchange')
       ]
     ];
-    /*
-    $form['transfer']['entity_id'] = array(
-      '#title' => t('Unique ID'),
-      '#description' => 'TODO make this work with autocompleted entity names',
-      '#type' => 'number',
-      '#weight' => 1,
-      '#default_value' => $this->entity->pid->value,
-      '#states' => array(
-        'invisible' => array(
-          ':input[name="entity_type"]' => array('value' => '')
-        )
-      ),
-    );
-     */
 
     //@todo I don't know how to later retrieve the entity from the label for an unknown entity type
     $autocomplete_routes = [
@@ -149,7 +135,7 @@ class WalletForm extends ContentEntityForm {
       $wallet->{$op_name}->value = $values[$op_name];
       $user_refs = [];
       if ($values[$op_name] == WALLET_ACCESS_OWNER) {
-        $wallet->access[$op_name] = [$wallet->ownerUserId()];
+        $wallet->access[$op_name] = [$wallet->getHolder()->id()];
       }
       elseif ($values[$op_name] = WALLET_ACCESS_USERS) {
         $wallet->access[$op_name] = [];
@@ -158,7 +144,7 @@ class WalletForm extends ContentEntityForm {
         }
       }
     }
-    //check for the change of ownership
+    //check for the change of holdership
     if ($values['entity_type'] && $values['entity_id']) {
       $wallet->set('entity_type', $values['entity_type']);
       $wallet->set('pid', $values['entity_id']);

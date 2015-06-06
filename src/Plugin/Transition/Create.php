@@ -26,16 +26,26 @@ class Create extends TransitionBase {
    * {@inheritdoc}
    * A transaction can be created if the user has a wallet, and permission to transaction
    */
-  public function accessOp(AccountInterface $acount) {
-    //@todo check that the user is allowed to pay in to payee wallet AND out from payer_wallet.
-    return empty($this->transaction->get('xid')->value);
+  public function accessOp(AccountInterface $account) {
+    return empty($this->transaction->get('xid')->value) &&
+      $this->transaction->payer->entity->access('payout') &&
+      $this->transaction->payee->entity->access('payin');
   }
 
   /**
    * {@inheritdoc}
    */
   public function execute(array $context) {
-    $this->baseExecute($context);
+
+    $saved = $this->transaction->save();
+
+    \Drupal::logger('mcapi')->notice(
+      'User @uid created transaction @serial',
+      [
+        '@uid' => \Drupal::currentUser()->id(),
+        '@serial' => $this->transaction->serial->value
+      ]
+    );
     //the save operation takes place elsewhere
     return ['#markup' => t('Transaction created')];
   }
@@ -49,14 +59,17 @@ class Create extends TransitionBase {
     unset($form['states']);
   }
 
-
+  /**
+   * {@inheritdoc}
+  */
   public function accessState(AccountInterface $account) {
-    //can we payin to the payee wallet and payout of the payer wallet
-    return $this->transaction->payer->entity->access('payout')
-    || $this->transaction->payee->entity->access('payin');
+    return TRUE;
   }
 
-  static function accessSettingsForm(&$element) {
+  /**
+   * {@inheritdoc}
+  */
+  static function accessSettingsElement(&$element, $default) {
     //special case, no settings
   }
 

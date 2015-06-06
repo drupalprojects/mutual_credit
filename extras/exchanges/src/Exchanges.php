@@ -68,8 +68,8 @@ class Exchanges {
 
   /**
    * Get the exchanges which this wallet can be used in.
-   * If the owner is an exchange return that exchange,
-   * otherwise return the exchanges the owner is in.
+   * If the holder is an exchange return that exchange,
+   * otherwise return the exchanges the holder is in.
    *
    * @param \Drupal\mcapi\Entity\Wallet $wallet
    *
@@ -84,8 +84,8 @@ class Exchanges {
    */
   public static function walletExchanges(Wallet $wallet, $open = FALSE) {
     return $wallet->entity_type == 'mcapi_exchange' ?
-      array($wallet->pid => $wallet->getOwner()) ://@todo how do exchanges own wallets if exchanges aren't an entity?
-      Self::in($wallet->getOwner(), TRUE, $open);
+      array($wallet->pid => $wallet->getHolder()) ://@todo how do exchanges own wallets if exchanges aren't an entity?
+      Self::in($wallet->getHolder(), TRUE, $open);
   }
 
 
@@ -105,11 +105,10 @@ class Exchanges {
   /*
    * identify a new parent entity for a wallet
    */
-  public static function new_owner($owner) {
-    if($exchange_ids = Exchanges::in($owner, FALSE)) {
+  public static function findNewHolder($previous_holder) {
+    if($exchange_ids = Exchanges::in($previous_holder, FALSE)) {
       //if the parent entity was in more than one exchange, this will pick a random one to take ownership
       return Exchange::load(reset($exchanges));
-
     }
   }
 

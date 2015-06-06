@@ -20,7 +20,7 @@ content:
   histories:
     weight: 3
 hidden:
-  owner: true
+  holder: true
   mcapi_limits_relative: true
   name: true
 third_party_settings: {  }

@@ -14,6 +14,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Exchange;
+use Drupal\Core\Render\Element;
 
 class WalletLimitOverride extends FormBase {
 
@@ -37,18 +38,18 @@ class WalletLimitOverride extends FormBase {
     //this is tricky. We need to know all the currency that could go in the wallet.
     //to do that we have to know all the currencies in the all the active exchanges the wallets parent is in.
     $wallet = $this->wallet;
+    $submit = FALSE;
 
     //@todo put some inline css here when drupal_process_attached no longer uses deprecated _drupal_add_html_head
     //see https://api.drupal.org/api/drupal/core!includes!common.inc/function/drupal_process_attached/8
     //$form['#attached']['html_head']
 
-    $overridden = mcapi_limits($wallet)->saved_overrides();
-    //@todo can we refactor this so we don't need to call on Exchanges?
+    $limiter = \Drupal::service('mcapi_limits.wallet_limiter')->setwallet($wallet);
     foreach (Exchange::currenciesAvailable($wallet) as $curr_id => $currency) {
       $config = $currency->getThirdPartySettings('mcapi_limits');
       if (!$config || $config['plugin'] == 'none')
         continue;
-      $defaults = mcapi_limits($wallet)->default_limits($currency);
+      $defaults = $limiter->defaults($currency);
       $limits = array_filter($defaults);
       if (array_key_exists('min', $limits)) {
         $desc[] = t('Min: !worth', array('!worth' => $currency->format($limits['min'])));
@@ -68,25 +69,18 @@ class WalletLimitOverride extends FormBase {
           '#type' => 'minmax',
           '#curr_id' => $curr_id,
           '#default_value' => array(
-            'min' => @$overridden[$curr_id]['min'],
-            'max' => @$overridden[$curr_id]['max']
+            'min' => $limiter->min($curr_id),
+            'max' => $limiter->max($curr_id),
           ),
           '#placeholder' => array(
             'min' => $defaults['min'],
             'max' => $defaults['max']
           )
         );
-      }
-      else {//currency is not overridable
-        //don't show anything
-        $form[$curr_id]['override'] = array(
-          '#markup' => t('This currency is not overridable')
-        );
+        $submit = TRUE;
       }
     }
-    //@todo the currencies could be sorted by weight; v low priority!
-
-    if (\Drupal\Core\Render\Element::children($form)) {
+    if ($submit) {
       $form['help'] = array(
         '#markup' => t("Leave fields blank to use the currencies' own settings") . '<br />',
         '#weight' => -1
@@ -150,8 +144,11 @@ class WalletLimitOverride extends FormBase {
       //are there security concerns about showing the user this message?
       drupal_set_message('Failed to save limit overrides: ' . $e->getMessage(), 'error');
     }
-    //@todo clear the wallet cache???
-    $form_state->setRedirect('entity.mcapi_wallet.canonical', array('mcapi_wallet' => $this->wallet->id()));
+    //no need to clear the wallet I think
+    $form_state->setRedirect(
+      'entity.mcapi_wallet.canonical',
+      ['mcapi_wallet' => $this->wallet->id()]
+    );
   }
 
 }

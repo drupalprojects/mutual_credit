@@ -40,7 +40,7 @@ class TransitionManager extends DefaultPluginManager {
    *
    * @param ConfigFactory $config_factory
    */
-  public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler, ConfigFactory $config_factory) {
+  public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler, ConfigFactory $config_factory, $redirecter) {
     parent::__construct(
       'Plugin/Transition',
       $namespaces,
@@ -49,11 +49,10 @@ class TransitionManager extends DefaultPluginManager {
       '\Drupal\mcapi\Annotation\Transition'
     );
     $this->setCacheBackend($cache_backend, 'transaction_transitions');
+    $this->redirecter = $redirecter;
     $this->config_factory = $config_factory;
     $this->plugins = [];
     $this->config = [];
-    //@todo can this be injected?
-    $this->redirecter = \Drupal::service('redirect.destination');
   }
 
   /*
@@ -177,7 +176,6 @@ class TransitionManager extends DefaultPluginManager {
               'transition' => $transition
             ])
           ];
-          //@todo consider abstracting the funky link_building so it works in buttons too.
           $display = $plugin->getConfiguration('display');
           if ($display != MCAPI_CONFIRM_NORMAL) {
             if ($display == MCAPI_CONFIRM_MODAL) {
@@ -199,7 +197,8 @@ class TransitionManager extends DefaultPluginManager {
           }
           if(!$plugin->getConfiguration('redirect') && $transition != 'view'){
             $path = $this->redirecter->get();
-            //@todo stop removing leading slash when the redirect service does it properly
+
+            //die($path);//@todo stop removing leading slash when the redirect service does it properly
             $renderable['#links'][$transition]['query'] = substr($path, 1);
           }
         }

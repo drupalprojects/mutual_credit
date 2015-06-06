@@ -50,11 +50,12 @@ class DashboardController extends ControllerBase {
    * build a page showing the state of the system.
    * one section for every exchange
    * every exchange has a list of properties, currencies and wallets
-   * every wallet shows its owner, balance and limits.
+   * every wallet shows its holder, balance and limits.
    */
   protected function buildPage() {
     $page['#prefix'] = 'Leave this tab open for reference<br />';
     $header = array('Wallet', 'Name', 'Balance', 'Mins', 'Maxes', 'Edit limits');
+    $limiter = \Drupal::service('mcapi_limits.wallet_limiter');
     foreach (Exchange::loadMultiple() as $exchange) {
       $id = $exchange->id();
       $page[$id] = array(
@@ -81,17 +82,17 @@ class DashboardController extends ControllerBase {
       $wids = get_mcapi_wallets_in_exchanges(array($id));
       $tbody = [];
       foreach (Wallet::loadMultiple($wids) as $wallet) {
-        $limits = mcapi_limits($wallet);
+        $limiter->setWallet($wallet);
         $mins = $maxes = $balances = [];
         foreach ($wallet->getSummaries() as $curr_id => $summary) {
-          $mins = $limits->mins(TRUE);
-          $maxes = $limits->maxes(TRUE);
+          $mins = mins($limiter);
+          $maxes = maxes($limiter);
           $currency = Currency::load($curr_id);
           $balances[] = $currency->format($summary['balance']);
         }
         $tbody[$wallet->id()] = array(
           'id' => \Drupal::l('#'.$wallet->id(), 'wallet/'.$wallet->id()),
-          'name' => \Drupal::l($wallet->getOwner()->label(), $wallet->getOwner()->url()),
+          'name' => \Drupal::l($wallet->getHolder()->label(), $wallet->getHolder()->url()),
           'balances' => array(
             'data' => array('#markup' => implode('<br />', $balances))
           ),
@@ -121,4 +122,23 @@ class DashboardController extends ControllerBase {
     }
     return $page;
   }
+}
+
+
+  //@todo move maxes and mins?
+function maxes($limiter){
+  $limits = $limiter->getLimits();
+  $maxes = [];
+  foreach (array_keys($limits) as $curr_id) {
+    $maxes[$curr_id] = $limiter->max($curr_id);
+  }
+  return $maxes;
+}
+function mins($limiter){
+  $limits = $limiter->getLimits();
+  $mins = [];
+  foreach (array_keys($limits) as $curr_id) {
+    $mins[$curr_id] = $limiter->min($curr_id);
+  }
+  return $mins;
 }

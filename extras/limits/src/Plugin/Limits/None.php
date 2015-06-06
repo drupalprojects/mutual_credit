@@ -32,9 +32,9 @@ class None extends McapiLimitsBase implements McapiLimitsInterface {
       '#markup' => t('There are no settings for this plugin')
     ));
   }
+  
   /**
-   * (non-PHPdoc)
-   * @see \Drupal\mcapi_limits\McapiLimitsInterface::checkLimits()
+   * {@inheritdoc}
    */
   public function checkLimits(WalletInterface $wallet, $diff){
     return TRUE;

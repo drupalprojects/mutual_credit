@@ -4,7 +4,6 @@
  * @file
  * Definition of Drupal\mcapi\Plugin\views\filter\Wallet.
  *
- * @todo fix the exposed filter (e.g. on transactions/admin) when the message block is working
  */
 
 namespace Drupal\mcapi\Plugin\views\filter;
@@ -121,10 +120,10 @@ class Wallet extends InOperator {
     return parent::adminSummary();
   }
 
-
+  //@todo fix the exposed filter (e.g. on transactions/admin) when the message block is working
   public function buildExposedForm(&$form, FormStateInterface $form_state) {
     parent::buildExposedForm($form, $form_state);
-    ///print_r($form['payer']);
+    die('Wallet exposed filter not yet implemented');
   }
 
 }

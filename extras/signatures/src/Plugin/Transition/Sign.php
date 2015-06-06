@@ -15,6 +15,7 @@ use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Config\ImmutableConfig;
 
 /**
  * Sign transition
@@ -30,7 +31,7 @@ class Sign extends TransitionBase {
   */
   public function execute(array $values) {
     Signatures::sign($this->transaction, \Drupal::currentUser());
-    $renderable = $this->baseExecute($transaction, $values);
+    $saved = $this->transaction->save();
 
     if ($this->transaction->state->target_id == TRANSACTION_STATE_FINISHED) {
       $message = t('@transaction is signed off', ['@transaction' => $this->transaction->label()]);
@@ -48,13 +49,10 @@ class Sign extends TransitionBase {
   }
 
   /**
-   * @see \Drupal\mcapi\TransitionBase::buildConfigurationForm()
    * Ensure the pending checkbox is ticked
    */
-  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    $form = parent::buildConfigurationForm($form, $form_state);
+  public static function settingsFormTweak(array &$form, FormStateInterface $form_state, ImmutableConfig $config) {
     unset($form['states']);
-    return $form;
   }
 
   /**
@@ -81,7 +79,7 @@ class Sign extends TransitionBase {
    *
    * @param array $element
    */
-  static function accessSettingsForm(&$element) {
+  static function accessSettingsElement(&$element, $default) {
     $element['access'] = ['#markup' => t('Only named signatories can sign.')];
   }
 

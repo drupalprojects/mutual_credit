@@ -8,6 +8,7 @@
 
 namespace Drupal\mcapi\Plugin\Transition;
 
+use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Plugin\TransitionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\FormState;
@@ -25,10 +26,7 @@ use Drupal\Core\Config\ImmutableConfig;
 class Edit extends TransitionBase {
 
   /**
-   *  access callback for transaction transition 'edit'
-   * is the transaction too old according to settings?
-   * does the current user have permission?
-   * @todo override access settings in the base configuration base form
+   * {@inheritdoc}
   */
   public function accessOp(AccountInterface $account) {
     $days = $this->configuration['window'];
@@ -39,13 +37,13 @@ class Edit extends TransitionBase {
   }
 
   /**
-   * {inheritdoc}
+   * {@inheritdoc}
    */
   public function form(array &$form) {
-    $display = EntityFormDisplay::collectRenderDisplay($this->transaction, 'admin');
+    $display = EntityFormDisplay::collectRenderDisplay($this->getTransaction(), 'admin');
     $form['#parents'] = [];//this is needed otherwise the nested entity API fields collide
     foreach (array_filter($this->configuration['fields']) as $name) {
-      //see EntityFormDisplay::bulidForm but we just want certain fields
+      //see EntityFormDisplay::buildForm but we just want certain fields
       if ($widget = $display->getRenderer($name)) {
         $items = $this->transaction->get($name);
         $items->filterEmptyItems();
@@ -60,11 +58,15 @@ class Edit extends TransitionBase {
   }
 
   /**
-   * {inheritdoc}
+   * {@inheritdoc}
    */
   static function settingsFormTweak(array &$form, FormStateInterface $form_state, ImmutableConfig $config) {
-    $fields = ['payer', 'payee', 'created', 'description', 'worth'];
-    //@todo More work needs to be done to show the field API fields editable, including 'worth'");
+    $visible_fields = EntityFormDisplay::collectRenderDisplay(Transaction::Create(), 'admin')
+      ->getComponents();
+    $allFields = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
+    foreach (array_intersect_key($allFields, $visible_fields) as $id => $field) {
+      $options[$id] = $field->getlabel();
+    }
     $form['edit_transition_settings'] = [
       '#type' => 'fieldset',
       '#title' => 'Editing',
@@ -73,7 +75,7 @@ class Edit extends TransitionBase {
         '#title' => t('Editable fields'),
         '#description' => t('select the fields which can be edited'),
         '#type' => 'checkboxes',
-        '#options' => array_combine($fields, $fields),//this might not be the best list
+        '#options' => $options,//this might not be the best list
         '#default_value' => $config->get('fields')
       ],
       'window' => [
@@ -88,13 +90,10 @@ class Edit extends TransitionBase {
 
   /**
    * {@inheritdoc}
-  */
+   */
   public function execute(array $values) {
-
-    //run the hooks and save the transaction
-    $this->baseExecute($this->transaction, $values);
-
-    //@todo make this string configurable
+    $saved = $this->transaction->save();
+    //consider making this string configurable
     return ['#markup' => 'The transaction has been re-saved!'];
   }
 

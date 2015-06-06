@@ -126,7 +126,6 @@ class Wallet extends EntityAutocomplete {
     $entity_labels = [];
     foreach ($entities as $entity) {
       $label = ($entity->access('view')) ? $entity->label() : t('- Restricted access -');
-      $label .= ' #' . $entity->id();
       // Labels containing commas or quotes must be wrapped in quotes.
       $entity_labels[] = Tags::encode($label);
     }

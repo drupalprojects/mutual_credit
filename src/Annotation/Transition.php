@@ -8,7 +8,6 @@
 namespace Drupal\mcapi\Annotation;
 
 use Drupal\Component\Annotation\Plugin;
-use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Defines a Transaction Transition annotation object.

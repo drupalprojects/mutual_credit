@@ -30,11 +30,9 @@ var options = {
     height: {{ height }},
     colors: ['{{ currency.color }}'],
     legend: {position: 'none'},
-    vAxis: { ticks: [
-    {% for tick in vaxislabels %}
+    vAxis: { ticks: [{% for tick in vaxislabels %}
     {v:{{ tick.value }}, f:"{{ tick.label }}"},
-  {% endfor %}
-    ]}
+  {% endfor %}]}
   }
   new google.visualization.LineChart(document.getElementById('{{ id }}')).draw(data, options);
 }

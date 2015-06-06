@@ -8,14 +8,13 @@
 namespace Drupal\mcapi\Storage;
 
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\mcapi\TransactionInterface;
 
 interface TransactionStorageInterface extends EntityStorageInterface {
 
   /**
    * truncate and rebuild the index table
    */
-  public function indexRebuild();
+  function indexRebuild();
 
   /**
    * Check the integrity of the index table
@@ -23,13 +22,14 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * @return boolean
    *   TRUE if the table is integral
    */
-  public function indexCheck();
+  function indexCheck();
 
   /**
    * When a transaction is deleted, remove it from the index table
+   *
    * @param array $serials
    */
-  public function indexDrop($serials);
+  function indexDrop($serials);
 
   /**
    * Filter by any field in the table; returns an array of serials keyed by xid
@@ -54,13 +54,15 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    *   Also note 'including' and 'involving' conditions will filter inclusively and
    *   exclusively respectively on the wallet ids passed. Actually I think those are the same
    *   because wallets can ONLY trade with other wallets in the same exchange, unless they have moved
+   *
    * @param number $offset
+   *
    * @param number $limit
    *
    * @return array
    *   an array keyed by xid with serial numbers as values
    */
-  public static function filter(array $conditions = [], $offset = 0, $limit = 25);
+  function filter(array $conditions = [], $offset = 0, $limit = 25);
 
   /**
    * Get some gerneral purpose stats by adding up the transactions for a given wallet
@@ -70,7 +72,9 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * It would be an interesting SQL query which could get balances for multiple users.
    *
    * @param integer $wallet_id
+   *
    * @param CurrencyInterface $currency
+   *
    * @param array $filters
    *
    * @return array
@@ -78,42 +82,47 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    *
    * @see \Drupal\mcapi\WalletInterface::getSummaries()
    */
-  public function summaryData($wallet_id, array $filters);
+  function summaryData($wallet_id, array $filters);
 
   /**
    * count the number of transactions that meet the given conditions
    *
-   * @param integer $curr_id
+   * @param string $curr_id
+   *
    * @param array $conditions
    *   keyed by transaction entity properties, values must match.
    *   Except in the case of state. If state is NULL, no filter will be applied,
    *   if state is not in the $conditions, a filter for positive states will be added.
+   *
    * @param boolean $serial
    *   whether to count unique serial numbers or xids
    *
    * return integer
    */
-  public function count($curr_id = '', $conditions = [], $serial = FALSE);
+  function count($curr_id = '', $conditions = [], $serial = FALSE);
 
   /**
    * get the total transaction volume of a currency.
    *
-   * @param integer $curr_id
+   * @param string $curr_id
    *
    * @param array $conditions
    *   Except in the case of state. If state is NULL, no filter will be applied,
    *   if state is not in the $conditions, a filter for positive states will be added.
-   * @return integerstring
-   *   ready for formatting with $currency->format
+   *
+   * @return integer
+   *   raw currency value
    */
-  public function volume($curr_id, $conditions = []);
+  function volume($curr_id, $conditions = []);
 
   /**
    * Retrieve the full balance history
    * N.B if caching running balances remember to clear the cache whenever a transaction changes state or is deleted.
    *
    * @param integer $wallet_id
-   * @param integer $curr_id
+   *
+   * @param string $curr_id
+   *
    * @param integer $since
    *   A unixtime before which to exclude the transactions.
    *   Note that whole history needs to be loaded in order to calculate a running balance
@@ -121,14 +130,16 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * @return array
    *   Balances keyed by timestamp
    */
-  public function timesBalances($wallet_id, $curr_id, $since);
+  function timesBalances($wallet_id, $curr_id, $since);
 
   /**
    * Return the ids of all the wallets which HAVE USED this currency
+   *
    * @param type $curr_id
+   *
    * @param type $conditions
    */
-  public function wallets($curr_id, $conditions = []);
+  function wallets($curr_id, $conditions = []);
 
   /**
    * get all the balances for a given currency
@@ -139,7 +150,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    *   keyed by wallet id
    *
    */
-  public function balances($curr_id);
+  function balances($curr_id);
 
 
   /**
@@ -147,12 +158,14 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * given currency
    *
    * @param integer wallet id
+   *
    * @param integer transaction id
+   *
    * @param string currency id
    *
    * @return integer raw currency value
    *
    */
-  public function runningBalance($wid, $xid, $curr_id);
+  function runningBalance($wid, $xid, $curr_id);
 
 }

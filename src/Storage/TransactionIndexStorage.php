@@ -18,6 +18,7 @@ use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\Core\Database\Database;
+use Drupal\Core\Cache\Cache;
 use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\Entity\State;
 
@@ -27,7 +28,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   /**
    * {@inheritdoc}
    * save 2 rows per worth into the index tables
-   * NB $entity cannot have children - this must be called inside foreach($transaction->flatten)
+   * @note $entity cannot have children - this must be called inside foreach($transaction->flatten)
    */
   public function postSave(EntityInterface $entity, $update = FALSE) {
     //alternatively how about a db_merge? would be quicker
@@ -37,13 +38,8 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         ->execute();
     }
 
-    //@todo reconsider whether the index table should have transactions in uncounted states
-    if (!in_array($entity->state->target_id, \Drupal::config('mcapi.misc')->get('counted'))) {
-      return;
-    }
-
     foreach ($entity->flatten() as $transaction) {
-      $record = $this->mapToStorageRecord($transaction);//if this was an entity property it wouldn't need recalculating
+      $record = $this->mapToStorageRecord($transaction);
 
       $common = [
         'xid' => $transaction->id(),
@@ -121,36 +117,11 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     );
   }
 
-
   /**
-   * for development use only!
-   * truncate the transaction index table OR assume that transactions will be deleted individually
-   *
-   * return integer[]
-   *   the serial numbers of all transactions with the given currency
-   */
-  public function wipeslate($curr_id = NULL) {
-    $serials = [];
-    //get the serial numbers
-    $query = $this->database->select("mcapi_transactions_index", 't')
-      ->fields('t', array('serial'));
-
-    if ($curr_id) {
-      $query->condition('curr_id', $curr_id);
-    }
-    $serials = $query->execute()->fetchCol();
-    if (!$curr_id) {//that means delete everything
-      $this->database->truncate('mcapi_transactions_index')->execute();
-    }
-    //otherwise index entries will be deleted transaction by transaction
-    return $serials;
-  }
-
-  /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::indexRebuild()
+   * {@inheritdoc}
    */
   public function indexRebuild() {
-    $states = $this->countedStates();
+    $states = $this->countedStates(TRUE);
     db_truncate('mcapi_transactions_index')->execute();
     //don't know how to do this with database API
     $this->database->query("
@@ -198,12 +169,13 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       ) "
     );
   }
+
   /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::indexCheck()
+   * {@inheritdoc}
    */
   public function indexCheck() {
     if ($this->database->query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
-      $states = $this->countedStates();
+      $states = $this->countedStates(TRUE);
       $volume_index = $this->database->query("SELECT sum(incoming) FROM {mcapi_transactions_index}")->fetchField();
       $volume = $this->database->query("SELECT sum(w.worth_value)
         FROM {mcapi_transaction} t
@@ -213,8 +185,9 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     }
     return FALSE;
   }
+
   /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::indexDrop()
+   * {@inheritdoc}
    */
   public function indexDrop($serials) {
     $this->database->delete('mcapi_transactions_index')
@@ -223,15 +196,14 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   }
 
   /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::filter()
-   * Makes it unnecessary to query the entity table itself, unless you want payer/payee
+   * {@inheritdoc}
    */
-  public static function filter(array $conditions = [], $offset = 0, $limit = 0) {
+  public function filter(array $conditions = [], $offset = 0, $limit = 0) {
     if (!empty($conditions['payer']) && !empty($conditions['payee'])) {
       throw new Exception('TransactionIndexStorage cannot filter by both payer and payee');
     }
 
-    $query = db_select('mcapi_transactions_index', 'x')
+    $query = $this->database->select('mcapi_transactions_index', 'x')
       ->fields('x', array('xid', 'serial'))
       ->orderby('created', 'DESC');
     //in any filter operation we need to need to halve the query because this table
@@ -250,7 +222,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     }
     $query->condition($halve);//this ensures we only return one row coz there are 2 foreach transaction
 
-    $this->parseConditions($query, $conditions);
+    $this->parseIndexConditions($query, $conditions);
 
     if ($limit) {
       //assume that nobody would ask for unlimited offset results
@@ -260,12 +232,12 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   }
 
   /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::summaryData()
+   * {@inheritdoc}
    */
   public function summaryData($wallet_id, array $conditions = []) {
-    //@todo Prefer to return 0 instead of null for empty columns
-    //@todo if not, the above should be handled in the calling function in wallet.php
-    $query = $this->database->select('mcapi_transactions_index', 'i')->fields('i', array('curr_id'));
+    $query = $this->database->select('mcapi_transactions_index', 'i')
+      ->fields('i', ['curr_id']);
+    $this->parseIndexConditions($query, $conditions);
     $query->addExpression('COUNT(DISTINCT i.serial)', 'trades');
     $query->addExpression('SUM(i.incoming)', 'gross_in');
     $query->addExpression('SUM(i.outgoing)', 'gross_out');
@@ -274,9 +246,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     $query->addExpression('COUNT(DISTINCT i.partner_id)', 'partners');
     $query->condition('i.wallet_id', $wallet_id)
       ->groupby('curr_id');
-    $this->parseConditions($query, $conditions);
-    $result = $query->execute()->fetchAllAssoc('curr_id', \PDO::FETCH_ASSOC);
-      return $result;
+    return $query->execute()->fetchAllAssoc('curr_id', \PDO::FETCH_ASSOC);
   }
 
   /**
@@ -295,33 +265,25 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * {@inheritdoc}
    */
   public function timesBalances($wallet_id, $curr_id, $since = 0) {
-    $cacheTag = 'wallet:timesbalances:'.$curr_id.':'.$wallet_id;
-    if ($cache = Cache::get($cacheTag)) {
-      $history = $cache->data;
-    }
-    else {
-      //this is a way to add up the results as we go along
-      $this->database->query("SET @csum := 0");//not sure which databases it works on
-      //I wish there was a better way to do this.
-      //It is cheaper to do stuff in mysql
-      $all_balances = $this->database->query(
-        "SELECT created, (@csum := @csum + diff) as balance
-          FROM {mcapi_transactions_index}
-          WHERE wallet_id = $wallet_id AND curr_id = '$curr_id'
-          ORDER BY created"
-      )->fetchAll();
-      $history = [];
-      //having done the addition, we can chop the beginning off the array
-      //if two transactions happen on the same second, the latter running balance will be shown only
-      foreach ($all_balances as $point) {
-        //@todo find a more efficient way to filter an array where all the keys are < x
-        if ($point->created < $since) {
-          continue;
-        }
-        $history[$point->created] = $point->balance;
+    $history = [];
+    //this is a way to add up the results as we go along
+    $this->database->query("SET @csum := 0");//not sure which databases it works on
+    //I wish there was a better way to do this.
+    //It is cheaper to do stuff in mysql
+    $all_balances = $this->database->query(
+      "SELECT created, (@csum := @csum + diff) as balance
+        FROM {mcapi_transactions_index}
+        WHERE wallet_id = $wallet_id AND curr_id = '$curr_id'
+        ORDER BY created"
+    )->fetchAll();
+    //having done the addition, we can chop the beginning off the array
+    //if two transactions happen on the same second, the latter running balance will be shown only
+    foreach ($all_balances as $point) {
+      //@todo find a more efficient way to filter an array where all the keys are < x
+      if ($point->created < $since) {
+        continue;
       }
-      //@todo how do we set cachetags for this cache object?
-      Cache::set($cacheTag, $history);
+      $history[$point->created] = $point->balance;
     }
     return $history;
   }
@@ -338,7 +300,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     if ($curr_id) {
       $conditions['curr_id'] = $curr_id;
     }
-    $this->parseConditions($query, $conditions);
+    $this->parseIndexConditions($query, $conditions);
     return $query->execute()->fetchField();
   }
 
@@ -350,8 +312,8 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       ->condition('incoming', 0);
     $query->addExpression('SUM(t.volume)');
     $query->condition('t.curr_id', $curr_id);
-    $this->parseConditions($query, $conditions);
-    return $query->execute()->fetchField();
+    $this->parseIndexConditions($query, $conditions);
+    return intval($query->execute()->fetchField());
   }
 
   /**
@@ -360,7 +322,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * @param SelectInterface $query
    * @param array $conditions
    */
-  private function parseConditions(SelectInterface $query, array $conditions) {
+  private function parseIndexConditions(SelectInterface $query, array $conditions) {
 
     if (empty($conditions['state'])) {
       $conditions['state'] = $this->countedStates();
@@ -375,7 +337,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         case 'type':
         case 'state':
         case 'curr_id':
-          $query->condition($field, (array)$value);
+            $query->condition($field, $value, is_array($value) ? 'IN' : NULL);
           break;
         case 'involving':
           $value = (array)$value;
@@ -408,16 +370,23 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
 
   /**
    * helper function to filter queries by counted states only
+   *
+   * @param boolean $as_string
+   *   return as a string suitable for dropping into a query string.
+   *
    * @return string
    *   a comma separated list of state ids, in quote marks
    */
-  private function countedStates() {
+  protected function countedStates($as_string = FALSE) {
     $counted_states = [];
-    $counted = array_filter(\Drupal::config('mcapi.misc')->get('counted'));
-    foreach ($counted as $state_id) {
-      $counted_states[] = "'".$id."'";
+    $counted = array_keys(array_filter(\Drupal::config('mcapi.misc')->get('counted')));
+    if ($as_string) {
+      foreach ($counted as $state_id) {
+        $counted_states[] = "'".$state_id."'";
+      }
+      $counted = implode(', ', $counted_states);
     }
-    return implode(', ', $counted_states);
+    return $counted;
   }
 
   /**
@@ -427,7 +396,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     $query = $this->database->select('mcapi_transactions_index', 'i')
       ->fields('i', ['wallet_id'])
       ->condition('curr_id', $curr_id);
-    $this->parseConditions($query, $conditions);
+    $this->parseIndexConditions($query, $conditions);
     return $query->distinct()
       ->execute()
       ->fetchCol();
@@ -449,4 +418,29 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       )
     )->fetchField();
   }
+
+  /**
+   * for development use only!
+   * truncate the transaction index table OR assume that transactions will be deleted individually
+   *
+   * return integer[]
+   *   the serial numbers of all transactions with the given currency
+   */
+  public function wipeslate($curr_id = NULL) {
+    $serials = [];
+    //get the serial numbers
+    $query = $this->database->select("mcapi_transactions_index", 't')
+      ->fields('t', array('serial'));
+
+    if ($curr_id) {
+      $query->condition('curr_id', $curr_id);
+    }
+    $serials = $query->execute()->fetchCol();
+    if (!$curr_id) {//that means delete everything
+      $this->database->truncate('mcapi_transactions_index')->execute();
+    }
+    //otherwise index entries will be deleted transaction by transaction
+    return $serials;
+  }
+
 }

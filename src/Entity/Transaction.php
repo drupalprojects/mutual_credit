@@ -11,11 +11,11 @@ namespace Drupal\mcapi\Entity;
 
 use Drupal\mcapi\TransactionInterface;
 
-use Drupal\mcapi\Access\WalletAccessControlHandler;
+use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\Entity\State;
 use Drupal\mcapi\McapiEvents;
 use Drupal\mcapi\TransactionSaveEvents;
-use Drupal\mcapi\Plugin\Field\McapiTransactionWorthException;
+use Drupal\mcapi\Access\WalletAccessControlHandler;
 use Drupal\user\Entity\User;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
@@ -57,31 +57,26 @@ use Drupal\Core\Cache\Cache;
  *   field_ui_base_route = "mcapi.admin.transactions",
  *   translatable = FALSE,
  *   links = {
- *     "canonical" = "transaction/{mcapi_transaction}"
+ *     "canonical" = "/transaction/{mcapi_transaction}"
  *   },
  *   constraints = {
- *     "integrity" = "Drupal\mcapi\TransactionIntegrityConstraint"
+ *     "Integrity" = {}
  *   }
  * )
  */
 class Transaction extends ContentEntityBase implements TransactionInterface {
 
-  /**
-   * These are the secondary transactions in the cluster. Note that children are
-   * not recursive
-   *
-   * @var Transaction[]
-   */
-  private $children = [];
+  private $violations;
 
   private $mailPluginManager;
+
   private $moduleHandler;
 
   //this is called from ContentEntityStorage::mapFromStorageRecords() so without create function
   public function __construct(array $values, $entity_type, $bundle = FALSE, $translations = array()) {
     parent::__construct($values, $entity_type, $bundle, $translations);
     $this->mailPluginManager = \Drupal::service('plugin.manager.mail');
-    //$this->moduleHandler = \Drupal::moduleHandler();//only used in transaction prevalidate alter hook
+    $this->moduleHandler = \Drupal::moduleHandler();//only used in transaction prevalidate alter hook
   }
 
   /**
@@ -132,111 +127,49 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   }
 
   /**
-   * {@inheritdoc}
-   * does the same as Entity::save but validates first.
-   */
-  public function save() {
-    if (!$this->validated) {
-      if ($violations = $this->validate()) {
-        reset($violations);
-        //throw new McapiTransactionException(key($violations), current($violations)->getMessage());
-        throw new McapiTransactionException(key($violations), current($violations) );
-      }
-    }
-    return $this->entityManager()->getStorage('mcapi_transaction')->save($this);
-  }
-
-
-  /**
    * work on the transaction prior to validation
    *
    * @return NULL
    */
-  public function prevalidate() {
-    //ensure the transaction is in the right starting state
-    if($this->isNew()) {
-      $start_state_id = $this->type->entity->start_state;
-      $this->state->setValue($start_state_id);
-    }
+  public function preInsert() {
 
-    $new_children = \Drupal::service('event_dispatcher')->dispatch(
+    //pass the transaction round to add children, but prevent the transaction from being modified.
+    $clone = clone($this);
+    $clone->children = [];
+    \Drupal::service('event_dispatcher')->dispatch(
       McapiEvents::CHILDREN,
-      new TransactionSaveEvents(clone($this))
+      new TransactionSaveEvents($clone)
     );
-    //@todo get an array from Event Dispatcher, or some other hook
-    array_merge($this->children, (array)$new_children);
-    //moduleHandler hasn't been initiated - why?
-    //$this->moduleHandler->alter('mcapi_transaction', $this);
+    $this->children = $clone->children;
+
+    //allow any module to alter the transaction, with children, before validation.
+    \Drupal::moduleHandler()->alter('mcapi_transaction', $this);
   }
 
   /**
-   * Validate a transaction cluster i.e. a transaction with children
-   * so there's no format for handling errors outside $form and typedata violations
+   * Validate a transaction including children
+   * The Drupal way has 'validate' and 'save' phases. We need to map those onto
+   * this Transaction's needs which are 'add children', alter, validate, and save
+   * So we're putting 'add children' and 'alter' into the transaction validation.
    *
-   * @return \Symfony\Component\Validator\ConstraintViolationInterface[]
+   * @return \Symfony\Component\Validator\ConstraintViolationCollection[]
    *
-   * @throws \Exception
-   *
-   * @todo after beta10
-   * @see https://www.drupal.org/node/2015613.
    */
   function validate() {
-    //if this is coming from transactionForm then all the entiry fields are validated
-    $violations = [];
-    if ($this->validated) {
-      return [];
-    }
-    $this->preValidate();
-    if (!$this->typedDataValidated) {
-      foreach ($this->flatten() as $entity) {
-        $violations = array_merge(
-          $violations,
-          $entity->validateTypedData()
-        );
+    if ($this->parent->value == 0) {//just to be sure
+      if (!$this->serial->value) {
+        $this->preInsert();
+      }
+      foreach ($this->children as $entity) {
+        foreach ($entity->validate() as $violation) {
+          $this->violations->add($violation);
+        }
       }
     }
-    if ($violations && $settings['mail_user1']) {
-      foreach ($this->violations as $v) {
-        $message[] = $v->getMessage();
-      }
-      //should this be done using the drupal mail system?
-      //my life is too short for such a rigmarol
-      $context = [
-        'subject' =>  t(
-          'Transaction error on !site',
-          ['!site' => \Drupal::config('system.site')->get('name')]
-        ),
-        'message' => implode('\n', $message)
-      ];
-
-      $this->mailPluginManager->mail(
-        'system',
-        'action_send_email',
-        User::load(1)->mail,
-        $langcode,
-        ['context' => $context]
-      );
-    }
-
-    $this->validated = TRUE;
+    //run validation on all the fields of this transaction
+    $this->violations = parent::validate();
     return $this->violations;
   }
-
-  /**
-   * TEMP
-   * Validate the typedData but outside of the form handler
-   * @see EntityFormDisplay::validateFormValues
-   */
-  private function validateTypedData() {
-    foreach ($this as $field_name => $items) {
-      $violationList = $items->validate();
-      //@todo there's no example yet in Drupal of what to do with this ViolationList at the entity level
-    }
-    $this->typedDataValidated = TRUE;//temp flag
-    return [];
-  }
-
-//          $widget->flagErrors($items, $violations, $form, $form_state);
 
 
   /**
@@ -251,21 +184,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       'creator' => \Drupal::currentUser()->id(),//uid of 0 means drush must have created it
       'parent' => 0,
     ];
-  }
 
-  /**
-   * save the child transactions, which refer to the saved parent
-   */
-  public function postSave(EntityStorageInterface $storage_controller, $update = TRUE) {
-    parent::postSave($storage_controller, $update);
-    self::clearWalletCache($this);
-  }
-
-  public static function postDelete(EntityStorageInterface $storage_controller, array $entities) {
-    parent::postDelete($storage_controller, $entities);
-    foreach ($entities as $entity) {
-      self::clearWalletCache($entity);
-    }
+    $values['state'] = Type::load($values['type'])->start_state;
   }
 
   /**
@@ -333,20 +253,20 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setRequired(TRUE);
 
     $fields['payer'] = BaseFieldDefinition::create('entity_reference')
-      ->setLabel(t('Payer'))
-      ->setDescription(t('Id of the giving wallet'))
+      ->setLabel(t('Payer wallet'))
       ->setSetting('target_type', 'mcapi_wallet')
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
-      ->setDisplayConfigurable('form', TRUE);
+      ->setDisplayConfigurable('form', TRUE)
+      ->setConstraints(['CanActOn' => ['action' => 'payin']]);
 
     $fields['payee'] = BaseFieldDefinition::create('entity_reference')
-      ->setLabel(t('Payee'))
-      ->setDescription(t('Id of the receiving wallet'))
+      ->setLabel(t('Payee wallet'))
       ->setSetting('target_type', 'mcapi_wallet')
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
-      ->setDisplayConfigurable('form', TRUE);
+      ->setDisplayConfigurable('form', TRUE)
+      ->setConstraints(['CanActOn' => ['action' => 'payout']]);
 
     $fields['creator'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Creator'))
@@ -410,16 +330,23 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   }
 
   /**
-   * Override Entity.php to update wallets as well as transaction
+   * Clear the cachetags of wallets involved in this transaction
    * @param type $update
    */
   protected function invalidateTagsOnSave($update) {
     parent::invalidateTagsOnSave($update);
-    $walletStorage = $this->entityManager()->getStorage('mcapi_wallet');
+    //ensure that we invalidate tags only once if a wallet is involved in more
+    //than one transaction
     foreach ($this->flatten() as $transaction) {
       foreach (['payer', 'payee'] as $actor) {
-        $wallet = $transaction->{$actor}->getEntity()->invalidateTagsOnSave();
+        $wallet = reset($transaction->{$actor}->referencedEntities());
+        if (!isset($wallets[$wallet->target_id])) {
+          $wallets[$wallet->target_id] = $wallet;
+        }
       }
+    }
+    foreach ($wallets as $wallet) {
+      $wallet->invalidateTagsOnSave(TRUE);
     }
   }
 

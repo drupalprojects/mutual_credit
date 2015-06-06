@@ -14,13 +14,15 @@ class TransitionSettingsForm extends ConfigFormBase {
 
   private $transition_id;
   private $transitionManager;
+  private $entityManager;
 
   /**
    * {@inheritdoc}
    */
-  public function __construct(ConfigFactoryInterface $configFactory, TransitionManager $transitionManager, $routeMatch) {
+  public function __construct(ConfigFactoryInterface $configFactory, EntityManager $entityManager, TransitionManager $transitionManager, $routeMatch) {
     $this->transition_id = $routeMatch->getParameters()->get('transition');
     $this->transitionManager = $transitionManager;
+    $this->entityManager = $entityManager;
     $this->configFactory = $configFactory;
   }
 
@@ -30,6 +32,7 @@ class TransitionSettingsForm extends ConfigFormBase {
   static public function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
+      $container->get('entity.manager'),
       $container->get('mcapi.transition_manager'),
       $container->get('current_route_match')
     );
@@ -120,17 +123,16 @@ class TransitionSettingsForm extends ConfigFormBase {
       '#weight' => 4,
       '#required' => TRUE
     ];
-    foreach (\Drupal::entityManager()->getViewModes('mcapi_transaction') as $id => $def) {
-      $view_modes[$id] = $def['label'];
-    }
     $form['sure']['format'] = [
       '#title' => t('View mode'),
       '#type' => 'radios',
-      '#options' => $view_modes,
       '#default_value' => $config->get('format'),
       '#required' => TRUE,
       '#weight' => 6
     ];
+    foreach ($this->entityManager->getViewModes('mcapi_transaction') as $id => $def) {
+      $form['sure']['format']['#options'][$id] = $def['label'];
+    }
     $form['sure']['twig'] = [
       '#title' => t('Template'),
       '#description' => $twig_help,//@note this is escaped in twig so links don't work
@@ -183,7 +185,7 @@ class TransitionSettingsForm extends ConfigFormBase {
     ];
 
     $form['feedback']= [
-      '#title' => t('Feedback'),
+      '#title' => $this->t('Feedback'),
       '#type' => 'fieldset',
       '#weight' => 6
     ];
@@ -216,7 +218,7 @@ class TransitionSettingsForm extends ConfigFormBase {
       '#open' => FALSE,
       '#weight' => 8,
     ];
-    $class::accessSettingsForm($form['access'], $config->get('access'));
+    $class::accessSettingsElement($form['access'], $config->get('access'));
 
     return parent::buildForm($form, $form_state);
   }
@@ -228,7 +230,7 @@ class TransitionSettingsForm extends ConfigFormBase {
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
     $class = $this->transitionManager->getDefinition($this->transition_id)['class'];
-    $class::validateConfigurationForm($form, $form_state);
+    $class::validateSettingsForm($form, $form_state);
   }
 
   /**

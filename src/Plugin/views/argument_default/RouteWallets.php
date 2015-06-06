@@ -32,7 +32,7 @@ class RouteWallets extends ArgumentDefaultPluginBase {
     //so this function needs to decide whether to return an argument
     foreach (\Drupal::service('current_route_match')->getParameters()->all() as $key => $entity) {
       if (walletable($entity)) {
-        $ids = Wallet::ownedBy($entity);
+        $ids = Wallet::heldBy($entity);
       }
     }
     //@todo returning nothing means the view doesn't show - maybe throw a 404?

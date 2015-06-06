@@ -15,8 +15,8 @@ use Drupal\Core\Routing\RouteMatch;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class WalletAddForm extends Formbase {
-  
-  private $owner;
+
+  private $holder;
   private $pluginManager;
 
   /**
@@ -25,16 +25,16 @@ class WalletAddForm extends Formbase {
   public function getFormId() {
     return 'wallet_add_form';
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public function __construct($route_match, $entity_manager) {
-    $this->owner = $entity_manager
+    $this->holder = $entity_manager
       ->getStorage($route_match->getParameters()->getIterator()->key())
       ->load($route_match->getParameters()->getIterator()->current());
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -49,11 +49,11 @@ class WalletAddForm extends Formbase {
    * {@inheritdoc}
    */
   public function title() {
-    return 
-      t("New wallet for @entity_type '!title'", 
+    return
+      t("New wallet for @entity_type '!title'",
       array(
-       '@entity_type' => $this->owner->getEntityType()->getLabel(),
-       '!title' => $this->owner->label()
+       '@entity_type' => $this->holder->getEntityType()->getLabel(),
+       '!title' => $this->holder->label()
       )
     );
   }
@@ -73,11 +73,11 @@ class WalletAddForm extends Formbase {
     );
     $form['entity_type'] = array(
     	'#type' => 'value',
-      '#value' => $this->owner->getEntityTypeId()
+      '#value' => $this->holder->getEntityTypeId()
     );
     $form['pid'] = array(
     	'#type' => 'value',
-      '#value' => $this->owner->id()
+      '#value' => $this->holder->id()
     );
 /*
     foreach ($this->pluginManager->getDefinitions() as $def) {
@@ -142,7 +142,7 @@ class WalletAddForm extends Formbase {
     $form_state->cleanValues();;
     $wallet = Wallet::create($form_state->getValues());
     $wallet->save();
-    $form_state->setRedirectUrl($wallet->getOwner()->urlInfo());
+    $form_state->setRedirectUrl($wallet->getHolder()->urlInfo());
   }
 
 }

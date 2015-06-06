@@ -112,7 +112,7 @@ function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDis
       //get the wallets belonging to this entity
       $wids = \Drupal::EntityManager()
         ->getStorage('mcapi_wallet')
-        ->getOwnedIds($entity);
+        ->filter(['holder' => $entity]);
       foreach (Wallet::loadMultiple($wids) as $wid => $wallet) {
         if ($wallet->access('summary')) {
           $wallets[] = $wallet;
@@ -124,7 +124,7 @@ function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDis
         'wallets_summaries' => [
           '#theme' => 'mcapi_wallets',
           '#wallets' => $wallets,
-          '#owner' => $entity,
+          '#holder' => $entity,
           '#view_mode' => 'summary',//@todo make wallet viewmode a variable
           '#cache' => [
             'contexts' => []
@@ -232,13 +232,13 @@ function mcapi_entity_insert($entity) {
 
 /**
  * implements hook_entity_update().
- * if the changed entity is a wallet owner, then refresh the wallet indices
- * especially in case the owner has moved to a different exchange
+ * if the changed entity is a wallet holder, then refresh the wallet indices
+ * especially in case the holder has moved to a different exchange
  */
 function mcapi_entity_update($entity) {
   if (walletable($entity)) {
     $storage = \Drupal::EntityManager()->getStorage('mcapi_wallet');
-    if ($wids = $storage->getOwnedIds($entity)) {
+    if ($wids = $storage->filter(['holder' => $entity])) {
       $storage->reIndex(Wallet::loadMultiple($wids));
     }
   }
@@ -376,7 +376,7 @@ function mcapi_theme() {
   $items['mcapi_wallets'] = [
     'variables' => [
       'wallets' => [],
-      'owner' => NULL,
+      'holder' => NULL,
       'view_mode' => ''
     ]
   ] + $file;
@@ -511,4 +511,3 @@ function mcapi_form_mcapi_transaction_form_alter(&$form, $form_state) {
   $form['payer']['widget'][0]['target_id']['#type'] = 'select_wallet';
   $form['payee']['widget'][0]['target_id']['#type'] = 'select_wallet';
 }
-

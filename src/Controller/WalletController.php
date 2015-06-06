@@ -25,10 +25,12 @@ class WalletController {
    * @return array
    *  a render array
    *
-   * @todo check with the page display of this view to see whether the route can access the views argument
+   * @todo check with the page display of this view to see whether the
+   * route provided by views can include the views argument
    * If not, this workaround is just fine.
    */
   public function log(WalletInterface $mcapi_wallet) {
+    return ['#markup' => 'views_embed_view not ready yet'];
     return views_embed_view(
       'wallet_statement',
       'embedded_in_route_mcapi_dot_wallet_log',

@@ -1,7 +1,7 @@
 services:
   mcapi.transition_manager:
     class: Drupal\mcapi\Plugin\TransitionManager
-    arguments: ['@container.namespaces', '@cache.entity', @module_handler, @config.factory, @current_user]
+    arguments: ['@container.namespaces', '@cache.entity', @module_handler, @config.factory, @redirect.destination]
 
   mcapi.transaction_relative_manager:
     class: Drupal\mcapi\Plugin\TransactionRelativeManager

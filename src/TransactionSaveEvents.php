@@ -3,24 +3,46 @@
 /**
  * @file
  * Contains \Drupal\mcapi\TransactionSaveEvents.
- * @todo consider replacing with Symfony\Component\EventDispatcher\GenericEvent
+ *
+ * Seems to be used for two completely different things
  */
 
 namespace Drupal\mcapi;
 
 use Symfony\Component\EventDispatcher\GenericEvent;
+use Drupal\mcapi\Entity\Transaction;
 
 /**
  * Defines a base class for all entity type events.
  */
 class TransactionSaveEvents extends GenericEvent {
 
+  private $children = [];
+  private $messages = [];
+
   /**
-   * same as parent::getSubject();
-   * @return type
+   *
+   * @param Transaction $transaction
    */
-  public function getTransaction() {
-    return $this->getSubject();
+  public function addChild(Transaction $transaction) {
+    $this->getSubject()->children[] = $transaction;
+  }
+
+  /**
+   *
+   * @param string $markup
+   */
+  public function addMessage($string) {
+    $this->messages[] = $string;
+  }
+
+  /**
+   *
+   * @return array
+   *   renderable array
+   */
+  public function getMessage() {
+    return implode(' ', $this->messages);
   }
 
 }

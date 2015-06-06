@@ -7,14 +7,14 @@
 
 namespace Drupal\mcapi_limits\Annotation;
 
-use Drupal\Core\TypedData\Annotation\DataType;
+use Drupal\Component\Annotation\Plugin;
 
 /**
  * Defines a 'limits' plugin annotation object.
  *
  * @Annotation
  */
-class Limits extends DataType {
+class Limits extends Plugin {
 
   /**
    * The plugin ID.
@@ -23,13 +23,8 @@ class Limits extends DataType {
    */
   public $id;
 
-  /**
-   * The default human-readable name of the field type.
-   *
-   * @ingroup plugin_translatable
-   *
-   * @var \Drupal\Core\Annotation\Translation
-   */
   public $label;
+
+  public $description;
 
 }

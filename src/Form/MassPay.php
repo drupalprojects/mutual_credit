@@ -195,7 +195,7 @@ class MassPay extends TransactionForm {
 
       //mail the owners of all the wallets involved.
       foreach (Wallet::loadMultiple($form_state->get('wallets')) as $wallet) {
-        $uids[] = $wallet->ownerUserId();
+        $uids[] = $wallet->genOwnerId();
       }
       foreach (User::loadMultiple(array_unique($uids)) as $account) {
         $to[] = $account->getEmail();

@@ -3,23 +3,43 @@ langcode: null
 status: true
 dependencies:
   config:
-    - core.entity_view_mode.mcapi_transaction.sentence
-    - field.field.mcapi_transaction.mcapi_transaction.categories
     - field.field.mcapi_transaction.mcapi_transaction.worth
   module:
     - mcapi
 targetEntityType: mcapi_transaction
 bundle: mcapi_transaction
 mode: default
-content: {  }
+content:
+  description:
+    type: string_textfield
+    weight: 0
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  payee:
+    type: entity_reference_autocomplete
+    weight: 2
+    settings:
+      match_operator: CONTAINS
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  payer:
+    type: entity_reference_autocomplete
+    weight: 3
+    settings:
+      match_operator: CONTAINS
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  worth:
+    type: worth
+    weight: 1
+    settings: {  }
+    third_party_settings: {  }
 hidden:
-  categories: true
   created: true
-  description: true
   mcapi_signatures: true
-  payee: true
-  payer: true
   state: true
   type: true
-  worth: true
-

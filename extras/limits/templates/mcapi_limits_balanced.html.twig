@@ -13,14 +13,10 @@
  * id
  * functionname
  */
- 
- 
 #}
-{% set dangerzone = 0.25 %}{% set range = max - min %}{% set zonesize =  range * dangerzone /2 %}
-{% set minsafe = min + zonesize %}{% set maxsafe = max - zonesize %}
-
+{% set dangerzone = 0.25 %}{% set range = max - min %}{% set zonesize =  range * dangerzone /2 %}{% set minsafe = min + zonesize %}{% set maxsafe = max - zonesize %}
 <script>
-google.load('visualization', '1.0', {'packages':['corechart']});
+google.load('visualization', '1', {'packages':['gauge']});
 google.setOnLoadCallback({{ functionname }});
 function {{ functionname }}() {
   var data = new google.visualization.arrayToDataTable([
@@ -45,4 +41,5 @@ function {{ functionname }}() {
   new google.visualization.Gauge(document.getElementById('{{ id }}')).draw(data, options);
 }
 </script>
+@todo this gcharts gauge javascript doesn't show
 <span id="{{ id }}" style="width:150px; height:150px;"></span>

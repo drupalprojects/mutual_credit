@@ -63,6 +63,7 @@ class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
       '#title' => t('Liquidity per user'),
       '#description' => t('The distance from zero a user can trade'),
       '#type' => 'worth',
+      '#allowed_curr_ids' => [$this->currency->id()],
       '#default_value' => array($this->configuration['liquidity'][0]),
       '#min' => 0,
     );

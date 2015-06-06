@@ -18,7 +18,6 @@ class WalletStorage extends SqlContentEntityStorage {
   /**
    * {@inheritdoc}
    * add the access setting to each wallet
-   * @see Drupal\user\UserStorage::mapFromStorageRecords
    */
   function mapFromStorageRecords(array $records, $load_from_revision = false) {
     $entities = parent::mapFromStorageRecords($records);
@@ -42,36 +41,16 @@ class WalletStorage extends SqlContentEntityStorage {
   }
 
   /**
-   * @deprecated
-   */
-  static function getOwnedIds(ContentEntityInterface $entity, $intertrading = FALSE) {
-
-    return Self::filter(['owner' => $entity, 'intertrading' => $intertrading]);
-
-    //This is faster than entity_load_multiple_by_properties()
-    $q = db_select('mcapi_wallet', 'w')
-      ->fields('w', array('wid'))
-      ->condition('entity_type', $entity->getEntityTypeId())
-      ->condition('pid', $entity->id())
-      ->condition('orphaned', 0);
-    if (!$intertrading) {
-      $q->condition('w.name', '_intertrading', '<>');
-    }
-    return $q->execute()->fetchCol();
-  }
-
-  /**
-   * write the wallet's access settings and the index table
+   * {@inheritdoc}
+   * write the wallet's access settings and the wallet holder index table
    */
   function doSave($wid, EntityInterface $wallet) {
-
     parent::doSave($wid, $wallet);
     $this->reIndex(array($wallet->id() => $wallet));
   }
 
   /**
    * {@inheritdoc}
-   * why isn't this static?
    */
   function doDelete($entities) {
     parent::doDelete($entities);
@@ -113,12 +92,8 @@ class WalletStorage extends SqlContentEntityStorage {
     }
   }
 
-
   /**
-   * get the wallets the given user can do the operation on
-   * @param string $operation
-   * @param AccountInterface $account
-   * @return []
+   * {@inheritdoc}
    */
   function walletsUserCanActOn($operation, $account) {
     $wallets = [];
@@ -133,12 +108,12 @@ class WalletStorage extends SqlContentEntityStorage {
     if ($account->id()) {
       $or->condition($operation, 2);
     }
-    //query to get all the
+    //query to get all the wallets this user can act on
     $w1 = $this->database->select('mcapi_wallet', 'w')
       ->fields('w', ['wid'])
       ->condition($or)
       ->execute();
-    //query to get all the named users.
+    //query to get all the wallets this user can act on as a named user.
     $w2 = $this->database->select('mcapi_wallets_access', 'w')
       ->fields('w', ['wid'])
       ->condition('operation', $operation)
@@ -147,30 +122,10 @@ class WalletStorage extends SqlContentEntityStorage {
     return array_unique(array_merge($w1->fetchCol(), $w2->fetchCol()));
   }
 
-
   /**
-   * get a selection of wallets, according to $conditions
-   *
-   * @param array $conditions
-   *   options are:
-   *   entity_types, an array of entitytypeIds
-   *   array exchanges, an array of exchange->id()s
-   *   string fragment, part of the name of the wallet or parent entity
-   *   wids, wallet->id()s to restrict the results to
-   *   owner, a ContentEntity of a type which according to wallet settings, could have children
-   *   intertrading, a boolean indicating whether to include or exclude _intertrading wallets
-   *
-   * @param $boolean $offset
-   *
-   * @param $boolean $limit
-   *
-   * @param boolean $intertrading
-   *   TRUE if the '_intertrading' wallets should be included.
-   *
-   * @return array
-   *   The wallet ids
+   * {@inheritdoc}
    */
-  static function filter(array $conditions, $offset = 0, $limit = NULL) {
+  function filter(array $conditions, $offset = 0, $limit = NULL) {
     $query = db_select('mcapi_wallet', 'w')->fields('w', array('wid'));
     $namelike = db_or();
     $like = FALSE;
@@ -190,9 +145,9 @@ class WalletStorage extends SqlContentEntityStorage {
       $query->condition('w.name', '_intertrading', $operator);
     }
 
-    if (array_key_exists('owner', $conditions)) {
-      $query->condition('entity_type', $conditions['owner']->getEntityTypeId())
-      ->condition('pid', $conditions['owner']->id());
+    if (array_key_exists('holder', $conditions)) {
+      $query->condition('entity_type', $conditions['holder']->getEntityTypeId())
+      ->condition('pid', $conditions['holder']->id());
     }
 
     if (array_key_exists('entity_types', $conditions)) {
@@ -203,8 +158,8 @@ class WalletStorage extends SqlContentEntityStorage {
       $string = '%'.db_like($conditions['fragment']).'%';
       $namelike->condition('w.name', $string, 'LIKE');
       $like = TRUE;
-      //remember that it is only possible to match against owner names
-      //if each of the owner types can have no more than one wallet.
+      //remember that it is only possible to match against holder names
+      //if each of the holder types can have no more than one wallet.
       //which entitytypes are we considering? if none were passed, then all of them
       if (empty($conditions['entity_types'])) {
         $conditions['entity_types'] = array_keys(Exchange::walletableBundles());
@@ -259,7 +214,6 @@ class WalletStorage extends SqlContentEntityStorage {
     //the tag allows the query to be altered, can't remember specifically why
     return $query->addTag('walletFilter')->execute()->fetchcol();
   }
-
 
 }
 

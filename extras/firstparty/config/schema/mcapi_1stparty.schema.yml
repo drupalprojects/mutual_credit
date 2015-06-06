@@ -50,16 +50,6 @@ mcapi_1stparty.editform.*:
         preset:
           type: integer
           label: 'Preset trading partner'
-    description:
-      type: mapping
-      label: 'Reason for payment'
-      mapping:
-        preset:
-          type: string
-          label: 'Preset transaction description'
-        placeholder:
-          type: string
-          label: 'Placeholder'
     fieldapi_presets:
       type: mapping
       label: 'Other presets'

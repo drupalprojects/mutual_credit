@@ -26,7 +26,8 @@ class CurrencyRouteProvider implements EntityRouteProviderInterface {
     $route = (new Route('/currency/{mcapi_currency}'))
       ->setDefaults([
         '_entity_view' => 'mcapi_currency.default',
-        '_title_callback' => 'Drupal\mcapi\Controller\CurrencyController::pageTitle',
+        //@todo for some reason the $currency isn't being passed to this function
+        //'_title_callback' => 'Drupal\mcapi\Controller\CurrencyController::title',
       ])
       ->setRequirement('_permission', 'access content');
     $route_collection->add('entity.mcapi_currency.canonical', $route);

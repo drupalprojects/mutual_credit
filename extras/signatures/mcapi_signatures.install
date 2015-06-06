@@ -29,7 +29,7 @@ function mcapi_signatures_modules_installed($modules) {
 function mcapi_signatures_uninstall() {
   drupal_set_message("This uninstall shouldn't have been possible if any transactions are pending");
   db_update('mcapi_transactions')
-    ->values(['state' => 'done'])
+    ->fields(['state' => 'done'])
     ->condition('state', 'pending')
     ->execute();//this isn't actually tested
   \Drupal::entityManager()->getStorage('mcapi_transaction')

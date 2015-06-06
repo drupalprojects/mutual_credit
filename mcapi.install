@@ -35,6 +35,11 @@ function mcapi_install() {
     ->set('zero_snippet', '<img src = "'. $zero_icon_uri .'" width = "31" />')
     ->save();
 
+  //add the wallets summaries extraField to the default user display
+  \Drupal::configFactory()->getEditable('core.entity_view_display.user.user.default')
+    ->set('content', ['wallets_summaries' => ['weight' => 1]])
+    ->save();
+
   drupal_set_message(\Drupal::configFactory()->get('mcapi.misc')->get('zero_snippet'));
 }
 
@@ -72,7 +77,6 @@ function mcapi_modules_installed() {
 /**
 use Drupal\field\Entity\FieldStorageConfig;
 FieldStorageConfig::load('mcapi_transaction.worth')->delete();
-//FieldStorageConfig::load('core.entity_view_display.user.user.default')->delete();
 field_purge_batch(10000);//rows at a time
 
 db_drop_table('mcapi_transaction');

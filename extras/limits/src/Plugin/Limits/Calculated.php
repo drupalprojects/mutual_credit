@@ -30,25 +30,25 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $subform = parent::buildConfigurationForm($form, $form_state);
     $class = get_class($this);
-    $subform['max_formula'] = array(
+    $subform['max_formula'] = [
       '#prefix' => t('N.B Result values are measured in native units, which might be cents, or seconds'),
       '#title' => t('Formula to calculate maximum limit'),
-      '#description' => t('Make a formula from the following variables: @vars', array('@vars' => $this->help())),
+      '#description' => t('Make a formula from the following variables: @vars', ['@vars' => $this->help()]),
       '#type' => 'textfield',
       '#default_value' => $this->configuration['max_formula'],
-      '#element_validate' => array(
-        array($class, 'validate_formula')
-      ),
-    );
-    $subform['min_formula'] = array(
+      '#element_validate' => [
+        [$class, 'validate_formula']
+      ]
+    ];
+    $subform['min_formula'] = [
       '#title' => t('Formula to calculate minimum limit'),
-      '#description' => t('Make a formula to output a NEGATIVE result from the following variables: @vars', array('@vars' => $this->help())),
+      '#description' => t('Make a formula to output a NEGATIVE result from the following variables: @vars', ['@vars' => $this->help()]),
       '#type' => 'textfield',
       '#default_value' => $this->configuration['min_formula'],
-      '#element_validate' => array(
-        array($class, 'validate_formula')
-      )
-    );
+      '#element_validate' => [
+        [$class, 'validate_formula']
+      ]
+    ];
     return $subform;
   }
 
@@ -57,10 +57,10 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
    */
   public function getLimits(WalletInterface $wallet) {
     $stats = $wallet->getStats($this->currency->id());
-    return array(
+    return [
       'max' => $this->parse($this->configuration['max_formula'], $stats),
       'min' => $this->parse($this->configuration['min_formula'], $stats)
-    );
+    ];
   }
 
   /**
@@ -83,12 +83,15 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
    */
   public static function validate_formula($element, $form_state) {
     if (!strlen($element['#value'])) return;
-    $test_values = array('gross_in' => 110, 'gross_out' => 90, 'trades' => 10, 'partners' => 5);
+    $test_values = ['gross_in' => 110, 'gross_out' => 90, 'trades' => 10, 'partners' => 5];
     $value = Self::parse($element['#value'], $test_values);
 
     if (!is_numeric($value)) {
       //@todo display this error properly
-      form_error($element, t('Formula does not evaluate to a number: @result', array('@result' => $result)));
+      form_error(
+        $element,
+        $this->t('Formula does not evaluate to a number: @result', ['@result' => $result])
+      );
     }
   }
 
@@ -98,14 +101,14 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
    * @param unknown $values
    */
   private static function parse($string, $values) {
-    $tokens = array('@in', '@out', '@num', '@ptn');
+    $tokens = ['@in', '@out', '@num', '@ptn'];
     if (empty($values)) return '';
-    $replacements = array(
+    $replacements = [
       $values['gross_in'] ? : 0,
       $values['gross_out'] ? : 0,
       $values['trades'] ? : 0,
       $values['partners'] ? : 0
-    );
+    ];
     $pattern = str_replace($tokens, $replacements, $string);
     return eval('return '. $pattern.';');
   }
@@ -117,10 +120,10 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
    */
   public function defaultConfiguration() {
     $defaults = parent::defaultConfiguration();
-    return $defaults+ array(
+    return $defaults+ [
       'min_formula' => '-@in/2-100',
       'max_formula' => '@in/2+100',
-    );
+    ];
   }
 
 }

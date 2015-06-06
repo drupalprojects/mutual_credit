@@ -26,7 +26,7 @@ On admin/accounting are the major architectural elements
 A small system such as a LETS or timebank will comprise one exchange, one currency, and one wallet per user.
 In a larger system a user can be in many exchanges and exchanges can contain many currencies.
 Any entity which has an entity_reference field referencing exchanges (like the user entity) can own wallets
-Wallets which have transacted cannot be deleted, but if the owner entity is deleted, ownership can be transferred to the owner entity's exchange
+Wallets which have transacted cannot be deleted, but if the holder entity is deleted, The wallet can be transferred to the holder entity's exchange
 
 Visit admin/accounting/currencies and configure your first currency. 
 The currency 'type' refers to how the integers in the database are converted and displayed.
@@ -70,7 +70,7 @@ Any entity which is in an exchange can own a wallet....
 The 1stparty transaction form 'partner' widget offers the user a list of currencies and a list of wallets to trade with, filtered according to whether intertrading is enabled for that form.
 It is possible, but only the most complex configurations would allow, to choose a partner wallet and currency which are not compatible.
 The transaction validation first decides which exchange is the 'source' of the transaction.
-It compares the currencies in the transaction with the currencies of all the exchanges of which the wallet owner is a member.
+It compares the currencies in the transaction with the currencies of all the exchanges of which the wallet holder is a member.
 If the partner wallet's parent is not in that echange, then it will try to split the transaction into 2.
 From the source wallet to the source exchange's _intertrading wallet, and a payment in a different currency from another exchanges _intertrading wallet to the destination wallet.
 So in a similar way it searches through destination wallet's exchanges to find one with an 'open' currency, that is, one with a exchange rate specified.
@@ -87,8 +87,8 @@ But not to pay my friend in France because the system has no way of knowing that
 This could be implemented however by adding a 'type' field to the currency.
 This approach to exchange is quite complex but should work in wide range of configurations.
 An exchange can allow many currencies
-A wallet owner can be in many exchanges
-A wallet owner can have many wallets
+A wallet holder can be in many exchanges
+A wallet holder can hold many wallets
 A transaction can consist of many currencies
 Currencies can be confined to certain exchanges or set free.
 

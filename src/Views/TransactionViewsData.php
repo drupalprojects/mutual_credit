@@ -8,175 +8,45 @@
 
 namespace Drupal\mcapi\Views;
 
-use Drupal\views\EntityViewsDataInterface;
+use Drupal\views\EntityViewsData;
 
-class TransactionViewsData implements EntityViewsDataInterface {
+class TransactionViewsData extends EntityViewsData {
 
   /**
    * {@inheritdoc}
+   * @todo see Drupal\taxonomy\TermViewsData to see how an index table can be incporated after beta 11
    */
   public function getViewsData() {
-    $data = [];
+    $data = parent::getViewsData();
 
-    $data['mcapi_transaction']['table'] = [
-      'group' => t('Transaction'),
-      'entity type' => 'mcapi_transaction',
-      'access query tag' => 'mcapi_views_access',
-      'base' => [
-        'field' => 'xid',
-        'title' => t('Transactions'),
-        'help' => t('Records of transactions between wallets'),
-        'weight' => 5,
-        'defaults' => [
-          //'field' => 'serial',//only base field itself works at the moment
-          'field' => 'xid',
-        ]
-      ],
-      'wizard_id' => 'transactions', //this links it to the wizard plugin
-      'entity revision' => ''//temp
+    $data['mcapi_transaction']['table']['base']['defaults']['field'] = 'xid';
+    $data['mcapi_transaction']['table']['wizard_id'] = 'transactions';
+    $data['mcapi_transaction']['table']['access query tag'] = 'mcapi_views_access';
+
+    $data['mcapi_transaction']['state']['field']['id'] = 'mcapi_state';
+    $data['mcapi_transaction']['state']['filter'] = [
+      'id' => 'in_operator',
+      'options callback' => 'mcapi_entity_label_list',
+      'options arguments' => ['mcapi_state']
     ];
-
-
-    $data['mcapi_transaction']['serial'] = [
-      'title' => t('Serial'), // The item it appears as on the UI,
-      'help' => t('The serial number of the transaction and dependents'),
-      'field' => [
-        'id' => 'standard',
-      ],
-      'sort' => [
-        'id' => 'standard',
-      ],
-    ];
-    $data['mcapi_transaction']['xid'] = [
-      'title' => t('Transaction id'), // The item it appears as on the UI,
-      'help' => t('The unique database key of the transaction'),
-      'field' => [
-        'id' => 'mcapi_entity', //this might be 'transaction' if it exists
-      ],
-      'sort' => [
-        'id' => 'standard',
-      ],
+    $data['mcapi_transaction']['type']['field']['id'] = 'mcapi_type';
+    $data['mcapi_transaction']['type']['filter'] = [
+      'id' => 'in_operator',
+      'options callback' => 'mcapi_entity_label_list',
+      'options arguments' => ['mcapi_type']
     ];
 
-    $data['mcapi_transaction']['payer'] = [
-      'title' => t('Payer'),
-      'help' => t('The giving wallet'),
-      'relationship' => [
-        'id' => 'standard',
-        'base' => 'mcapi_wallet',
-        'base field' => 'wid',
-        'label' => t('Payer'),
-        'relationship field' => 'payer'
-      ],
-      'filter' => [
-        'id' => 'wallet_name',
-      ],
-      'argument' => [
-        'id' => 'standard',
-      ],
-      'field' => [
-        'id' => 'standard',
-      ],
-    ];
-    $data['mcapi_transaction']['payee'] = [
-      'title' => t('Payee'),
-      'help' => t('The receiving wallet'),
-      'relationship' => [
-        'id' => 'standard',
-        'base' => 'mcapi_wallet',
-        'base field' => 'wid',
-        'label' => t('Payee'),
-        'relationship field' => 'payee'
-      ],
-      'filter' => [
-        'id' => 'wallet_name',
-      ],
-      'argument' => [
-        'id' => 'standard',
-      ],
-      'field' => [
-        'id' => 'standard',
-      ],
-    ];
-    $data['mcapi_transaction']['creator'] = [
-      'title' => t('Creator'),
-      'help' => t('The user who first created the transaction.'),
-      'relationship' => [
-        'id' => 'standard',
-        'base' => 'users',
-        'base field' => 'uid',
-        'label' => t('Creator'),
-        'relationship field' => 'creator',
-        'filter' => ['id' => 'user_name']
-      ],
-      'filter' => [
-        'id' => 'user_name',
-      ],
-      'argument' => [
-        'id' => 'user_uid',
-      ],
-      'field' => [
-        'id' => 'standard',
-      ],
-    ];
-    $data['mcapi_transaction']['description'] = [
-      'title' => t('Description'),
-      'help' => t('A one line description of what was exchanged.'),
-      'filter' => [
-        'id' => 'string',
-      ],
-      'argument' => [
-        'id' => 'string',
-      ],
-      'field' => [
-        'id' => 'mcapi_description',
-      ],
-    ];
+    $data['mcapi_transaction']['parent']['field']['id'] = 'boolean';
+    $data['mcapi_transaction']['parent']['filter']['id'] = 'boolean';
+    unset(
+      $data['mcapi_transaction']['parent']['argument'],
+      $data['mcapi_transaction']['parent']['sort'],
+      $data['mcapi_transaction']['parent']['entity field']
+    );
 
-    $data['mcapi_transaction']['state'] = [
-      'title' => t('State'),
-      'help' => t('The name of the workflow state of the transaction'),
-      'field' => [
-        'id' => 'mcapi_state',
-      ],
-      'filter' => [
-        'id' => 'in_operator',
-        'options callback' => 'mcapi_entity_label_list',
-        'options arguments' => ['mcapi_state']
-      ],
-      'sort' => [
-        'id' => 'standard',
-      ],
-    ];
-
-    $data['mcapi_transaction']['type'] = [
-      'title' => t('Type'),
-      'help' => t('Which form or module which created the transaction'),
-      'field' => [
-        'id' => 'standard',
-      ],
-      'filter' => [
-        'id' => 'in_operator',
-        'options callback' => 'mcapi_entity_label_list',
-        'options arguments' => ['mcapi_type']
-      ],
-      'sort' => [
-        'id' => 'standard',
-      ],
-    ];
-    $data['mcapi_transaction']['parent'] = [
-      'title' => t('Parent'),
-      'help' => t('Whether the transaction has a parent.'),
-      'field' => [
-        'id' => 'boolean',
-      ],
-      'filter' => [
-        'id' => 'boolean',
-      ],
-    ];
     $data['mcapi_transaction']['created'] = [
-      'title' => t('Created'),
-      'help' => t('The second the transaction was created.'),
+      'title' => $this->t('Created'),
+      'help' => $this->t('The second the transaction was created.'),
       'field' => [
         'id' => 'date',
       ],
@@ -188,8 +58,8 @@ class TransactionViewsData implements EntityViewsDataInterface {
       ],
     ];
     $data['mcapi_transaction']['changed'] = [
-      'title' => t('Changed'),
-      'help' => t('The second the transaction was last saved.'),
+      'title' => $this->t('Changed'),
+      'help' => $this->t('The second the transaction was last saved.'),
       'field' => [
         'id' => 'date',
       ],
@@ -200,9 +70,10 @@ class TransactionViewsData implements EntityViewsDataInterface {
         'id' => 'date',
       ],
     ];
+    /**
     $data['mcapi_transaction']['created_year_month'] = [
-      'title' => t('Created year + month'),
-      'help' => t('Date in the form of YYYYMM.'),
+      'title' => $this->t('Created year + month'),
+      'help' => $this->t('Date in the form of YYYYMM.'),
       'argument' => [
         'field' => 'created',
         'id' => 'date_year_month',
@@ -210,29 +81,47 @@ class TransactionViewsData implements EntityViewsDataInterface {
     ];
 
     $data['mcapi_transaction']['created_year'] = [
-      'title' => t('Created year'),
-      'help' => t('Date in the form of YYYY.'),
+      'title' => $this->t('Created year'),
+      'help' => $this->t('Date in the form of YYYY.'),
       'argument' => [
         'field' => 'created',
         'id' => 'date_year',
       ],
     ];
+     *
+     */
     //virtual fields
     $data['mcapi_transaction']['transitions'] = [
-      'title' => t('Transitions'),
-      'help' => t('What the user can do to the transaction'),
+      'title' => $this->t('Transitions'),
+      'help' => $this->t('What the user can do to the transaction'),
       'field' => [
         'id' => 'transaction_transitions',
       ]
     ];
 
+    /**
+    // Load all typed data definitions of all fields. This should cover each of
+    // the entity base, revision, data tables.
+    $field_definitions = \Drupal\mcapi\Storage\TransactionStorageSchema::getTransactionIndexSchema();
+
+    //$table_mapping = $this->storage->getTableMapping();
+    foreach ($table_mapping->getFieldNames('mcapi_transactions_index') as $field_name) {
+      $this->mapFieldDefinition('mcapi_transactions_index', $field_name, $field_definitions[$field_name], $table_mapping, $data[$table]);
+    }
+    $data['mcapi_transactions_index']['table']['entity type'] = 'mcapi_transaction';
+
+     *
+    */
+
+    //print_R($data['mcapi_transactions_index']);die();
+
     $data['mcapi_transactions_index']['table'] = [
-      'group' => t('Transaction index'),
+      'group' => $this->t('Transaction index'),
       'entity type' => 'mcapi_transaction',
       'base' => [
         'field' => 'xid',
-        'title' => t('Transaction index'),
-        'help' => t('Transaction index table'),
+        'title' => $this->t('Transaction index'),
+        'help' => $this->t('Transaction index table'),
         'access query tag' => 'mcapi_views_access',
         'weight' => 5,
         'defaults' => [
@@ -244,8 +133,8 @@ class TransactionViewsData implements EntityViewsDataInterface {
     ];
 
     $data['mcapi_transactions_index']['serial'] = [
-      'title' => t('Serial'), // The item it appears as on the UI,
-      'help' => t('The serial number of the transaction and dependents'),
+      'title' => $this->t('Serial'), // The item it appears as on the UI,
+      'help' => $this->t('The serial number of the transaction and dependents'),
       'field' => [
         'id' => 'standard',
       ],
@@ -254,8 +143,8 @@ class TransactionViewsData implements EntityViewsDataInterface {
       ],
     ];
     $data['mcapi_transactions_index']['xid'] = [
-      'title' => t('Transaction id'), // The item it appears as on the UI,
-      'help' => t('The unique database key of the transaction'),
+      'title' => $this->t('Transaction id'), // The item it appears as on the UI,
+      'help' => $this->t('The unique database key of the transaction'),
       'field' => [
         'id' => 'mcapi_entity', //this might be 'transaction' if it exists
       ],
@@ -266,8 +155,8 @@ class TransactionViewsData implements EntityViewsDataInterface {
     //the wallet_id and partner_id are being used in a limited way here.
     //with new handlers, would allow some interesting possibilities
     $data['mcapi_transactions_index']['wallet_id'] = [
-      'title' => t('Wallet ID'),
-      'help' => t('The wallet we are looking at'),
+      'title' => $this->t('Wallet ID'),
+      'help' => $this->t('The wallet we are looking at'),
       'relationship' => [
         'id' => 'standard',
         'base' => 'mcapi_wallet',
@@ -286,8 +175,8 @@ class TransactionViewsData implements EntityViewsDataInterface {
       ],
     ];
     $data['mcapi_transactions_index']['partner_id'] = [
-      'title' => t('Partner wallet ID'),
-      'help' => t('The wallet the 1st user traded with'),
+      'title' => $this->t('Partner wallet ID'),
+      'help' => $this->t('The wallet the 1st user traded with'),
       'relationship' => [
         'id' => 'standard',
         'base' => 'mcapi_wallet',
@@ -307,8 +196,8 @@ class TransactionViewsData implements EntityViewsDataInterface {
     ];
 
     $data['mcapi_transactions_index']['state'] = [
-      'title' => t('State'),
-      'help' => t('The name of the workflow state of the transaction.') . ' ' . t("'Counted' states only."),
+      'title' => $this->t('State'),
+      'help' => $this->t('The name of the workflow state of the transaction.') . ' ' . t("'Counted' states only."),
       'field' => [
         'id' => 'mcapi_state',
       ],
@@ -322,8 +211,8 @@ class TransactionViewsData implements EntityViewsDataInterface {
     ];
 
     $data['mcapi_transactions_index']['type'] = [
-      'title' => t('Type'),
-      'help' => t('Which form or module which created the transaction.'),
+      'title' => $this->t('Type'),
+      'help' => $this->t('Which form or module which created the transaction.'),
       'field' => [
         'id' => 'standard',
       ],
@@ -337,8 +226,8 @@ class TransactionViewsData implements EntityViewsDataInterface {
       ],
     ];
     $data['mcapi_transactions_index']['created'] = [
-      'title' => t('Created'),
-      'help' => t('The second the transaction was created.'),
+      'title' => $this->t('Created'),
+      'help' => $this->t('The second the transaction was created.'),
       'field' => [
         'id' => 'date',
       ],
@@ -349,16 +238,9 @@ class TransactionViewsData implements EntityViewsDataInterface {
         'id' => 'date',
       ],
     ];
-    $data['mcapi_transactions_index']['exchange'] = [
-      'title' => t('Current Exchange'),
-      'help' => t('Any of the exchanges the current user is a member of'),
-      'filter' => [
-        'id' => 'mcapi_current_exchange',
-      ],
-    ];
     $data['mcapi_transactions_index']['created_year_month'] = [
-      'title' => t('Created year + month'),
-      'help' => t('Date in the form of YYYYMM.'),
+      'title' => $this->t('Created year + month'),
+      'help' => $this->t('Date in the form of YYYYMM.'),
       'argument' => [
         'field' => 'created',
         'id' => 'date_year_month',
@@ -366,16 +248,16 @@ class TransactionViewsData implements EntityViewsDataInterface {
     ];
 
     $data['mcapi_transactions_index']['created_year'] = [
-      'title' => t('Created year'),
-      'help' => t('Date in the form of YYYY.'),
+      'title' => $this->t('Created year'),
+      'help' => $this->t('Date in the form of YYYY.'),
       'argument' => [
         'field' => 'created',
         'id' => 'date_year',
       ],
     ];
     $data['mcapi_transactions_index']['incoming'] = [
-      'title' => t('Income'),
-      'help' => t('The income from the transaction; positive or zero'),
+      'title' => $this->t('Income'),
+      'help' => $this->t('The income from the transaction; positive or zero'),
       'field' => [
         'id' => 'worth',
         'additional fields' => ['curr_id']
@@ -388,8 +270,8 @@ class TransactionViewsData implements EntityViewsDataInterface {
       ],
     ];
     $data['mcapi_transactions_index']['outgoing'] = [
-      'title' => t('Expenditure'),
-      'help' => t('The outgoing quantity of the transaction; positive or zero'),
+      'title' => $this->t('Expenditure'),
+      'help' => $this->t('The outgoing quantity of the transaction; positive or zero'),
       'field' => [
         'id' => 'worth',
         'additional fields' => ['curr_id']
@@ -402,8 +284,8 @@ class TransactionViewsData implements EntityViewsDataInterface {
       ],
     ];
     $data['mcapi_transactions_index']['diff'] = [
-      'title' => t('Change in balance'),
-      'help' => t('The difference to the balance; positive or negative'),
+      'title' => $this->t('Change in balance'),
+      'help' => $this->t('The difference to the balance; positive or negative'),
       'field' => [
         'id' => 'worth',
         'additional fields' => ['curr_id']
@@ -416,8 +298,8 @@ class TransactionViewsData implements EntityViewsDataInterface {
       ],
     ];
     $data['mcapi_transactions_index']['volume'] = [
-      'title' => t('Volume'),
-      'help' => t('The quantity of the transaction; always positive'),
+      'title' => $this->t('Volume'),
+      'help' => $this->t('The quantity of the transaction; always positive'),
       'field' => [
         'id' => 'worth',
         'additional fields' => ['curr_id']
@@ -430,8 +312,8 @@ class TransactionViewsData implements EntityViewsDataInterface {
       ],
     ];
     $data['mcapi_transactions_index']['curr_id'] = [
-      'title' => t('Currency'),
-      'help' => t('The currency'),
+      'title' => $this->t('Currency'),
+      'help' => $this->t('The currency'),
       'field' => [
         'id' => 'standard',
       ],
@@ -443,8 +325,8 @@ class TransactionViewsData implements EntityViewsDataInterface {
       ],
     ];
     $data['mcapi_transactions_index']['child'] = [
-      'title' => t('Is a child'),
-      'help' => t('FALSE if the transaction is the main one with that serial number'),
+      'title' => $this->t('Is a child'),
+      'help' => $this->t('FALSE if the transaction is the main one with that serial number'),
       'field' => [
         'id' => 'boolean',
       ],
@@ -455,21 +337,20 @@ class TransactionViewsData implements EntityViewsDataInterface {
 
     //virtual fields
     $data['mcapi_transactions_index']['balance'] = [
-      'title' => t('Running balance'),
-      'help' => t("The sum of the wallet's previous transactions."),
+      'title' => $this->t('Running balance'),
+      'help' => $this->t("The sum of the wallet's previous transactions."),
       'field' => [
         'id' => 'balance',
         'additional fields' => ['curr_id']
       ],
     ];
     $data['mcapi_transactions_index']['transitions'] = [
-      'title' => t('Transitions'),
-      'help' => t('What the user can do to the transaction'),
+      'title' => $this->t('Transitions'),
+      'help' => $this->t('What the user can do to the transaction'),
       'field' => [
         'id' => 'transaction_transitions',
       ]
-    ];
-
+    ];//use this to compare with autogenerated data
     return $data;
   }
 

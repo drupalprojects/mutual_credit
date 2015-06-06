@@ -28,7 +28,7 @@ class Payee extends PluginBase implements TransactionRelativeInterface {//does i
    * {@inheritdoc}
    */
   public function isRelative(TransactionInterface $transaction, AccountInterface $account) {
-    return $transaction->payee->entity->ownerUserId() == $account->id();
+    return $transaction->payee->entity->getOwner()->id() == $account->id();
   }
 
   /**
@@ -42,7 +42,7 @@ class Payee extends PluginBase implements TransactionRelativeInterface {//does i
    * {@inheritdoc}
    */
   public function getUsers(TransactionInterface $transaction) {
-    return [$transaction->payee->entity->ownerUserId()];
+    return [$transaction->payee->entity->getOwner()->id()];
   }
 
 }

@@ -1,6 +1,7 @@
 <?php
 
 use \Drupal\mcapi\Entity\Transaction;
+use \Drupal\mcapi\Entity\Type;
 use Drupal\mcapi_signatures\Signatures;
 
 define ('TRANSACTION_STATE_PENDING', 'pending');
@@ -45,7 +46,7 @@ function mcapi_signatures_mcapi_transaction_presave($transaction) {
       $transaction->signatures[$uid] = 0;
     }
     //sign for the current user
-    mcapi_sign($transaction, \Drupal::currentUser());
+    Signatures::sign($transaction, \Drupal::currentUser());
   }
 }
 
@@ -126,8 +127,7 @@ function mcapi_signatures_theme() {
     'template' => 'mcapi_signatures',
     'variables' => [
       'transaction' => NULL,
-    ],
-    'file' => 'mcapi_signatures.inc'
+    ]
   ];
   return $items;
 }
@@ -188,7 +188,7 @@ function mcapi_signatures_user_view(array &$build, \Drupal\user\UserInterface $a
     $build['mcapi_signatures'][] = views_embed_view(
       'mcapi_pending_signatures',
       'my_pending',
-      [$account->id()]
+      $account->id()
     );
   }
 }
