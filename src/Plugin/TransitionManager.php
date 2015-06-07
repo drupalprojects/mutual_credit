@@ -163,7 +163,6 @@ class TransitionManager extends DefaultPluginManager {
       if (!$show_view) {
         $exclude[] = 'view';
       }
-
       foreach ($this->active($transaction, $exclude) as $transition => $plugin) {
         if ($transaction->access($transition)->isAllowed()) {
           $route_name = $transition == 'view' ?

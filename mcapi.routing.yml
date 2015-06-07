@@ -105,9 +105,16 @@ mcapi.wallets.autocomplete:
     _custom_access: 'Drupal\mcapi\Access\TransactionAccessControlHandler::enoughWallets'
     
 mcapi.masspay:
-  path: '/transaction/masspay'
+  path: '/transaction/one2many'
   defaults:
-    _entity_form: 'mcapi_transaction.masspay'
+    _entity_form: 'mcapi_transaction.12many'
+    _title: 'Mass payment'
+  requirements:
+    _permission: 'manage mcapi'
+mcapi.masspay:
+  path: '/transaction/many2one'
+  defaults:
+    _entity_form: 'mcapi_transaction.many21'
     _title: 'Mass payment'
   requirements:
     _permission: 'manage mcapi'

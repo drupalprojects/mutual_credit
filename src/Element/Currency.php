@@ -24,10 +24,10 @@ class Currency extends FormElement {
   public function getInfo() {
     return array(
       '#input' => TRUE,
-      '#process' => array(
-        array(get_class($this), 'process_currcodes'),
-      ),
-      '#theme_wrappers' => array('form_element'),
+      '#process' => [
+        [get_class($this), 'process_currcodes'],
+      ],
+      '#theme_wrappers' => ['form_element'],
       '#multiple' => FALSE,
       '#options' => [],//array of curr_ids and currency names
       '#status' => TRUE //filter only for active currences
@@ -45,12 +45,12 @@ class Currency extends FormElement {
     if (empty($element['#options']) && !empty($element['#curr_ids'])) {
       //shows the intersection of all currencies and currencies provided
       $element['#options'] = array_intersect_key(
-          mcapi_entity_label_list('mcapi_currency', $element['#curr_ids']),
-          entity_load_multiple_by_properties('mcapi_currency', $conditions)
+        mcapi_entity_label_list('mcapi_currency', $element['#curr_ids']),
+        entity_load_multiple_by_properties('mcapi_currency', $conditions)
       );
     }
     elseif (empty($element['#options'])) {
-      $element['#options'] = $element['#options'] = mcapi_entity_label_list('mcapi_currency', $conditions);
+      $element['#options'] = mcapi_entity_label_list('mcapi_currency', $conditions);
     }
     elseif ($element['#options'] == 'all') {
       $element['#options'] = mcapi_entity_label_list('mcapi_currency');

@@ -508,6 +508,6 @@ function mcapi_entity_type_alter(array &$entity_types) {
  * @todo remove this when https://www.drupal.org/node/2480277 is addressed
  */
 function mcapi_form_mcapi_transaction_form_alter(&$form, $form_state) {
-  $form['payer']['widget'][0]['target_id']['#type'] = 'select_wallet';
-  $form['payee']['widget'][0]['target_id']['#type'] = 'select_wallet';
+  //$form['payer']['widget'][0]['target_id']['#type'] = 'select_wallet';
+  //$form['payee']['widget'][0]['target_id']['#type'] = 'select_wallet';
 }

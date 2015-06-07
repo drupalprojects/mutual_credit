@@ -48,22 +48,7 @@ class TransactionForm extends ContentEntityForm {
     $transaction = $this->entity->getEntityTypeId() == 'mcapi_transaction'
       ? $this->entity
       : Transaction::Create();
-/*
-    $form['payer'] = [
-      '#title' => t('Wallet to be debited'),
-      '#type' => 'select_wallet',
-      '#role' => 'payer',
-      '#default_value' => $transaction->get('payer')->entity,
-      '#weight' => 9,
-    ];
-    $form['payee'] = [
-      '#title' => t('Wallet to be credited'),
-      '#type' => 'select_wallet',
-      '#role' => 'payee',
-      '#default_value' => $transaction->get('payee')->entity,
-      '#weight' => 10,
-    ];
-    */
+
     $form['type'] = [
       '#title' => t('Transaction type'),
       '#options' => mcapi_entity_label_list('mcapi_type'),

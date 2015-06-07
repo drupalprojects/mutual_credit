@@ -38,7 +38,7 @@ class Erase extends TransitionBase {
   */
   public function accessOp(AccountInterface $account) {
     if ($this->transaction->state->target_id != TRANSACTION_STATE_ERASED) {
-      return parent::accessOp($this->transaction, $account);
+      return parent::accessOp($account);
     }
     return FALSE;
   }

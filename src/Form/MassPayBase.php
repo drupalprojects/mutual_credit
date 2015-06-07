@@ -2,170 +2,142 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Form\MassPay.
+ * Definition of Drupal\mcapi\Form\MassPayBase.
  * Create an cluster of transactions, based on a single entity form
  * N.B. This could be an entity form for Transaction OR Exchange.
  * If the latter, it will be appropriately populated.
+ *
  */
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\Core\Entity\EntityForm;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Form\FormStateInterface;
 
-class MassPay extends TransactionForm {
+class MassPayBase extends EntityForm {
 
-  private $payers;
-  private $payees;
-  //private $exchange_id;
-  //$this->entity refers to the Exchange until is changed in $this->form()
-
-  public function getFormId() {
-    return 'mcapi_mass_payment';
-  }
 
   /**
    * Overrides Drupal\mcapi\Form\TransactionForm::form().
    */
-  public function form(array $form, FormStateInterface $form_state) {
-
+  public function buildForm(array $form, FormStateInterface $form_state) {
+    $form = ['submit' => [
+      '#type' => 'submit',
+      '#weight' => 50
+    ]];
     if (empty($form_state->get('validated_transactions'))) {
-      //$this->exchange_id = $this->entity;
-
       //we have to mimic some part of the normal entity form preparation.
       //@todo on the rebuilt form we need to make a default entity.
       //But how to get the submitted values from $form_state?
-      //$form_state['input'] means before processing and
-      //$form_state['values'] hasn't been calculated yet
-      $this->entity = Transaction::create([]);
-
-      $form_display = EntityFormDisplay::collectRenderDisplay($this->entity, 'mass');
-      $this->setFormDisplay($form_display, $form_state);
-
-      $form = parent::form($form, $form_state);
+      //$this->entity = Transaction::create([]);
+      //$form = parent::form($form, $form_state);
+      $form['submit']['#value'] = $this->t('Preview');
       $this->step_1($form, $form_state);
+
     }
     else {
+      $viewBuilder = \Drupal::entityManager()->getViewBuilder('mcapi_transaction');
       foreach ($form_state->get('validated_transactions') as $transaction) {
-        $form['preview'][] = entity_view($transaction, 'sentence');
+        $form['preview'][] = $viewBuilder->view($transaction, 'sentence');
       }
+      $form['submit']['#value'] = $this->t('Confirm');
     }
     return $form;
   }
 
   public function step_1(array &$form, FormStateInterface $form_state) {
-
     if (empty($form_state->get('confirmed'))) {
       $types = \Drupal::config('mcapi.wallets')->get('entity_types');
       if ($types['user:user'] == 1) {
-        $mode_options = array(
-          t('Only the users below'),
-      	  t("All users' except the below"),
-        );
+        $mode_options = [
+          $this->t('The named users'),
+      	  $this->t("All users except those named"),
+        ];
       }
       else {
-        $mode_options = array(
-          t('Only the wallets below'),
-          t("All wallets' except the below"),
-        );
+        $mode_options = [
+          $this->t('The named wallets'),
+          $this->t("All wallets except those named"),
+        ];
       }
-      $form['mode'] = array(
-      	'#title' => t('Mode'),
-        '#description' => t('Determine how this form will work'),
+      $form['mode'] = [
         '#type' => 'radios',
         //@todo start with nothing selected to force the user to choose something.
         '#options' => $mode_options,
-      );
-      $form['one'] = $form['payer'];
-      $form['payer']['#access'] = FALSE;
-      $form['one']['#title'] = t('The one wallet');
-      $form['direction'] = array(
-        '#title' => t('Direction'),
-        '#type' => 'radios',
-        //@todo start with nothing selected to force the user to choose something.
-        '#options' => array(
-          'one2many' => t('One wallet pays many wallets'),
-          'many2one' => t('One wallet charges many wallets')
-        ),
-      );
-
-      $form['worth']['#required'] = TRUE;
-
-      $form['many'] = $form['payee'];
-      $form['payee']['#access'] = FALSE;
-      $form['many']['#title'] = t('The many wallets');
-      //modify the widget to return multiple values
-      $form['many']['#value_callback'] = array(get_class($this), 'form_type_select_wallets_value');
-      $form['mode']['#weight'] = 7;
-      $form['one']['#weight'] = 8;
-      $form['direction']['#weight'] = 9;
-      $form['many']['#weight'] = 10;
-
-      $form['type']['#type'] = 'value';
-      $form['type']['#value'] = 'mass';
-
-//@todo
-      $form['notification'] = array(
-        '#title' => 'Notify everybody',
+        '#weight' => '2'
+      ];
+      $form['payer'] = [
+        '#title' => $this->t('Payer'),
+        '#type' => 'select_wallet',
+        '#autocomplete_route_parameters' => ['role' => 'payer']
+      ];
+      $form['payee'] = [
+        '#title' => $this->t('Payee'),
+        '#type' => 'select_wallet',
+        '#autocomplete_route_parameters' => ['role' => 'payee']
+      ];
+      $form['description'] = [
+        '#title' => $this->t('Description'),
+        '#placeholder' => $this->t('What this payment is for...'),
+        '#type' => 'textfield',
+        '#weight' => 5
+      ];
+      $form['worth'] = [
+        '#title' => $this->t('Worth'),
+        '#type' => 'worth',
+        '#weight' => 6
+      ];
+      $form['notification'] = [
+        '#title' => $this->t('Notify everybody'),
         //@todo decide whether to put rules in a different module
         '#description' => \Drupal::moduleHandler()->moduleExists('rules') ?
           $this->t('Ensure this mail does not clash with mails sent by the rules module.') : '',
       	'#type' => 'fieldset',
         '#open' => TRUE,
         '#weight' => 20,
-        'body' => array(
+        'body' => [
       	  '#title' => $this->t('Message'),
           //@todo the tokens?
           //'#description' => $this->t('The following tokens are available:') .' [user:name]',
           '#type' => 'textarea',
           //this needs to be stored per-exchange. What's the best way?
           '#default_value' => \Drupal::service('user.data')->get('mcapi', $this->currentUser()->id(), 'masspay')
-        )
-      );
-
+        ]
+      ];
     }
   }
 
-  public function validate(array $form, FormStateInterface $form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
     if ($form_state->getErrors()) return;
     //only validate step 1
     if (empty($form_state->get('validated_transactions'))) {
       $form_state->cleanValues();;//without this, buildentity fails, but again, not so in nodeFormController
 
-      $form_state->addValue('creator', $this->currentUser()->id());
-      $form_state->addValue('type', 'mass');
+      $form_state->setValue('creator', $this->currentUser()->id());
+      $form_state->setValue('type', 'mass');
       $values = $form_state->getValues();
-      if ($values['direction'] == 'one2many') {
-        $payers = array($values['one']);
-        $payees = $values['many'];
-      }
-      else {
-        $payers = $values['many'];
-        $payees = array($values['one']);
-      }
-
-      $template = Transaction::create($values);
+      $transactions = [];
       $uuid_service = \Drupal::service('uuid');
-      foreach ($payers as $payer) {
-        foreach ($payees as $payee) {
+      foreach ((array)$form_state->getValue('payer') as $payer) {
+        foreach ((array)$form_state->getValue('payee') as $payee) {
           if ($payer == $payee) {
             continue;
           }
-          $next = clone $template;
-          $next->payer = $payer;
-          $next->payee = $payee;
-          $next->uuid = $uuid_service->generate();
-          $transactions[] = $next;
+          $values['payer'] = $payer;
+          $values['payee'] = $payee;
+          $transactions[] = Transaction::create($values);
         }
       }
-      //@todo after alpha12: handle transaction violations
+
       foreach ($transactions as $transaction) {
+        //we do NOT add children
         $violations = $transaction->validate();
-        foreach ($violations as $field => $message) {
-          $form_state->setErrorByName($field, $message);
+        foreach ($violations as $violation) {
+          //echo ($violation->getpropertypath());
+          $form_state->setErrorByName($violation->getpropertypath(), $violation->getMessage());
         }
       }
       //@todo update to d8
@@ -177,7 +149,7 @@ class MassPay extends TransactionForm {
   }
 
 
-  public function submit(array $form, FormStateInterface $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     //@todo how do we inject stuff into forms?
     \Drupal::service('user.data')
@@ -188,14 +160,12 @@ class MassPay extends TransactionForm {
     }
     else {
       $main_transaction = array_shift($form_state->get('validated_transactions'));
-      foreach ($form_state->get('validated_transactions') as $transaction) {
-        $main_transaction->children[] = $transaction;
-      }
+      $main_transaction->children = $form_state->get('validated_transactions');
       $main_transaction->save();
 
       //mail the owners of all the wallets involved.
       foreach (Wallet::loadMultiple($form_state->get('wallets')) as $wallet) {
-        $uids[] = $wallet->genOwnerId();
+        $uids[] = $wallet->getOwnerId();
       }
       foreach (User::loadMultiple(array_unique($uids)) as $account) {
         $to[] = $account->getEmail();
@@ -207,13 +177,11 @@ class MassPay extends TransactionForm {
       //go to the transaction certificate
       $form_state->setRedirect(
         'entity.mcapi_transaction.canonical',
-        array(
-          'mcapi_transaction' => $main_transaction->serial->value
-        )
+        ['mcapi_transaction' => $main_transaction->serial->value]
       );
 
       $this->logger('mcapi')->notice(
-        'User @uid created @num mass transactions @serial',
+        'User @uid created @num mass transactions #@serial',
         [
           '@uid' => $this->currentUser()->id(),
           '@count' => count($form_state->get('validated_transactions')),
@@ -223,6 +191,14 @@ class MassPay extends TransactionForm {
     }
   }
 
+  /**
+   *
+   * @param type $element
+   * @param type $input
+   * @param FormStateInterface $form_state
+   * @return type
+   * @deprecated
+   */
   function form_type_select_wallets_value(&$element, $input, FormStateInterface $form_state) {
     if (empty($input)) {
       return;

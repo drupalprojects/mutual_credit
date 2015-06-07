@@ -336,7 +336,7 @@ function _mcapi_get_axis_max($val) {
  * DO NOT OVERRIDE, javascript transitions depend on the classes defined here
  * override certificate or change the mcapi_sentence variable instead
  */
-function template_preprocess_mcapi_transaction(&$vars) {
+function template_preprocess_mcapi_transaction(&$vars, $hook, $info) {
   $element = $vars['transaction'];
   $transaction = $element['#mcapi_transaction'];
   //don't know if this is needed in d8
@@ -371,6 +371,7 @@ function template_preprocess_certificate(&$vars) {
   $element = $vars['transaction'];
   $transaction = $element['#mcapi_transaction'];
   $vars = get_transaction_vars($transaction) + $vars;
+  unset($element['worth'], $element['created']);//these are already rendered in $vars
   //hide the field api label
   foreach (Element::children($element) as $sub) {
     if (array_key_exists('#theme', $element[$sub]) && $element[$sub]['#theme'] == 'field') {
@@ -378,7 +379,6 @@ function template_preprocess_certificate(&$vars) {
     }
     $vars[$sub] = $element[$sub];
   }
-
   $vars['children'] = [];
   if (isset($transaction->children)) {
     foreach ($transaction->children as $child) {
@@ -388,6 +388,7 @@ function template_preprocess_certificate(&$vars) {
       unset($vars['children'][$child->id()]['#pre_render']);
     }
   }
+  //print_r($vars['worth']);die();
   //choose the transaction theme template based on the first currency of the transaction
   //not sure if this is worth the processing power at the moment
   //$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->get('type')->value;
@@ -419,7 +420,7 @@ function template_preprocess_mcapi_currency(&$vars) {
 }
 
 /**
- * {@inheritdoc}
+ * gets all the vars which we know are in the transaction
  */
 function get_transaction_vars(TransactionInterface $transaction) {
   $vars['state'] = State::load($transaction->type->entity->start_state)->label;
@@ -441,7 +442,8 @@ function get_transaction_vars(TransactionInterface $transaction) {
 
   //NB the transaction certificate, which uses entity_view_display overwrites field with display options, i.e. this one!
   //but this is needed for the sentence display'
-  $vars['worth'] = $transaction->worth->view();
+  $worth = $transaction->worth->view();
+  $vars['worth'] = \Drupal::service('renderer')->render($worth);
 
   $vars['created'] = format_date($transaction->created->value, 'medium');
 

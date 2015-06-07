@@ -23,10 +23,13 @@ class WalletAutocompleteController extends ControllerBase{
 
   use DependencySerializationTrait;
 
-  private $action;
+  /**
+   * helps filter for wallets according to which actions the current user can do on them.
+   */
+  private $role;
 
   function __construct($routeMatch) {
-    $this->action = $routeMatch->getParameter('role');
+    $this->role == $routeMatch->getParameter('role');
   }
 
   public static function create(ContainerInterface $container) {
@@ -66,10 +69,14 @@ class WalletAutocompleteController extends ControllerBase{
     $walletStorage = $this->entityManager()->getStorage('mcapi_wallet');
     //return only the wallets which are both permitted and meet the filter criteria
     $results = $walletStorage->filter($conditions);
-    if ($this->action != 'null') {
+    if ($this->role) {
+      die($this->role);
+      $walletperm = $this->role == 'payer'
+          ? 'payout'
+          : 'payin';
       $results = array_intersect(
         $results,
-        $walletStorage->walletsUserCanActOn($this->action, $this->currentUser())
+        $walletStorage->walletsUserCanActOn($walletperm, $this->currentUser())
       );
     }
     return $results;

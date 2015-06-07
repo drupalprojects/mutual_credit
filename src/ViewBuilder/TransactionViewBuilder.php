@@ -87,10 +87,21 @@ class TransactionViewBuilder extends EntityViewBuilder {
         'library' => ['mcapi/mcapi.transaction']
       ]
     ];
-    unset($build['#cache']);
+    //unset($build['#cache']);
     return $build;
   }
 
+function build(array $build) {
+  $build_list = array(
+    '#langcode' => $build['#langcode'],
+    0 => $build
+  );
+
+  if ($build['#view_mode'] == 'certificate') {
+    $build_list = $this->buildMultiple($build_list);
+  }
+  return $build_list[0];
+}
 
 
   /**

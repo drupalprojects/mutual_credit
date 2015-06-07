@@ -3,6 +3,7 @@ langcode: null
 status: true
 dependencies:
   config:
+    - field.field.mcapi_transaction.mcapi_transaction.categories
     - field.field.mcapi_transaction.mcapi_transaction.worth
   module:
     - mcapi
@@ -10,28 +11,33 @@ targetEntityType: mcapi_transaction
 bundle: mcapi_transaction
 mode: default
 content:
+  created:
+    type: datetime_timestamp
+    weight: 4
+    settings: {  }
+    third_party_settings: {  }
   description:
     type: string_textfield
     weight: 0
     settings:
       size: 60
-      placeholder: ''
+      placeholder: 'What was exchanged?'
     third_party_settings: {  }
   payee:
-    type: entity_reference_autocomplete
+    type: select_wallet
     weight: 2
     settings:
       match_operator: CONTAINS
-      size: 60
-      placeholder: ''
+      size: '30'
+      placeholder: 'Wallet name or #number'
     third_party_settings: {  }
   payer:
-    type: entity_reference_autocomplete
+    type: select_wallet
     weight: 3
     settings:
       match_operator: CONTAINS
-      size: 60
-      placeholder: ''
+      size: '30'
+      placeholder: 'Wallet name or #number'
     third_party_settings: {  }
   worth:
     type: worth
@@ -39,7 +45,7 @@ content:
     settings: {  }
     third_party_settings: {  }
 hidden:
-  created: true
+  categories: true
   mcapi_signatures: true
   state: true
   type: true

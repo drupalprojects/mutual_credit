@@ -153,7 +153,6 @@ class Exchange {
 
   /**
    * get a list of all the currencies currently in a wallet's scope, ordered by weight
-   * which is to say, in any of the wallet's parent's exchanges
    *
    * @param WalletInterface $wallet
    *
@@ -163,6 +162,7 @@ class Exchange {
   public static function currenciesAvailable($wallet) {
     if (!isset($wallet->currencies_available)) {
       if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+        //get the currencies in all the wallet parent's exchanges
         Exchanges::currenciesAvailable($wallet);
       }
       else {

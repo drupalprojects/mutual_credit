@@ -38,7 +38,8 @@ use Drupal\Core\Cache\Cache;
  *     "access" = "Drupal\mcapi\Access\TransactionAccessControlHandler",
  *     "form" = {
  *       "transition" = "Drupal\mcapi\Form\TransitionForm",
- *       "masspay" = "Drupal\mcapi\Form\MassPay",
+ *       "12many" = "Drupal\mcapi\Form\One2Many",
+ *       "many21" = "Drupal\mcapi\Form\Many2One",
  *       "admin" = "Drupal\mcapi\Form\TransactionForm",
  *       "delete" = "Drupal\mcapi\Form\TransactionDeleteConfirm",
  *     },
@@ -252,7 +253,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 
-    $fields['payer'] = BaseFieldDefinition::create('entity_reference')
+    $fields['payer'] = BaseFieldDefinition::create('wallet')
       ->setLabel(t('Payer wallet'))
       ->setSetting('target_type', 'mcapi_wallet')
       ->setReadOnly(TRUE)
@@ -260,7 +261,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setDisplayConfigurable('form', TRUE)
       ->setConstraints(['CanActOn' => ['action' => 'payin']]);
 
-    $fields['payee'] = BaseFieldDefinition::create('entity_reference')
+    $fields['payee'] = BaseFieldDefinition::create('wallet')
       ->setLabel(t('Payee wallet'))
       ->setSetting('target_type', 'mcapi_wallet')
       ->setReadOnly(TRUE)
@@ -350,30 +351,4 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     }
   }
 
-
-  /**
-   * calculate a transaction quantity based on a provided formala and input quantity
-  *
-  * @param string $formula
-  *   formula using [q] for base_quant. If it is just a number the number is returned as is
-  *   otherwise [q]% should work or other variables to be determined
-  *
-  * @param integer $base_value
-  *
-  * @return interger | NULL
-  */
-  public static function calc($formula, $base_value) {
-    if (is_null($base_value)) return 0;
-    if (is_numeric($formula)) return $formula;
-    $proportion = str_replace('%', '', $formula);
-    if (empty($base_value)) $base_quant = 0;
-    if (is_numeric($proportion)) {
-      return $base_value * $proportion/100;
-    }
-    //$formula = str_replace('/', '//', $formula);
-    $equation = str_replace('[q]', $base_value, $formula) .';';
-    $val = eval('return '. $equation);
-    if (is_numeric($val)) return $val;
-    drupal_set_message(t('Problem with calculation for dependent transaction: @val', array('@val' => $val)));
-  }
 }

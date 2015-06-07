@@ -15,11 +15,6 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
   foreach ($tokens as $name => $original) {
     $replacements[$original] = $replaced[$name];
   }
-  drupal_set_message('rendering worth in mcapi.tokens.inc');
-  //why do we need to render this and nothing else?
-  $replacements['[mcapi:worth]'] = \Drupal::service('renderer')
-    ->render($replacements['[mcapi:worth]']);
-
   //handle any entity references - tokens within tokens
   $token_service = \Drupal::token();
   if ($payer_tokens = $token_service->findWithPrefix($tokens, 'payer')) {

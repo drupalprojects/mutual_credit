@@ -31,7 +31,10 @@ class WorthFormatter extends FormatterBase {
     $elements = [];
 
     foreach ($items as $delta => $item) {
-      $elements[$delta] = array('#markup' => $item->view());
+      $elements[$delta] = array(
+        '#markup' => $item->view(),
+        '#cache' => ['tags' => []]
+      );
     }
     return $elements;
   }

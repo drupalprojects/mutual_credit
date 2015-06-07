@@ -12,6 +12,7 @@ use Drupal\Core\Render\Element\FormElement;
 use Drupal\Core\Render\Element;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Exchange;
 use Drupal\Core\Template\Attribute;
 
 /**
@@ -55,6 +56,10 @@ class Worth extends FormElement {
       $element['#default_value'] = $element['#value'];
     }
     else {
+      if(empty($element['#default_value'])) {
+        //
+        $element['#allowed_curr_ids'] = array_keys(Exchange::currenciesAvailable());
+      }
       $map = Self::curr_map($element['#default_value']);
       //restrict the defaults according to the allowed currencies
       if ($not_allowed = array_diff(array_keys($map), $element['#allowed_curr_ids'])) {
@@ -239,7 +244,7 @@ class Worth extends FormElement {
       //test the formula
       foreach($element['#value'] as $delta => $worth) {
         if (empty($worth['value'])) continue;
-        $result = Transaction::calc($worth['value'], 100);
+        $result = Self::calc($worth['value'], 100);
         if (!is_numeric($result)) {
           $form_state->setError($element[$delta], t('Invalid formula'));
         }
@@ -310,5 +315,32 @@ class Worth extends FormElement {
       $map[$item['curr_id']] = $key;
     }
     return $map;
+  }
+
+
+  /**
+   * calculate a transaction quantity based on a provided formala and input quantity
+  *
+  * @param string $formula
+  *   formula using [q] for base_quant. If it is just a number the number is returned as is
+  *   otherwise [q]% should work or other variables to be determined
+  *
+  * @param integer $base_value
+  *
+  * @return interger | NULL
+  */
+  public static function calc($formula, $base_value) {
+    if (is_null($base_value)) return 0;
+    if (is_numeric($formula)) return $formula;
+    $proportion = str_replace('%', '', $formula);
+    if (empty($base_value)) $base_quant = 0;
+    if (is_numeric($proportion)) {
+      return $base_value * $proportion/100;
+    }
+    //$formula = str_replace('/', '//', $formula);
+    $equation = str_replace('[q]', $base_value, $formula) .';';
+    $val = eval('return '. $equation);
+    if (is_numeric($val)) return $val;
+    drupal_set_message(t('Problem with calculation for dependent transaction: @val', array('@val' => $val)));
   }
 }

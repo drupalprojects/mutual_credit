@@ -22,20 +22,21 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class TransactionLimitsConstraintValidator extends ConstraintValidator {
 
-  use DependencySerializationTrait;
-
-  private $replacements = [];
   private $currentUser;
   private $limiter;
   private $logger;
+  private $replacements = [];
+  private $diffs = [];
 
-  function __construct($limitManager, $limiter, $logger) {
-    $this->currentUser = $limitManager;
-    $this->limitManager = $limitManager;
-    $this->limiter = $limiter;
-    $this->logger = $logger->get('mcapi_limits');
+  function __construct($currentUser, $limitManager, $limiter, $logger) {
+    $this->currentUser = \Drupal::service('current_user');
+    $this->limitManager = \Drupal::service('plugin.manager.mcapi_limits');
+    $this->limiter = \Drupal::service('mcapi_limits.wallet_limiter');
+    $this->logger = \Drupal::logger('mcapi_limits');
   }
 
+  /*
+   * can't get this to fire.
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('current_user'),
@@ -44,6 +45,8 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator {
       $container->get('logger.factory')
     );
   }
+   *
+   */
 
   /**
    * {@inheritdoc}
@@ -52,7 +55,7 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator {
     //first add up all the transactions
     //to exclude the current transactions from the sum of saved transactions
     //compare the resulting balances for each wallet with its limits
-    foreach ($this->diff($transaction) as $wid => $percurrency) {
+    foreach ($this->differentiate($transaction) as $wid => $percurrency) {
       $wallet = Wallet::load($wid);
       foreach ($percurrency as $curr_id => $diffs) {
         //check to see if any of the skips apply.
@@ -83,9 +86,6 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator {
 
         $diff = array_sum($diffs);
         $projected = $wallet->getStats($curr_id)['balance'] + $diff;
-        //$min and
-        //$max are derived by
-        //@todo inject the wallet limiter?
         $this->limiter->setwallet($wallet);
         $max = $this->limiter->max($curr_id);
         $min = $this->limiter->min($curr_id);
@@ -93,6 +93,8 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator {
           '!wallet' => $wallet->label()
         ];
 
+        //@todo ideally we would ensure that we showed only the last violation message for each wallet
+        //maybe by each violation being indexed with a wallet id
         if ($diff > 0 && $projected > 0 && is_numeric($max) && $projected > $max) {
           $this->replacements['!limit'] = $currency->format($max);
           $this->replacements['excess'] = $currency->format($projected - $max);
@@ -124,17 +126,17 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator {
    * this is only used in tokens, so far, and in mcapi_limits module
    * incoming transaction can be a transaction object with children or an array
    */
-  private function diff($transaction) {
+  private function differentiate($transaction) {
     foreach ($transaction->flatten() as $tran) {
       foreach ($tran->worth->getValue() as $worth) {
         extract($worth); //makes variables $value and $curr_id
         //we can't prepare the array in advance with zeros so += and -= throws notices
         //instead we just build up an array and add them up later
-        $diff[$tran->payer->target_id][$curr_id][] = -$value;
-        $diff[$tran->payee->target_id][$curr_id][] = $value;
+        $this->diffs[$tran->payer->target_id][$curr_id][] = -$value;
+        $this->diffs[$tran->payee->target_id][$curr_id][] = $value;
       }
     }
-    return $diff;
+    return $this->diffs;
   }
 
 }

@@ -10,11 +10,12 @@
 
 namespace Drupal\mcapi\Plugin\Action;
 
+use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Element\Worth;
+use Drupal\rules\Engine\RulesActionBase;
 use Drupal\Core\Action\ConfigurableActionBase;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\rules\Engine\RulesActionBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\mcapi\Entity\Transaction;
 
 /**
  * Adds a transaction to a cluster during validation phase
@@ -53,7 +54,7 @@ class Levy extends RulesActionBase {//implements ContainerFactoryPluginInterface
     $values = [];
     foreach ($worth as $delta => $item) {
       //if this currency was in the prime transaction, pass it to the calculator
-      $calculated = Transaction::calc($item['value'], $transaction->worth->val($item['curr_id']));
+      $calculated = Worth::calc($item['value'], $transaction->worth->val($item['curr_id']));
       //don't save zero value auto transactions, even if the currency settings permit
       if ($rounded == mcapi_round($calculated, $item['currcode'], $this->configuration['round'] == 'up')) {
         //if a quant was returned (and there really should be, from at least one currency), add it to the $dependent
@@ -174,8 +175,9 @@ class Levy extends RulesActionBase {//implements ContainerFactoryPluginInterface
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     $form_state->cleanValues();;
-    foreach ($form_state->getValues() as $key => $val)
-    $this->configuration['key'] = $val;
+    foreach ($form_state->getValues() as $key => $val) {
+      $this->configuration[$key] = $val;
+    }
   }
 
 

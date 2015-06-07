@@ -24,27 +24,15 @@ class Wallet extends EntityAutocomplete {
    * {@inheritdoc}
    */
   public function getInfo() {
+    $info = parent::getInfo();
+    array_shift($info['#process']);//get rid of callback Self::processEntityAutocomplete
     return [
       '#autocomplete_route_name' => 'mcapi.wallets.autocomplete',
       '#autocomplete_route_parameters' => ['role' => 'null'],
-      '#required' => TRUE
-    ] + parent::getInfo();
+      '#required' => TRUE,
+      '#target_type' => 'mcapi_wallet'
+    ] + $info;
   }
-
-  /**
-   * process callback
-   */
-  public static function processEntityAutocomplete(array &$element, FormStateInterface $form_state, array &$complete_form) {
-    if (isset($element['#role'])) {
-      $element['#autocomplete_route_parameters']['role'] = $element['#role'] == 'payer'
-        ? 'payout'
-        : 'payin';
-    }
-    //this should go in getInfo() but somehow from there it is overridden
-    $element['#placeholder'] = t('Wallet name or #number');
-    return $element;
-  }
-
 
   /**
    * element_validate callback for select_wallet
@@ -112,7 +100,7 @@ class Wallet extends EntityAutocomplete {
    */
   public static function extractEntityIdFromAutocompleteInput($input) {
     $match = NULL;
-    // Take "label (#entity id)', match the ID from # when it's a number
+    // Take "label #entity id', match the ID from number after #
     if (preg_match("/.*\#(\d+)/", $input, $matches)) {
       $match = $matches[1];
     }
