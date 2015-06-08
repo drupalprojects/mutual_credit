@@ -1,14 +1,13 @@
+id: wallets
+label: Wallets
+description: 'A list of wallets help by a given entity.'
+tag: 'mcapi'
 langcode: en
 status: true
 dependencies:
   module:
-    - block
     - mcapi
-id: wallets
-label: Wallets
 module: views
-description: ''
-tag: ''
 base_table: mcapi_wallet
 base_field: wid
 core: 8.x
@@ -31,7 +30,7 @@ display:
           disable_sql_rewrite: false
           distinct: false
           slave: false
-          query_comment: false
+          query_comment: ''
           query_tags: {  }
       exposed_form:
         type: basic
@@ -85,14 +84,14 @@ display:
           hide_empty: false
         provider: views
       fields:
-        wallet_label:
-          id: wallet_label
+        label:
+          id: label
           table: mcapi_wallet
-          field: wallet_label
+          field: label
           relationship: none
           group_type: group
           admin_label: ''
-          label: Label
+          label: ''
           exclude: false
           alter:
             alter_text: false
@@ -111,57 +110,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          plugin_id: mcapi_wallet_label
-          provider: mcapi
-        entity_type:
-          id: entity_type
-          table: mcapi_wallet
-          field: entity_type
-          relationship: none
-          group_type: group
-          admin_label: ''
-          label: 'Holder type'
-          exclude: true
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: ''
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -183,8 +132,9 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          plugin_id: mcapi_holder_type
-          provider: mcapi
+          link: 1
+          entity_type: mcapi_wallet
+          plugin_id: mcapi_wallet_label
       filters: {  }
       sorts: {  }
       title: Wallets
@@ -200,10 +150,6 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - views
-              - views
           default_action: default
           exception:
             value: all
@@ -228,28 +174,28 @@ display:
             type: none
             fail: 'not found'
           validate_options: {  }
+          break_phrase: false
+          not: 0
+          dependencies:
+            module:
+              - views
+              - views
           plugin_id: standard
           provider: views
       field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
-  tradable_wallets:
-    display_plugin: page
-    id: tradable_wallets
-    display_title: 'Wallets I can trade with'
-    position: 1
-    display_options:
-      path: wallets
-      display_comment: ""
-      field_langcode: '***LANGUAGE_language_interface***'
-      field_langcode_add_to_query: null
-      arguments: {  }
-      defaults:
-        arguments: false
-      display_description: ''
-  my_wallets:
+      display_extenders: {  }
+      display_comment: 'Its all about the Contextual filter default'
+    cache_metadata:
+      contexts:
+        - 'languages:language_interface'
+        - url
+        - 'url.query_args.pagers:0'
+      cacheable: false
+  block_1:
     display_plugin: block
-    id: my_wallets
-    display_title: 'My wallets block'
+    id: block_1
+    display_title: 'My wallets'
     position: 2
     provider: block
     display_options:
@@ -257,11 +203,58 @@ display:
       field_langcode_add_to_query: null
       block_description: 'My wallets'
       display_comment: ''
-      display_description: ''
+      display_description: 'The wallets of the entity indicated in the route, if any'
       block_category: 'Community Accounting'
-      title: 'My Wallets'
+      arguments:
+        wid:
+          id: wid
+          table: mcapi_wallet
+          field: wid
+          relationship: none
+          group_type: group
+          admin_label: ''
+          default_action: default
+          exception:
+            value: all
+            title_enable: false
+            title: All
+          title_enable: false
+          title: ''
+          default_argument_type: current_user_wallets
+          default_argument_options: {  }
+          default_argument_skip_url: false
+          summary_options:
+            base_path: ''
+            count: true
+            items_per_page: 25
+            override: false
+          summary:
+            sort_order: asc
+            number_of_records: 0
+            format: default_summary
+          specify_validation: false
+          validate:
+            type: none
+            fail: 'not found'
+          validate_options: {  }
+          break_phrase: false
+          not: 0
+          dependencies:
+            module:
+              - views
+              - views
+              - views
+          plugin_id: standard
+          provider: views
       defaults:
-        title: false
+        arguments: false
+      display_extenders: {  }
+    cache_metadata:
+      contexts:
+        - 'languages:language_interface'
+        - url
+        - 'url.query_args.pagers:0'
+      cacheable: false
   owned_wallets:
     display_plugin: block
     id: owned_wallets
@@ -316,4 +309,10 @@ display:
           provider: views
       defaults:
         arguments: false
-
+      display_extenders: {  }
+    cache_metadata:
+      contexts:
+        - 'languages:language_interface'
+        - url
+        - 'url.query_args.pagers:0'
+      cacheable: false

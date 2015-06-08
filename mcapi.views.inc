@@ -21,7 +21,6 @@ function mcapi_views_data_alter(&$data) {
       )
     );
   }
-  $data['mcapi_transaction_worth']['worth']['field']['id'] = 'worth';
 }
 
 /**
@@ -33,11 +32,3 @@ function mcapi_form_views_exposed_form_alter(&$form, $form_state) {
   $form['payee']['#description'] = $description;
   $form['payer']['#description'] = $description;
 }
-
-function mcapi_views_states() {
-  foreach (\Drupal::config('mcapi.misc')->get('counted') as $key => $val) {
-    if ($val) $options['value']['default'][$key] = $key;
-  }
-  return $options;
-}
-

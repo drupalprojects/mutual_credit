@@ -44,32 +44,10 @@ class TransactionViewsData extends EntityViewsData {
       $data['mcapi_transaction']['parent']['entity field']
     );
 
-    $data['mcapi_transaction']['created'] = [
-      'title' => $this->t('Created'),
-      'help' => $this->t('The second the transaction was created.'),
-      'field' => [
-        'id' => 'date',
-      ],
-      'sort' => [
-        'id' => 'date'
-      ],
-      'filter' => [
-        'id' => 'date',
-      ],
-    ];
-    $data['mcapi_transaction']['changed'] = [
-      'title' => $this->t('Changed'),
-      'help' => $this->t('The second the transaction was last saved.'),
-      'field' => [
-        'id' => 'date',
-      ],
-      'sort' => [
-        'id' => 'date'
-      ],
-      'filter' => [
-        'id' => 'date',
-      ],
-    ];
+
+    $data['mcapi_transaction']['payer']['filter']['id'] = 'wallet_name';
+    $data['mcapi_transaction']['payee']['filter']['id'] = 'wallet_name';
+    $data['mcapi_transaction']['creator']['filter']['id'] = 'user_name';
     /**
     $data['mcapi_transaction']['created_year_month'] = [
       'title' => $this->t('Created year + month'),
@@ -90,6 +68,7 @@ class TransactionViewsData extends EntityViewsData {
     ];
      *
      */
+
     //virtual fields
     $data['mcapi_transaction']['transitions'] = [
       'title' => $this->t('Transitions'),
@@ -99,7 +78,24 @@ class TransactionViewsData extends EntityViewsData {
       ]
     ];
 
+    //@todo I don't know why these relationships aren't coming automatically when 'creator' is
+    $data['mcapi_transaction']['payer']['relationship'] = [
+      'base' => 'mcapi_wallet',
+      'base field' => 'wid',
+      'label' => 'Payer wallet',
+      'title' => 'Payer',
+      'id' => 'standard'
+    ];
+    $data['mcapi_transaction']['payee']['relationship'] = [
+      'base' => 'mcapi_wallet',
+      'base field' => 'wid',
+      'label' => 'Payee wallet',
+      'title' => 'Payee',
+      'id' => 'standard'
+    ];
+
     /**
+    //@todo consider why the index table isn't being found by views
     // Load all typed data definitions of all fields. This should cover each of
     // the entity base, revision, data tables.
     $field_definitions = \Drupal\mcapi\Storage\TransactionStorageSchema::getTransactionIndexSchema();
@@ -112,7 +108,6 @@ class TransactionViewsData extends EntityViewsData {
 
      *
     */
-
     //print_R($data['mcapi_transactions_index']);die();
 
     $data['mcapi_transactions_index']['table'] = [
@@ -203,7 +198,8 @@ class TransactionViewsData extends EntityViewsData {
       ],
       'filter' => [
         'id' => 'in_operator',
-        'options callback' => 'mcapi_views_states',
+        'options callback' => 'mcapi_entity_label_list',
+        'options arguments' => ['mcapi_state']
       ],
       'sort' => [
         'id' => 'standard',
@@ -318,12 +314,15 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'standard',
       ],
       'filter' => [
-        'id' => 'standard',
+        'id' => 'in_operator',
+        'options callback' => 'mcapi_entity_label_list',
+        'options arguments' => ['mcapi_currency']
       ],
       'argument' => [
         'id' => 'standard',
       ],
     ];
+
     $data['mcapi_transactions_index']['child'] = [
       'title' => $this->t('Is a child'),
       'help' => $this->t('FALSE if the transaction is the main one with that serial number'),

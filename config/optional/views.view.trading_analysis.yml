@@ -1,13 +1,10 @@
-langcode: en
-status: true
-dependencies:
-  module:
-    - block
-    - mcapi
 id: trading_analysis
 label: 'Trading analysis'
-module: views
 description: 'per currency transaction summary for individual wallets'
+langcode: en
+status: true
+dependencies: {  }
+module: views
 tag: ''
 base_table: mcapi_transactions_index
 base_field: xid
@@ -36,7 +33,7 @@ display:
           disable_sql_rewrite: false
           distinct: false
           replica: false
-          query_comment: false
+          query_comment: ''
           query_tags: {  }
         provider: views
         dependencies: {  }
@@ -62,17 +59,14 @@ display:
       row:
         type: fields
       fields:
-        xid:
+        diff:
+          id: diff
           table: mcapi_transactions_index
-          field: xid
-          id: xid
-          plugin_id: numeric
-          provider: views
+          field: diff
           relationship: none
-          group_type: group
+          group_type: sum
           admin_label: ''
-          dependencies: {  }
-          label: 'Transaction id'
+          label: Balance
           exclude: false
           alter:
             alter_text: false
@@ -91,7 +85,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -117,22 +111,24 @@ display:
           precision: 0
           decimal: .
           separator: ','
-          format_plural: false
-          format_plural_singular: '1'
-          format_plural_plural: '@count'
+          format_plural: 0
+          format_plural_string: "1\x03@count"
           prefix: ''
           suffix: ''
-        diff:
-          id: diff
-          table: mcapi_transactions_index
-          field: diff
-          relationship: none
-          group_type: group
-          admin_label: ''
+          format: normal
           dependencies:
             module:
               - mcapi
-          label: Balance
+          plugin_id: worth
+          provider: mcapi
+        outgoing:
+          id: outgoing
+          table: mcapi_transactions_index
+          field: outgoing
+          relationship: none
+          group_type: sum
+          admin_label: ''
+          label: 'Total expenditure'
           exclude: false
           alter:
             alter_text: false
@@ -151,7 +147,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -173,30 +169,191 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          plugin_id: worth
-          provider: mcapi
-        outgoing:
-          id: outgoing
-          table: mcapi_transactions_index
-          field: outgoing
+          set_precision: false
+          precision: 0
+          decimal: .
+          separator: ','
+          format_plural: 0
+          format_plural_string: "1\x03@count"
+          prefix: ''
+          suffix: ''
+          format: normal
           plugin_id: worth
           provider: mcapi
         incoming:
           id: incoming
           table: mcapi_transactions_index
           field: incoming
+          relationship: none
+          group_type: sum
+          admin_label: ''
+          label: 'Total income'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          set_precision: false
+          precision: 0
+          decimal: .
+          separator: ','
+          format_plural: 0
+          format_plural_string: "1\x03@count"
+          prefix: ''
+          suffix: ''
+          format: normal
           plugin_id: worth
           provider: mcapi
         partner_id:
           id: partner_id
           table: mcapi_transactions_index
           field: partner_id
+          relationship: none
+          group_type: count_distinct
+          admin_label: ''
+          label: 'Num partners'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          set_precision: false
+          precision: 0
+          decimal: .
+          separator: ','
+          format_plural: 0
+          format_plural_string: "1\x03@count"
+          prefix: ''
+          suffix: ''
+          link: true
           plugin_id: mcapi_wallet_label
           provider: mcapi
         serial:
           id: serial
           table: mcapi_transactions_index
           field: serial
+          relationship: none
+          group_type: count
+          admin_label: ''
+          label: 'Num transactions'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          set_precision: false
+          precision: 0
+          decimal: .
+          separator: ','
+          format_plural: 0
+          format_plural_string: "1\x03@count"
+          prefix: ''
+          suffix: ''
           plugin_id: standard
           provider: views
       filters: {  }
@@ -214,9 +371,6 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - views
           default_action: 'not found'
           exception:
             value: all
@@ -242,11 +396,20 @@ display:
             type: none
             fail: 'not found'
           validate_options: {  }
+          dependencies:
+            module:
+              - views
           plugin_id: standard
           provider: views
       field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
       group_by: true
+      display_extenders: {  }
+    cache_metadata:
+      contexts:
+        - 'languages:language_interface'
+        - url
+      cacheable: false
   wallet_stats:
     display_plugin: block
     id: wallet_stats
@@ -286,7 +449,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -339,7 +502,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -392,7 +555,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -445,7 +608,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -498,7 +661,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -527,5 +690,10 @@ display:
       display_description: 'transactions summary per currency'
       block_category: 'Community Accounting'
       block_description: 'Wallet summary per currency'
-      display_comment: "@todo render the currency name instead of the machine name"
-
+      display_comment: '@todo render the currency name instead of the machine name'
+      display_extenders: {  }
+    cache_metadata:
+      contexts:
+        - 'languages:language_interface'
+        - url
+      cacheable: false

@@ -1,5 +1,10 @@
+id: mcapi_transactions
+label: Transactions
+description: 'A list of all transactions'
+tag: mcapi
 langcode: en
 status: true
+core: 8.x
 dependencies:
   config:
     - field.storage.mcapi_transaction.worth
@@ -7,14 +12,9 @@ dependencies:
   module:
     - mcapi
     - user
-id: mcapi_transactions
-label: 'Transactions'
 module: views
-description: 'A list of all transactions'
-tag: 'mcapi'
 base_table: mcapi_transaction
 base_field: xid
-core: 8.x
 display:
   default:
     display_plugin: default
@@ -78,15 +78,98 @@ display:
           quantity: 9
         provider: views
       style:
-        type: html_list
+        type: table
         options:
           grouping: {  }
           row_class: ''
           default_row_class: false
-          type: ul
-          wrapper_class: item-list
-          class: ''
-        provider: views
+          override: true
+          sticky: false
+          caption: ''
+          summary: ''
+          description: ''
+          columns:
+            xid: xid
+            serial: serial
+            name: name
+            name_1: name_1
+            description: description
+            worth: worth
+            created: created
+            type: type
+            state: state
+            transitions: transitions
+          info:
+            xid:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            serial:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            name:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            name_1:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            description:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            worth:
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            created:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            type:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            state:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            transitions:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          default: '-1'
+          empty_table: false
       row:
         type: fields
         options:
@@ -96,68 +179,6 @@ display:
           hide_empty: false
         provider: views
       fields:
-        xid:
-          id: xid
-          table: mcapi_transaction
-          field: xid
-          relationship: none
-          group_type: group
-          admin_label: ''
-          dependencies:
-            module:
-              - views
-          label: '#'
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: null
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          set_precision: false
-          precision: 0
-          decimal: .
-          separator: ''
-          format_plural: false
-          format_plural_singular: '1'
-          format_plural_plural: '@count'
-          prefix: ''
-          suffix: ''
-          plugin_id: numeric
-          provider: views
         serial:
           id: serial
           table: mcapi_transaction
@@ -165,14 +186,11 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - views
           label: Serial
           exclude: false
           alter:
-            alter_text: false
-            text: ''
+            alter_text: true
+            text: '#{{ serial }}'
             make_link: false
             path: ''
             absolute: false
@@ -204,25 +222,40 @@ display:
           element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: true
+          element_default_classes: false
           empty: ''
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          plugin_id: standard
-          provider: views
-        wallet_label:
-          id: wallet_label
-          table: mcapi_wallet
-          field: wallet_label
-          relationship: payee
-          group_type: group
-          admin_label: ''
+          click_sort_column: value
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: 1
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: 0
           dependencies:
             module:
-              - mcapi
-          label: ''
-          exclude: true
+              - views
+          plugin_id: standard
+          provider: views
+        label_1:
+          id: label_1
+          table: mcapi_wallet
+          field: label
+          relationship: payer
+          group_type: group
+          admin_label: ''
+          label: Payer
+          exclude: false
           alter:
             alter_text: false
             text: ''
@@ -240,7 +273,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: null
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -254,7 +287,7 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: false
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -262,20 +295,21 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
+          link: 1
+          entity_type: mcapi_wallet
           plugin_id: mcapi_wallet_label
-          provider: mcapi
-        wallet_label_1:
-          id: wallet_label_1
+        label:
+          id: label
           table: mcapi_wallet
-          field: wallet_label
-          relationship: payer
+          field: label
+          relationship: payee
           group_type: group
           admin_label: ''
-          label: ''
+          label: Payee
           exclude: false
           alter:
-            alter_text: true
-            text: "From: {{ wallet_label_1 }}<br />\nTo: {{ wallet_label }}"
+            alter_text: false
+            text: ''
             make_link: false
             path: ''
             absolute: false
@@ -290,7 +324,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: null
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -304,7 +338,7 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: false
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -312,11 +346,9 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          dependencies:
-            module:
-              - mcapi
+          link: 1
+          entity_type: mcapi_wallet
           plugin_id: mcapi_wallet_label
-          provider: mcapi
         description:
           id: description
           table: mcapi_transaction
@@ -420,7 +452,7 @@ display:
           empty_zero: false
           hide_alter_empty: true
           click_sort_column: value
-          type: worth_raw
+          type: worth
           settings: {  }
           group_column: value
           group_columns: {  }
@@ -664,16 +696,13 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - views
           operator: contains
           value: ''
           group: 1
           exposed: true
           expose:
             operator_id: description_op
-            label: Description
+            label: 'Description contains'
             description: ''
             use_operator: false
             operator: description_op
@@ -701,6 +730,9 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
+          dependencies:
+            module:
+              - views
           plugin_id: string
           provider: views
         payee:
@@ -711,12 +743,12 @@ display:
           group_type: group
           admin_label: ''
           operator: in
-          value: ''
+          value: {  }
           group: 1
           exposed: true
           expose:
             operator_id: ''
-            label: Payee
+            label: 'Payee wallet #id'
             description: ''
             use_operator: false
             operator: payee_op
@@ -761,13 +793,13 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          operator: 'in'
-          value: ''
+          operator: in
+          value: {  }
           group: 1
           exposed: true
           expose:
             operator_id: ''
-            label: Payer
+            label: 'Payer wallet #id'
             description: ''
             use_operator: false
             operator: payer_op
@@ -783,6 +815,7 @@ display:
               ladmin: '0'
               manager: '0'
               admin: '0'
+            reduce: false
           is_grouped: false
           group_info:
             label: ''
@@ -809,16 +842,13 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - user
           operator: in
-          value: ''
+          value: {  }
           group: 1
           exposed: true
           expose:
             operator_id: creator_op
-            label: Creator
+            label: 'Creator user id'
             description: ''
             use_operator: false
             operator: creator_op
@@ -847,6 +877,9 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
+          dependencies:
+            module:
+              - user
           plugin_id: user_name
           provider: user
         state:
@@ -905,15 +938,11 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - views
-              - views
-              - views
           operator: in
           value:
             auto: auto
             default: default
+            mass: mass
             test: test
           group: 1
           exposed: true
@@ -925,7 +954,7 @@ display:
             operator: type_1_op
             identifier: type_1
             required: false
-            remember: false
+            remember: true
             multiple: false
             remember_roles:
               authenticated: authenticated
@@ -935,7 +964,7 @@ display:
               ladmin: '0'
               manager: '0'
               admin: '0'
-            reduce: false
+            reduce: true
           is_grouped: false
           group_info:
             label: ''
@@ -946,8 +975,14 @@ display:
             multiple: false
             remember: false
             default_group: All
-            default_group_multaiple: {  }
+            default_group_multiple: {  }
             group_items: {  }
+            default_group_multaiple: {  }
+          dependencies:
+            module:
+              - views
+              - views
+              - views
           plugin_id: in_operator
           provider: views
       sorts:
@@ -1042,6 +1077,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
+        - 'url.query_args.pagers:0'
       cacheable: false
   admin:
     display_plugin: page
@@ -1084,6 +1120,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
+        - 'url.query_args.pagers:0'
       cacheable: false
   simple:
     display_plugin: page
@@ -1263,112 +1300,6 @@ display:
           hide_alter_empty: true
           plugin_id: standard
           provider: views
-        wallet_label:
-          id: wallet_label
-          table: mcapi_wallet
-          field: wallet_label
-          relationship: payee
-          group_type: group
-          admin_label: ''
-          dependencies:
-            module:
-              - mcapi
-          label: ''
-          exclude: true
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: null
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          plugin_id: mcapi_wallet_label
-          provider: mcapi
-        wallet_label_1:
-          id: wallet_label_1
-          table: mcapi_wallet
-          field: wallet_label
-          relationship: payer
-          group_type: group
-          admin_label: ''
-          dependencies:
-            module:
-              - mcapi
-          label: Between
-          exclude: false
-          alter:
-            alter_text: true
-            text: "From: {{ wallet_label_1 }}<br />\nTo: {{ wallet_label }}"
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: null
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          plugin_id: mcapi_wallet_label
-          provider: mcapi
         description:
           id: description
           table: mcapi_transaction
@@ -1423,6 +1354,108 @@ display:
           link: 1
           plugin_id: mcapi_description
           provider: mcapi
+        label_1:
+          id: label_1
+          table: mcapi_wallet
+          field: label
+          relationship: payer
+          group_type: group
+          admin_label: ''
+          label: 'Payer wallet label'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: false
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          link: 1
+          entity_type: mcapi_wallet
+          plugin_id: mcapi_wallet_label
+        label:
+          id: label
+          table: mcapi_wallet
+          field: label
+          relationship: payee
+          group_type: group
+          admin_label: ''
+          label: 'Payee wallet label'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: false
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          link: 1
+          entity_type: mcapi_wallet
+          plugin_id: mcapi_wallet_label
         worth:
           id: worth
           table: mcapi_transaction__worth
@@ -1602,11 +1635,6 @@ display:
           view: 1
           plugin_id: transaction_transitions
           provider: mcapi
-        worth_1:
-          id: worth_1
-          table: mcapi_transaction__worth
-          field: worth
-          plugin_id: field
       display_description: ''
       display_extenders: {  }
     cache_metadata:
@@ -1614,4 +1642,5 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
+        - 'url.query_args.pagers:0'
       cacheable: false

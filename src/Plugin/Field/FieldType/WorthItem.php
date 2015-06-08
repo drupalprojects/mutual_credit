@@ -91,13 +91,13 @@ class WorthItem extends FieldItemBase {
   }
 
   /**
-   * format the worth value according to 3 view modes, normal, decimal and raw
+   * format the worth value according to 3 view modes, normal, decimal and native
    * taking into account that there may be special formatting if worth is 0
    */
   public function view($mode = 'normal') {
     extract($this->getValue(FALSE));
     $currency = Currency::load($curr_id);
-    if ($mode == 'raw') {
+    if ($mode == 'native') {
       $markup = $value;
     }
     else {

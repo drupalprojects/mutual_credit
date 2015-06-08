@@ -3,7 +3,6 @@ langcode: null
 status: true
 dependencies:
   config:
-    - field.field.mcapi_transaction.mcapi_transaction.categories
     - field.field.mcapi_transaction.mcapi_transaction.worth
   module:
     - mcapi

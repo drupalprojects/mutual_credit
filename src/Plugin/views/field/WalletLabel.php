@@ -42,7 +42,7 @@ class WalletLabel extends Standard {
   }
 
   public function query() {
-    $this->ensureMyTable();
+    //$this->ensureMyTable();
   }
 
   /**

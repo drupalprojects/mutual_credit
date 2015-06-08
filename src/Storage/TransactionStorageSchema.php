@@ -1,4 +1,4 @@
-llllll<?php
+<?php
 
 /**
  * @file

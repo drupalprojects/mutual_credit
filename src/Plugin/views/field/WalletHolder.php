@@ -33,13 +33,7 @@ class WalletHolder extends Standard {
    * {@inheritdoc}
    */
   function render(ResultRow $values) {
-    $holder = $this->getEntity($values)->getHolder();
-    if ($url = $holder->url()) {
-      return $this->l($holder->label(), $url);
-    }
-    else {
-      return \Drupal::Config('system.site')->get('name');
-    }
+    return $this->getEntity($values)->getHolder()->link();
 
   }
 

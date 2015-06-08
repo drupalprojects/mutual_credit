@@ -11,11 +11,10 @@ namespace Drupal\mcapi\Plugin\views\filter;
 use Drupal\Component\Utility\Tags;
 use Drupal\Core\Entity\Element\EntityAutocomplete;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\user\Entity\User;
 use Drupal\views\Plugin\views\filter\InOperator;
 
 /**
- * Filter handler for usernames.
+ * Filter handler for wallet ids.
  *
  * @ingroup views_filter_handlers
  *
@@ -23,18 +22,20 @@ use Drupal\views\Plugin\views\filter\InOperator;
  */
 class Wallet extends InOperator {
 
-
+  /**
+   * Options form subform for setting options.
+   *
+   * @see buildOptionsForm()
+   */
   protected function valueForm(&$form, FormStateInterface $form_state) {
-    $form['value'] = array(
-      '#title' => $this->t('Usernames'),
+    $form['value'] = [
+      '#title' => $this->t('Wallet names....'),
       '#type' => 'select_wallet',
-    );
+      '#default_value' => $this->value ? Wallet::loadMultiple($this->value) : NULL
+    ];
 
     $user_input = $form_state->getUserInput();
     if ($form_state->get('exposed') && !isset($user_input[$this->options['expose']['identifier']])) {
-
-      $wallets = $this->value ? Wallet::loadMultiple($this->value) : array();
-      $default_value = EntityAutocomplete::getEntityLabels($wallets);
       $user_input[$this->options['expose']['identifier']] = $default_value;
       $form_state->setUserInput($user_input);
     }
@@ -98,32 +99,20 @@ class Wallet extends InOperator {
     // prevent array filter from removing our anonymous user.
   }
 
+
   // Override to do nothing.
   public function getValueOptions() { }
 
   public function adminSummary() {
     // set up $this->valueOptions for the parent summary
-    $this->valueOptions = array();
-
+    $this->valueOptions = [];
     if ($this->value) {
-      $result = entity_load_multiple_by_properties('user', array('uid' => $this->value));
-      foreach ($result as $account) {
-        if ($account->id()) {
-          $this->valueOptions[$account->id()] = $account->label();
-        }
-        else {
-          $this->valueOptions[$account->id()] = 'Anonymous'; // Intentionally NOT translated.
-        }
+      $result = entity_load_multiple_by_properties('wallet', array('wid' => $this->value));
+      foreach ($result as $wallet) {
+        $this->valueOptions[$wallet->id()] = $wallet->label();
       }
     }
-
     return parent::adminSummary();
-  }
-
-  //@todo fix the exposed filter (e.g. on transactions/admin) when the message block is working
-  public function buildExposedForm(&$form, FormStateInterface $form_state) {
-    parent::buildExposedForm($form, $form_state);
-    die('Wallet exposed filter not yet implemented');
   }
 
 }

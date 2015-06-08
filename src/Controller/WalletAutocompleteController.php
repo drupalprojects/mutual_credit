@@ -93,7 +93,7 @@ class WalletAutocompleteController extends ControllerBase{
     else {
       foreach (Wallet::loadMultiple($wids) as $wallet) {
         $json[] = [
-          'value' => $wallet->label(NULL, FALSE),//maybe shorter
+          'value' => $wallet->label(NULL, FALSE) .' #'.$wallet->id(),
           'label' => $wallet->label(NULL, TRUE)
           //both labels should end with the #wid which is needed for parsing later
         ];

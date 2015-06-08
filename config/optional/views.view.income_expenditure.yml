@@ -1,15 +1,14 @@
+id: income_expenditure
+label: 'Income & Expenditure'
+description: 'two displays showing a users transactions in each direction, by period'
 langcode: en
 status: true
 dependencies:
   config:
     - field.storage.mcapi_transaction.worth
   module:
-    - field
     - mcapi
-id: income_expenditure
-label: 'Income & Expenditure'
 module: views
-description: 'two displays showing a users transactions in each direction, by period'
 tag: ''
 base_table: mcapi_transaction
 base_field: xid
@@ -36,7 +35,7 @@ display:
           disable_sql_rewrite: false
           distinct: false
           replica: false
-          query_comment: false
+          query_comment: ''
           query_tags: {  }
         provider: views
         dependencies: {  }
@@ -113,7 +112,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -177,6 +176,11 @@ display:
       link_url: ''
       link_display: income
       display_extenders: {  }
+    cache_metadata:
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+      cacheable: false
   expenditure:
     display_plugin: attachment
     id: expenditure
@@ -217,7 +221,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -270,7 +274,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -326,7 +330,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -350,59 +354,6 @@ display:
           hide_alter_empty: true
           link: 1
           plugin_id: mcapi_description
-          provider: mcapi
-        wallet_label:
-          id: wallet_label
-          table: mcapi_wallet
-          field: wallet_label
-          relationship: payee
-          group_type: group
-          admin_label: ''
-          dependencies:
-            module:
-              - mcapi
-          label: Payee
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: ''
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          plugin_id: mcapi_wallet_label
           provider: mcapi
         worth:
           id: worth
@@ -435,7 +386,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -463,8 +414,8 @@ display:
           group_column: value
           group_columns: {  }
           group_rows: true
-          delta_limit: all
-          delta_offset: '0'
+          delta_limit: 0
+          delta_offset: 0
           delta_reversed: false
           delta_first_last: false
           multi_type: separator
@@ -501,7 +452,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -554,7 +505,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -580,6 +531,57 @@ display:
           view: 0
           plugin_id: transaction_transitions
           provider: mcapi
+        label:
+          id: label
+          table: mcapi_wallet
+          field: label
+          relationship: payee
+          group_type: group
+          admin_label: ''
+          label: Payee
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          link: 1
+          entity_type: mcapi_wallet
+          plugin_id: mcapi_wallet_label
       defaults:
         fields: false
         arguments: false
@@ -691,6 +693,12 @@ display:
       inherit_pager: true
       inherit_exposed_filters: true
       display_extenders: {  }
+    cache_metadata:
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+      cacheable: false
   income:
     display_plugin: page
     id: income
@@ -831,7 +839,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -884,7 +892,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -940,7 +948,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -965,16 +973,13 @@ display:
           link: 1
           plugin_id: mcapi_description
           provider: mcapi
-        wallet_label:
-          id: wallet_label
+        label:
+          id: label
           table: mcapi_wallet
-          field: wallet_label
+          field: label
           relationship: payer
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - mcapi
           label: Payer
           exclude: false
           alter:
@@ -994,7 +999,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1011,13 +1016,14 @@ display:
           element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
-          element_default_classes: true
+          element_default_classes: false
           empty: ''
           hide_empty: false
           empty_zero: false
-          hide_alter_empty: true
+          hide_alter_empty: false
+          link: 1
+          entity_type: mcapi_wallet
           plugin_id: mcapi_wallet_label
-          provider: mcapi
         worth:
           id: worth
           table: mcapi_transaction__worth
@@ -1049,7 +1055,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1077,8 +1083,8 @@ display:
           group_column: value
           group_columns: {  }
           group_rows: true
-          delta_limit: all
-          delta_offset: '0'
+          delta_limit: 0
+          delta_offset: 0
           delta_reversed: false
           delta_first_last: false
           multi_type: separator
@@ -1115,7 +1121,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1168,7 +1174,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: ''
+            max_length: null
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1211,4 +1217,9 @@ display:
           plugin_id: standard
           provider: views
       display_extenders: {  }
-
+    cache_metadata:
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+      cacheable: false

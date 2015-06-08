@@ -17,24 +17,39 @@ class WalletViewsData extends EntityViewsData {
   public function getViewsData() {
     $data = parent::getViewsData();
     $data['mcapi_wallet']['wid']['field']['id'] = 'mcapi_entity';
+
+
+    //unwanted fields
     unset($data['mcapi_wallet']['pid']);
+    unset($data['mcapi_wallet']['payin']);
+    unset($data['mcapi_wallet']['payout']);
+    unset($data['mcapi_wallet']['details']);
+    unset($data['mcapi_wallet']['summary']);
+    unset($data['mcapi_wallet']['operations']);
 
-    $data['mcapi_wallet']['table']['base']['defaults']['field'] = 'wallet_label';
-
-    $data['mcapi_wallet']['wallet_label'] = [
+    $data['mcapi_wallet']['label'] = [
       'title' => t('Label'),
-      'help' => t('the name of the wallet'),
+      'help' => t('Uses the entity label_callback'),
       'field' => [
         'id' => 'mcapi_wallet_label',
-      ]
+      ],
     ];
     $data['mcapi_wallet']['holder'] = [
-      'title' => t('The wallet holder'),
+      'title' => t('Holding entity'),
+      'help' => t('Could be any entity implementing OwnerInterface'),
       'field' => [
         'id' => 'mcapi_wallet_holder',
       ],
     ];
+    $data['mcapi_wallet']['owner'] = [
+      'title' => t('Owner user'),
+      'help' => t('The user who is ultimately responsible for the wallet'),
+      'field' => [
+        'id' => 'mcapi_wallet_user',
+      ],
+    ];
     $data['mcapi_wallet']['entity_type']['field']['id'] = 'mcapi_holder_type';
+    $data['mcapi_wallet']['entity_type']['field']['help'] = $this->t("The wallet holder's translated EntityType name");
 
     return $data;
   }

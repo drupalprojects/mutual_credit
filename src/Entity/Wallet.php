@@ -50,6 +50,7 @@ use Drupal\Core\Session\AccountInterface;
  *   },
  *   admin_permission = "configure mcapi",
  *   base_table = "mcapi_wallet",
+ *   label_callback = "Drupal\mcapi\Entity\Wallet::walletFormatName",
  *   entity_keys = {
  *     "id" = "wid",
  *     "uuid" = "uuid"
@@ -116,21 +117,26 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * {@inheritdoc}
    */
   public function label($langcode = NULL, $full = TRUE) {
-    //normally you would display the $full name to all users and the wallet->name only to the holder.
-    $output = '';
-    //we need to decide whether / when to display the holder and when the wallet name
+    return call_user_func($this->getEntityType()->getLabelCallback(), $this);
+  }
 
-    $name = $this->name->value;
-    if ($full || !$name) {
-      $output = $this->getHolder()->label() . ": ";
-    }
+  /**
+   * entity_label_callback().
+   * default callback for wallet
+   * put the Holder's name with the wallet name in brackets if it exists
+   */
+  public static function walletFormatName($wallet) {
+    $output = $wallet->getHolder()->label();//what happens if the wallet is orphaned?
+
+    $name = $wallet->name->value;
+
     if ($name == '_intertrade') {
-      $output .= t('Import/Export');
+      $output .= ' '.t('Import/Export');
     }
-    elseif ($name) {
-      $output .= $name;
+    elseif($name) {
+      $output .= ' ('.$name.')';
     }
-    return $output . ' #' . $this->wid->value;
+    return $output;
   }
 
   /**
@@ -179,8 +185,8 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       ->setReadOnly(TRUE);
 
     $fields['name'] = BaseFieldDefinition::create('string')
-      ->setLabel(t('Name'))
-      ->setDescription(t("The holder's name for this wallet"))
+      ->setLabel(t('Wallet name'))
+      ->setDescription(t("Set by the wallet's owner"))
       ->addConstraint('max_length', 64)
       ->setSetting('default_value', array(0 => '')); //if we leave the default to be NULL it is difficult to filter with mysql
     //->setDisplayConfigurable('view', TRUE)
@@ -215,6 +221,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     }
     $fields['orphaned'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Orphaned'))
+      ->setDescription(t('TRUE if this wallet is not currently held'))
       ->setSetting('default_value', array(0 => '0'));
     return $fields;
   }

@@ -47,14 +47,14 @@ class WorthFieldItemList extends FieldItemList {
    */
   public function view($mode = 'normal') {
     foreach ($this->list as $item) {
-      $renderable = $item->view($mode);
+      $renderable[] = $item->view($mode);
       $values[] = \Drupal::service('renderer')->render($renderable);
     }
-    $delimiter = '';
     if (count($values) > 1) {
-      $delimiter = \Drupal::config('mcapi.misc')->get('worths_delimiter');
+      $markup = implode(\Drupal::config('mcapi.misc')->get('worths_delimiter'), $values);
     }
-    return ['#markup' => implode($delimiter, $values)];
+    else $markup = current($values);
+    return ['#markup' => $markup];
   }
 
 

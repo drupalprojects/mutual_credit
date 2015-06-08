@@ -18,7 +18,7 @@ use Drupal\views\ViewExecutable;
  *
  * @ingroup views_field_handlers
  *
- * @ViewsField("mcapi_Type")
+ * @ViewsField("mcapi_type")
  */
 class Type extends FieldPluginBase {
 
@@ -30,7 +30,8 @@ class Type extends FieldPluginBase {
   }
 
   function render(ResultRow $values) {
-    return $this->types[$this->getValue($values)];
+    $raw = $this->getValue($values);
+    return '<span class = "'.$raw.'">'.$this->types[$raw].'</span>';
   }
 
 }

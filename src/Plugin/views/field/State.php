@@ -30,7 +30,9 @@ class State extends FieldPluginBase {
   }
 
   function render(ResultRow $values) {
-    return $this->states[$this->getValue($values)];
+    $raw = $this->getValue($values);
+    //@todo make some nice css for each of the default states, maybe using dingbats coz consistent clipart would be hard
+    return '<span class = "'.$raw.'">'.$this->states[$raw].'</span>';
   }
 
 }

@@ -10,7 +10,6 @@ namespace Drupal\mcapi\Element;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\Element\EntityAutocomplete;
 use Drupal\Component\Utility\Tags;
-use Drupal\Core\Template\Attribute;
 
 /**
  * Provides a widget to select wallets, using autocomplete
@@ -29,8 +28,7 @@ class Wallet extends EntityAutocomplete {
     return [
       '#autocomplete_route_name' => 'mcapi.wallets.autocomplete',
       '#autocomplete_route_parameters' => ['role' => 'null'],
-      '#required' => TRUE,
-      '#target_type' => 'mcapi_wallet'
+      //'#target_type' => 'mcapi_wallet'
     ] + $info;
   }
 
@@ -111,13 +109,13 @@ class Wallet extends EntityAutocomplete {
    * {@inheritdoc}
    */
   public static function getEntityLabels(array $entities) {
-    $entity_labels = [];
-    foreach ($entities as $entity) {
-      $label = ($entity->access('view')) ? $entity->label() : t('- Restricted access -');
+    $wallet_labels = [];
+    foreach ($entities as $wallet) {
+      $label = ($wallet->access('view')) ? $wallet->label() : t('- Restricted access -');
       // Labels containing commas or quotes must be wrapped in quotes.
-      $entity_labels[] = Tags::encode($label);
+      $wallet_labels[] = Tags::encode($label)  . ' #' . $wallet->wid->value;
     }
-    return implode(', ', $entity_labels);
+    return implode(', ', $wallet_labels);
   }
 
 }

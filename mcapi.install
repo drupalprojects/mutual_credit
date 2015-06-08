@@ -51,7 +51,7 @@ function mcapi_modules_installed() {
   foreach (\Drupal::service('mcapi.transition_manager')->getDefinitions() as $id => $definition) {
     if (!array_key_exists($id, $active)) {
       $active[$id] = $id;
-      drupal_set_message('enabled transition '.$id);
+      //drupal_set_message('enabled transition '.$id);
     }
     //this may result in more than one save, but it won't result in saving unchanged values
     $conf->set('active_transitions', $active)->save();
@@ -61,7 +61,7 @@ function mcapi_modules_installed() {
   foreach (\Drupal::service('mcapi.transaction_relative_manager')->getDefinitions() as $id => $definition) {
     if (!array_key_exists($id, $active)) {
       $active[$id] = $id;
-      drupal_set_message('enabled relative '.$id);
+      //drupal_set_message('enabled relative '.$id);
     }
     //this may result in more than one save, but it won't result in saving unchanged values
     $conf->set('active_relatives', $active)->save();

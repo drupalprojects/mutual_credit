@@ -24,18 +24,42 @@ use Drupal\Core\Field\FieldItemListInterface;
  */
 class WorthFormatter extends FormatterBase {
 
+      /**
+   * {@inheritdoc}
+   */
+  protected function defineOptions() {
+    $options = parent::defineOptions();
+    $options['format'] = ['default' => 'normal'];
+    return $options;
+  }
+
   /**
    * {@inheritdoc}
    */
-  public function viewElements(FieldItemListInterface $items) {
-    $elements = [];
+  public function buildOptionsForm(&$form, FormStateInterface $form_state) {
+    $form['format'] = [
+      '#title' => $this->t("Format"),
+      '#type' => 'radios',
+      '#options' => [
+        'normal' => $this->t('Normal'),
+        'native' => $this->t('Native integer'),
+        'decimalised' => $this->t('Forced decimal')
+      ],
+      '#required' => TRUE,
+      '#default_value' => !empty($this->options['format']),
+    ];
+    parent::buildOptionsForm($form, $form_state);
+  }
 
-    foreach ($items as $delta => $item) {
-      $elements[$delta] = array(
-        '#markup' => $item->view(),
-        '#cache' => ['tags' => []]
-      );
-    }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function viewElements(FieldItemListInterface $items) { 
+    //we're shovelling all the $items into 1 element because the have already
+    //been rendered together, with a separator character
+    $elements[0] = $items->view($this->options['format'] == 'normal');
+
     return $elements;
   }
 

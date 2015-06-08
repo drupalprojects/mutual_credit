@@ -9,23 +9,10 @@ namespace Drupal\mcapi\Plugin\Field\FieldType;
 
 use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
 
-use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Entity\TypedData\EntityDataDefinition;
-use Drupal\Core\Field\FieldDefinitionInterface;
-use Drupal\Core\Field\FieldItemBase;
-use Drupal\Core\Field\FieldStorageDefinitionInterface;
-use Drupal\Core\TypedData\DataDefinition;
-use Drupal\Core\TypedData\DataReferenceDefinition;
 
 /**
- * Defines the 'entity_reference' entity field type.
- *
- * Supported settings (below the definition's 'settings' key) are:
- * - target_type: The entity type to reference. Required.
- * - target_bundle: (optional): If set, restricts the entity bundles which may
- *   may be referenced. May be set to an single bundle, or to an array of
- *   allowed bundles.
+ * Defines the 'wallet' entity field type, which is only separate from
+ * entity_reference because it has a separate widget and autocomplete class
  *
  * @FieldType(
  *   id = "wallet",

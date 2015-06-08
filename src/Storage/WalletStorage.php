@@ -174,7 +174,6 @@ class WalletStorage extends SqlContentEntityStorage {
         $alias = $entity_type_id;
         $entity_table = $entity_info->getDataTable() ? : $entity_info->getBaseTable();
 
-        //@see mcapi_entity_type_alter()
         if ($entity_type_id == 'user') {
           $label_key = 'name';
         }
@@ -185,6 +184,9 @@ class WalletStorage extends SqlContentEntityStorage {
         if ($label_key) {
           $query->leftjoin($entity_table, $alias, "w.pid = $alias.uid");
           $namelike->condition($alias.'.'.$label_key, $string, 'LIKE');
+        }
+        else {
+          drupal_set_message("Can't filter on ".$entity_type_id .' because there is no label field for that entityType', 'warning');
         }
         /*
         //We are joining both to the entity table and to its exchanges reference

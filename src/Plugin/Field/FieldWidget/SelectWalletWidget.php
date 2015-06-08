@@ -3,6 +3,7 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\Field\Widget\SelectWalletWidget.
+ * @deprecated
  */
 
 namespace Drupal\mcapi\Plugin\Field\FieldWidget;
