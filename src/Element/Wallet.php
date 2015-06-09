@@ -88,13 +88,7 @@ class Wallet extends EntityAutocomplete {
 
 
   /**
-   * Extracts the entity ID from the autocompletion result.
-   *
-   * @param string $input
-   *   The input coming from the autocompletion result.
-   *
-   * @return mixed|null
-   *   An entity ID or NULL if the input does not contain one.
+   * {@inheritdoc}
    */
   public static function extractEntityIdFromAutocompleteInput($input) {
     $match = NULL;

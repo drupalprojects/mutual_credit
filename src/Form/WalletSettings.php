@@ -15,6 +15,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class WalletSettings extends ConfigFormBase {
 
   private $entityManager;
+
+  public function __construct(ConfigFactoryInterface $configFactory, $entityManager) {
+    $this->setConfigFactory($configFactory);
+    $this->entityManager = $entityManager;
+  }
   /**
    * {@inheritdoc}
    */
@@ -22,18 +27,15 @@ class WalletSettings extends ConfigFormBase {
     return 'mcapi_wallet_settings_form';
   }
 
-  public function __construct(ConfigFactoryInterface $configFactory, $entityManager) {
-    $this->setConfigFactory($configFactory);
-    $this->entityManager = $entityManager;
-  }
-
+  /**
+   * {@inheritdoc}
+   */
   static public function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
       $container->get('entity.manager')
     );
   }
-
 
   /**
    * {@inheritdoc}
@@ -42,12 +44,12 @@ class WalletSettings extends ConfigFormBase {
     $config = $this->configFactory()->get('mcapi.wallets');
 
     $form['add_link_location'] = [
-      '#title' => t("Location of 'new wallet' link"),
+      '#title' => $this->t("Location of 'new wallet' link"),
       '#type' => 'checkboxes',
-      '#options' => array(
+      '#options' => [
         'local_action' => $this->t("Local action on the holder's display page"),
         'summaries' => $this->t('In the wallet summaries block'),
-      ),
+      ],
       '#default_value' => $config->get('add_link_location'),
       '#required' => TRUE,
       '#weight' => 1,
@@ -59,7 +61,7 @@ class WalletSettings extends ConfigFormBase {
       Url::fromUri('https://api.drupal.org/api/drupal/core!modules!user!src!EntityOwnerInterface.php/interface/EntityOwnerInterface/8')
     );
     $form['entity_types'] = [
-      '#title' => t('Max number of wallets'),
+      '#title' => $this->t('Max number of wallets'),
       '#description' => $this->t(
         "Wallets can be owned by any entity type which implements !interface and has an entity_references field to 'exchange' entities.",
         ['!interface' => $link]
@@ -92,8 +94,8 @@ class WalletSettings extends ConfigFormBase {
       }
     }
     $form['autoadd'] = [
-      '#title' => t('Auto-create'),
-      '#description' => t('One new wallet for each entity type above.') .' '.t('This is not retrospective'),
+      '#title' => $this->t('Auto-create'),
+      '#description' => $this->t('Each entity type above will be created with its own wallet.') .' '.t('This is not retroactive'),
       '#type' => 'checkbox',
       '#default_value' => $config->get('autoadd'),
       '#weight' => 3,
@@ -133,6 +135,30 @@ class WalletSettings extends ConfigFormBase {
     $form['wallet_access']['summary'][WALLET_ACCESS_OWNER]['#disabled'] = TRUE;
     unset($form['wallet_access']['payin']['#options'][WALLET_ACCESS_ANY]);
     unset($form['wallet_access']['payout']['#options'][WALLET_ACCESS_ANY]);
+
+    $form['user_interface'] = [
+      '#title' => $this->t('User interface'),
+      '#type' => 'details',
+      'threshhold' => [
+        '#title' => $this->t('Threshhold'),
+        '#description' => $this->t('If there are more wallets to choose from than this number, the autocomplete widget will be used.'),
+        '#type' => 'number',
+        '#default_value' => $config->get('threshhold'),
+        '#required' => TRUE
+      ],
+      'widget' => [
+        '#title' => $this->t('Widget'),
+        '#description' => $this->t('The preferred widget to select from a small number of wallets.'),
+        '#type' => 'radios',
+        '#options' => [
+          'select' => $this->t('A dropdown box'),
+          'radios' => $this->t('Radio buttons')
+        ],
+        '#default_value' => $config->get('widget'),
+        '#required' => TRUE
+      ],
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -163,6 +189,8 @@ class WalletSettings extends ConfigFormBase {
       ->set('summary', array_filter($vals['summary']))
       ->set('payin', array_filter($vals['payin']))
       ->set('payout', array_filter($vals['payout']))
+      ->set('threshhold', array_filter($vals['threshhold']))
+      ->set('widget', array_filter($vals['widget']))
       ->save();
 
     parent::submitForm($form, $form_state);

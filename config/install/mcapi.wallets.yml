@@ -14,3 +14,5 @@ summary:
   2: '2'
 payin:
   2: '2'
+threshhold: 5
+widget: select

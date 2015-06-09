@@ -59,8 +59,10 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
   public static function enoughWallets($account = NULL) {
     Self::$result;
     if (!Self::$result) {
-      if (!$account)$account = \Drupal::currentUser();
-      $walletStorage = \Drupal::entitymanager()->getStorage('mcapi_wallet');
+      if (!$account){
+        $account = \Drupal::currentUser();
+      }
+      $walletStorage = \Drupal::entityManager()->getStorage('mcapi_wallet');
       $payin = $walletStorage->walletsUserCanActOn('payin', $account);
       $payout = $walletStorage->walletsUserCanActOn('payout', $account);
       //there must be at least one wallet in each (and they must be different!)

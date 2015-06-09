@@ -116,7 +116,7 @@ class TransitionForm extends EntityConfirmFormBase {
         $renderable = [
           '#type' => 'inline_template',
           '#template' => $this->transition->getConfiguration('twig'),
-          '#context' => get_transaction_vars($this->entity)
+          '#context' => get_transaction_vars($this->entity),
         ];
         break;
       default:
@@ -145,6 +145,7 @@ class TransitionForm extends EntityConfirmFormBase {
 
     //add any extra form elements as defined in the transition plugin.
     $this->transition->form($form, $this->entity);
+    $form['preview']['#weight'] = -1;
 
     //not sure why this is sometimes not included from TransactionViewBuilder
     $form['#attached']['library'][] = 'mcapi/mcapi.transaction';

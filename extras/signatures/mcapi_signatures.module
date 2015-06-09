@@ -90,7 +90,7 @@ function mcapi_signatures_mcapi_transaction_delete($transaction) {
  */
 function mcapi_signatures_mcapi_transaction_insert($transaction) {
   if (!isset($transaction->signatures)) return;
-  if (empty($transaction->parent)) return;
+  if ($transaction->parent->value) return;//only work with parent transactions
   $uid = \Drupal::currentUser()->id();
   $q = db_insert('mcapi_signatures')
     ->fields(['serial', 'uid', 'signed']);

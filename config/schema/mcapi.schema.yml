@@ -98,6 +98,12 @@ mcapi.wallets:
     payout:
       type: map
       label: 'Pay out of this wallet'
+    threshhold:
+      type: integer
+      label: 'If there are more wallets to choose from than this number, the autocomplete widget will be used.'
+    widget:
+      type: string
+      label: 'The preferred widget to select from a small number of wallets.'
 
 mcapi.currency.*:
   type: config_entity

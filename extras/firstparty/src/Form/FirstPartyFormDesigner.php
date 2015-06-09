@@ -116,7 +116,7 @@ class FirstPartyFormDesigner extends EntityForm {
         '0' => $this->t('Outgoing'),
         '1' => $this->t('Incoming')
       ],
-      '#default_value' => $configEntity->direction,
+      '#default_value' => intval($configEntity->incoming),
       '#required' => TRUE,
       '#weight' => $w++
     ];
@@ -154,22 +154,12 @@ class FirstPartyFormDesigner extends EntityForm {
       '#group' => 'steps',
       '#weight' => $w++
     ];
-    $form['mywallet']['widget'] = [
-      '#title' => $this->t('Widget'),
-      '#description' => $this->t('Only for users with more than one wallet.'),
-      '#type' => 'radios',
-      '#options' => [
-        'select' => $this->t('Dropdown'),
-        'radios' => $this->t('Radio buttons'),
-      ],
-      '#default_value' => $configEntity->mywallet['widget'],
-      '#required' => TRUE,
-    ];
     $form['mywallet']['unused'] = [
       '#title' => $this->t('Unused behaviour'),
       '#description' => $this->t('What to do when the user has just one wallet?'),
       '#type' => 'radios',
       '#options' => [
+        'normal' => $this->t('Normal'),
         'disabled' => $this->t('Greyed out'),
         'hidden' => $this->t('Disappeared'),
       ],

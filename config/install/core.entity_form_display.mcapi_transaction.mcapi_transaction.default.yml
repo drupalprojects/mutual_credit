@@ -29,6 +29,7 @@ content:
       match_operator: CONTAINS
       size: '30'
       placeholder: 'Wallet name or #number'
+      role: payee
     third_party_settings: {  }
   payer:
     type: select_wallet
@@ -37,6 +38,7 @@ content:
       match_operator: CONTAINS
       size: '30'
       placeholder: 'Wallet name or #number'
+      role: payer
     third_party_settings: {  }
   worth:
     type: worth

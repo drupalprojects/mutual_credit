@@ -48,8 +48,8 @@ class TransactionRouteProvider implements EntityRouteProviderInterface {
       ])
       ->setRequirement('_entity_access', 'mcapi_transaction.transition')
       ->setOption('parameters', ['mcapi_transaction' => ['serial' => TRUE]]);
-    $route_collection->add('mcapi.transaction.op', $route);
+    $route_collection->add('mcapi.transaction.transition', $route);
     return $route_collection;
   }
-  
+
 }

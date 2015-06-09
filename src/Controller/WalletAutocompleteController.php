@@ -70,7 +70,6 @@ class WalletAutocompleteController extends ControllerBase{
     //return only the wallets which are both permitted and meet the filter criteria
     $results = $walletStorage->filter($conditions);
     if ($this->role) {
-      die($this->role);
       $walletperm = $this->role == 'payer'
           ? 'payout'
           : 'payin';

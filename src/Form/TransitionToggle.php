@@ -18,14 +18,14 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class TransitionToggle extends ConfirmFormBase {
 
   private $id;
-  private $transition;
+  private $transitionName;
   private $config;
 
   public function __construct($configFactory, $transition_manager, $route_match) {
     $this->setConfigFactory($configFactory);
     $this->id = $route_match->getParameter('transition');
     if ($this->id) {
-      $this->transition = $transition_manager->getDefinition($this->id)->getConfiguration();
+      $this->transitionName = $transition_manager->getConfig($this->id)->get('title');
     }
     $this->config = $this->configFactory->getEditable('mcapi.misc');
   }
@@ -52,7 +52,7 @@ class TransitionToggle extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getQuestion() {
-    $args = ['%name' => $this->transition['title']];
+    $args = ['%name' => $this->transitionName];
     return $this->config->get('active_transitions')[$this->id] ?
       $this->t('Are you sure you want to disable %name?', $args) :
       $this->t('Are you sure you want to enable %name?', $args);
@@ -73,6 +73,7 @@ class TransitionToggle extends ConfirmFormBase {
   public function getDescription() {
     return $this->t('This will affect your transaction workflows.');
   }
+
   /**
    * {@inheritdoc}
    */
@@ -88,7 +89,7 @@ class TransitionToggle extends ConfirmFormBase {
     $active = $this->config->get('active_transitions');
     $active[$this->id] = !$active[$this->id];
     $this->config->set('active_transitions', $active)->save();
-    $args = ['%label' => $this->transition['title']];
+    $args = ['%label' => $this->transitionName];
     if ($active[$this->id]) {
       drupal_set_message($this->t('Transition %label has been enabled.', $args));
     }
@@ -102,7 +103,7 @@ class TransitionToggle extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function title() {
-    $args = ['@name' => $this->transition->label];
+    $args = ['@name' => $this->transition->get('title')];
     return $plugin->getConfiguration('status') ?
       $this->t('Disable transition @name', $args) :
       $this->t('Enable transition @name', $args);

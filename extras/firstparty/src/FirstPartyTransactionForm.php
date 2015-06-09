@@ -82,8 +82,14 @@ class FirstPartyTransactionForm extends TransactionForm {
       '#form' => $form,
       '#twig_tokens' => $tokens,
       '#twig_template' => $this->config->experience['twig'],
-      '#incoming' => $config->incoming
+      '#incoming' => $config->incoming,
+      '#cache' => [
+        'contexts' => ['user']//@todo check this is working.
+      ]
     ];
+    //the whole 1stparty cache would need clearing
+    //anytime any user changed any permission on any wallet
+    //it is still worth cachinh though because the form could be on every page
   }
 
   /**
@@ -123,11 +129,16 @@ class FirstPartyTransactionForm extends TransactionForm {
     //if the currentUser doesn't have more than one wallet,
     //disable the field and store the value in $form_state
     else {
-      $mywallet['#type'] = 'value';
+      $unused = $config->mywallet['unused'];
+      if ($unused == 'disabled') {
+        $mywallet['#disabled'] = TRUE;
+      }
+      elseif ($unused == 'hidden') {
+        unset($mywallet);
+      }
       //this will be used to populate mywallet in the validation
       $form_state->set('mywallet', [['target_id' => reset($my_wallets)]]);
     }
-
     //handle the description
     //$form['description']['#placeholder'] = $config->description['placeholder'];
 

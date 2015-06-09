@@ -37,7 +37,7 @@ mcapi_1stparty.editform.*:
       type: mapping
       label: 'My Wallet'
       mapping:
-        widget:
+        unused:
           type: string
           label: 'Widget'
     partner:

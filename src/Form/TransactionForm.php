@@ -49,6 +49,7 @@ class TransactionForm extends ContentEntityForm {
       ? $this->entity
       : Transaction::Create();
 
+
     $form['type'] = [
       '#title' => t('Transaction type'),
       '#options' => mcapi_entity_label_list('mcapi_type'),
@@ -128,7 +129,7 @@ class TransactionForm extends ContentEntityForm {
 
     //now we divert to the transition confirm form
     $form_state->setRedirect(
-      'mcapi.transaction.op',
+      'mcapi.transaction.transition',
       ['mcapi_transaction' => 0, 'transition' => 'create']);
   }
 

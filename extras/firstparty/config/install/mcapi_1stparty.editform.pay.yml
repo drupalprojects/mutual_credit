@@ -9,7 +9,7 @@ status: 1
 type: default
 incoming: 0
 mywallet:
-  widget: select
+  unused: disabled
 partner:
   preset: ''
 fieldapi_presets:

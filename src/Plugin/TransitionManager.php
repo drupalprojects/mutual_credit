@@ -167,7 +167,7 @@ class TransitionManager extends DefaultPluginManager {
         if ($transaction->access($transition)->isAllowed()) {
           $route_name = $transition == 'view' ?
             'entity.mcapi_transaction.canonical' :
-            'mcapi.transaction.op';
+            'mcapi.transaction.transition';
           $renderable['#links'][$transition] = [
             'title' => $plugin->getConfiguration('title'),
             'url' => Url::fromRoute($route_name, [
@@ -181,16 +181,17 @@ class TransitionManager extends DefaultPluginManager {
               $renderable['#attached']['library'][] = 'core/drupal.ajax';
               $renderable['#links'][$transition]['attributes'] = [
                 'class' => ['use-ajax'],
-                'data-accepts' => 'application/vnd.drupal-modal',
-                'data-dialog-options' => Json::encode(['width' => 500])
+                'data-dialog-type' => 'modal',
+                'data-dialog-options' => Json::encode(['width' => 500]),
               ];
             }
             elseif($display == MCAPI_CONFIRM_AJAX) {
               //curious how, to make a ajax link it seems necessary to put the url in 2 places
               $renderable['#links'][$transition]['ajax'] = [
+                //there must be either a callback or a path
                 'wrapper' => 'transaction-'.$transaction->serial->value,
                 'method' => 'replace',
-                'url' => $renderable['#links'][$transition]['url']
+                'path' => $renderable['#links'][$transition]['url']->getInternalPath()
               ];
             }
           }
@@ -201,6 +202,7 @@ class TransitionManager extends DefaultPluginManager {
             $renderable['#links'][$transition]['query'] = substr($path, 1);
           }
         }
+
       }
       if (array_key_exists('#links', $renderable)) {
         $renderable += [
@@ -216,4 +218,48 @@ class TransitionManager extends DefaultPluginManager {
   }
 
 }
+
+/* not working
+Array
+        (
+            [title] => Erase
+            [url] => Drupal\Core\Url Object
+                (
+                    [urlGenerator:protected] =>
+                    [urlAssembler:protected] =>
+                    [accessManager:protected] =>
+                    [routeName:protected] => mcapi.transaction.op
+                    [routeParameters:protected] => Array
+                        (
+                            [mcapi_transaction] => 99
+                            [transition] => erase
+                        )
+
+                    [options:protected] => Array
+                        (
+                        )
+
+                    [external:protected] =>
+                    [unrouted:protected] =>
+                    [uri:protected] =>
+                    [internalPath:protected] =>
+                    [_serviceIds:protected] => Array
+                        (
+                        )
+
+                )
+
+            [attributes] => Array
+                (
+                    [class] => Array
+                        (
+                            [0] => use-ajax
+                        )
+
+                    [data-accepts] => application/vnd.drupal-modal
+                    [data-dialog-options] => {"width":500}
+                )
+
+            [query] => transaction/99
+ */
 
