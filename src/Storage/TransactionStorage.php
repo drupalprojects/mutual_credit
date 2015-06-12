@@ -13,11 +13,8 @@
 
 namespace Drupal\mcapi\Storage;
 
-use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\Core\Database\Database;
-use Drupal\mcapi\TransactionInterface;
 use Drupal\mcapi\Entity\State;
 
 
@@ -29,10 +26,32 @@ class TransactionStorage extends TransactionIndexStorage {
    * We need to overwrite the whole save function
    * Also in this method we write the index table
    *
-   * @see EntityStorageBase::save().
+   * {@inheritdoc}
    */
 
   public function save(EntityInterface $entity) {
+    //much of this is borrowed from parent::save
+    $id = $entity->id();
+
+    // Track the original ID.
+    if ($entity->getOriginalId() !== NULL) {
+      $id = $entity->getOriginalId();
+    }
+
+    // Track if this entity is new.
+    $is_new = $entity->isNew();
+    // Track if this entity exists already.
+    $id_exists = $this->has($id, $entity);
+
+    // A new entity should not already exist.
+    if ($id_exists && $is_new) {
+      throw new EntityStorageException(SafeMarkup::format('@type entity with ID @id already exists.', array('@type' => $this->entityTypeId, '@id' => $id)));
+    }
+    // Load the original entity, if any.
+    if ($id_exists && !isset($entity->original)) {
+      $entity->original = $this->loadUnchanged($id);
+    }
+
     $this->invokeHook('presave', $entity);
     //this $entity is coming from above where it may have $children
     //and in fact be several records
@@ -125,7 +144,8 @@ class TransactionStorage extends TransactionIndexStorage {
   }
 
   /**
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::filter()
+   * {@inheritdoc}
+   *
    * @note the parent function is very similar but works on the index table and doesn't know payer and payee conditions.
    */
   public function filter(array $conditions = [], $offset = 0, $limit = 0) {
@@ -140,6 +160,9 @@ class TransactionStorage extends TransactionIndexStorage {
     return $query->execute()->fetchAllKeyed();
   }
 
+  /**
+   * utility function to convert $conditions to modifications on the mcapi_transaction table
+   */
   private function parseConditions($query, $conditions) {
     //take account for the worth table.
     if (array_key_exists('value', $conditions) || array_key_exists('curr_id', $conditions)) {

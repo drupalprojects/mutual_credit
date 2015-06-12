@@ -92,7 +92,6 @@ class Edit extends TransitionBase {
    * {@inheritdoc}
    */
   public function execute(array $values) {
-    $saved = $this->transaction->save();
     //consider making this string configurable
     return ['#markup' => 'The transaction has been re-saved!'];
   }

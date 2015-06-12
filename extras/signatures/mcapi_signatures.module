@@ -1,8 +1,10 @@
 <?php
 
-use \Drupal\mcapi\Entity\Transaction;
-use \Drupal\mcapi\Entity\Type;
+use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi_signatures\Signatures;
+use Drupal\user\UserInterface;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 
 define ('TRANSACTION_STATE_PENDING', 'pending');
 
@@ -160,7 +162,7 @@ function mcapi_signatures_entity_extra_field_info() {
           'mcapi_signatures' => [
             'label' => t('Pending transactions'),
             'description' => t('Transactions yet to be signed'),
-            'weight' => 0,
+            'weight' => 3,
           ],
         ]
       ]
@@ -183,7 +185,7 @@ function mcapi_signatures_entity_extra_field_info() {
  * Implements hook_ENTITY_TYPE_view() for user entities.
  * add the extraField
  */
-function mcapi_signatures_user_view(array &$build, \Drupal\user\UserInterface $account, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display) {
+function mcapi_signatures_user_view(array &$build, UserInterface $account, EntityViewDisplayInterface $display) {
   if ($display->getComponent('mcapi_signatures')) {
     $build['mcapi_signatures'][] = views_embed_view(
       'mcapi_pending_signatures',

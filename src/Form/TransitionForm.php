@@ -88,7 +88,7 @@ class TransitionForm extends EntityConfirmFormBase {
    * How do we go back
    */
   public function getCancelUrl() {
-    if ($this->transition->getConfiguration('id') == 'create') {//the transaction hasn't been created yet
+    if ($this->transition->getPluginId() == 'create') {//the transaction hasn't been created yet
       //we really want to go back the populated transaction form using the back button in the browser
       //failing that we want to go back to whatever form it was, fresh
       //failing that we go to the user page user.page
@@ -178,6 +178,9 @@ class TransitionForm extends EntityConfirmFormBase {
     try {
       //the op might have injected values into the form, so it needs to be able to access them
       $renderable = $this->transition->execute($values);
+      if (!in_array($this->transition->getPluginId(), ['view', 'delete'])) {
+        $this->entity->save();
+      }
 
       $events = new TransactionSaveEvents(
         clone($this->entity),

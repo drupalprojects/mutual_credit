@@ -31,7 +31,6 @@ class Sign extends TransitionBase {
   */
   public function execute(array $values) {
     Signatures::sign($this->transaction, \Drupal::currentUser());
-    $saved = $this->transaction->save();
 
     if ($this->transaction->state->target_id == TRANSACTION_STATE_FINISHED) {
       $message = t('@transaction is signed off', ['@transaction' => $this->transaction->label()]);
@@ -81,23 +80,6 @@ class Sign extends TransitionBase {
    */
   static function accessSettingsElement(&$element, $default) {
     $element['access'] = ['#markup' => t('Only named signatories can sign.')];
-  }
-
-    /**
-   * sign a transaction
-   * change the state if no more signatures are left
-   * would be nice if this was in a decorator class so $transaction->sign($account) is possible
-   * @param TransactionInterface $transaction
-   * @param AccountInterface $account
-   */
-  final function sign(AccountInterface $account) {
-    if (array_key_exists($account->id(), $this->transaction->signatures)) {
-      $this->transaction->signatures[$account->id()] = REQUEST_TIME;
-      //set the state to finished if there are no outstanding signatures
-      if (array_search(0, $this->transaction->signatures) === FALSE) {
-        $this->transaction->set('state', TRANSACTION_STATE_FINISHED);
-      }
-    }
   }
 
 }

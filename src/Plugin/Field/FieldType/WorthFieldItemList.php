@@ -27,6 +27,7 @@ class WorthFieldItemList extends FieldItemList {
       }
     }
     $this->list = array_values($this->list);
+    return $this;
   }
 
   /**

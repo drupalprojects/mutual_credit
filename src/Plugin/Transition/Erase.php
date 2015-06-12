@@ -53,8 +53,7 @@ class Erase extends TransitionBase {
       ->set($this->transaction->serial->value, $this->transaction->state->target_id);
 
     $saved = $this->transaction
-      ->set('state', TRANSACTION_STATE_ERASED)//will be saved later
-      ->save();
+      ->set('state', TRANSACTION_STATE_ERASED);//will be saved later
 
     return ['#markup' => $this->t('The transaction is erased.')];
   }

@@ -345,11 +345,12 @@ function template_preprocess_mcapi_transaction(&$vars, $hook, $info) {
   if (!strpos($element['#view_mode'], ' ')) {
     $vars['attributes']['class'][] = 'mode-'.$element['#view_mode'];
   }
-
-  foreach (['watermark', 'stamp'] as $overlay) {
-    if (@$element[$overlay]) {
-      $vars['overlay'] = $element[$overlay];
-      $vars['overlay_class'] = $overlay;
+  if ($element['#view_mode'] == 'certificate') {
+    foreach (['watermark', 'stamp'] as $overlay) {
+      if (@$element[$overlay]) {
+        $vars['overlay'] = $element[$overlay];
+        $vars['overlay_class'] = $overlay;
+      }
     }
   }
   //@todo consider other approaches rather than the noLinks undeclared variable
@@ -358,7 +359,6 @@ function template_preprocess_mcapi_transaction(&$vars, $hook, $info) {
     $view_link = \Drupal::routeMatch()->getRouteName() != 'entity.mcapi_transaction.canonical';
     $vars['links'] = \Drupal::service('mcapi.transition_manager')
       ->getLinks($transaction, $view_link);
-    $transaction->noLinks = TRUE;//arghh this function is running twice
   }
 }
 

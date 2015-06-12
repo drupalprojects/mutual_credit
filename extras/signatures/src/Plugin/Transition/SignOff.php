@@ -30,15 +30,14 @@ class SignOff extends TransitionBase {
    * {@inheritdoc}
   */
   public function execute(array $values) {
-    foreach ($transaction->signatures as $uid => $signed) {
+    foreach ($this->transaction->signatures as $uid => $signed) {
       if ($signed) continue;
-      $this->sign($this->transaction, User::load($uid));
+      Signatures::sign($this->transaction, User::load($uid));
     }
-    $saved = $this->transaction->save();
-    return $renderable + [
+    return [
       '#markup' => t(
         '@transaction is signed off',
-        ['@transaction' => $transaction->label()]
+        ['@transaction' => $this->transaction->label()]
       )
     ];
   }

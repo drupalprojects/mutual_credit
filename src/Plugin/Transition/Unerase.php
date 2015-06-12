@@ -42,7 +42,6 @@ class Unerase extends TransitionBase {
     $store = \Drupal::service('keyvalue.database')->get('mcapi_erased');
     $this->transaction->set('state', $store->get($this->transaction->serial->value, 0));
     $store->delete($this->transaction->serial->value);
-    $saved = $this->transaction->save();
 
     return ['#markup' => $this->t('The transaction is restored.')];
   }

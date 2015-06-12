@@ -37,8 +37,6 @@ class Create extends TransitionBase {
    */
   public function execute(array $context) {
 
-    $saved = $this->transaction->save();
-
     \Drupal::logger('mcapi')->notice(
       'User @uid created transaction @serial',
       [

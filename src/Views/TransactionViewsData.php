@@ -49,6 +49,9 @@ class TransactionViewsData extends EntityViewsData {
     $data['mcapi_transaction']['payee']['filter']['id'] = 'wallet_name';
     $data['mcapi_transaction']['creator']['filter']['id'] = 'user_name';
     /**
+    // @todo Add similar support to any date field
+    // @see https://www.drupal.org/node/2337507
+    // @see NodeViewsData
     $data['mcapi_transaction']['created_year_month'] = [
       'title' => $this->t('Created year + month'),
       'help' => $this->t('Date in the form of YYYYMM.'),

@@ -315,6 +315,7 @@ function mcapi_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
  * implements hook_entity_extra_field_info().
  */
 function mcapi_entity_extra_field_info() {
+  return;
   //go through all the bundles which are configured to hold wallets
   $types = \Drupal::config('mcapi.wallets')->get('entity_types');
   foreach((array)$types as $entity_bundle => $max) {

@@ -52,6 +52,9 @@ class TransactionViewBuilder extends EntityViewBuilder {
       $view_mode = $this->config->get('format');
     }
     $build = parent::getBuildDefaults($entity, $view_mode, $langcode);
+    $build['#theme_wrappers'][] = $build['#theme'];
+    unset($build['#theme']);
+
     switch($view_mode) {
       case 'certificate':
         $build['#theme'] = 'certificate';
@@ -73,7 +76,6 @@ class TransactionViewBuilder extends EntityViewBuilder {
         ];
     }
     $build += [
-      '#theme_wrappers' => ['mcapi_transaction'],
       '#attributes' => [
         'class' => [
           'transaction',
@@ -87,7 +89,8 @@ class TransactionViewBuilder extends EntityViewBuilder {
         'library' => ['mcapi/mcapi.transaction']
       ]
     ];
-    //unset($build['#cache']);
+    unset($build['#cache']);
+    //@todo we might need to use the post-render cache to get the links right instead of template_preprocess_mcapi_transaction
     return $build;
   }
 

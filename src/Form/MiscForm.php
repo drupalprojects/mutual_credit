@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Contains \Drupal\mcapi\Form\MiscForm.
+ *
+ */
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
