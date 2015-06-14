@@ -49,6 +49,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
  *   },
  *   links = {
  *     "canonical" = "/currency/{mcapi_currency}",
+ *     "collection" = "/admin/accounting/currencies",
  *     "edit-form" = "/admin/accounting/currencies/{mcapi_currency}",
  *     "delete-form" = "/admin/accounting/currencies/{mcapi_currency}/delete",
  *   }
@@ -151,10 +152,13 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * {@inheritdoc}
    */
   public function transactions(array $conditions = [], $serial = FALSE) {
-    $conditions += array('curr_id' => $this->id());
-    $serials = $this->getTransactionStorage()->filter($conditions);
-    if ($serial) {
-      return count(array_unique($serials));
+    $serials = [];
+    if ($this->id()) {
+      $conditions += array('curr_id' => $this->id());
+      $serials = $this->getTransactionStorage()->filter($conditions);
+      if ($serial) {
+        $serials = array_unique($serials);
+      }
     }
     return count($serials);
   }
@@ -202,8 +206,8 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   function format($raw_num) {
     $raw_num += 0;
     if (!is_integer($raw_num + 0)) {
-      \Drupal::logger('mcapi')->log(
-        LogLevel::ERROR,
+      $this->loggerFactory('mcapi')->log(
+        \Psr\Log\LogLevel::ERROR,
         'Attempting to format a currency value with a non-integer'
       );
     }

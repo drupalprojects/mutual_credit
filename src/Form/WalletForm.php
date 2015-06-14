@@ -50,8 +50,6 @@ class WalletForm extends ContentEntityForm {
     $form = parent::form($form, $form_state);
     $wallet = $this->entity;
 
-    unset($form['langcode']); // No language so we remove it.
-
     if ($wallet->name->value != '_intertrading') {
       $form['name'] = [
         '#type' => 'textfield',
@@ -105,7 +103,7 @@ class WalletForm extends ContentEntityForm {
       $id = $type .'_entity_id';
       $form['transfer'][$id] = [
         '#title' => t('Name or unique ID'),
-        '#type' => 'textfield',
+        '#type' => 'entity_autocomplete',
         '#placeholder' => t('@entityname name...', ['@entityname' => $label]),
         '#states' => [
           'visible' => [
@@ -113,10 +111,8 @@ class WalletForm extends ContentEntityForm {
           ]
         ],
         '#autocomplete_route_name' => 'system.entity_autocomplete',
-        '#autocomplete_route_parameters' => [
-          'target_type' => $type,
-          'selection_handler' => 'default'//might want to change this but what are the options?
-        ],
+        '#target_type' => $type,
+        '#selection_handler' => 'default'//might want to change this but what are the options?
       ];
     }
 
@@ -173,10 +169,12 @@ class WalletForm extends ContentEntityForm {
         '#default_value' => is_array($saved) ? WALLET_ACCESS_USERS : $saved,
         '#weight' => $weight++,
       ];
+
       $form['access'][$op_name . '_users'] = [
         '#title' => '...'. $this->t('Specified users'),
         '#type' => 'entity_autocomplete',
-        '#autocomplete_route_name' => 'system.entity_autocomplete',
+        //'#autocomplete_route_name' => 'system.entity_autocomplete',
+        //'#autocomplete_route_parameters' => ['selection_settings_key' => ''],
         '#target_type' => 'user',
         '#tags' => TRUE,
         '#placeholder' => $this->t('@entityname name...', ['@entityname' => t('User')]),

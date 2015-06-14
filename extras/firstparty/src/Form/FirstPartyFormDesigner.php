@@ -338,7 +338,6 @@ class FirstPartyFormDesigner extends EntityForm {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $form_state->cleanValues();
     $values = $form_state->getValues();
-    //$form_state->setValue('fieldapi_presets', $values['fieldapi_presets']);
     foreach ($values as $name => $value) {
       if (!in_array($value, ['actions', 'langcode'])) {
         $this->entity->set($name, $value);

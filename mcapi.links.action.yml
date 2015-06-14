@@ -14,7 +14,7 @@ mcapi.admin.currency.add:
   route_name: mcapi.admin_currency_add
   title: New currency
   appears_on:
-    - mcapi.admin_currency_list
+    - entity.mcapi_currency.collection
 
 #puts an add wallet action on some entity canonical pages
 mcapi.addWallet.action:

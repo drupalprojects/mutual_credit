@@ -5,10 +5,10 @@ mcapi.admin:
   parent: system.admin
   weight: 4
 
-mcapi.admin_currency_list:
+entity.mcapi_currency.collection.link:
   title: Currencies
   description: Each currency implies a set of values and a community of users who economic fortunes are intertwined
-  route_name: mcapi.admin_currency_list
+  route_name: entity.mcapi_currency.collection
   parent: mcapi.admin
   weight: 3
 

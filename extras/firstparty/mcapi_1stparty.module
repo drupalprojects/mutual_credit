@@ -83,17 +83,18 @@ function mcapi_1stparty_form_field_ui_form_display_overview_form_alter(&$form, $
  */
 function mcapi_1stparty_menu_links_discovered_alter(&$links) {
   foreach (FirstPartyFormDesign::loadMultiple() as $id => $first_party_form) {
-    if (empty($first_party_form->menu['menu_name'])) continue;
-    $route_name = 'mcapi.1stparty.'.$id;
-
-    $parent_path = substr($first_party_form->path, 0, strrpos($first_party_form->path, '/'));
-    $links[$route_name.'.link'] = [
-      'title' => $first_party_form->title,
-      'route_name' => $route_name,
-      'provider' => 'mcapi_1stparty',
-      //'parent' => '',// currently the entity doesn't support nested menu items
-      //weight
-    ];
+    if ($menu = $first_party_form->menu['menu_name']) {
+      $route_name = 'mcapi.1stparty.'.$id;
+      $parent_path = substr($first_party_form->path, 0, strrpos($first_party_form->path, '/'));
+      $links[$route_name.'.link'] = [
+        'title' => $first_party_form->title,
+        'route_name' => $route_name,
+        'provider' => 'mcapi_1stparty',
+        'menu_name' => $menu
+        //'parent' => '',// currently the entity doesn't support nested menu items
+        //weight
+      ];
+    }
   }
 }
 

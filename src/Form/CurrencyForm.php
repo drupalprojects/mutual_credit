@@ -57,7 +57,7 @@ class CurrencyForm extends EntityForm {
         '#selection_handler' => 'default:user',
         '#selection_settings' => [
           'filter' => [
-            'role' => array_keys($roles)
+            'permission' => ['manage mcapi']
           ]
         ],
         '#tags' => FALSE,
@@ -133,21 +133,24 @@ class CurrencyForm extends EntityForm {
       '#default_value' => property_exists($currency, 'issuance') ? $currency->issuance : 'acknowledgement',
       //this should have an API function to work with other transaction controllers
       //disable this if transactions have already happened
-      '#disabled' => (bool)$this->entity->transactions(),
+      '#disabled' => !empty($currency->transactions()),
       '#required' => TRUE,
       '#weight' => 4,
     ];
 
-    $serials = $this->entity->transactions(['curr_id' => $currency->id(), 'value' => 0]);
+    $serials = $currency->isNew() ?
+      [] :
+      $currency->transactions(['curr_id' => $currency->id(), 'value' => 0]);
+
     $form['zero'] = [
       '#title' => t('Allow zero transactions'),
       '#type' => 'checkbox',
       '#default_value' => $currency->zero,
       //this is required if any existing transactions have zero value
-      '#required' => !empty($serials),
       '#weight' => 7
     ];
-    if ($form['zero']['#required']) {
+    if ($serials) {
+      $form['zero']['#required'] = TRUE;
       $form['zero']['#description'] = t("Zero transaction already exist so this field is required");
     }
     else {
@@ -164,6 +167,7 @@ class CurrencyForm extends EntityForm {
     	  '2' => $this->t('remove completely from the database'),
       ],
       '#default_value' => $currency->deletion,
+      '#required' => TRUE,
       '#weight' => 8
     ];
     $form['display'] = [
@@ -212,7 +216,7 @@ class CurrencyForm extends EntityForm {
       drupal_set_message(t('Currency %label has been added.', ['%label' => $currency->label()]));
     }
 
-    $form_state->setRedirect('mcapi.admin_currency_list');
+    $form_state->setRedirect('entity.mcapi_currency.collection');
   }
 
   /**

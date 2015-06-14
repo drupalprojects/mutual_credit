@@ -79,8 +79,7 @@ class SelectWalletWidget extends EntityReferenceAutocompleteWidget {
       ->getStorage('mcapi_wallet')
       ->walletsUserCanActOn($op, \Drupal::currentUser());
 
-    //@todo TEMP flip less than to greater than
-    if (count($wids) < \Drupal::config('mcapi.wallets')->get('threshhold')) {
+    if (count($wids) > \Drupal::config('mcapi.wallets')->get('threshhold')) {
       $element += [
         '#type' => 'select_wallet',
         //assuming that the field item name IS the role
@@ -102,7 +101,7 @@ class SelectWalletWidget extends EntityReferenceAutocompleteWidget {
         '#default_value' => isset($referenced_entities[$delta]) ? $referenced_entities[$delta]->id() : ''
       ];
     }
-    return array('target_id' => $element);
+    return ['target_id' => $element];
   }
 
 

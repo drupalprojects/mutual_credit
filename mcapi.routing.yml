@@ -19,7 +19,7 @@ mcapi.admin_misc:
     _admin_route: TRUE
 
 #currencies
-mcapi.admin_currency_list:
+entity.mcapi_currency.collection:
   path: '/admin/accounting/currencies'
   defaults:
     _entity_list: 'mcapi_currency'
@@ -57,7 +57,6 @@ entity.mcapi_currency.delete_form:
     _permission: 'configure mcapi'
   options:
     _admin_route: TRUE
-
 
 mcapi.admin.transactions:
   path: '/admin/accounting/transactions'

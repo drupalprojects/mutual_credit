@@ -66,7 +66,7 @@ function mcapi_requirements($phase) {
  */
 function mcapi_help($route_name, $route_match) {
   switch ($route_name) {
-    case 'mcapi.admin_currency_list':
+    case 'entity.mcapi_currency.collection':
       return implode(' ', [
         t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.'),
         t('Retired currencies can no longer be used, but transactions are still visible.'),
