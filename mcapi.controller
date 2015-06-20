@@ -91,7 +91,10 @@ class mcapiEntityController extends EntityAPIController {
       $items = isset($values['worth'][LANGUAGE_NONE]) ? $values['worth'][LANGUAGE_NONE] : $values['worth'];
       foreach ($items as $delta => $item) {
         if ($item['quantity']) {
-          $worths[] = array('currcode' => $item['currcode'], 'quantity' => $item['quantity']);
+          $worths[] = array(
+            'currcode' => $item['currcode'], 
+            'quantity' => $item['quantity']
+          );
         }
       }
       unset($values['worth']);
@@ -186,7 +189,7 @@ class mcapiEntityController extends EntityAPIController {
       return transaction_cluster_create($transaction, $arg1);
     }
     else{
-      drupal_set_message('Problem with entity_save', 'error');
+      drupal_set_message('Problem saving transaction', 'error');
     }
   }
 

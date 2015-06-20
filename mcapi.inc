@@ -523,7 +523,6 @@ function template_preprocess_certificate(&$vars) {
   $vars['recorded'] = format_date($transaction->created, 'medium');
   $vars['type'] = $transaction->type;
   $vars['date'] = format_date($transaction->created, 'long');
-  debug($transaction->created);
   $vars['classes_array'] = array('transaction', 'certificate', $transaction->type, 'state-'.$transaction->state);
   if (!property_exists($transaction, 'xid') || empty($transaction->xid)) {
     $vars['classes_array'][] = 'preview';

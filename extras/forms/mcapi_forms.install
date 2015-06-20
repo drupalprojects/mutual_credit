@@ -126,3 +126,11 @@ function mcapi_forms_update_7004() {
     db_update('mcapi_forms')->fields(array('data' => serialize($form)))->condition('name', $name);
   }
 }
+
+/**
+ * clear up some broken menu links
+ */
+function mcapi_forms_update_7005() {
+  db_delete('menu_links')->condition('menu_name', '140')->execute();
+}
+

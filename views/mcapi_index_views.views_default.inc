@@ -293,6 +293,7 @@ function mcapi_index_views_views_default_views() {
     t('2nd user'),
     t('Balance'),
     t('Name'),
+    t('With'),
     t('Currency'),
     t('Statement'),
     t('Greco index [greco]')

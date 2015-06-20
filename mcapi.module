@@ -29,8 +29,6 @@ define('TRANSACTION_STATE_UNDONE', 0);
 //This constant and another in the forms module ensures the argument position is not determined by chance
 define('TRANSACTION_BUILD_INFO_ARG', 0);
 
-
-
 /**
  * Community Accounting API wrapper function, see transaction.api.php
  * arguments:

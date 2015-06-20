@@ -196,7 +196,7 @@ function mcapi_signatures_update_7010() {
  */
 function mcapi_signatures_update_7011() {
   db_query(
-    "DELETE FROM mcapi_signatures WHERE serial > :serial", 
+    "DELETE FROM {mcapi_signatures} WHERE serial > :serial", 
     array(':serial' => db_query("SELECT MAX(serial) from {mcapi_transactions}")->fetchField())
   );
 }

@@ -854,7 +854,7 @@ function mcapi_transaction_mail_action_form($context = array()) {
     '#description' => t('If the transaction is in this state'),
     '#type' => 'radios',
     '#options' => mcapi_get_states(),
-    '#default_value' => $context['state']
+    '#default_value' => @$context['state']
   );
   return $form;
 }
