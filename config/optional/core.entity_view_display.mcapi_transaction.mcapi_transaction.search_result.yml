@@ -1,0 +1,54 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.mcapi_transaction.search_result
+    - field.field.mcapi_transaction.mcapi_transaction.categories
+    - field.field.mcapi_transaction.mcapi_transaction.worth
+  module:
+    - mcapi
+id: mcapi_transaction.mcapi_transaction.search_result
+targetEntityType: mcapi_transaction
+bundle: mcapi_transaction
+mode: search_result
+content:
+  created:
+    type: timestamp_ago
+    weight: 4
+    settings: {  }
+    third_party_settings: {  }
+    label: inline
+  description:
+    type: string
+    weight: 0
+    settings:
+      link_to_entity: true
+    third_party_settings: {  }
+    label: hidden
+  payee:
+    type: wallet_name
+    weight: 2
+    settings:
+      template: '#{{ wallet_id }}: {{ owner_label }} {{ wallet_name }}'
+    third_party_settings: {  }
+    label: inline
+  payer:
+    type: wallet_name
+    weight: 3
+    settings:
+      template: '#{{ wallet_id }}: {{ owner_label }} {{ wallet_name }}'
+    third_party_settings: {  }
+    label: inline
+  worth:
+    type: worth
+    weight: 1
+    settings:
+      format: normal
+    third_party_settings: {  }
+    label: inline
+hidden:
+  categories: true
+  changed: true
+  creator: true
+  mcapi_signatures: true
+  state: true

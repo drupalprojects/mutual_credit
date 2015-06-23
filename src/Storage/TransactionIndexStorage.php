@@ -191,7 +191,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    */
   public function indexDrop($serials) {
     $this->database->delete('mcapi_transactions_index')
-      ->condition('serial', (array)$serials)
+      ->condition('serial', $serials, 'IN')
       ->execute();
   }
 

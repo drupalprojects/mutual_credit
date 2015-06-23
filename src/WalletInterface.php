@@ -19,21 +19,21 @@ interface WalletInterface extends ContentEntityInterface {
    * get the user who is responsible for this wallet, that means either the
    * user-holder, or the owner of the holder. This deliberately echos the EntityOwnerInterface
    */
-  public function getOwner();
+  function getOwner();
 
   /**
    * return the parent entity if there is one, otherwise return the wallet itself
    * @return ContentEntityInterface
    *   The one entity to which this wallet belongs
    */
-  public function getHolder();
+  function getHolder();
 
   /**
    * return the parent entity if there is one, otherwise return the wallet itself
    * @return ContentEntityInterface
    *   The one entity to which this wallet belongs
    */
-  public function setHolder(EntityOwnerInterface $entity);
+  function setHolder(EntityOwnerInterface $entity);
 
   /**
    * get a list of the currencies held in the wallet
@@ -42,14 +42,6 @@ interface WalletInterface extends ContentEntityInterface {
    *   keyed by currency id
    */
   function currenciesUsed();
-
-  /**
-   * get a list of the currencies used or available to this wallet
-   *
-   * @return CurrencyInterface[]
-   *   keyed by currency id
-   */
-  function currencies_all();
 
   /**
    * get the trading stats for all currencies allowed or used in the wallet
@@ -96,7 +88,7 @@ interface WalletInterface extends ContentEntityInterface {
    * @return array
    *   all transactions between the times given
    */
-  public function history($from = 0, $to = 0);
+  function history($from = 0, $to = 0);
 
   /**
    * Handle the deletion of the wallet's parent
@@ -115,7 +107,7 @@ interface WalletInterface extends ContentEntityInterface {
    * @return array
    *   wallet ids belonging to the passed entity
    */
-  public static function heldBy(ContentEntityInterface $entity);
+  static function heldBy(ContentEntityInterface $entity);
 
 
 }

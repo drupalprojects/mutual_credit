@@ -40,7 +40,6 @@ function mcapi_install() {
     ->set('content', ['wallets_summaries' => ['weight' => 1]])
     ->save();
 
-  drupal_set_message(\Drupal::configFactory()->get('mcapi.misc')->get('zero_snippet'));
 }
 
 function mcapi_modules_installed() {

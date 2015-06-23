@@ -17,13 +17,13 @@ interface TransactionRelativeInterface {
    * @param TransactionInterface $transaction
    * @param AccountInterface $account
    */
-  public function isRelative(TransactionInterface $transaction, AccountInterface $account);
+  function isRelative(TransactionInterface $transaction, AccountInterface $account);
 
   /**
    *
    * @param QueryInterface $query
    */
-  public function condition(QueryInterface $query);
+  function condition(QueryInterface $query);
 
   /**
    *
@@ -31,6 +31,6 @@ interface TransactionRelativeInterface {
    *
    * @return integer[]
    */
-  public function getUsers(TransactionInterface $transaction);
+  function getUsers(TransactionInterface $transaction);
 
 }

@@ -30,4 +30,6 @@ langcode: en
 dependencies: {  }
 third_party_settings: 
   exchange: 2
-
+dependencies:
+  module:
+    - mcapi_tester

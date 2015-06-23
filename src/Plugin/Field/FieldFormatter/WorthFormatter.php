@@ -10,57 +10,99 @@ namespace Drupal\mcapi\Plugin\Field\FieldFormatter;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Plugin implementation of the 'worth' formatter.
+ * @todo inject config
  *
  * @FieldFormatter(
  *   id = "worth",
- *   label = @Translation("Currency value"),
+ *   label = @Translation("Currency values"),
  *   field_types = {
- *     "worth",
+ *     "worth"
  *   }
  * )
  */
 class WorthFormatter extends FormatterBase {
 
-      /**
-   * {@inheritdoc}
-   */
-  protected function defineOptions() {
-    $options = parent::defineOptions();
-    $options['format'] = ['default' => 'normal'];
-    return $options;
-  }
-
   /**
    * {@inheritdoc}
    */
-  public function buildOptionsForm(&$form, FormStateInterface $form_state) {
+  public function settingsForm(array $form, FormStateInterface $form_state) {
+    $form = parent::settingsForm($form, $form_state);
     $form['format'] = [
       '#title' => $this->t("Format"),
       '#type' => 'radios',
-      '#options' => [
-        'normal' => $this->t('Normal'),
-        'native' => $this->t('Native integer'),
-        'decimalised' => $this->t('Forced decimal')
-      ],
+      '#options' => $this->getOptions(),
       '#required' => TRUE,
-      '#default_value' => !empty($this->options['format']),
+      '#default_value' => $this->getSetting('format'),
     ];
-    parent::buildOptionsForm($form, $form_state);
+    return $form;
   }
-
 
   /**
    * {@inheritdoc}
    */
-  public function viewElements(FieldItemListInterface $items) { 
+  public static function defaultSettings() {
+    $settings = parent::defaultSettings();
+    $settings['format'] = 'normal';
+    return $settings;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function settingsSummary() {
+    return [$this->getOptions()[$this->getSetting('format')]];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function viewElements(FieldItemListInterface $items) {
+    $output = [];
+    foreach ($items as $item) {
+      if ($item->value == 0) {
+        if ($item->currency->zero) {
+          if ($this->getSetting('format') == 'normal') {
+            $output[] = \Drupal::config('mcapi.misc')->get('zero_snippet');
+          }
+          else {
+            $output[] = 0;
+          }
+        }
+        else {
+          drupal_set_message("Zero value shouldn't be possible in ".$item->curr_id, 'warning');
+        }
+      }
+      else {
+        switch($this->getSetting('format')) {
+          case 'native':
+            $output[] = $item->value;
+            break;
+          case 'normal':
+            $output[] = $item->currency->format($item->value);//@todo move this method out of the currency?
+            break;
+          case 'decimalised':
+            $output[] = mcapi_decimalised($item->currency->format($item->value));
+        }
+      }
+    }
     //we're shovelling all the $items into 1 element because the have already
     //been rendered together, with a separator character
-    $elements[0] = $items->view($this->options['format'] == 'normal');
-
+    $elements[0]['#markup'] = implode(
+      \Drupal::config('mcapi.misc')->get('worths_delimiter'),
+      $output
+    );
     return $elements;
   }
 
+  private function getOptions() {
+    return [
+      'normal' => $this->t('Normal'),
+      'native' => $this->t('Native integer'),
+      'decimalised' => $this->t('Force decimal (Rarely needed)')
+    ];
+  }
 }

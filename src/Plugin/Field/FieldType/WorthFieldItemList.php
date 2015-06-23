@@ -46,16 +46,15 @@ class WorthFieldItemList extends FieldItemList {
   /**
    * {@inheritdoc}
    */
-  public function view($mode = 'normal') {
+  public function __view($mode = 'normal') {
     foreach ($this->list as $item) {
       $renderable[] = $item->view($mode);
       $values[] = \Drupal::service('renderer')->render($renderable);
     }
-    if (count($values) > 1) {
-      $markup = implode(\Drupal::config('mcapi.misc')->get('worths_delimiter'), $values);
-    }
-    else $markup = current($values);
-    return ['#markup' => $markup];
+    $delimiter = count($values) > 1 ?
+      \Drupal::config('mcapi.misc')->get('worths_delimiter')
+      :0;
+    return ['#markup' => implode($delimiter, $values)];
   }
 
 
@@ -64,10 +63,8 @@ class WorthFieldItemList extends FieldItemList {
    *
    * @param string $curr_id
    *
-   * @return integer | NULL
-   *   NULL if the currency isn't known
-   *
-   * @see function intertrading_new_worths().
+   * @return integer
+   *   0 if the currency isn't known
    *
    */
   public function val($curr_id) {
@@ -76,13 +73,14 @@ class WorthFieldItemList extends FieldItemList {
         return $item->value;
       }
     }
+    return 0;
   }
 
   public function currencies($full = FALSE) {
     $c = [];
     foreach ($this->list as $item) {
       if ($full) {
-        $c[$item->curr_id] = mcapi_currency_load($item->curr_id);
+        $c[$item->curr_id] = $item->currency;
       }
       else {
         $c[] = $item->curr_id;

@@ -1,14 +1,15 @@
+langcode: en
+status: true
+dependencies: {  }
 id: cc
-uuid: 4450dc37-0564-480e-8800-a3d78c18f12d
 name: 'Community Coins'
 uid: 1
 issuance: exchange
-deletion: 1
-format: 
-  0: CC
-  1: '0000'
+format:
+  - CC
+  - '0000'
 zero: 1
 color: '#ff00ff'
 weight: '1'
-limits_plugin: none
-limits_settings: 
+deletion: 1
+

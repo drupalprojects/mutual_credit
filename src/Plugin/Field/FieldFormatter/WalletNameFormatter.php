@@ -12,15 +12,16 @@ namespace Drupal\mcapi\Plugin\Field\FieldFormatter;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Plugin implementation of the 'worth' formatter.
  *
- * @FieldFormatter---------------------------------------(
+ * @FieldFormatter(
  *   id = "wallet_name",
  *   label = @Translation("wallet name"),
  *   field_types = {
- *     "worth",
+ *     "wallet"
  *   }
  * )
  */
@@ -30,12 +31,16 @@ class WalletNameFormatter extends FormatterBase {
    * {@inheritdoc}
    */
   public function viewElements(FieldItemListInterface $items) {
-    //assuming there is only 1 wallet
-    //$elements[0] = $items[0]->view();
     $wallet = reset($items->referencedEntities());
-    return [0 => $wallet->label()];
+    $replacements = [
+      '{{ wallet_id }}' => $wallet->id(),
+      '{{ wallet_name }}' => $wallet->name->value,//@todo checkplain
+      '{{ owner_label }}' => $wallet->getowner()->label(),
+      '{{ owner_type }}' => $wallet->getowner()->getEntityType()->label
+    ];
+//try this with #markup?
+    return [0 => strtr($this->options['template'], $replacements)];
 
-    return $items->view();
   }
 
 
@@ -43,21 +48,31 @@ class WalletNameFormatter extends FormatterBase {
    * {@inheritdoc}
    */
   public function settingsForm(array $form, FormStateInterface $form_state) {
-    $form['format'] = [
-      '#title' => $this->t('Generate auto name if name not given'),
-      '#type' => 'checkbox',
-      '#default_value' => $this->getSetting('auto')
+    $form = parent::settingsForm($form, $form_state);
+    $form['template'] = [
+      '#title' => $this->t('Wallet name template'),
+      '#description' => $this->t('Arrange any of the following tokens, considering that wallet names are optional.') .' '.
+        '{{ wallet_id }}, {{ wallet_name }}, {{ owner_label }}, {{ owner_type }}',
+      '#type' => 'textfield',
+      '#default_value' => $this->getSetting('template')
     ];
+    return $form;
   }
 
   /**
    * {@inheritdoc}
    */
   public function settingsSummary() {
-    return [
-      '#markup' => $this->getSetting('auto') ? $this->t('Autopopulated') : $this->t('May be blank')
-    ];
+    return ['#markup' => $this->getSetting('template')];
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public static function defaultSettings() {
+    $settings = parent::defaultSettings();
+    $settings['template'] = '#{{ wallet_id }}: {{ owner_type }} {{ owner_label }} {{ wallet_name }}';
+    return $settings;
+  }
 
 }

@@ -129,7 +129,7 @@ class MiscForm extends ConfigFormBase {
       '#weight' => 15,
       'button' => [
         '#type' => 'submit',
-        '#value' => 'rebuild_mcapi_index',
+        '#value' => 'Rebuild transaction index',
         '#submit' => [
           [get_class($this), 'rebuild_mcapi_index']
         ]
@@ -163,13 +163,13 @@ class MiscForm extends ConfigFormBase {
 
     parent::submitForm($form, $form_state);
     if($config->get('counted') != $values['counted']) {
-      rebuild_mcapi_index($form, $form_state);
+      SELF::rebuild_mcapi_index($form, $form_state);
     }
   }
 
   static function rebuild_mcapi_index(array &$form, FormStateInterface $form_state) {
     //not sure where to put this function
-    $this->entityManager->getStorage('mcapi_transaction')->indexRebuild();
+    \Drupal::entityManager()->getStorage('mcapi_transaction')->indexRebuild();
     drupal_set_message("Index table is rebuilt");
     $form_state->setRedirect('system.status');
   }

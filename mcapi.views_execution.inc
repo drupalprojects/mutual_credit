@@ -4,19 +4,16 @@ use Drupal\views\ViewExecutable;
 use Drupal\views\Plugin\views\query\QueryPluginBase;
 
 /**
- * implements hook_views_query_alter().
+ * implements hook_views_query_tag_alter().
  * Per-transaction access control on transaction views
  * on the basis of seeing EITHER wallet
  *
  * @param Drupal\views\ViewExecutable $view
  * @param Drupal\views\Plugin\views\query\QueryPluginBase $query
  */
-function mcapi_views_query_alter(ViewExecutable $view, QueryPluginBase $query) {
-  return;
+function mcapi_views_query_mcapi_transaction_alter(ViewExecutable $view, QueryPluginBase $query) {
   list($base, $wallet_fields) = mcapi_views_query_alter_setup($view);
-  if (!$base) {
-    return;
-  }
+
   $query->setWhereGroup('AND', 'both_wallets');
 
   foreach ($wallet_fields as $db_field_name) {
@@ -80,7 +77,6 @@ function mcapi_views_query_alter(ViewExecutable $view, QueryPluginBase $query) {
  * @note also used in mcapi_exchanges_views_query_alter_setup()
  */
 function mcapi_views_query_alter_setup(ViewExecutable $view) {
-  return;
   $base = $view->storage->get('base_table');
   if (!in_array($base, ['mcapi_transaction', 'mcapi_transactions_index'])) {
     return;

@@ -229,14 +229,6 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   /**
    * {@inheritDoc}
    */
-  public function currencies_all() {
-    //that means unused currencies should appear last
-    return $this->currenciesUsed() + Exchange::currenciesAvailable($this);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
   public function currenciesUsed() {
     if (!$this->currencies_used) {
       $this->currencies_used = [];

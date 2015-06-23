@@ -1,7 +1,7 @@
 id: wallets
 label: Wallets
 description: 'A list of wallets help by a given entity.'
-tag: 'mcapi'
+tag: ''
 langcode: en
 status: true
 dependencies:

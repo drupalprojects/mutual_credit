@@ -9,7 +9,6 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityDeleteForm;
-use Drupal\Core\Url;
 
 /**
  * Builds the form to delete a currency

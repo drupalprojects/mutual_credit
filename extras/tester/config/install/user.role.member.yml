@@ -1,5 +1,4 @@
 id: member
-uuid: 08ab4367-14ab-40c1-b945-69291d66bc46
 label: Trader
 weight: 2
 permissions:
@@ -7,3 +6,6 @@ permissions:
   - 'change own username'
 status: true
 langcode: en
+dependencies:
+  module:
+    - mcapi_tester

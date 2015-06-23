@@ -21,7 +21,7 @@ interface TransactionInterface extends ContentEntityInterface {
    * @return mixed
    *   an array of transaction entities or one transaction entity, depending on the input
    */
-  public static function loadBySerials($serials);
+  static function loadBySerials($serials);
 
   /**
    * returns a clone of the transaction as an array with the children next to the parent
@@ -30,6 +30,6 @@ interface TransactionInterface extends ContentEntityInterface {
    *   transactions with the cloned parent transaction first and children property removed
    *
    */
-  public function flatten();
+  function flatten();
 
 }

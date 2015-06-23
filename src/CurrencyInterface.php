@@ -16,13 +16,6 @@ use Drupal\Core\Session\AccountInterface;
 interface CurrencyInterface extends ConfigEntityInterface {
 
   /**
-   * returns the currency label
-   *
-   * @return string
-   */
-  public function label($langcode = NULL);
-
-  /**
    * return the number of transactions, in all states
    *
    * @param array $conditions
@@ -32,7 +25,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    *
    * @return integer.
    */
-  public function transactions(array $conditions = [], $serial = FALSE);
+  function transactions(array $conditions = [], $serial = FALSE);
 
   /**
    * return the sum of all transactions, in all states
@@ -43,12 +36,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    * @return integer
    *   raw quantity which should be formatted using currency->format($value);
    */
-  public function volume(array $conditions = []);
-
-  /**
-   * check that a currency has no transactions and if so, call the parent delete method
-   */
-  public function delete();
+  function volume(array $conditions = []);
 
   /**
    * Format the database integer value according to the formatting string in $currency->format.
@@ -59,21 +47,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    * @return string
    *   #markup containing the formatted value
    */
-  public function format($raw_num);
-
-  /**
-   * Format the value in some other way
-   * This was created for google charts which wouldn't understand 'CC1.23' as a number
-   *
-   * @param integer $raw_num
-   *   the value stored in the worth field 'value' column
-   *
-   * @return string
-   *   plaintext #markup containing the formatted value. Hopefully 90 mins,
-   * normally formatted say as '1 1/2 hours' would come out of this function '1.30'.
-   */
-  public function faux_format($raw_num, $format = []);
-
+  function format($raw_num);
 
   /**
    * Check whether it is allowed to deleted this currency, which means deleting
@@ -81,7 +55,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    *
    * @return boolean
    */
-  public function deletable();
+  function deletable();
 
   /**
    * break up a native quantity into the parts
@@ -90,7 +64,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    * @return array
    *   the value expressed in parts, e.g. pounds, shillings and pence
    */
-  public function formatted_parts($raw_num);
+  function formatted_parts($raw_num);
 
 }
 

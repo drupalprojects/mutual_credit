@@ -1,5 +1,4 @@
 id: manager
-uuid: f36149d3-20b1-4e06-9b00-d4bb9f01abc4
 label: 'General Manager'
 weight: 5
 permissions:
@@ -15,3 +14,7 @@ permissions:
   - 'select account cancellation method'
 status: true
 langcode: en
+
+dependencies:
+  module:
+    - mcapi_tester

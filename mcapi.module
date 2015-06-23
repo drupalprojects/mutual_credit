@@ -490,3 +490,18 @@ function mcapi_default_display_fields() {
   }
   return $fieldAPI;
 }
+
+/**
+ * convert a formatted currency value into a plain decimal number
+ * suitable for use with google charts
+ * @param string $formatted_value
+ * return string
+ *   hopefully a decimal value
+ */
+function mcapi_decimalised($formatted_value) {
+  //convert 1hr 23mins to 1.23
+  //replace likely separators with dots
+  $str = preg_replace('/([.: ]+)/', '.', $formatted_value);
+  //remove everything except numbers and dots
+  return preg_replace('/([^0-9.]+)/', '', $str);
+}

@@ -12,6 +12,8 @@ use Drupal\Core\TypedData\DataDefinition;
 use Drupal\field\FieldInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\Core\TypedData\DataReferenceDefinition;
+use Drupal\Core\Entity\TypedData\EntityDataDefinition;
 
 /**
  * Plugin implementation of the 'worth' field type.
@@ -39,9 +41,13 @@ class WorthItem extends FieldItemBase {
 
   public static function propertydefinitions(FieldStorageDefinitionInterface $field_definition) {
     $properties['curr_id'] = DataDefinition::create('string')
-      ->setLabel('Currency Id');
+      ->setLabel(t('@label ID', ['Currency']));
     $properties['value'] = DataDefinition::create('integer')
-      ->setLabel('Value');
+      ->setLabel(t('Value'));
+    $properties['currency'] = DataReferenceDefinition::create('entity')
+      ->setLabel(t('Currency'))
+      ->setComputed(TRUE)
+      ->setTargetDefinition(EntityDataDefinition::create('mcapi_currency'));
     return $properties;
   }
 
@@ -67,15 +73,14 @@ class WorthItem extends FieldItemBase {
     ];
   }
 
-
-
   /**
    * {@inheritdoc}
    */
   public function setValue($value, $notify = true) {
     $this->set('curr_id', $value['curr_id']);
     $this->set('value', $value['value']);
-
+    //set the computed field
+    $this->set('currency', Currency::load($value['curr_id']), $notify);
     // Notify the parent of any changes.
     if ($notify && isset($this->parent)) {
       $this->parent->onChange($this->name);
@@ -86,43 +91,8 @@ class WorthItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public function isEmpty() {
-    $val = $this->get('value');
-    return empty($val);
-  }
-
-  /**
-   * format the worth value according to 3 view modes, normal, decimal and native
-   * taking into account that there may be special formatting if worth is 0
-   */
-  public function view($mode = 'normal') {
-    extract($this->getValue(FALSE));
-    $currency = Currency::load($curr_id);
-    if ($mode == 'native') {
-      $markup = $value;
-    }
-    else {
-      if ($value) {
-        $markup = $currency->format($value);
-        if ($mode == 'decimal') {
-          //this could be smarter, but for now we're just going to strip out
-          //all the non-numeric characters
-          //can't think how best to do it with regex
-          $new = '';
-          foreach(str_split($markup) as $char) {
-            if (is_numeric($char)) $new .= $char;
-          }
-          $markup = $new;
-        }
-      }
-      //optional special display if the item is zero in this currency
-      elseif ($currency->zero) {
-        if ($mode == 'decimal') {
-          $markup = 0;
-        }
-        $markup = \Drupal::config('mcapi.misc')->get('zero_snippet');
-      }
-    }
-    return array('#markup' => $markup);
+    if ($this->currency->zero) return FALSE;
+    return $this->get('value') == 0;
   }
 
 }

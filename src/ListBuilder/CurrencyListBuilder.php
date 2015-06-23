@@ -8,7 +8,7 @@ namespace Drupal\mcapi\ListBuilder;
 
 use Drupal\Core\Config\Entity\DraggableListBuilder;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\mcapi_exchanges\Entity\Exchange;//if the module is enabled!
+use Drupal\Core\Render\Element;
 
 /**
  * Provides a listing of currencies
@@ -70,6 +70,20 @@ class CurrencyListBuilder extends DraggableListBuilder {
     }
     return $row + $actions;
   }
+
+  /*
+   * remove the delete link if there is only one currency
+   */
+  public function render() {
+    $build = parent::render();
+    $children = element::children($build['entities']);
+    if (count($children) == 1) {
+      $id = reset($children);
+      unset($build['entities'][$id]['operations']['data']['#links']['delete']);
+    }
+    return $build;
+  }
+
 
   /**
    * {@inheritdoc}

@@ -17,9 +17,9 @@ function template_preprocess_mcapi_limits_absolute(&$vars) {
   $vars['balanceformatted'] = $currency->format($summary['balance']);
   $vars['minformatted'] = $currency->format($limits->min($curr_id));
   $vars['maxformatted'] = $currency->format($limits->max($curr_id));
-  $vars['balance'] = $currency->faux_format($summary['balance']);
-  $vars['min'] = $currency->faux_format($limits->min($curr_id));
-  $vars['max'] = $currency->faux_format($limits->max($curr_id));
+  $vars['balance'] = mcapi_decimalised($summary['balance']);
+  $vars['min'] = mcapi_decimalised($limits->min($curr_id));
+  $vars['max'] = mcapi_decimalised($limits->max($curr_id));
 }
 
 /**
@@ -49,17 +49,19 @@ function template_preprocess_mcapi_limits_relative(&$vars) {
  * this can only be used if the formatted value is numeric
  */
 function template_preprocess_mcapi_limits_balanced(&$vars) {
-  $curr_id = $vars['currency']->id();
-  $stats = $vars['wallet']->getStats($curr_id);
-  $vars['id'] = $vars['id'] = $curr_id.'-ometer-'.$vars['wallet']->id();
+  $currency = $vars['currency'];
+  $curr_id = $currency->id();
+  $wallet = $vars['wallet'];
+  $stats = $wallet->getStats($curr_id);
+  $vars['id'] = $vars['id'] = $curr_id.'-ometer-'.$wallet->id();
   $vars['functionname'] = str_replace('-', '_', $vars['id']);
   //the google gauge cannot mask the real number with a formatted value
   //so instead of these native numbers we need to present it with a number which resembles the presentation number
-  $vars['balance'] = $vars['currency']->faux_format($stats['balance']);
+  $vars['balance'] = mcapi_decimalised($currency->format($stats['balance']));
   $limiter = \Drupal::service('mcapi_limits.wallet_limiter')
-    ->setwallet($vars['wallet']);
-  $vars['min'] = $vars['currency']->faux_format($limiter->min($curr_id));
-  $vars['max'] = $vars['currency']->faux_format($limiter->max($curr_id));
+    ->setwallet($wallet);
+  $vars['min'] = mcapi_decimalised($currency->format($limiter->min($curr_id)));
+  $vars['max'] = mcapi_decimalised($currency->format($limiter->max($curr_id)));
 }
 
 
@@ -180,7 +182,7 @@ function limits_settings_subform($form, $form_state) {
  */
 function mcapi_view_limits(WalletInterface $wallet, $curr_ids = []) {
   $renderable = [];
-  $currencies = $wallet->currencies_all();
+  $currencies = Exchange::currenciesAvailable($wallet);
   if ($curr_ids) {
     $currencies = array_intersect_key($currencies, array_flip($curr_ids));
   }

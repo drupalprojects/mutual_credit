@@ -1,13 +1,16 @@
+langcode: en
+status: true
+dependencies: {  }
 id: Hhrs
-name: Human Hours
+name: 'Human Hours'
 uid: 1
 issuance: acknowledgement
-deletion: 2
-format: 
-  0: Hr
-  1: '00'
-  2: ':'
-  3: 59/4
+format:
+  - Hr
+  - '00'
+  - ':'
+  - 59/4
 zero: 0
 color: '#008888'
 weight: '3'
+deletion: 2

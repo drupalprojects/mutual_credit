@@ -9,7 +9,7 @@ dependencies:
   module:
     - mcapi
 module: views
-tag: ''
+tag: 'mcapi_transaction'
 base_table: mcapi_transaction
 base_field: xid
 core: 8.x

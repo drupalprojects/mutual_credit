@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - mcapi
+id: mcapi_transaction.search_result
+label: 'Search result'
+targetEntityType: mcapi_transaction
+cache: true
+

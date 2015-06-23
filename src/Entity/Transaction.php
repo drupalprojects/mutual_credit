@@ -240,7 +240,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setDescription(t('A one line description of what was exchanged.'))
       ->setRequired(TRUE)
       ->setSettings(array('default_value' => '', 'max_length' => 255))//this could be a setting.
-      ->setDisplayConfigurable('form', TRUE);
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
 
     $fields['serial'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Serial number'))
@@ -259,6 +260,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
       ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE)
       ->setConstraints(['CanActOn' => ['action' => 'payin']]);
 
     $fields['payee'] = BaseFieldDefinition::create('wallet')
@@ -267,12 +269,14 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
       ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE)
       ->setConstraints(['CanActOn' => ['action' => 'payout']]);
 
     $fields['creator'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Creator'))
       ->setDescription(t('The user who created the transaction'))
       ->setSetting('target_type', 'user')
+      ->setDisplayConfigurable('view', TRUE)
       ->setReadOnly(TRUE)
       ->setRevisionable(FALSE)
       ->setRequired(TRUE);
@@ -288,6 +292,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setLabel(t('State'))
       ->setDescription(t('Completed, pending, disputed, etc.'))
       ->setSetting('target_type', 'mcapi_state')
+      ->setDisplayConfigurable('view', TRUE)
       ->setReadOnly(FALSE)
       ->setRequired(TRUE);
 
@@ -309,6 +314,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $fields['changed'] = BaseFieldDefinition::create('changed')
       ->setLabel(t('Changed'))
       ->setDescription(t('The time that the transaction was last saved.'))
+      ->setDisplayConfigurable('view', TRUE)
       ->setRevisionable(FALSE)
       ->setTranslatable(FALSE);
 

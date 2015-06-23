@@ -1,13 +1,17 @@
+langcode: en
+status: true
+dependencies: {  }
 id: veur
-name: Virtual Euro
+name: 'Virtual Euro'
 uid: 1
 issuance: commodity
-deletion: 0
-format: 
-  0: €
-  1: '000'
-  2: ':'
-  3: 99
+format:
+  - €
+  - '000'
+  - ':'
+  - 99
 zero: 0
 color: '#0000ff'
 weight: '2'
+deletion: 0
+

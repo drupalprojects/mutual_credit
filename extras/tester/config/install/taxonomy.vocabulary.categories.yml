@@ -1,8 +1,9 @@
-vid: categories
-uuid: 3fd062fc-969b-4514-9d00-aa63e8aac821
+langcode: en
+status: true
+dependencies: {  }
 name: Categories
+vid: categories
 description: 'Test vocabulary'
 hierarchy: '0'
 weight: 0
-status: true
-langcode: en
+

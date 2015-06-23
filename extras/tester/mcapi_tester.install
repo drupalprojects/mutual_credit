@@ -63,7 +63,7 @@ function multiple_exchanges() {
 
 
   $exchange_ids = mcapi_tester_make_exchanges();
-
+die('multiple exchanges not working yet');
 return;
   put_users_in_exchanges();
   //make some intertrading transactions
@@ -111,9 +111,10 @@ function mcapi_tester_uninstall() {
   \Drupal::CurrentUser()->setAccount(User::load(1));
 
   //should delete automatically
-  //foreach (Term::loadByProperties(array('vid' => 'categories')) as $term) {
-    //$term->delete();
-  //}
+  foreach (\Drupal\taxonomy\Entity\Term::loadByProperties(array('vid' => 'categories')) as $term) {
+    $term->delete();
+  }
+
 
   module_load_install('mcapi_tester');
   mcapi_tester_delete_transactions();
@@ -125,7 +126,7 @@ function mcapi_tester_uninstall() {
   //}
 
   //delete test users
-  foreach (User::loadMultiple() as $user) {
+  foreach (\Drupal\user\Entity\User::loadMultiple() as $user) {
     if ($user->id() < 2) continue;
     $user->delete();//all users' wallets are now 'unused' so will be deleted also
   }
@@ -145,6 +146,32 @@ function mcapi_tester_uninstall() {
       $currency->delete();
     }
   }
+  Drupal\field\Entity\FieldStorageConfig::load('mcapi_transaction.categories')->delete();
+
+ db_delete('config')->condition(
+   'name',
+   [
+     'block.block.systemhelp',
+     'field.storage.mcapi_transaction.categories',
+     'mcapi.type.test',
+     'mcapi_1stparty.editform.test1',
+     'mcapi_1stparty.editform.test2',
+     'mcapi_1stparty.editform.test3',
+     'taxonomy.vocabulary.categories',
+     'user.role.admin',
+     'field.field.mcapi_transaction.mcapi_transaction.categories',
+     'user.role.helper',
+     'user.role.ladmin',
+     'user.role.manager',
+     'user.role.member'
+   ],
+   'IN'
+ )->execute();
+ \Drupal::configFactory()->getEditable('core.extension')
+  ->clear("module.mcapi_tester")
+  ->save();
+  drupal_flush_all_caches();
+
   field_purge_batch(5);
 }
 

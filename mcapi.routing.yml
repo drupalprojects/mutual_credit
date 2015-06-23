@@ -18,46 +18,6 @@ mcapi.admin_misc:
   options:
     _admin_route: TRUE
 
-#currencies
-entity.mcapi_currency.collection:
-  path: '/admin/accounting/currencies'
-  defaults:
-    _entity_list: 'mcapi_currency'
-    _title: Currencies
-  requirements:
-    _permission: 'manage mcapi'
-  options:
-    _admin_route: TRUE
-
-entity.mcapi_currency.edit_form:
-  path: '/admin/accounting/currencies/{mcapi_currency}'
-  defaults:
-    _entity_form: 'mcapi_currency.edit'
-    _title: 'Editing currency'
-  requirements:
-    _permission: 'configure mcapi'
-  options:
-    _admin_route: TRUE
-
-mcapi.admin_currency_add:
-  path: '/admin/accounting/currencies/add'
-  defaults:
-    _entity_form: 'mcapi_currency.edit'
-    _title: 'Editing currency'
-  requirements:
-    _entity_create_access: mcapi_currency
-  options:
-    _admin_route: TRUE
-
-entity.mcapi_currency.delete_form:
-  path: '/admin/accounting/currencies/{mcapi_currency}/delete'
-  defaults:
-    _entity_form: 'mcapi_currency.delete'
-  requirements:
-    _permission: 'configure mcapi'
-  options:
-    _admin_route: TRUE
-
 mcapi.admin.transactions:
   path: '/admin/accounting/transactions'
   defaults:

@@ -7,3 +7,6 @@ dependencies: { }
 third_party_settings:
   mcapi_signatures:
     signatures: { }
+dependencies:
+  module:
+    - mcapi_tester

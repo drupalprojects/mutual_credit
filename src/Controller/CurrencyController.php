@@ -16,8 +16,8 @@ use Drupal\Core\Entity\Controller\EntityViewController;
  */
 class CurrencyController extends EntityViewController {
 
-  public function title(EntityInterface $currency) {
-    return $currency->label();
+  public function title(EntityInterface $mcapi_currency) {
+    return $mcapi_currency->label();
   }
 
 }

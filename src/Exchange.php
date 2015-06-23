@@ -12,11 +12,11 @@
 
 namespace Drupal\mcapi;
 
-use Drupal\user\Entity\User;
+use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\mcapi\Entity\Currency;
-use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\WalletInterface;
 
 use Drupal\mcapi_exchanges\Exchanges;
 
@@ -62,7 +62,9 @@ class Exchange {
    * @todo update function and documentation after OG is integrated
    */
   public static function walletableBundles() {
-    debug('how many times does this run in a request?', 'does it need cacheing?');
+    echo 'how many times does this run in a request? - does it need caching?';
+    //runs once for each transaction deleted.
+
     //@todo is there a usual way of working with static variables in static functions?
     if (!Self::$walletableBundles) {
       if (0 && $cache = \Drupal::cache()->get('walletableBundles')) {
@@ -93,7 +95,7 @@ class Exchange {
   /*
    * identify a new parent entity for a wallet
    */
-  public static function FindNewHolder(EntityInterface $previous_holder) {
+  public static function FindNewHolder(EntityOwnerInterface $previous_holder) {
     if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
       return Exchanges::newHolder($previous_holder);
     }
@@ -103,16 +105,34 @@ class Exchange {
   }
 
   /**
-   * Load currencies for a given user
-   * A list of all the currencies available to the current user
+   * Load currencies for a given ownerentity
    *
-   * @param AccountInterface $account
+   * @param EntityOwnerInterface $account
    *
    * @return Currency[]
    */
-  public static function userCurrencies(AccountInterface $account = NULL) {
+  public static function ownerEntityCurrencies(EntityOwnerInterface $entity = NULL) {
     if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-      return Exchanges::userCurrencies($account);
+      return Exchanges::ownerEntityCurrencies($entity);
+    }
+    else {
+      return Currency::loadMultiple();
+    }
+  }
+
+  /**
+   * Identify the currencies which can be used by a given wallet
+   *
+   * @param walletInterface $wallet
+   *
+   * @return Currency[]
+   *
+   * @deprecated this is only used in mcapi_tester.module to generate transactions
+   *
+   */
+  public static function walletCurrencies(walletInterface $wallet = NULL) {
+    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+      return Exchanges::walletCurrencies($wallet);
     }
     else {
       return Currency::loadMultiple();

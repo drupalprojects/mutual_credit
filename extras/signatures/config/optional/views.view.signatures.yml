@@ -244,7 +244,7 @@ display:
       display_extenders: {  }
       display_description: ''
       block_description: 'Pending transactions'
-      block_category: CommunityAccounting
+      block_category: Community Accounting
     cache_metadata:
       contexts:
         - 'languages:language_interface'

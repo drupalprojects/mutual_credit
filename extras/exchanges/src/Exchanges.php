@@ -25,7 +25,7 @@ class Exchanges {
    * return a list of exchanges of which the passed entity is a member
    * If an exchange is passed, it returns itself
    *
-   * @param ContentEntityInterface $entity
+   * @param OwnerEntityInterface $entity
    *   Any Content Entity which is a member of an exchange
    *
    * @return integer[]
@@ -34,7 +34,7 @@ class Exchanges {
    * @deprecated
    * @todo replace all uses of this with _og_get_entity_groups($entity_type = 'user', $entity = NULL, $states = array(OG_STATE_ACTIVE), $field_name = NULL)
    */
-  static function in(ContentEntityInterface $entity = NULL, $enabled = TRUE, $open = FALSE) {
+  static function in(OwnerEntityInterface $entity = NULL, $enabled = TRUE, $open = FALSE) {
     if (!is_object($entity)) {
       $entity = User::load(\Drupal::currentUser()->id());
     }
@@ -71,7 +71,7 @@ class Exchanges {
    * If the holder is an exchange return that exchange,
    * otherwise return the exchanges the holder is in.
    *
-   * @param \Drupal\mcapi\Entity\Wallet $wallet
+   * @param \Drupal\mcapi\Entity\WalletInterface $wallet
    *
    * @param boolean $open
    *   exclude closed exchanges
@@ -82,7 +82,7 @@ class Exchanges {
    * @todo maybe this should return only exchange ids?
    * @deprecated replace with og_get_entity_groups($entity_type = 'user', $entity = NULL, $states = array(OG_STATE_ACTIVE), $field_name = NULL);
    */
-  public static function walletExchanges(Wallet $wallet, $open = FALSE) {
+  public static function walletExchanges(WalletInterface $wallet, $open = FALSE) {
     return $wallet->entity_type == 'mcapi_exchange' ?
       array($wallet->pid => $wallet->getHolder()) ://@todo how do exchanges own wallets if exchanges aren't an entity?
       Self::in($wallet->getHolder(), TRUE, $open);
@@ -116,16 +116,29 @@ class Exchanges {
    * Load currencies for a given user
    * A list of all the currencies available to the current user
    *
-   * @param AccountInterface $account
+   * @param EntityOwnerInterface $entity
+   *
+   * @return CurrencyInterface[]
+   */
+  public static function ownerEntityCurrencies(EntityOwnerInterface $entity = NULL) {
+    $exchange_ids = Exchanges::in($entity, TRUE);
+    return SELF::currencies($exchange_ids, FALSE);
+  }
+
+  /**
+   * Identify the currencies which can be used by a given wallet
+   *
+   * @param WalletInterface $wallet
    *
    * @return CurrencyInterface[]
    *
    * @todo refactor this
    */
-  public static function userCurrencies(AccountInterface $account = NULL) {
-    $exchange_ids = Exchanges::in($account, TRUE);
+  public static function walletCurrencies(walletInterface $wallet = NULL) {
+    $exchange_ids = Exchanges::in($wallet->getOwner(), TRUE);
     return SELF::currencies($exchange_ids, FALSE);
   }
+
 
   /**
    * Get all the currencies in the given exchanges

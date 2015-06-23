@@ -7,7 +7,7 @@ id: wallet_log
 label: 'wallet log'
 module: views
 description: ''
-tag: ''
+tag: 'mcapi_transaction'
 base_table: mcapi_transactions_index
 base_field: xid
 core: 8.x

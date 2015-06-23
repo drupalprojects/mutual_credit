@@ -1,7 +1,7 @@
 id: mcapi_transactions
 label: Transactions
 description: 'A list of all transactions'
-tag: mcapi
+tag: mcapi_transaction
 langcode: en
 status: true
 core: 8.x

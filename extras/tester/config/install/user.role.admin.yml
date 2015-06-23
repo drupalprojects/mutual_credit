@@ -1,5 +1,4 @@
 id: admin
-uuid: 9c78b898-53c3-4bc4-b95a-90624c392433
 label: Administrator
 weight: 6
 permissions:
@@ -14,3 +13,6 @@ permissions:
   - 'administer permissions'
 status: true
 langcode: en
+dependencies:
+  module:
+    - mcapi_tester

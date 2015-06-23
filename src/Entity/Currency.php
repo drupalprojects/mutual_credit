@@ -122,8 +122,12 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
 
   function __construct($values) {
     parent::__construct($values, 'mcapi_currency');
-
-    $this->preformat();
+    $this->format_nums = [];
+    foreach ($this->format as $i => $val) {
+      if ($i % 2 == 1) {
+        $this->format_nums[$i] = $val;
+      }
+    }
   }
 
   /**
@@ -144,18 +148,13 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * {@inheritdoc}
    */
-  public function label($langcode = NULL) {
-    return $this->name;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function transactions(array $conditions = [], $serial = FALSE) {
     $serials = [];
     if ($this->id()) {
       $conditions += array('curr_id' => $this->id());
-      $serials = $this->getTransactionStorage()->filter($conditions);
+      $serials = \Drupal::entityManager()
+        ->getStorage('mcapi_transaction')
+        ->filter($conditions);
       if ($serial) {
         $serials = array_unique($serials);
       }
@@ -167,7 +166,9 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * {@inheritdoc}
    */
   public function volume(array $conditions = []) {
-    return $this->getTransactionStorage()->volume($this->id(), $conditions);
+    return \Drupal::entityManager()
+      ->getStorage('mcapi_transaction')
+      ->volume($this->id(), $conditions);
   }
 
   /**
@@ -246,52 +247,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
-   * {@inheritdoc}
-   * @todo I think this is is replaced by format('integer')
-   */
-  public function faux_format($raw_num, $format = []) {
-    //this is a wrapper around $this->format which temporarily changes the configured
-    //by default it removes
-    $temp = $this->format;
-    //put the passed formatter into the currency object
-    $this->format = $format;
-    //work out a suitable format
-    if (!$this->format) {
-      //make a simple temp format using the first and second numbers separated by a point
-      $this->format = array('', $temp[1]);
-      if (array_key_exists(3, $temp)) {
-        $this->format[2] = '.';
-        $this->format[3] = $temp[3];
-      }
-    }
-    //reset the preformatter with the new format
-    $this->preformat(TRUE);
-    //get the formatted value, with the temp markup
-    $result = $this->format($raw_num);
-    //set the formatter back to normal
-    $this->format = $temp;
-    //reset the preprocessor with the normal formatter
-    $this->preformat(TRUE);
-    //return the number, having been formatted with the passed formatter
-    return $result;
-  }
-
-
-  /**
-   * not very elegant way to get the odd-keyed values from an arbitrary length array
-   */
-  private function preformat($reset = FALSE) {
-    if (!property_exists($this, 'format_nums') || $reset) {
-      $this->format_nums = [];
-      foreach ($this->format as $i => $val) {
-        if ($i % 2 == 1) {
-          $this->format_nums[$i] = $val;
-        }
-      }
-    }
-  }
-
-  /**
    * convert multiple components (coming from a form widget) into a raw value
    *
    * @param array $parts
@@ -327,13 +282,4 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   function isDefaultRevision() {
     return TRUE;
   }
-
-  private function getTransactionStorage() {
-    //couldn't / shouldn't this be injected?
-    if (!$this->transactionStorage) {
-      $this->transactionStorage = \Drupal::entityManager()->getStorage('mcapi_transaction');
-    }
-    return $this->transactionStorage;
-  }
-
 }

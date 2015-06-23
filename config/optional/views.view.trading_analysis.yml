@@ -5,7 +5,7 @@ langcode: en
 status: true
 dependencies: {  }
 module: views
-tag: ''
+tag: 'mcapi_transaction'
 base_table: mcapi_transactions_index
 base_field: xid
 core: 8.x

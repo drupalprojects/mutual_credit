@@ -34,6 +34,14 @@ class WorthWidget extends WidgetBase {
    * @see \Drupal\Core\Field\WidgetInterface
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
+    //@todo utilise the advice below taken from \Drupal\datetime\Plugin\Field\FieldWidget\DateTimeWidgetBase.
+    // We are nesting some sub-elements inside the parent, so we need a wrapper.
+    // We also need to add another #title attribute at the top level for ease in
+    // identifying this item in error messages. We do not want to display this
+    // title because the actual title display is handled at a higher level by
+    // the Field module.
+    //$element['#theme_wrappers'][] = 'worth_wrapper';
+    //$element['#attributes']['class'][] = 'container-inline';
 
     //$element contains no meaningful information
     $element += array(

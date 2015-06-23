@@ -201,8 +201,8 @@ class TransitionForm extends EntityConfirmFormBase {
     }
     catch (\Exception $e) {
       drupal_set_message($this->t(
-        "Error performing @transition transition:",
-        ['@transition' => $this->transition->label]
+        "Error performing @transition transition: @error",
+        ['@transition' => $this->transition->label, '@error' => $e->getMessage()]
       ), 'error');
       return;
     }
@@ -222,7 +222,7 @@ class TransitionForm extends EntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function __setEntity(EntityInterface $entity) {
+  public function setEntity(EntityInterface $entity) {
     $this->entity = $entity;
     $this->transition->setTransaction($entity);
     return $this;

@@ -89,8 +89,8 @@ class McapiBlockBase extends BlockBase {
       $otheruser = ($this->configuration['user_source'] == MCAPIBLOCK_USER_MODE_PROFILE) ? NULL : $this->account;
       //show only the currency which can be seen by the current user AND the profiled user
       $this->currencies = array_intersect_key(
-      	Exchange::userCurrencies(\Drupal::currentUser()),
-        Exchange::userCurrencies($otheruser)
+      	Exchange::ownerEntityCurrencies(\Drupal::currentUser()),
+        Exchange::ownerEntityCurrencies($otheruser)
       );
     }
     else{
