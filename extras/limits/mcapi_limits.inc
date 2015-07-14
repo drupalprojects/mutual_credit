@@ -3,6 +3,7 @@
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Exchange;
 
 /**
  * preprocessor function for theme callback mcapi_limits_absolute

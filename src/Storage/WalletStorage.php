@@ -62,7 +62,7 @@ class WalletStorage extends SqlContentEntityStorage {
    * @param array \Drupal\mcapi\Entity\Wallet[]
    *   keyed by wallet id
    */
-  private function reIndex(array $wallets) {
+  public function reIndex(array $wallets) {
     $this->dropIndex($wallets);
     $query = $this->database->insert('mcapi_wallets_access')
       ->fields(array('wid', 'operation', 'uid'));

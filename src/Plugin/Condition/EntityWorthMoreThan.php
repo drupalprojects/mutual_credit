@@ -4,7 +4,7 @@
  * @file
  * Contains \Drupal\mcapi\Plugin\Condition\EntityWorthMoreThan.
  *
- * @todo this is unfinished because there is no UI yet
+ * @todo see https://www.drupal.org/node/2284687
  */
 
 namespace Drupal\mcapi\Plugin\Condition;

@@ -1,5 +1,5 @@
 name: Transaction signing
-description: Use actions and triggers to require signatures before transactions move into pending state. Default assumes all active members will expire at the end of the year
+description: Certain transaction types may require signatures before transitioning into the finished state
 package: Community Accounting
 configure: mcapi.admin.signatures
 core: 8.x

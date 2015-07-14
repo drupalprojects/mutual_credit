@@ -14,6 +14,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a 'Transaction is of type' condition.
+ * @todo see https://www.drupal.org/node/2284687
  *
  * @Condition(
  *   id = "mcapi_transaction_type",

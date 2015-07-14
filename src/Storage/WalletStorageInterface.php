@@ -48,4 +48,11 @@ interface WalletStorageInterface extends EntityStorageInterface {
    */
   function filter(array $conditions, $offset = 0, $limit = NULL);
 
+
+  /**
+   *
+   * @param array \Drupal\mcapi\Entity\Wallet[]
+   *   keyed by wallet id
+   */
+   function reIndex(array $wallets);
 }

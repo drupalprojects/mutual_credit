@@ -61,7 +61,6 @@ function mcapi_tester_modules_installed($modules) {
 
 function multiple_exchanges() {
 
-
   $exchange_ids = mcapi_tester_make_exchanges();
 die('multiple exchanges not working yet');
 return;
@@ -103,6 +102,7 @@ return;
  \Drupal::configFactory()->getEditable('core.extension')
   ->clear("module.mcapi_tester")
   ->save();
+ foreach user:loadMultiple()
   drupal_flush_all_caches();
  */
 function mcapi_tester_uninstall() {
@@ -111,7 +111,7 @@ function mcapi_tester_uninstall() {
   \Drupal::CurrentUser()->setAccount(User::load(1));
 
   //should delete automatically
-  foreach (\Drupal\taxonomy\Entity\Term::loadByProperties(array('vid' => 'categories')) as $term) {
+  foreach (\Drupal::entityManager()->getStorage('taxonomy_term')->loadByProperties(array('vid' => 'categories')) as $term) {
     $term->delete();
   }
 
