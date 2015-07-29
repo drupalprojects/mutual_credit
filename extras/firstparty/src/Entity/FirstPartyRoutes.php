@@ -1,11 +1,11 @@
 <?php
 /**
  * @file
- * Contains \Drupal\mcapi_1stparty\FirstPartyRoutes
+ * Contains \Drupal\mcapi_1stparty\Entity\FirstPartyRoutes
  * Defines dynamic routes.
  */
 
-namespace Drupal\mcapi_1stparty;
+namespace Drupal\mcapi_1stparty\Entity;
 
 use Symfony\Component\Routing\RouteCollection;
 use Symfony\Component\Routing\Route;
@@ -22,9 +22,9 @@ class FirstPartyRoutes {
    *
    * @see mcapi_1stparty_entity_type_alter which declares new _entity_forms
    */
-  public function routes() {
+  public function getRoutes() {
     $route_collection = new RouteCollection();
-    foreach (entity_load_multiple('1stparty_editform') as $id => $editform) {
+    foreach (entity_load_multiple('firstparty_editform') as $id => $editform) {
       $route = new Route($editform->path);
       $route->setDefaults([
         '_controller' => '\Drupal\mcapi_1stparty\FirstPartyTransactionForm::loadForm',
@@ -36,7 +36,7 @@ class FirstPartyRoutes {
       ]);
       $route->setOptions([
         'parameters' => [
-          '1stparty_editform' => $id,
+          'firstparty_editform' => $id,
         ]
       ]);
       $route_collection->add('mcapi.1stparty.'.$id, $route);

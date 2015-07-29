@@ -69,7 +69,7 @@ class FirstPartyEditFormListBuilder extends ConfigEntityListBuilder{
   public function submitForm(array &$form, $form_state) {
     $editform = FirstPartyFormDesign::create($form_state->getValues());
     $editform->save();
-    $form_state->setRedirect('mcapi.admin_1stparty_editform.edit', array('1stparty_editform' => $editform->id()));
+    $form_state->setRedirect('mcapi.admin_firstparty_editform.edit', array('firstparty_editform' => $editform->id()));
   }
 
 }

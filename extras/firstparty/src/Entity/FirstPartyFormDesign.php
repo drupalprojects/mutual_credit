@@ -13,10 +13,10 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\Annotation\EntityType;
 
 /**
- * Defines the 1stparty_editform entity.
+ * Defines the firstparty_editform entity.
  *
  * @ConfigEntityType(
- *   id = "1stparty_editform",
+ *   id = "firstparty_editform",
  *   label = @Translation("Transaction form design"),
  *   handlers = {
  *     "access" = "Drupal\mcapi_1stparty\FirstPartyEditFormAccessControlHandler",
@@ -28,6 +28,9 @@ use Drupal\Core\Entity\Annotation\EntityType;
  *       "disable" = "Drupal\mcapi_1stparty\Form\FirstPartyEditFormDisableConfirm"
  *     },
  *     "list_builder" = "Drupal\mcapi_1stparty\FirstPartyEditFormListBuilder",
+ *     "route_provider" = {
+ *       "html" = "Drupal\mcapi_1stparty\Entity\FirstPartyRoutes",
+ *     },
  *   },
  *   admin_permission = "configure mcapi",
  *   config_prefix = "editform",
@@ -37,12 +40,12 @@ use Drupal\Core\Entity\Annotation\EntityType;
  *     "label" = "title",
  *     "status" = "status"
  *   },
- *   field_ui_base_route = "mcapi.admin_1stparty_editform_list",
+ *   field_ui_base_route = "mcapi.admin_firstparty_editform_list",
  *   links = {
- *     "edit-form" = "/admin/accounting/forms/{1stparty_editform}",
- *     "delete-form" = "/admin/accounting/forms/{1stparty_editform}/delete",
- *     "enable" = "/admin/accounting/forms/{1stparty_editform}/enable",
- *     "disable" = "/admin/accounting/forms/{1stparty_editform}/disable",
+ *     "edit-form" = "/admin/accounting/forms/{firstparty_editform}",
+ *     "delete-form" = "/admin/accounting/forms/{firstparty_editform}/delete",
+ *     "enable" = "/admin/accounting/forms/{firstparty_editform}/enable",
+ *     "disable" = "/admin/accounting/forms/{firstparty_editform}/disable",
  *   }
  * )
  */

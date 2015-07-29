@@ -3,13 +3,18 @@
 use \Drupal\Core\Render\Element;
 use \Drupal\Core\Form\FormBuilder;
 use \Drupal\Core\Config\Entity\ConfigEntityInterface;
+use \Drupal\Core\Render\Element\InlineTemplate;
 
 /**
  * theme implementation of callback 1stpartyform
- * this must be a function, because we are taking a twig string instead of using a template file
+ * this must be a function, because we are taking a twig string 
+ * instead of using a template file
  */
 function theme_1stpartyform($vars) {
+  $renderer = \Drupal::service('renderer');
   $form = $vars['form'];
+  $form['#attributes']['class'][] = 'firstparty-form';
+  $form['#attached']['library'][] = 'mcapi_1stparty/display';
   $tokens = ['hidden_elements' => []];
   //append everything not rendered onto the last rendered thing.
   $vars['twig_template'] .= '{{ hidden_elements }}';
@@ -18,7 +23,7 @@ function theme_1stpartyform($vars) {
     //mywallet is never stripped because its visibility in the template is
     //context sensitive.
     if ($fieldname == 'mywallet' && $tokens[$fieldname]['#type'] != 'value') {
-      $tokens[$fieldname] = \Drupal::service('renderer')->render($form[$fieldname]);
+      $tokens[$fieldname] = $renderer->render($form[$fieldname]);
     }
     //if it is in the template, render the token
     elseif (strpos($vars['twig_template'], '{{ '.$fieldname.' }}') !== FALSE) {
@@ -46,12 +51,18 @@ function theme_1stpartyform($vars) {
   foreach (array_keys($tokens) as $fieldname) {
     unset($form[$fieldname]);
   }
-  $form['children'] = [
-    '#type' => 'inline_template',
-    '#template' => _filter_autop($vars['twig_template']),
-    '#context' => $tokens
-  ];
-  return \Drupal::service('renderer')->render($form);
+  $content = \Drupal::service('twig')->
+    renderInline(str_replace("\n", '<br />', $vars['twig_template']), $tokens);
+  return str_replace('</form>', $css . $content . '</form>', $renderer->render($form));
+   
+  
+  //if we render this using the inline_template element, specifically
+  //InlineTemplate::preRenderInlineTemplate($element)
+  //the form elements are filtered out later by drupal_render
+  $output = \Drupal::service('twig')->
+    renderInline(_filter_autop($vars['twig_template']), $tokens);
+  
+  
 }
 
 /**

@@ -1,27 +1,27 @@
-mcapi.admin_1stparty_editform_list:
+mcapi.admin_firstparty_editform_list:
   path: '/admin/accounting/forms'
   defaults:
-    _entity_list: '1stparty_editform'
+    _entity_list: 'firstparty_editform'
     _title: 'Transaction forms'
   requirements:
     _permission: 'configure mcapi'
   options:
     _admin_route: TRUE
 
-mcapi.admin_1stparty_editform.add:
+mcapi.admin_firstparty_editform.add:
   path: '/admin/accounting/forms/create'
   defaults:
-    _entity_form: '1stparty_editform.add'
+    _entity_form: 'firstparty_editform.add'
     _title: 'Create payment form'
   requirements:
-    _entity_create_access: 1stparty_editform
+    _entity_create_access: firstparty_editform
   options:
     _admin_route: TRUE
 
-entity.1stparty_editform.edit_form:
-  path: '/admin/accounting/forms/{1stparty_editform}'
+entity.firstparty_editform.edit_form:
+  path: '/admin/accounting/forms/{firstparty_editform}'
   defaults:
-    _entity_form: '1stparty_editform.edit'
+    _entity_form: 'firstparty_editform.edit'
     _title: 'Transaction form designer'
   requirements:
     #this needs to be overridden by the exchanges module so that forms can belong to groups
@@ -29,32 +29,30 @@ entity.1stparty_editform.edit_form:
   options:
     _admin_route: TRUE
 
-entity.1stparty_editform.delete_form:
-  path: '/admin/accounting/forms/{1stparty_editform}/delete'
+entity.firstparty_editform.delete_form:
+  path: '/admin/accounting/forms/{firstparty_editform}/delete'
   defaults:
-    _entity_form: '1stparty_editform.delete'
+    _entity_form: 'firstparty_editform.delete'
   requirements:
     _permission: 'configure mcapi'
   options:
     _admin_route: TRUE
 
-entity.1stparty_editform.disable:
-  path: '/admin/accounting/forms/{1stparty_editform}/disable'
+entity.firstparty_editform.disable:
+  path: '/admin/accounting/forms/{firstparty_editform}/disable'
   defaults:
-    _entity_form: '1stparty_editform.disable'
+    _entity_form: 'firstparty_editform.disable'
   requirements:
     _permission: 'configure mcapi'
   options:
     _admin_route: TRUE
     
-entity.1stparty_editform.enable:
-  path: '/admin/accounting/forms/{1stparty_editform}/enable'
+entity.firstparty_editform.enable:
+  path: '/admin/accounting/forms/{firstparty_editform}/enable'
   defaults:
-    _entity_form: '1stparty_editform.enable'
+    _entity_form: 'firstparty_editform.enable'
   requirements:
     _permission: 'configure mcapi'
   options:
     _admin_route: TRUE
 
-route_callbacks:
-  - '\Drupal\mcapi_1stparty\FirstPartyRoutes:routes'

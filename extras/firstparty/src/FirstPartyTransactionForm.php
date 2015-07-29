@@ -33,8 +33,8 @@ class FirstPartyTransactionForm extends TransactionForm {
     //NB seems like injection doesn't happen
     $this->id = $request->getCurrentRequest()
       ->attributes->get('_route_object')
-      ->getOptions()['parameters']['1stparty_editform'];
-    $this->config = entity_load('1stparty_editform', $this->id);
+      ->getOptions()['parameters']['firstparty_editform'];
+    $this->config = entity_load('firstparty_editform', $this->id);
   }
 
 

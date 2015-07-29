@@ -352,7 +352,7 @@ class FirstPartyFormDesigner extends EntityForm {
     else {
       drupal_set_message(t("Form '%label' has been added.", ['%label' => $this->entity->get('title')]));
     }
-    $form_state->setRedirect('mcapi.admin_1stparty_editform_list');
+    $form_state->setRedirect('mcapi.admin_firstparty_editform_list');
   }
 
   //is called from the form validator, so must be public

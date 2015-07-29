@@ -5,7 +5,7 @@
  * Contains \Drupal\mcapi_1stparty\TransactionFormAccessCheck.
  * Custom Access control handler for Designed transaction forms
  *
- * @see extras/firstparty/src/FirstPartyRoutes
+ * @see extras/firstparty/src/Entity/FirstPartyRoutes
  */
 
 namespace Drupal\mcapi_1stparty;
