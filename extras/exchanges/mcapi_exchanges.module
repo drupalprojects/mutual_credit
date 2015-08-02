@@ -22,13 +22,13 @@ const WALLET_ACCESS_EXCHANGE = 'e';//this could be moved the exchange module
  */
 function mcapi_exchanges_entity_type_alter(array &$entity_types) {
   $path = 'Drupal\mcapi_exchanges\Overrides\\';
-  if (array_key_exists('1stparty_editform', $entity_types)) {
-    $entity_types['1stparty_editform']
+  if (array_key_exists('firstparty_editform', $entity_types)) {
+    $entity_types['firstparty_editform']
       ->setListbuilderClass($path.'FirstPartyEditFormListBuilderExchanges');
-    $entity_types['1stparty_editform']
+    $entity_types['firstparty_editform']
       ->setAccessClass($path.'ExchangesFirstPartyEditFormAccessControlHandler');
     //what is this?
-    $entity_types['1stparty_editform']
+    $entity_types['firstparty_editform']
       ->setAccessClass($path.'ExchangesTransactionFormAccessCheck');
   }
   $entity_types['mcapi_currency']

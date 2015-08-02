@@ -7,6 +7,7 @@ dependencies:
     - field.field.mcapi_transaction.mcapi_transaction.worth
   module:
     - mcapi
+    - search
 id: mcapi_transaction.mcapi_transaction.search_result
 targetEntityType: mcapi_transaction
 bundle: mcapi_transaction

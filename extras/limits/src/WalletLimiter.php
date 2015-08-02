@@ -114,7 +114,7 @@ class WalletLimiter {//couldn't be bothered to make an interface for this
   }
 
   function __toString() {
-    die('use the theme system');
+    drupal_set_message('use the theme system to visualise wallets');
 
     foreach ($this->limits as $curr_id => $limits) {
       $currency = mcapi_currency_load($curr_id);

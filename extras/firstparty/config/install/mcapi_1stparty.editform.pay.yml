@@ -2,7 +2,7 @@ id: pay
 path: 'transact/pay'
 menu:
   title: 'Pay someone'
-  menu_name: Tools
+  menu_name: 'account'
   weight: 5
 title: 'Pay someone'
 status: 1

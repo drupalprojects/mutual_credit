@@ -34,7 +34,7 @@ class ExchangesTransactionFormAccessCheck extends TransactionFormAccessCheck {
    */
   public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
     if ($result = parent::access($route, $route_match, $account)->isAllowed()) {
-      $editform_id = $route->getOption('parameters')['1stparty_editform'];
+      $editform_id = $route->getOption('parameters')['firstparty_editform'];
       $editform = FirstPartyFormDesign::load($editform_id);
       if ($exchange = Exchange::load($editform->get('exchange'))) {
         //forward the positive result if the current user is in this form's exchange

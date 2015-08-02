@@ -34,7 +34,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
       $holder = entity_load(key($params), reset($params));
     }
     //quickcheck for users to add their own wallets
-    if ($account->hasPermission('create own wallets') && $holder->getEntityTypeId() == 'user' && $account->id() == $owner->id) {
+    if ($account->hasPermission('create own wallets') and $holder->getEntityTypeId() == 'user' and $account->id() == $holder->id()) {
       $checkroom = TRUE;
     }
     //for exchange managers to add wallets to any entity of that exchange

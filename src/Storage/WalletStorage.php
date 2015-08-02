@@ -68,10 +68,11 @@ class WalletStorage extends SqlContentEntityStorage {
       ->fields(array('wid', 'operation', 'uid'));
     foreach ($wallets as $wid => $wallet) {
       foreach (array_keys(Exchange::walletOps()) as $op) {
-        if (!is_array($wallet->access[$op])) continue;
-        foreach ($wallet->access[$op] as $value) {
-          $values = [$wid, $op, $value];
-          $query->values($values);
+        if (isset($wallet->access[$op]) && is_array($wallet->access[$op])) {
+          foreach ($wallet->access[$op] as $value) {
+            $values = [$wid, $op, $value];
+            $query->values($values);
+          }
         }
       }
     }

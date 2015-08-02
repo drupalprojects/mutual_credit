@@ -11,7 +11,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
 use Drupal\Core\Render\Element;
 use Drupal\mcapi\Entity\Transaction;
-use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\Currency as CurrencyEntity;
 use Drupal\mcapi\Exchange;
 use Drupal\Core\Template\Attribute;
 
@@ -67,7 +67,7 @@ class Worth extends FormElement {
         drupal_set_message(
           t(
             'Passed default @currency is not one of the allowed currencies',
-            array('@currency' => Currency::load(reset($not_allowed))->label())
+            ['@currency' => CurrencyEntity::load(reset($not_allowed))->label()]
           ),
           'warning'
         );
@@ -102,7 +102,7 @@ class Worth extends FormElement {
       //i want a div around each currency widget
       extract($item);//creates $curr_id and $value
 
-      $currency = \Drupal\mcapi\Entity\Currency::load($curr_id);
+      $currency = CurrencyEntity::load($curr_id);
       if ($element['#config'] && !is_numeric($value)) $parts = [];
       else $parts = $currency->formatted_parts(abs(intval($value)));
       $element[$delta]['curr_id'] = ['#type' => 'hidden', '#value' => $curr_id];
@@ -205,7 +205,7 @@ class Worth extends FormElement {
     if ($input !== FALSE) {
       foreach ($input as $delta => $parts) {
         $curr_id = $parts['curr_id'];
-        $quant = \Drupal\mcapi\Entity\Currency::load($curr_id)->unformat($parts);
+        $quant = CurrencyEntity::load($curr_id)->unformat($parts);
         if ($element['#config']) {
           //leaving the main value component blank in config mode means ignore the currency
           if ($parts[1] == '') {
@@ -254,7 +254,7 @@ class Worth extends FormElement {
     else {
       //check for allowed zero values.
       foreach ($element['#value'] as $delta => $worth) {
-        $currency = mcapi_currency_load($worth['curr_id']);
+        $currency = CurrencyEntity::load($worth['curr_id']);
         //zero values are only accepted if the currency allows and if cardinality there is only one currency in the field
         if (empty($worth['value'])) {
           if (count($element['#value']) > 1) {
@@ -299,7 +299,7 @@ class Worth extends FormElement {
       $temp_options[$worth['curr_id']] = $worth;//we need the worths keyed by $curr_id
       $helper[] = $worth['curr_id'];
     }
-    $helper = Currency::LoadMultiple($helper);
+    $helper = CurrencyEntity::LoadMultiple($helper);
     uasort($helper, 'mcapi_uasort_weight');
     //now we have sorted array keys
     //I'm a bit unsure how to sort one array by another but this is quick and dirty

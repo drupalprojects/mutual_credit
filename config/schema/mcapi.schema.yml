@@ -149,10 +149,10 @@ mcapi.state.*:
       type: string
       label: State ID
     label:
-      type: text
+      type: label
       label: Label
     description:
-      type: string
+      type: text
       label: Description
     counted:
       type: boolean
@@ -166,7 +166,7 @@ mcapi.type.*:
       type: string
       label: Type ID
     label:
-      type: text
+      type: label
       label: Label
     description:
       type: text
@@ -180,7 +180,7 @@ mcapi.transition.*:
   label: Transition settings
   mapping: 
     title:
-      'type': text
+      'type': label
       'label': Title
     tooltip:
       'type': text

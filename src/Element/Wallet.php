@@ -27,8 +27,7 @@ class Wallet extends EntityAutocomplete {
     array_shift($info['#process']);//get rid of callback Self::processEntityAutocomplete
     return [
       '#autocomplete_route_name' => 'mcapi.wallets.autocomplete',
-      '#autocomplete_route_parameters' => ['role' => 'null'],
-      //'#target_type' => 'mcapi_wallet'
+      '#autocomplete_route_parameters' => ['role' => 'null']
     ] + $info;
   }
 
@@ -50,7 +49,7 @@ class Wallet extends EntityAutocomplete {
               // Try to get a match from the input string
               $form_state->setError(
                 $element,
-                t('Unable to identify wallet: @string', ['@string' => $string])
+                $this->t('Unable to identify wallet: @string', ['@string' => $string])
               );
             }
             else {
@@ -70,7 +69,10 @@ class Wallet extends EntityAutocomplete {
             $valid_ids = array_keys(\Drupal\mcapi\Entity\Wallet::loadMultiple($ids));
             if ($invalid_ids = array_diff($ids, $valid_ids)) {
               foreach ($invalid_ids as $invalid_id) {
-                $form_state->setError($element, t("The wallet '%id' does not exist.", ['%id' => $invalid_id]));
+                $form_state->setError(
+                  $element, 
+                  $this->t("The wallet '%id' does not exist.", ['%id' => $invalid_id])
+                );
               }
             }
           }
@@ -79,7 +81,9 @@ class Wallet extends EntityAutocomplete {
         // matches (tags).
         if (!$element['#tags'] && !empty($value)) {
           $last_value = $value[count($value) - 1];
-          $value = isset($last_value['target_id']) ? $last_value['target_id'] : $last_value;
+          $value = isset($last_value['target_id']) ? 
+            $last_value['target_id'] : 
+            $last_value;
         }
       }
     }
@@ -105,7 +109,9 @@ class Wallet extends EntityAutocomplete {
   public static function getEntityLabels(array $entities) {
     $wallet_labels = [];
     foreach ($entities as $wallet) {
-      $label = ($wallet->access('view')) ? $wallet->label() : t('- Restricted access -');
+      $label = ($wallet->access('view')) ? 
+        $wallet->label() : 
+        $this->t('- Restricted access -');
       // Labels containing commas or quotes must be wrapped in quotes.
       $wallet_labels[] = Tags::encode($label)  . ' #' . $wallet->wid->value;
     }

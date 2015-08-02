@@ -35,9 +35,13 @@ function mcapi_install() {
     ->set('zero_snippet', '<img src = "'. $zero_icon_uri .'" width = "31" />')
     ->save();
 
+  return;
   //add the wallets summaries extraField to the default user display
+  //@todo add the wallet summaries to the existing user
+  //isn't there a way to make it appear by default?
+  //this config item may not exist in the install profile
   \Drupal::configFactory()->getEditable('core.entity_view_display.user.user.default')
-    ->set('content', ['wallets_summaries' => ['weight' => 1]])
+    ->set('content.wallets_summaries', ['weight' => 1])
     ->save();
 
 }

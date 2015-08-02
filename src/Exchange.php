@@ -62,8 +62,6 @@ class Exchange {
    * @todo update function and documentation after OG is integrated
    */
   public static function walletableBundles() {
-    echo 'how many times does this run in a request? - does it need caching?';
-    //runs once for each transaction deleted.
 
     //@todo is there a usual way of working with static variables in static functions?
     if (!Self::$walletableBundles) {

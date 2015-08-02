@@ -13,9 +13,6 @@ namespace Drupal\mcapi\Entity;
  * @ConfigEntityType(
  *   id = "mcapi_state",
  *   label = @Translation("Transaction state"),
- *   handlers = {
- *     "storage" = "Drupal\Core\Config\Entity\ConfigEntityStorage",
- *   },
  *   config_prefix = "state",
  *   entity_keys = {
  *     "id" = "id",
@@ -73,10 +70,10 @@ class State extends \Drupal\Core\Config\Entity\ConfigEntityBase {
  * NOT CURRENTLY USED
  */
   public static function descriptions() {
-  foreach (State::loadMultiple() as $state) {
-    //we'll save the translators the effort...
-    $desc[] = $state->label .' - '. $state->description .'.';
+    foreach (State::loadMultiple() as $state) {
+      //we'll save the translators the effort...
+      $desc[] = $state->label .' - '. $state->description .'.';
+    }
+    return t('State explanations: @explanations', array('@explanations' => implode(' | ', $desc)));
   }
-  return t('State explanations: @explanations', array('@explanations' => implode(' | ', $desc)));
-}
 }

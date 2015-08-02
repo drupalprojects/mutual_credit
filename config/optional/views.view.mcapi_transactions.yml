@@ -1,20 +1,20 @@
-id: mcapi_transactions
-label: Transactions
-description: 'A list of all transactions'
-tag: mcapi_transaction
 langcode: en
 status: true
-core: 8.x
 dependencies:
   config:
     - field.storage.mcapi_transaction.worth
-    - system.menu.main
+    - user.role.authenticated
   module:
     - mcapi
     - user
+id: mcapi_transactions
+label: Transactions
 module: views
+description: 'A list of all transactions'
+tag: mcapi_transaction
 base_table: mcapi_transaction
 base_field: xid
+core: 8.x
 display:
   default:
     display_plugin: default
@@ -1077,7 +1077,8 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-        - 'url.query_args.pagers:0'
+        - url.query_args
+        - user.permissions
       cacheable: false
   admin:
     display_plugin: page
@@ -1090,12 +1091,13 @@ display:
       field_langcode_add_to_query: null
       path: transactions/admin
       menu:
-        type: normal
+        type: tab
         title: Filter
         description: ''
-        name: navigation
+        parent: ''
         weight: 0
         context: '0'
+        menu_name: main
       exposed_form:
         type: input_required
         options:
@@ -1120,7 +1122,8 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-        - 'url.query_args.pagers:0'
+        - url.query_args
+        - user.permissions
       cacheable: false
   simple:
     display_plugin: page
@@ -1133,17 +1136,18 @@ display:
       field_langcode_add_to_query: null
       path: transactions
       menu:
-        type: normal
-        title: 'Transaction log'
+        type: 'default tab'
+        title: Log
         description: ''
-        name: navigation
+        parent: ''
         weight: 0
         context: '0'
+        menu_name: main
       access:
-        type: none
+        type: role
         options:
-          perm: 'manage mcapi'
-        provider: views
+          role:
+            authenticated: authenticated
       defaults:
         access: false
         title: false
@@ -1637,10 +1641,16 @@ display:
           provider: mcapi
       display_description: ''
       display_extenders: {  }
+      tab_options:
+        type: normal
+        title: Transactions
+        description: ''
+        weight: 0
     cache_metadata:
       contexts:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-        - 'url.query_args.pagers:0'
+        - url.query_args
+        - user.roles
       cacheable: false

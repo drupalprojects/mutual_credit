@@ -119,7 +119,6 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    * @return boolean
    */
   public function accessOp(AccountInterface $account, $arg2=null) {
-    if ($arg2)die('accessOp has too many args in '.$this->getPluginId());
     //children can't be edited that would be too messy
     if ($this->transaction->parent->value) {
       return FALSE;

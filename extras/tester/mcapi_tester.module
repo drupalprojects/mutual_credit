@@ -127,7 +127,7 @@ function mcapi_tester_make_inter_transactions($num) {
   }
 }
 
-function mcapi_tester_1stparty_editform_load($entities) {
+function mcapi_tester_firstparty_editform_load($entities) {
 //  debug($entities);
   foreach ($entities as &$firstpartyform) {
   //  if
