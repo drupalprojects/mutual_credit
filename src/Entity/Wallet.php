@@ -123,7 +123,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   /**
    * entity_label_callback().
    * default callback for wallet
-   * put the Holder's name with the wallet name in brackets if it exists
+   * put the Holder entity's name with the wallet name in brackets if there is one
    */
   public static function walletFormatName($wallet) {
     $output = $wallet->getHolder()->label();//what happens if the wallet is orphaned?
@@ -306,8 +306,10 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    */
   public static function orphan(ContentEntityInterface $holder) {
     $new_holder_entity = Exchange::findNewHolder($holder);
-    $wallet_ids = Self::entityManager()->getStorage('mcapi_wallet')->filter(['holder' => $holder]);
-    foreach (entity_load('mcapi_wallet', $wallet_ids) as $wallet) {
+    $wallet_ids = Self::entityManager()
+      ->getStorage('mcapi_wallet')
+      ->filter(['holder' => $holder]);
+    foreach (Self::loadMultiple($wallet_ids) as $wallet) {
       $criteria = ['involving' => $wallet->id()];
       if (Self::entityManager()->getStorage('mcapi_transaction')->filter($criteria)) {
         $new_name = $this->t(

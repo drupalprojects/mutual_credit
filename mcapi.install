@@ -26,7 +26,11 @@ function mcapi_install() {
     //give every existing user a wallet
     $values = ['entity_type' => $account->getEntityTypeId(), 'pid' => $account->id()];
     $w = Wallet::create($values);
-    $w->set('name', t("@name's default wallet", ['@name' => $account->label()]));
+    $name = $account->label();
+    if ($name == 'placeholder-for-uid-1') {
+      $name = 'User 1';
+    }
+    $w->set('name', t("@name's default wallet", ['@name' => $name]));
     $w->save();
   }
 

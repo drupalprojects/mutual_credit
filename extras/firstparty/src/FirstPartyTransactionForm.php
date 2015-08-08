@@ -127,7 +127,7 @@ class FirstPartyTransactionForm extends TransactionForm {
       $mywallet_element['#title'] = $this->t('With');
     }
     //if the currentUser doesn't have more than one wallet,
-    //disable the field and store the value in $form_state
+    //disable mywallet field and store its wallet id in $form_state
     else {
       $unused = $config->mywallet['unused'];
       if ($unused == 'disabled') {
@@ -136,8 +136,11 @@ class FirstPartyTransactionForm extends TransactionForm {
       elseif ($unused == 'hidden') {
         unset($mywallet);
       }
+      $my_one_wallet = reset($my_wallets);
       //this will be used to populate mywallet in the validation
-      $form_state->set('mywallet', [['target_id' => reset($my_wallets)]]);
+      $form_state->set('mywallet', [['target_id' => $my_one_wallet]]);
+      //in any case remove the current users one wallet from the list of recipients
+      unset($partner['widget'][0]['target_id']['#options'][$my_one_wallet]);
     }
     //handle the description
     //$form['description']['#placeholder'] = $config->description['placeholder'];

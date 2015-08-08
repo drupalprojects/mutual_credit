@@ -39,7 +39,7 @@ class Exchange {
       WALLET_ACCESS_ANY => t('Anyone on the internet'),
       WALLET_ACCESS_USERS => t('Named users...')
     ];
-    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+    if (Self::MultipleExchanges()) {
       //we could take this to the parent::walletPermissions()...
       $perms[WALLET_ACCESS_EXCHANGE] = t('Members in the same exchange(s)');
     }
@@ -69,7 +69,7 @@ class Exchange {
         Self::$walletableBundles = $cache->data;
       }
       else{
-        if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+        if (Self::MultipleExchanges()) {
           Self::$walletableBundles = Exchanges::walletableBundles($wallet, $open);
         }
         else {
@@ -94,7 +94,7 @@ class Exchange {
    * identify a new parent entity for a wallet
    */
   public static function FindNewHolder(EntityOwnerInterface $previous_holder) {
-    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+    if (Self::MultipleExchanges()) {
       return Exchanges::newHolder($previous_holder);
     }
     else {
@@ -110,7 +110,7 @@ class Exchange {
    * @return Currency[]
    */
   public static function ownerEntityCurrencies(EntityOwnerInterface $entity = NULL) {
-    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+    if (Self::MultipleExchanges()) {
       return Exchanges::ownerEntityCurrencies($entity);
     }
     else {
@@ -129,7 +129,7 @@ class Exchange {
    *
    */
   public static function walletCurrencies(walletInterface $wallet = NULL) {
-    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+    if (Self::MultipleExchanges()) {
       return Exchanges::walletCurrencies($wallet);
     }
     else {
@@ -163,7 +163,7 @@ class Exchange {
     if ($include_virtual){
       $tokens[] = 'url';
     }
-    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+    if (Self::MultipleExchanges()) {
       $tokens[] = 'intertrade';
     }
     return $tokens;
@@ -179,7 +179,7 @@ class Exchange {
    */
   public static function currenciesAvailable($wallet) {
     if (!isset($wallet->currencies_available)) {
-      if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+      if (Self::MultipleExchanges()) {
         //get the currencies in all the wallet parent's exchanges
         Exchanges::currenciesAvailable($wallet);
       }
@@ -218,10 +218,17 @@ class Exchange {
         t('Create payments out of this wallet')
       ]
     ];
-    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+    if (Self::MultipleExchanges()) {
       $ops += Exchanges::walletOps();
     }
     return $ops;
   }
 
+  private static function multipleExchanges() {
+    static $multiple = NULL;
+    if (!isset($multiple)) {
+      $multiple = \Drupal::moduleHandler()->moduleExists('mcapi_exchanges');
+    }
+    return $multiple;
+  }
 }

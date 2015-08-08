@@ -431,7 +431,7 @@ function mcapi_theme() {
 function walletable($entity) {
   $type_id = $entity->getEntityTypeId();
   //the quick answer
-  if ($type_id == 'user' || $type_id == 'mcapi_exchange') {
+  if ($type_id == 'user') {
     return TRUE; //because of intertrading wallets
   }
   $bundles = Exchange::walletableBundles();
@@ -503,4 +503,14 @@ function mcapi_decimalised($formatted_value) {
   $str = preg_replace('/([.: ]+)/', '.', $formatted_value);
   //remove everything except numbers and dots
   return preg_replace('/([^0-9.]+)/', '', $str);
+}
+
+/**
+ * take a worth value, typically from config and return true if all the currencies in it are zero
+ */
+function empty_worth(array $worth) {
+  return array_filter(
+    $worth,
+    function ($val) {return $val['value'];} 
+  );
 }

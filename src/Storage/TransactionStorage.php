@@ -52,21 +52,19 @@ class TransactionStorage extends TransactionIndexStorage {
       $entity->original = $this->loadUnchanged($id);
     }
 
-    $this->invokeHook('presave', $entity);
-    //this $entity is coming from above where it may have $children
-    //and in fact be several records
-    //NB currently transactions are NOT revisionable
-    if ($is_new = $entity->isNew()) {
+    $this->doPreSave($entity);
+    //determine the serial number
+    if ($is_new) {
       $last = $this->database->query(
         "SELECT MAX(serial) FROM {mcapi_transaction}"
       )->fetchField();
-      $entity->serial->value = $this->database->nextId($last);
+      $serial = $this->database->nextId($last);
     }
 
     $parent = 0;
     //note that this clones the parent tranaction
     foreach ($entity->flatten() as $transaction) {
-      $transaction->serial = $entity->serial->value;
+      $transaction->serial = $serial;
       $record = $this->mapToStorageRecord($transaction);
       $record->changed = REQUEST_TIME;
 
@@ -80,7 +78,6 @@ class TransactionStorage extends TransactionIndexStorage {
         $cache_ids = array($transaction->id());
         $this->resetCache($cache_ids);
         $this->indexDrop($entity->serial->value);
-        $this->invokeFieldMethod('update', $transaction);
         $this->saveToDedicatedTables($transaction, 1);
         $this->invokeHook('update', $entity);
       }
@@ -101,7 +98,6 @@ class TransactionStorage extends TransactionIndexStorage {
           //alter the passed entity, at least the parent
           $parent = $entity->xid->value = $insert_id;
         }
-        $this->invokeFieldMethod('insert', $transaction);
         $this->saveToDedicatedTables($transaction, 0);
         // The entity is no longer new.
         $entity->enforceIsNew(FALSE);
@@ -111,8 +107,9 @@ class TransactionStorage extends TransactionIndexStorage {
         $cache_ids = [];
       }
     }
+    
     // Allow code to run after saving.
-    $this->postSave($entity, $return == SAVED_UPDATED);
+    $this->doPostSave($entity, !$is_new);
     $entity->setOriginalId($entity->id());
     unset($entity->original);
     $this->clearCache([$entity]);
