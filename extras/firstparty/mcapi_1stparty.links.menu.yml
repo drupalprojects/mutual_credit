@@ -1,6 +1,0 @@
-mcapi.admin_firstparty_editform_list:
-  title: Payment forms
-  description: Design your own transaction forms from the logged in user's perspective.
-  route_name: mcapi.admin_firstparty_editform_list
-  parent: mcapi.admin
-  weight: 5
