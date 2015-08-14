@@ -13,6 +13,7 @@ use Drupal\user\Entity\User;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Utility\Tags;
 use Drupal\mcapi\Exchange;
+use Drupal\mcapi\Entity\Wallet;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class WalletForm extends ContentEntityForm {
@@ -24,7 +25,7 @@ class WalletForm extends ContentEntityForm {
 
     $this->permissions = Exchange::walletPermissions();
     if ($wallet->entity_type !== 'user') {
-      unset($this->permissions[WALLET_ACCESS_OWNER]);
+      unset($this->permissions[Wallet::ACCESS_OWNER]);
     }
     $this->ops = Exchange::walletOps();
   }
@@ -65,7 +66,7 @@ class WalletForm extends ContentEntityForm {
     $this->accessElement($form, 'details');
     $this->accessElement($form, 'summary');
     //anon users cannot pay in or out of wallets
-    unset($this->permissions[WALLET_ACCESS_ANY]);
+    unset($this->permissions[Wallet::ACCESS_ANY]);
     $this->accessElement($form, 'payin');
     $this->accessElement($form, 'payout');
 
@@ -130,10 +131,10 @@ class WalletForm extends ContentEntityForm {
     foreach (Exchange::walletOps() as $op_name => $label) {
       $wallet->{$op_name}->value = $values[$op_name];
       $user_refs = [];
-      if ($values[$op_name] == WALLET_ACCESS_OWNER) {
+      if ($values[$op_name] == Wallet::ACCESS_OWNER) {
         $wallet->access[$op_name] = [$wallet->getHolder()->id()];
       }
-      elseif ($values[$op_name] = WALLET_ACCESS_USERS) {
+      elseif ($values[$op_name] = Wallet::ACCESS_USERS) {
         $wallet->access[$op_name] = [];
         foreach ($values[$op_name.'_users'] as $val) {
           $wallet->access[$op_name][] = $val['target_id'];
@@ -166,7 +167,7 @@ class WalletForm extends ContentEntityForm {
         '#description' => $this->ops[$op_name][1],
         '#type' => 'select',
         '#options' => array_intersect_key($this->permissions, $system_default),
-        '#default_value' => is_array($saved) ? WALLET_ACCESS_USERS : $saved,
+        '#default_value' => is_array($saved) ? Wallet::ACCESS_USERS : $saved,
         '#weight' => $weight++,
       ];
 
@@ -181,7 +182,7 @@ class WalletForm extends ContentEntityForm {
         '#default_value' => is_array($saved) ? User::loadMultiple($saved) : [],
         '#states' => [
           'visible' => [
-            ':input[name="' . $op_name . '"]' => ['value' => WALLET_ACCESS_USERS]
+            ':input[name="' . $op_name . '"]' => ['value' => Wallet::ACCESS_USERS]
           ]
         ],
         '#weight' => $weight++,

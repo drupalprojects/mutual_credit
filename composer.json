@@ -1,0 +1,6 @@
+{
+    "name": "drupal/mutual_credit",
+    "description": "Community Accounting",
+    "type": "drupal-module",
+    "license": "GPL-2.0+"
+}

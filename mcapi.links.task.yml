@@ -38,3 +38,14 @@ mcapi.currency.edit.tab:
   base_route: entity.mcapi_currency.edit_form
   weight: 0
 
+mcapi.masspay.12many:
+  route_name: mcapi.masspay.12many
+  title: 'One-to-many'
+  base_route: mcapi.masspay.12many
+  weight: 0
+
+mcapi.masspay.many21:
+  route_name: mcapi.masspay.many21
+  title: 'Many-to-one'
+  base_route: mcapi.masspay.12many
+  weight: 0

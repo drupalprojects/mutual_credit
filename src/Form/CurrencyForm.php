@@ -85,7 +85,7 @@ class CurrencyForm extends EntityForm {
       ]),
       '#states' => [
         'visible' => [
-          ':input[name="issuance"]' => ['value' => CURRENCY_TYPE_ACKNOWLEDGEMENT]
+          ':input[name="issuance"]' => ['value' => Currency::TYPE_ACKNOWLEDGEMENT]
         ]
       ],
       '#weight' => 3,
@@ -100,7 +100,7 @@ class CurrencyForm extends EntityForm {
       ]),
       '#states' => [
         'visible' => [
-          ':input[name="issuance"]' => ['value' => CURRENCY_TYPE_EXCHANGE]
+          ':input[name="issuance"]' => ['value' => Currency::TYPE_EXCHANGE]
         ]
       ],
       '#weight' => 3,
@@ -115,7 +115,7 @@ class CurrencyForm extends EntityForm {
       ]),
       '#states' => [
         'visible' => [
-          ':input[name="issuance"]' => ['value' => CURRENCY_TYPE_COMMODITY]
+          ':input[name="issuance"]' => ['value' => Currency::TYPE_COMMODITY]
         ]
       ],
       '#weight' => 3,
@@ -126,9 +126,9 @@ class CurrencyForm extends EntityForm {
       '#description' => t('Currently only affects visualisation.'),
       '#type' => 'radios',
       '#options' => [
-        CURRENCY_TYPE_ACKNOWLEDGEMENT => t('Acknowledgement', [], ['context' => 'currency-type']),
-        CURRENCY_TYPE_EXCHANGE => t('Exchange', [], ['context' => 'currency-type']),
-        CURRENCY_TYPE_COMMODITY => t('Backed by a commodity', [], ['context' => 'currency-type']),
+        Currency::TYPE_ACKNOWLEDGEMENT => t('Acknowledgement', [], ['context' => 'currency-type']),
+        Currency::TYPE_EXCHANGE => t('Exchange', [], ['context' => 'currency-type']),
+        Currency::TYPE_COMMODITY => t('Backed by a commodity', [], ['context' => 'currency-type']),
       ],
       '#default_value' => property_exists($currency, 'issuance') ? $currency->issuance : 'acknowledgement',
       //this should have an API function to work with other transaction controllers
@@ -161,10 +161,9 @@ class CurrencyForm extends EntityForm {
       '#title' => t('Deletion'),
       '#type' => 'radios',
       '#options' => [
-        //'0' => $this->t('Delete nothing but add a counter transaction'),//reverse mode
-        '0' => $this->t('Transactions are permanent (but reverse transactions can be made manually)'),
-    	  '1' => $this->t('keep transaction in a deleted state'),
-    	  '2' => $this->t('remove completely from the database'),
+        Currency::MCAPI_UNDO_REVERSE => $this->t('Transactions are permanent (and deleting creates a reverse transaction in the cluster)'),
+    	  Currency::MCAPI_UNDO_ERASE => $this->t('keep transaction in a deleted state'),
+    	  Currency::MCAPI_UNDO_DELETE => $this->t('remove completely from the database'),
       ],
       '#default_value' => $currency->deletion,
       '#required' => TRUE,

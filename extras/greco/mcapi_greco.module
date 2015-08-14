@@ -36,7 +36,7 @@ function mcapi_greco_theme() {
 function mcapi_index_views_cron() {
   $manager = \Drupal::entityManager()->getStorage('mcapi_transaction');
   foreach (Currency::loadMultiple() as $curr_id => $currency) {
-    if ($currency->issuance != CURRENCY_TYPE_EXCHANGE) continue;
+    if ($currency->issuance != Currency::TYPE_EXCHANGE) continue;
     $sum_of_all_debit_balances = 0;
     //get the sum of all debit balances (in this currency) of all wallets
 

@@ -1,13 +1,3 @@
-mcapi.admin_firstparty_editform_list:
-  path: '/admin/accounting/forms'
-  defaults:
-    _entity_list: 'firstparty_editform'
-    _title: 'Transaction forms'
-  requirements:
-    _permission: 'configure mcapi'
-  options:
-    _admin_route: TRUE
-
 mcapi.admin_firstparty_editform.add:
   path: '/admin/accounting/forms/create'
   defaults:

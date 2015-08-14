@@ -1,5 +1,5 @@
 id: done
 label: Done
 description: The final state of the default workflow
-module: mcapi
+provider: mcapi
 counted: true

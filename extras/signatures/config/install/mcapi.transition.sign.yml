@@ -20,3 +20,6 @@ status: true
 weight: 2
 #has its own access function
 access: {}
+dependencies:
+  module:
+    - mcapi_signatures

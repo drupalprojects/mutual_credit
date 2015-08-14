@@ -42,6 +42,18 @@ class BalanceLimits extends McapiBlockBase {
         unset($form['curr_ids']['#options'][$curr_id]);
       }
     }
+    /** now the perspective is a property of the currency and the limits, not user 1 choice.
+    $form['perspective'] = [
+      '#title' => $this->t('Perspective'),
+      '#type' => 'radios',
+      '#options' => [
+        'absolute' => $this->t('View the absolute limits with the balance between.'),
+        'relative' => $this->t('View the earning and spending limits relative to the current balance')
+      ],
+      '#default_value' => $this->configuration['perspective']
+    ];
+     * 
+     */
     return $form;
   }
 

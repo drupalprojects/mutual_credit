@@ -100,10 +100,10 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       'entity_type' => 'mcapi_exchange',
       'pid' => $this->id(),
       'name' => '_intertrading',
-      'details' => WALLET_ACCESS_AUTH,
-      'summary' => WALLET_ACCESS_AUTH,
-      'payin' => WALLET_ACCESS_AUTH,
-      'payout' => WALLET_ACCESS_AUTH
+      'details' => Wallet::ACCESS_AUTH,
+      'summary' => Wallet::ACCESS_AUTH,
+      'payin' => Wallet::ACCESS_AUTH,
+      'payout' => Wallet::ACCESS_AUTH
     );
     $wallet = Wallet::create($props);
     $wallet->save();

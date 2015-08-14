@@ -76,7 +76,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       $query->execute();
     }
   }
-
+  
   /**
    * {@ineritdoc}
    */
@@ -92,24 +92,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     $this->resetCache(array_keys($transactions));
     $this->indexDrop($serials);
     \Drupal::logger('mcapi')->notice(
-      'Transaction deleted by user @uid: @serials',
-      [
-        '@uid' => \Drupal::currentuser()->id(),
-        '@serials' => implode(', ', array_keys($transactions))
-      ]
-    );
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function doErase(array $transactions) {
-    foreach ($transactions as $transaction) {
-      $transaction->set('state', TRANSACTION_STATE_ERASED);
-      $transaction->save($transaction);
-    }
-    \Drupal::logger('mcapi')->notice(
-      'Transaction erased by user @uid: @serials',
+      'Transactions deleted by user @uid; Serials: @serials',
       [
         '@uid' => \Drupal::currentuser()->id(),
         '@serials' => implode(', ', array_keys($transactions))

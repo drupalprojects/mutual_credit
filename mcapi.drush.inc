@@ -21,7 +21,7 @@ function mcapi_drush_help($section) {
     case 'drush:mcapi-delete':
       return dt('Completely remove all references to transactions with given serial number');
     case 'drush:mcapi-purge':
-      return dt('Remove all erased and reversed transactions and unfreeze the deletemode');
+      return dt('Remove all erased and reversed transactions, reset the counters, and unfreeze the deletemode');
   }
 }
 
@@ -41,17 +41,20 @@ function mcapi_drush_help($section) {
  */
 function mcapi_drush_command() {
   $items['mcapi-wipeslate'] = array(
-    //'callback' => 'drush_mcapi_wipeslate',
+    'callback' => 'drush_mcapi_wipeslate',
     'description' => dt('Trucate the transactions table and fieldAPI fields. USE WITH CARE.'),
     'drupal dependencies' => array('mcapi'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
-    'options' => array(
-      'purge' => 'Completely remove'
-    ),
+  );
+  $items['mcapi-undo'] = array(
+    //'callback' => 'drush_mcapi_undo',
+    'description' => dt('Selectively delete transactions. Pass the serial numbers as individual arguments'),
+    'drupal dependencies' => array('mcapi'),
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
   );
   $items['mcapi-delete'] = array(
-    //'callback' => 'drush_mcapi_delete',
-    'description' => dt('Selectively delete transactions. Pass the serial numbers as individual arguments'),
+    'callback' => 'drush_mcapi_delete',
+    'description' => dt('Delete one or more sub-transactions, irrespective of the currency undo modes. Pass the entity id, xid, not the serial number!'),
     'drupal dependencies' => array('mcapi'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
   );
@@ -60,18 +63,42 @@ function mcapi_drush_command() {
 
 //truncate transactions
 function drush_mcapi_wipeslate() {
-  $storage = \Drupal::entityManager()->getStorage('mcapi_transaction')->wipeslate();
+  
+  $storage = \Drupal::entityManager()
+    ->getStorage('mcapi_transaction')
+    ->delete($storage->loadMultiple());
+  
   //how to do "are you sure?" messages in drush!
   //this should be protected with the user 1 password
   drush_print(dt("@purged transactions purged", array('@purged' => count($serials))));
   field_cache_clear();
 }
 
-//delete specific transactions by serials
-function drush_mcapi_delete() {
-	$storage = \Drupal::entityManager()->getStorage('mcapi_transaction');
+/**
+ * drush callback
+ * @note not yet implemented
+ * undo specific transactions by serials
+ * note that the currencies deployed affect whether the transaction is deleted, 
+ * is reversed with another transaction, or simply changes state
+ * @todo create a Transaction::undo function to sort this out, aside from what Transaction operations are doing.
+ */
+function drush_mcapi_undo() {
+  //@todo check drush documentation for a better way to get the args
+  //at least this way avoids loading them all into memory at once
 	foreach(func_get_args() as $serial) {
-    Transaction::loadBySerials(array($serial))->delete();
+    Transaction::loadBySerials(array($serial))->undo();
 	}
   drush_print(dt('Deleted'));
+}
+
+/**
+ * drush callback 
+ * @todo test drush_mcapi_delete()
+ */
+function drush_mcapi_delete() {
+  //todo I think there is a better way than func_get_args
+  $transactions = Transaction::loadMultiple(func_get_args());
+	foreach($transactions as $sub) {
+    $sub->delete();
+	}
 }

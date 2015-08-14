@@ -13,5 +13,5 @@ format:
 zero: 0
 color: '#0000ff'
 weight: '2'
-deletion: 0
+deletion: '0'
 

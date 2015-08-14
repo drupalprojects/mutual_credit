@@ -2,4 +2,7 @@ id: signatures
 label: Needs signatures
 description: Requires signatures by default
 start_state: pending
-module: mcapi_signatures
+provider: mcapi
+dependencies:
+  module:
+    - mcapi_signatures

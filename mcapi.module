@@ -18,24 +18,9 @@ use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Exchange;
 
 
-//states are mutually exclusive //is it appropriate to use constants for plugin names?
+//@todo its not really appropriate to use constants for plugin names?
 const TRANSACTION_STATE_FINISHED = 'done';
 const TRANSACTION_STATE_ERASED = 'erased';
-
-//these are hardly used - probably only for visualisation
-const CURRENCY_TYPE_ACKNOWLEDGEMENT = 'acknowledgement';
-const CURRENCY_TYPE_EXCHANGE = 'exchange';
-const CURRENCY_TYPE_COMMODITY = 'commodity';
-
-//
-const WALLET_ACCESS_ANY = '1';//this is the role id
-const WALLET_ACCESS_AUTH = '2';//this is the role id
-const WALLET_ACCESS_USERS = 'u';//user id is in the wallet access table
-const WALLET_ACCESS_OWNER =  'o';//this is replaced with a named user MAYBE NOT NEEDED
-
-const MCAPI_CONFIRM_NORMAL = 0;
-const MCAPI_CONFIRM_AJAX = 1;
-const MCAPI_CONFIRM_MODAL = 2;
 
 /**
  * implements hook_requirements().
@@ -108,6 +93,7 @@ function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDis
   if ($display->getComponent('wallets_summaries')) {
     //check the entity is of a type which can own a wallet.
     $key = 'entity_types.' . $entity->getEntityTypeId() .':'. $entity->bundle();
+    $wallets = [];
     if (\Drupal::config('mcapi.wallets')->get($key)) {
       //get the wallets belonging to this entity
       $wids = \Drupal::EntityManager()
@@ -439,19 +425,6 @@ function walletable($entity) {
     && in_array($entity->bundle(), $bundles[$type_id]);
 }
 
-
- /**
-  * Delete all transaction entities
-  * For development only!
-  *
-  * @todo move this to be a drush command when drush is working!
-  */
-function mcapi_wipeslate() {
-  $storage = \Drupal::entityManager()
-    ->getStorage('mcapi_transaction')
-    ->delete($storage->loadMultiple());
-}
-
 /**
  * implements hook_ENTITY_TYPE_view().
  * put the stamp for erased transactions
@@ -513,4 +486,35 @@ function empty_worth(array $worth) {
     $worth,
     function ($val) {return $val['value'];} 
   );
+}
+
+/**
+ * implement mcapi hook_mcapi_form_list().
+ * return a list of transaction forms declared in this module.
+ * each item must e an array with the following keys
+ * - 'title' => 'Blah'
+ * - 'route' => 'mcapi.transaction_form'
+ * - 'route_parameters' => []
+ * - 'operations' => [Url::fromPath('blah')] an array of items, each with title and path
+ */
+function mcapi_mcapi_form_list() {
+  $forms['default'] = [
+    'title' => t('Default'),
+    'route' => 'mcapi.transaction_log',
+    'route_parameters' => [],
+    'operations' => []
+  ];
+  $forms['12many'] = [
+    'title' => t('One wallet pays many'),
+    'route' => 'mcapi.masspay.12many',
+    'route_parameters' => [],
+    'operations' => []
+  ];
+  $forms['many21'] = [
+    'title' => t('Many wallets pay one'),
+    'route' => 'mcapi.masspay.many21',
+    'route_parameters' => [],
+    'operations' => []
+  ];
+  return $forms;
 }

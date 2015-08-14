@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Storage;
 use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\mcapi\WalletInterface;
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Exchange;
 use Drupal\Core\Entity\EntityInterface;
 
@@ -24,7 +25,7 @@ class WalletStorage extends SqlContentEntityStorage {
     //populate the access property with the single char values
     foreach(array_keys(Exchange::walletOps()) as $op) {
       foreach ($records as $key => $record) {
-        if (!in_array($record->{$op}, [WALLET_ACCESS_OWNER, WALLET_ACCESS_USERS])) {
+        if (!in_array($record->{$op}, [Wallet::ACCESS_OWNER, Wallet::ACCESS_USERS])) {
           $entities[$key]->access[$op] = $record->{$op};
         }
       }

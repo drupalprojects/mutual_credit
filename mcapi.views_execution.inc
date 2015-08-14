@@ -49,15 +49,15 @@ function mcapi_views_query_mcapi_transaction_alter(ViewExecutable $view, QueryPl
     $wallet_operations = db_or();
 
     //if the wallet allows anyone to see
-    $wallet_operations->condition($details_field, WALLET_ACCESS_ANY);
+    $wallet_operations->condition($details_field, Wallet::ACCESS_ANY);
 
     //or if we are logged in
     if ($uid = \Drupal::CurrentUser()->id()) {
-      $wallet_operations->condition($details_field, WALLET_ACCESS_AUTH);
+      $wallet_operations->condition($details_field, Wallet::ACCESS_AUTH);
       //or if the current user is named
       $wallet_operations->condition(
         db_and()
-          ->condition($details_field, WALLET_ACCESS_USERS)
+          ->condition($details_field, Wallet::ACCESS_USERS)
           ->condition('mcapi_wallet_access_designated.uid', $uid)
       );
     }

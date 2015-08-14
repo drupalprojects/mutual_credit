@@ -79,7 +79,7 @@ return;
  * implements hook_uninstall().
  *
   FieldStorageConfig::load('mcapi_transaction.categories')->delete();
- *
+ 
  db_delete('config')->condition(
    'name',
    [
@@ -231,7 +231,7 @@ function mcapi_tester_make_exchanges() {
         'id' => $id,
         'name' => $currname,
         'zero' => rand(0, 1),
-        'issuance' => CURRENCY_TYPE_EXCHANGE,
+        'issuance' => Currency::TYPE_EXCHANGE,
         'deletion' => 1,
         'format' => array($first.$first, '000', ':', '99'),
         'weight' => $w,

@@ -2,7 +2,7 @@ langcode: en
 status: true
 dependencies: {  }
 name: Categories
-vid: categories
+vid: test_categories
 description: 'Test vocabulary'
 hierarchy: '0'
 weight: 0

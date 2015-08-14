@@ -10,6 +10,7 @@
 namespace Drupal\mcapi_1stparty;
 
 use Drupal\mcapi\Form\TransactionForm;
+use Drupal\mcapi\Plugin\TransitionManager;
 use Drupal\mcapi\Exchanges;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Type;
@@ -200,16 +201,16 @@ class FirstPartyTransactionForm extends TransactionForm {
 
     $preview_mode = $this->config->experience['preview'];
 
-    if ($preview_mode != MCAPI_CONFIRM_NORMAL) {
+    if ($preview_mode != TransitionManager::CONFIRM_NORMAL) {
       $actions['submit']['#attached']['library'][] = 'core/drupal.ajax';
-      if ($preview_mode == MCAPI_CONFIRM_MODAL) {
+      if ($preview_mode == TransitionManager::CONFIRM_MODAL) {
         $actions['submit']['#attributes'] = [
           'class' => ['use-ajax'],
           'data-accepts' => 'application/vnd.drupal-modal',
           'data-dialog-options' => Json::encode(['width' => 500])
         ];
       }
-      elseif($display == MCAPI_CONFIRM_AJAX) {
+      elseif($display == TransitionManager::CONFIRM_AJAX) {
         //curious how, to make a ajax link it seems necessary to put the url in 2 places
         $actions['submit']['#ajax'] = [
           'wrapper' => 'mcapi-transaction-1stparty-form',

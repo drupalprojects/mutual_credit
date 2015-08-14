@@ -139,7 +139,6 @@ mcapi.currency.*:
     deletion:
       type: integer
       label: Delete options
-    #third_party_settings included in definition of config_entity core.data_types.schema.yml
         
 mcapi.state.*:
   type: config_entity

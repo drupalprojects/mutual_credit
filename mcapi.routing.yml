@@ -62,19 +62,29 @@ mcapi.wallets.autocomplete:
     _controller: 'Drupal\mcapi\Controller\WalletAutocompleteController::autocomplete'
   requirements:
     _custom_access: 'Drupal\mcapi\Access\TransactionAccessControlHandler::enoughWallets'
-    
-mcapi.masspay:
-  path: '/transaction/one2many'
+
+mcapi.admin.transaction_form.list:
+  path: '/admin/accounting/forms'
+  defaults:
+    _controller: 'Drupal\mcapi\Controller\FormList::buildPage'
+    _title: 'Transaction forms'
+  requirements:
+    _permission: 'configure mcapi'
+  options:
+    _admin_route: TRUE
+
+mcapi.masspay.12many:
+  path: '/transaction/mass/12many'
   defaults:
     _entity_form: 'mcapi_transaction.12many'
-    _title: 'Mass payment'
+    _title: 'One wallet pays many'
   requirements:
     _permission: 'manage mcapi'
-mcapi.masspay:
-  path: '/transaction/many2one'
+mcapi.masspay.many21:
+  path: '/transaction/mass/many21'
   defaults:
     _entity_form: 'mcapi_transaction.many21'
-    _title: 'Mass payment'
+    _title: 'Many wallets pay one'
   requirements:
     _permission: 'manage mcapi'
 

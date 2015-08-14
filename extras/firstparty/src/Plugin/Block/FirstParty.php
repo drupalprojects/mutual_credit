@@ -18,7 +18,7 @@ use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
 
 
 /**
- * Provides a transaction form
+ * Provides a designed transaction form
  *
  * @Block(
  *   id = "mcapi_1stparty",

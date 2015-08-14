@@ -82,17 +82,19 @@ class TransactionViewsData extends EntityViewsData {
     ];
 
     //@todo I don't know why these relationships aren't coming automatically when 'creator' is
+    $data['mcapi_transaction']['payer']['help'] = $this->t('The wallet which was debited');
     $data['mcapi_transaction']['payer']['relationship'] = [
       'base' => 'mcapi_wallet',
       'base field' => 'wid',
-      'label' => 'Payer wallet',
+      //'label' => 'Payer wallet',
       'title' => 'Payer',
       'id' => 'standard'
     ];
+    $data['mcapi_transaction']['payer']['help'] = $this->t('The wallet which was credited');
     $data['mcapi_transaction']['payee']['relationship'] = [
       'base' => 'mcapi_wallet',
       'base field' => 'wid',
-      'label' => 'Payee wallet',
+      //'label' => 'Payee wallet',
       'title' => 'Payee',
       'id' => 'standard'
     ];

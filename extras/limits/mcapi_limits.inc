@@ -188,14 +188,15 @@ function mcapi_view_limits(WalletInterface $wallet, $curr_ids = []) {
     $currencies = array_intersect_key($currencies, array_flip($curr_ids));
   }
   foreach ($currencies as $currency) {
-    if ($currency->getThirdPartySetting('mcapi_limits', 'plugin', 'none') == 'none') continue;
+    if ($currency->getThirdPartySetting('mcapi_limits', 'plugin', 'none') == 'none') {
+      continue;
+    }
     if ($currency->getThirdPartySetting('mcapi_limits', 'display_relative', 'absolute') == TRUE) {
       $theme = 'mcapi_limits_relative';
     }
     else {
       $limiter = \Drupal::service('mcapi_limits.wallet_limiter')
         ->setwallet($wallet);
-
       $max = $limiter->max($currency->id());
       if ($max && (-$max == $limiter->min($currency->id()))) {
         $theme = 'mcapi_limits_balanced';

@@ -16,6 +16,7 @@ use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\WalletInterface;
 
 use Drupal\mcapi_exchanges\Exchanges;
@@ -34,10 +35,10 @@ class Exchange {
    */
   public static function walletPermissions() {
     $perms = [
-      WALLET_ACCESS_OWNER => t('The wallet owner'),
-      WALLET_ACCESS_AUTH => t('Any logged in users'),
-      WALLET_ACCESS_ANY => t('Anyone on the internet'),
-      WALLET_ACCESS_USERS => t('Named users...')
+      Wallet::ACCESS_OWNER => t('The wallet owner'),
+      Wallet::ACCESS_AUTH => t('Any logged in users'),
+      Wallet::ACCESS_ANY => t('Anyone on the internet'),
+      Wallet::ACCESS_USERS => t('Named users...')
     ];
     if (Self::MultipleExchanges()) {
       //we could take this to the parent::walletPermissions()...

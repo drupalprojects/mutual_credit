@@ -1,5 +1,8 @@
 id: pending
 label: Pending
 description: Awaiting signatures
-module: mcapi_signatures
 counted: false
+provider: mcapi
+dependencies:
+  module:
+    - mcapi_signatures

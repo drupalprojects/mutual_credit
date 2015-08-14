@@ -8,6 +8,7 @@
 
 namespace Drupal\mcapi_1stparty\Form;
 
+use Drupal\mcapi\Plugin\TransitionManager;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\Core\Render\Element;
@@ -254,9 +255,9 @@ class FirstPartyFormDesigner extends EntityForm {
         '#title' => $this->t('Preview mode'),
         '#type' => 'radios',
         '#options' => [
-          MCAPI_CONFIRM_NORMAL => $this->t('Basic - Go to a fresh page'),
-          MCAPI_CONFIRM_AJAX => $this->t('Ajax - Replace the form'),
-          MCAPI_CONFIRM_MODAL => $this->t('Modal - Confirm in a dialogue box')
+          TransitionManager::CONFIRM_NORMAL => $this->t('Basic - Go to a fresh page'),
+          TransitionManager::CONFIRM_AJAX => $this->t('Ajax - Replace the form'),
+          TransitionManager::CONFIRM_MODAL => $this->t('Modal - Confirm in a dialogue box')
         ],
         '#default_value' => $configEntity->experience['preview'],
         '#weight' => 3,

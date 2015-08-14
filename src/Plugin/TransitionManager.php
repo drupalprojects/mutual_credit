@@ -26,6 +26,11 @@ class TransitionManager extends DefaultPluginManager {
   private $plugins;
 
   private $config;
+  
+  
+  const CONFIRM_NORMAL = 0;
+  const CONFIRM_AJAX = 1;
+  const CONFIRM_MODAL = 2;
 
   /**
    * Constructs the TransitionManager object
@@ -176,8 +181,8 @@ class TransitionManager extends DefaultPluginManager {
             ])
           ];
           $display = $plugin->getConfiguration('display');
-          if ($display != MCAPI_CONFIRM_NORMAL) {
-            if ($display == MCAPI_CONFIRM_MODAL) {
+          if ($display != Self::CONFIRM_NORMAL) {
+            if ($display == Self::CONFIRM_MODAL) {
               $renderable['#attached']['library'][] = 'core/drupal.ajax';
               $renderable['#links'][$transition]['attributes'] = [
                 'class' => ['use-ajax'],
@@ -185,7 +190,7 @@ class TransitionManager extends DefaultPluginManager {
                 'data-dialog-options' => Json::encode(['width' => 500]),
               ];
             }
-            elseif($display == MCAPI_CONFIRM_AJAX) {
+            elseif($display == Self::CONFIRM_AJAX) {
               //curious how, to make a ajax link it seems necessary to put the url in 2 places
               $renderable['#links'][$transition]['ajax'] = [
                 //there must be either a callback or a path

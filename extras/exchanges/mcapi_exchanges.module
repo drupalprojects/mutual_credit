@@ -14,7 +14,7 @@ use Drupal\og\Entity\OgMembership;
 
 
 const EXCHANGE_OG_REF = 'mcapi_exchange_og_ref';
-const WALLET_ACCESS_EXCHANGE = 'e';//this could be moved the exchange module
+const WALLET_ACCESS_EXCHANGE = 'e';//this extends the series of constants in the wallet entity
 
 /**
  * implements hook_entity_info_alter().

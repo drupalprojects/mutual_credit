@@ -1,4 +1,10 @@
+langcode: en
+status: true
+provider: mcapi
+dependencies:
+  module:
+    - mcapi
 id: auto
 label: Automated
-description: Created automatically
+description: 'Created automatically'
 start_state: done

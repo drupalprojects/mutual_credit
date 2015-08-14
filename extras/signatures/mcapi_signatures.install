@@ -1,10 +1,8 @@
 <?php
-//Id;
 
 Use \Drupal\Core\Url;
 
 function mcapi_signatures_install() {
-
   module_set_weight('mcapi_signatures', 2);
 }
 
@@ -27,8 +25,16 @@ function mcapi_signatures_modules_installed($modules) {
  * would not be uninstallable.
  */
 function mcapi_signatures_uninstall() {
-  drupal_set_message("This uninstall shouldn't have been possible if any transactions are pending");
-  db_update('mcapi_transactions')
+  $p = db_select('mcapi_transaction', 't')
+    ->fields('t')
+    ->condition('state', 'pending')
+    ->countQuery()
+    ->execute()
+    ->fetchfield();
+  if ($p) {
+    drupal_set_message("This uninstall shouldn't have been possible if any transactions are pending");
+  }
+  db_update('mcapi_transaction')
     ->fields(['state' => 'done'])
     ->condition('state', 'pending')
     ->execute();//this isn't actually tested

@@ -19,3 +19,6 @@ body: 'Tokens will be needed for this mail!'
 status: true
 weight: 2
 access: {}
+dependencies:
+  module:
+    - mcapi_signatures

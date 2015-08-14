@@ -27,7 +27,6 @@ use Drupal\Core\Entity\Annotation\EntityType;
  *       "enable" = "Drupal\mcapi_1stparty\Form\FirstPartyEditFormEnableConfirm",
  *       "disable" = "Drupal\mcapi_1stparty\Form\FirstPartyEditFormDisableConfirm"
  *     },
- *     "list_builder" = "Drupal\mcapi_1stparty\FirstPartyEditFormListBuilder",
  *     "route_provider" = {
  *       "html" = "Drupal\mcapi_1stparty\Entity\FirstPartyRoutes",
  *     },

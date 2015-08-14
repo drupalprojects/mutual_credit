@@ -6,6 +6,7 @@
  */
 
 namespace Drupal\mcapi\Entity;
+use \Drupal\Core\Config\Entity\ConfigEntityBase;
 
 /**
  * Defines the transaction state entity class.
@@ -20,7 +21,7 @@ namespace Drupal\mcapi\Entity;
  *   }
  * )
  */
-class State extends \Drupal\Core\Config\Entity\ConfigEntityBase {
+class State extends ConfigEntityBase {
 
   /**
    * Identifier for the current State
@@ -48,7 +49,7 @@ class State extends \Drupal\Core\Config\Entity\ConfigEntityBase {
    *
    * @var string
    */
-  public $module;
+  public $provider;
 
   /**
    * Whether or not transactions in this state counts towards the transaction stats
@@ -62,18 +63,13 @@ class State extends \Drupal\Core\Config\Entity\ConfigEntityBase {
     return $this->id;
   }
   
-  
-/**
- * get a string suitable describing the states
- * @return string
- *   the label and description of every state.
- * NOT CURRENTLY USED
- */
-  public static function descriptions() {
-    foreach (State::loadMultiple() as $state) {
-      //we'll save the translators the effort...
-      $desc[] = $state->label .' - '. $state->description .'.';
-    }
-    return t('State explanations: @explanations', array('@explanations' => implode(' | ', $desc)));
+
+  /**
+   * {@inheritdoc}
+   */
+  public function calculateDependencies() {
+    parent::calculateDependencies();
+    $this->addDependency('module', $this->provider);
+    return $this->dependencies;
   }
 }

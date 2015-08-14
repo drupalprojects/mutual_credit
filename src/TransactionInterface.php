@@ -22,6 +22,11 @@ interface TransactionInterface extends ContentEntityInterface {
    *   an array of transaction entities or one transaction entity, depending on the input
    */
   static function loadBySerials($serials);
+  
+  /**
+   * delete, reverse or erase the transaction, according to the deletemodes of its currencies
+   */
+  function undo();
 
   /**
    * returns a clone of the transaction as an array with the children next to the parent

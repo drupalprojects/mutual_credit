@@ -41,7 +41,6 @@ use Drupal\Core\Cache\Cache;
  *       "12many" = "Drupal\mcapi\Form\One2Many",
  *       "many21" = "Drupal\mcapi\Form\Many2One",
  *       "admin" = "Drupal\mcapi\Form\TransactionForm",
- *       "delete" = "Drupal\mcapi\Form\TransactionDeleteConfirm",
  *     },
  *     "views_data" = "Drupal\mcapi\Views\TransactionViewsData",
  *     "route_provider" = {
@@ -172,7 +171,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     return $this->violations;
   }
 
-
   /**
    * {@inheritdoc}
    */
@@ -255,7 +253,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setRequired(TRUE);
 
     $fields['payer'] = BaseFieldDefinition::create('wallet')
-      ->setLabel(t('Payer wallet'))
+      ->setLabel(t('Payer'))
+      ->setDescription(t('The wallet which was debited'))
       ->setSetting('target_type', 'mcapi_wallet')
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
@@ -264,7 +263,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setConstraints(['CanActOn' => ['action' => 'payin']]);
 
     $fields['payee'] = BaseFieldDefinition::create('wallet')
-      ->setLabel(t('Payee wallet'))
+      ->setLabel(t('Payee'))
+      ->setDescription(t('The wallet which was credited'))
       ->setSetting('target_type', 'mcapi_wallet')
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
@@ -357,4 +357,18 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     }
   }
 
+  /**
+   * {@inheritdoc}
+   * @todo write the undo function
+   */
+  function undo() {
+    throw new \Exception('Transaction undo not implemented yet.');
+    foreach ($this->flatten() as $subtransaction) {
+      //get the currencies from $transaction->worth
+      //foreach currency get the delete mode.
+      //delete, or reverse each worth value, or change the state of the transaction
+      //if there are no worth values left and parent += 0, then delete the transaction entity itself      
+    }
+    //for the parent, if there are no children and no currencies, then delete the transaction
+  }
 }

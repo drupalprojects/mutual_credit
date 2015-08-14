@@ -65,7 +65,12 @@ use Drupal\Core\Session\AccountInterface;
  * )
  */
 class Wallet extends ContentEntityBase implements WalletInterface {
-
+  
+  const ACCESS_ANY = '1';//this is the role id
+  const ACCESS_AUTH = '2';//this is the role id
+  const ACCESS_USERS = 'u';//user id is in the wallet access table
+  const ACCESS_OWNER =  'o';//this is replaced with a named user MAYBE NOT NEEDED
+  
   private $holder;
   private $stats = [];
 

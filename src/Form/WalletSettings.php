@@ -8,6 +8,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Url;
 use Drupal\mcapi\Exchange;
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\field\Entity\FieldConfig;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -129,12 +130,12 @@ class WalletSettings extends ConfigFormBase {
       ];
     }
 
-    $form['wallet_access']['details'][WALLET_ACCESS_OWNER]['#default_value'] = TRUE;
-    $form['wallet_access']['details'][WALLET_ACCESS_OWNER]['#disabled'] = TRUE;
-    $form['wallet_access']['summary'][WALLET_ACCESS_OWNER]['#default_value'] = TRUE;
-    $form['wallet_access']['summary'][WALLET_ACCESS_OWNER]['#disabled'] = TRUE;
-    unset($form['wallet_access']['payin']['#options'][WALLET_ACCESS_ANY]);
-    unset($form['wallet_access']['payout']['#options'][WALLET_ACCESS_ANY]);
+    $form['wallet_access']['details'][Wallet::ACCESS_OWNER]['#default_value'] = TRUE;
+    $form['wallet_access']['details'][Wallet::ACCESS_OWNER]['#disabled'] = TRUE;
+    $form['wallet_access']['summary'][Wallet::ACCESS_OWNER]['#default_value'] = TRUE;
+    $form['wallet_access']['summary'][Wallet::ACCESS_OWNER]['#disabled'] = TRUE;
+    unset($form['wallet_access']['payin']['#options'][Wallet::ACCESS_ANY]);
+    unset($form['wallet_access']['payout']['#options'][Wallet::ACCESS_ANY]);
 
     $form['user_interface'] = [
       '#title' => $this->t('User interface'),
@@ -169,7 +170,7 @@ class WalletSettings extends ConfigFormBase {
   public function validateForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     foreach (array_keys(Exchange::walletOps()) as $op_name => $blurb) {
-      if (array_filter($values[$op_name]) == [WALLET_ACCESS_USERS => WALLET_ACCESS_USERS]) {
+      if (array_filter($values[$op_name]) == [Wallet::ACCESS_USERS => Wallet::ACCESS_USERS]) {
         $form_state->setErrorByName($op_name, t("'Named users' cannot be selected by itself"));
       }
     }

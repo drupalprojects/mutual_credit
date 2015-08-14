@@ -2,4 +2,9 @@ id: mass
 label: Mass
 description: Between one wallet and many
 start_state: done
-module: mcapi
+status: true
+provider: mcapi
+dependencies: 
+  module:
+    - mcapi
+third_party_settings: { }

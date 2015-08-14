@@ -57,7 +57,15 @@ use Drupal\Core\Entity\EntityStorageInterface;
  */
 
 class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwnerInterface {
-
+  
+  const UNDO_DELETE = 2;
+  const UNDO_ERASE = 1;
+  const UNDO_REVERSE = 0;
+  
+  const TYPE_ACKNOWLEDGEMENT = 2;
+  const TYPE_COMMODITY = 1;
+  const TYPE_EXCHANGE = 0;
+    
   public $id;
 
   public $uuid;
@@ -139,7 +147,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       'format' => ['$', 0, '.', '99'],
       'zero' => FALSE,
       'color' => '000',
-      'deletion' => ['erase' => 'erase'],
+      'deletion' => SELF::MCAPI_UNDO_ERASE,
       'weight' => 0,
       'uid' => \Drupal::CurrentUser()->id() ? : 1
     );

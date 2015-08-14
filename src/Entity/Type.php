@@ -54,4 +54,20 @@ class Type extends ConfigEntityBase {
    */
   public $start_state;
 
+  /**
+   * start of which to start with.
+   *
+   * @var integer
+   */
+  public $provider;
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function calculateDependencies() {
+    $dependencies = parent::calculateDependencies();
+    $this->addDependency('module', $this->provider);
+    return $this->dependencies;
+  }
+  
 }

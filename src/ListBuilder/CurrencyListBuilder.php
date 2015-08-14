@@ -9,6 +9,7 @@ namespace Drupal\mcapi\ListBuilder;
 use Drupal\Core\Config\Entity\DraggableListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Render\Element;
+use Drupal\mcapi\Entity\Currency;
 
 /**
  * Provides a listing of currencies
@@ -45,9 +46,9 @@ class CurrencyListBuilder extends DraggableListBuilder {
     }
     $row['title'] = ['#markup' => $entity->link(NULL, 'canonical')];
     $type_names = array(
-      CURRENCY_TYPE_ACKNOWLEDGEMENT => t('Acknowledgement'),
-      CURRENCY_TYPE_EXCHANGE => t('Exchange'),
-      CURRENCY_TYPE_COMMODITY => t('Commodity')
+      Currency::TYPE_ACKNOWLEDGEMENT => t('Acknowledgement'),
+      Currency::TYPE_EXCHANGE => t('Exchange'),
+      Currency::TYPE_COMMODITY => t('Commodity')
     );
     $type = $entity->issuance ? $entity->issuance : CURRENCY_TYPE_ACKNOWLEDGEMENT;
 

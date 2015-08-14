@@ -11,6 +11,7 @@ use Drupal\Core\Entity\EntityAccessControlHandler;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessResult;
+use Drupal\mcapi\Entity\Wallet;
 
 /**
  * Defines an access controller option for the mcapi_wallet entity.
@@ -59,12 +60,12 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
       return $result;
     }
     switch ($entity->access[$op]) {
-      case WALLET_ACCESS_AUTH:
+      case Wallet::ACCESS_AUTH:
         if ($account->id()) {
           return AccessResult::allowed()->cachePerUser();
         }
         break;
-      case WALLET_ACCESS_ANY:
+      case Wallet::ACCESS_ANY:
         return AccessResult::allowed()->cachePerPermissions();
       default:
         return AccessResult::neutral()->cachePerPermissions();
@@ -80,13 +81,13 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
     if ($account->hasPermission('manage mcapi')) {
       return AccessResult::allowed()->cachePerPermissions();
     }
-    //case WALLET_ACCESS_OWNER
+    //case Wallet::ACCESS_OWNER
     elseif ($op == 'edit') {
       //edit isn't a configurable operation. Only the holder can do it
       $entity->access['edit'] = array($entity->getHolder()->id());
     }
 
-    //special case WALLET_ACCESS_USERS where $op is an array
+    //special case Wallet::ACCESS_USERS where $op is an array
     if (is_array($entity->access[$op])) {//designated users
       if(in_array($account->id(), $entity->access[$op])) {
         return AccessResult::allowed()->cachePerUser();
