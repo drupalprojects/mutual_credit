@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Form;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
+use Drupal\mcapi\Entity\Currency;
 
 class CurrencyForm extends EntityForm {
 
@@ -161,9 +162,9 @@ class CurrencyForm extends EntityForm {
       '#title' => t('Deletion'),
       '#type' => 'radios',
       '#options' => [
-        Currency::MCAPI_UNDO_REVERSE => $this->t('Transactions are permanent (and deleting creates a reverse transaction in the cluster)'),
-    	  Currency::MCAPI_UNDO_ERASE => $this->t('keep transaction in a deleted state'),
-    	  Currency::MCAPI_UNDO_DELETE => $this->t('remove completely from the database'),
+        Currency::UNDO_REVERSE => $this->t('Transactions are permanent (and deleting creates a reverse transaction in the cluster)'),
+    	  Currency::UNDO_ERASE => $this->t('keep transaction in a deleted state'),
+    	  Currency::UNDO_DELETE => $this->t('remove completely from the database'),
       ],
       '#default_value' => $currency->deletion,
       '#required' => TRUE,

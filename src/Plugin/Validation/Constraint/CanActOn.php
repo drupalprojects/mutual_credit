@@ -17,7 +17,7 @@ use Drupal\mcapi\Exchange;
 /**
  * Checks if the current user is authorised to pay out of the payer wallet
  *
- * @Plugin(
+ * @Constraint(
  *   id = "CanActOn",
  *   label = @Translation("Allowed to pay out of the wallet")
  * )

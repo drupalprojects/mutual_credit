@@ -11,11 +11,11 @@ use \Drupal\Core\Entity\Plugin\Validation\Constraint\CompositeConstraintBase;
 
 /**
  * Supports validating payer & payee of parent transactions
+ *   type = "entity"...
  *
- * @Plugin(
- *   id = "Integrity",
+ * @Constraint(
+ *   id = "TransactionIntegrity",
  *   label = @Translation("Checks that the payer and payee wallets are different"),
- *   type = "entity:mcapi_transaction"
  * )
  */
 class TransactionIntegrityConstraint extends CompositeConstraintBase {

@@ -30,7 +30,12 @@ class TransitionForm extends EntityConfirmFormBase {
   function __construct($request, $route_match, $transitionManager, $event_dispatcher) {
     $this->request = $request;
     $transitionId = $route_match->getparameter('transition') ? : 'view';
-    $this->transition = $transitionManager->getPlugin($transitionId);
+    
+    
+    $this->transition = $transitionManager->getPlugin(
+      $transitionId, 
+      $route_match->getParameters()->get('mcapi_transaction')
+    );
     $this->eventDispatcher = $event_dispatcher;
   }
 
@@ -202,7 +207,7 @@ class TransitionForm extends EntityConfirmFormBase {
     catch (\Exception $e) {
       drupal_set_message($this->t(
         "Error performing @transition transition: @error",
-        ['@transition' => $this->transition->label, '@error' => $e->getMessage()]
+        ['@transition' => $this->transition->title, '@error' => $e->getMessage()]
       ), 'error');
       return;
     }

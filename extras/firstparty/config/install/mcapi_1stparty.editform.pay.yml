@@ -13,7 +13,11 @@ mywallet:
 partner:
   preset: ''
 fieldapi_presets:
-  worth: { }
+  worth:
+    preset:
+      -
+        curr_id: cc
+        value: 0
   description: { }
 experience:
   twig: "From {{ mywallet }}\r\nPay: {{ partner }}\r\n{{ worth }}\r\nfor {{ description }}"

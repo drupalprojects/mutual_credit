@@ -27,7 +27,7 @@ class FirstPartyEditFormDisableConfirm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return new Url('mcapi.admin_firstparty_editform_list');
+    return new Url('mcapi.admin.transaction_form.list');
   }
 
   /**

@@ -9,7 +9,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  * implements hook_help().
  */
 function mcapi_1stparty_help($route_name) {
-  if ($route_name == 'mcapi.admin_firstparty_editform_list') {
+  if ($route_name == 'mcapi.admin.transaction_form.list') {
     $help[] = t('Design your own forms for users to start transactions on their workflow paths.');
     $help[] = t('Each form has access control and can be presented as a block, page or panel.');
     $help[] = t('Each form can have presets and hidden fields.');

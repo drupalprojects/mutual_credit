@@ -113,7 +113,6 @@ class TransactionViewsData extends EntityViewsData {
 
      *
     */
-    //print_R($data['mcapi_transactions_index']);die();
 
     $data['mcapi_transactions_index']['table'] = [
       'group' => $this->t('Transaction index'),
@@ -124,10 +123,7 @@ class TransactionViewsData extends EntityViewsData {
         'help' => $this->t('Transaction index table'),
         'access query tag' => 'mcapi_views_access',
         'weight' => 5,
-        'defaults' => [
-          //'field' => 'serial',//only base field itself works at the moment
-          'field' => 'xid',
-        ]
+        'defaults' => []
       ],
       'wizard_id' => 'transaction_index', //this links it to the wizard plugin
     ];
@@ -146,7 +142,7 @@ class TransactionViewsData extends EntityViewsData {
       'title' => $this->t('Transaction id'), // The item it appears as on the UI,
       'help' => $this->t('The unique database key of the transaction'),
       'field' => [
-        'id' => 'mcapi_entity', //this might be 'transaction' if it exists
+        'id' => 'field', //this might be 'transaction' if it exists
       ],
       'sort' => [
         'id' => 'standard',

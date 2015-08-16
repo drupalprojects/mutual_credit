@@ -36,15 +36,7 @@ class Create extends TransitionBase {
    * {@inheritdoc}
    */
   public function execute(array $context) {
-
-    \Drupal::logger('mcapi')->notice(
-      'User @uid created transaction @serial',
-      [
-        '@uid' => \Drupal::currentUser()->id(),
-        '@serial' => $this->transaction->serial->value
-      ]
-    );
-    //the save operation takes place elsewhere
+    //do nothing here because the parent function writes the (transitioned) transaction.
     return ['#markup' => t('Transaction created')];
   }
 

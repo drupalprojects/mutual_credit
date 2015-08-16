@@ -27,7 +27,7 @@ class FirstPartyTransactionForm extends TransactionForm {
    * the editform configEntity whos e defaults are used to build the tempalte transaction Entity
    */
   private $id;
-  private $config;
+  private $configEntity;
 
   public function __construct(EntityManagerInterface $entity_manager, $tempstore, $request) {
     parent::__construct($entity_manager, $tempstore);
@@ -35,7 +35,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     $this->id = $request->getCurrentRequest()
       ->attributes->get('_route_object')
       ->getOptions()['parameters']['firstparty_editform'];
-    $this->config = entity_load('firstparty_editform', $this->id);
+    $this->configEntity = entity_load('firstparty_editform', $this->id);
   }
 
 
@@ -62,14 +62,14 @@ class FirstPartyTransactionForm extends TransactionForm {
     module_load_include('inc', 'mcapi_1stparty');
     $form = \Drupal::service('entity.form_builder')//inject this...
       ->getForm(
-        mcapi_forms_default_transaction($this->config),
+        mcapi_forms_default_transaction($this->configEntity),
         $this->id
       );
     //remove any items from the $form which are not in the template
     $tokens = mcapi_1stparty_transaction_tokens();
     foreach ($tokens as $token) {
-      if (strpos($this->config->experience['twig'], $token) === FALSE) {
-        if (!isset($this->config->{$token}['preset'])) {
+      if (strpos($this->configEntity->experience['twig'], $token) === FALSE) {
+        if (!isset($this->configEntity->{$token}['preset'])) {
           unset($form[$token]);//we'll rely on the entity defaults
         }
       }
@@ -82,8 +82,8 @@ class FirstPartyTransactionForm extends TransactionForm {
       '#theme'=> '1stpartyform',
       '#form' => $form,
       '#twig_tokens' => $tokens,
-      '#twig_template' => $this->config->experience['twig'],
-      '#incoming' => $config->incoming,
+      '#twig_template' => $this->configEntity->experience['twig'],
+      '#incoming' => $this->configEntity->incoming,
       '#cache' => [
         'contexts' => ['user']//@todo check this is working.
       ]
@@ -97,15 +97,15 @@ class FirstPartyTransactionForm extends TransactionForm {
    * Symfony routing callback
    */
   public function title() {
-    return $this->config->title;
+    return $this->configEntity->title;
   }
 
   /**
    * Get the original transaction form and alter it according to
-   * the 1stparty form settings saved in $this->config.
+   * the 1stparty form settings saved in $this->configEntity.
    */
   public function form(array $form, FormStateInterface $form_state) {
-    $config = $this->config;
+    $config = $this->configEntity;
     $form_state->set('config', $config);
     $form = parent::form($form, $form_state);
     if ($config->get('incoming')) {
@@ -164,42 +164,18 @@ class FirstPartyTransactionForm extends TransactionForm {
     $form['state']['#type'] = 'value';
     $form['state']['#value'] = Type::load($config->type)->start_state;
     unset($form['creator']);
-
-    //::validate is called before any specifed handlers
-    $form['#validate'] = [];
-    array_unshift($form['#validate'], '::firstparty_convert_direction');
     return $form;
   }
 
-  /**
-   * element validator for 'partner'
-   * set the payer and payee from the mywallet, partner and direction
-   */
-  static function firstparty_convert_direction($form, FormStateInterface $form_state) {
-    $values = $form_state->getValues();
-    if ($form_state->get('config')->incoming) {//swop the payer and payee values
-      $form_state->setValueForElement(
-        $form['payee']['widget'],
-        $form_state->get('mywallet') ?  : $values['payee']
-      );
-    }
-    else {
-      $form_state->setValueForElement(
-        $form['payer']['widget'],
-        $form_state->get('mywallet') ?  : $values['payer']
-      );
-    }
-
-  }
 
   /**
    * Returns an array of supported actions for the current entity form.
    */
   protected function actions(array $form, FormStateInterface $form_state) {
     $actions = parent::actions($form, $form_state);
-    $actions['submit']['#value'] = $this->config->experience['button'];
+    $actions['submit']['#value'] = $this->configEntity->experience['button'];
 
-    $preview_mode = $this->config->experience['preview'];
+    $preview_mode = $this->configEntity->experience['preview'];
 
     if ($preview_mode != TransitionManager::CONFIRM_NORMAL) {
       $actions['submit']['#attached']['library'][] = 'core/drupal.ajax';
@@ -215,7 +191,7 @@ class FirstPartyTransactionForm extends TransactionForm {
         $actions['submit']['#ajax'] = [
           'wrapper' => 'mcapi-transaction-1stparty-form',
           'method' => 'replace',
-          'url' => Url::fromRoute('mcapi.1stparty.'.$this->config->id)
+          'url' => Url::fromRoute('mcapi.1stparty.'.$this->configEntity->id)
         ];
       }
     }

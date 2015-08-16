@@ -15,104 +15,101 @@ namespace Drupal\mcapi\Storage;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Database\Database;
-use Drupal\mcapi\Entity\State;
 
 
 class TransactionStorage extends TransactionIndexStorage {
 
   /**
+   * {@inheritdoc}
+   * 
    * because the transaction entity is keyed by serial number not xid,
    * and because it contains child entities,
    * We need to overwrite the whole save function
-   * Also in this method we write the index table
+   * Note therefore that preSave and postSave take the whole transaction cluster
    *
-   * {@inheritdoc}
    */
-
-  public function save(EntityInterface $entity) {
+  public function save(EntityInterface $transaction) {
     //much of this is borrowed from parent::save
-    $id = $entity->id();
+    $id = $transaction->id();
 
     // Track the original ID.
-    if ($entity->getOriginalId() !== NULL) {
-      $id = $entity->getOriginalId();
+    if ($transaction->getOriginalId() !== NULL) {
+      $id = $transaction->getOriginalId();
     }
 
     // Track if this entity is new.
-    $is_new = $entity->isNew();
+    $is_new = $transaction->isNew();
     // Track if this entity exists already.
-    $id_exists = $this->has($id, $entity);
+    $id_exists = $this->has($id, $transaction);
 
     // A new entity should not already exist.
     if ($id_exists && $is_new) {
       throw new EntityStorageException(SafeMarkup::format('@type entity with ID @id already exists.', array('@type' => $this->entityTypeId, '@id' => $id)));
     }
     // Load the original entity, if any.
-    if ($id_exists && !isset($entity->original)) {
-      $entity->original = $this->loadUnchanged($id);
+    if ($id_exists && !isset($transaction->original)) {
+      $transaction->original = $this->loadUnchanged($id);
     }
 
-    $this->doPreSave($entity);
+    $this->doPreSave($transaction);
     //determine the serial number
     if ($is_new) {
       $last = $this->database->query(
         "SELECT MAX(serial) FROM {mcapi_transaction}"
       )->fetchField();
-      $serial = $this->database->nextId($last);
+      $transaction->serial->value = $this->database->nextId($last);
     }
 
     $parent = 0;
-    //note that this clones the parent tranaction
-    foreach ($entity->flatten() as $transaction) {
-      $transaction->serial = $serial;
-      $record = $this->mapToStorageRecord($transaction);
+    //note that flatten() clones the transactions
+    foreach ($transaction->flatten(FALSE) as $entity) {
+      $entity->serial->value = $transaction->serial->value;
+      $record = $this->mapToStorageRecord($entity);
       $record->changed = REQUEST_TIME;
 
-      if (!$is_new) {
+      if ($is_new) {
+        $return = SAVED_NEW;
+        $record->created = REQUEST_TIME;
+        //the first transaction is the parent,
+        //and the subsequent transactions must have its xid as their parent
+        $record->parent = (int)$parent;
+        
+        // Ensure the entity is still seen as new after assigning it an id while storing its data.
+        if (!$entity->isNew()) {
+          echo 'enforcing newness of entity!';
+          $entity->enforceIsNew();
+        }
+        $entity->xid->value = $this->database
+          ->insert('mcapi_transaction', ['return' => Database::RETURN_INSERT_ID])
+          ->fields((array) $record)
+          ->execute();
+        if (!$parent) {
+          //the first entity running through here is always the parent, thus has a parent xid of 0
+          $parent = $entity->xid->value;//saved for next in the flattened array
+        }
+        // The entity is no longer new.
+        $entity->enforceIsNew(FALSE);//because we were working on a clone
+        // Reset general caches, but keep caches specific to certain entities.
+        $cache_ids = [];
+      }
+      else {
         $return = SAVED_UPDATED;
         $this->database
           ->update('mcapi_transaction')
           ->fields((array) $record)
           ->condition('xid', $record->xid)
           ->execute();
-        $cache_ids = array($transaction->id());
-        $this->resetCache($cache_ids);
+        $this->resetCache([$entity->id()]);
         $this->indexDrop($entity->serial->value);
-        $this->saveToDedicatedTables($transaction, 1);
-        $this->invokeHook('update', $entity);
       }
-      else {
-        $return = SAVED_NEW;
-        // Ensure the entity is still seen as new after assigning it an id while storing its data.
-        $transaction->enforceIsNew();
-        //$record->serial = $serial;
-        //the first transaction is the parent,
-        //and the subsequent transactions must have its xid as their parent
-        if ($parent) $record->parent = $parent;
-        $insert_id = $this->database
-          ->insert('mcapi_transaction', array('return' => Database::RETURN_INSERT_ID))
-          ->fields((array) $record)
-          ->execute();
-        $transaction->xid->value = $insert_id;
-        if (!$parent) {
-          //alter the passed entity, at least the parent
-          $parent = $entity->xid->value = $insert_id;
-        }
-        $this->saveToDedicatedTables($transaction, 0);
-        // The entity is no longer new.
-        $entity->enforceIsNew(FALSE);
-        $transaction->setOriginalId($entity->id());
-        $this->invokeHook('insert', $entity);
-        // Reset general caches, but keep caches specific to certain entities.
-        $cache_ids = [];
-      }
+      $this->doSaveFieldItems($entity);
     }
     
     // Allow code to run after saving.
-    $this->doPostSave($entity, !$is_new);
-    $entity->setOriginalId($entity->id());
-    unset($entity->original);
-    $this->clearCache([$entity]);
+    $this->doPostSave($transaction, !$is_new);
+    $transaction->setOriginalId($transaction->id());
+    unset($transaction->original);
+    $this->clearCache([$transaction]);
     return $return;
   }
 

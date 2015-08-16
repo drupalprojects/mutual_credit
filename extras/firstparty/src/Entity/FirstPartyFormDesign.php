@@ -39,7 +39,6 @@ use Drupal\Core\Entity\Annotation\EntityType;
  *     "label" = "title",
  *     "status" = "status"
  *   },
- *   field_ui_base_route = "mcapi.admin_firstparty_editform_list",
  *   links = {
  *     "edit-form" = "/admin/accounting/forms/{firstparty_editform}",
  *     "delete-form" = "/admin/accounting/forms/{firstparty_editform}/delete",

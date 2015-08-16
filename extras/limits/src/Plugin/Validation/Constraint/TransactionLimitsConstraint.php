@@ -15,7 +15,7 @@ use Symfony\Component\Validator\Constraint;
 /**
  * Supports validating payer & payee of parent transactions
  *
- * @Plugin(
+ * @Constraint(
  *   id = "Limits",
  *   label = @Translation("Checks that neither wallet goes beyond its determined credit limits"),
  *   type = "entity:mcapi_transaction"

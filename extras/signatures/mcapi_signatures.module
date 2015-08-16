@@ -49,6 +49,7 @@ function mcapi_signatures_mcapi_transaction_presave($transaction) {
     }
     //sign for the current user
     Signatures::sign($transaction, \Drupal::currentUser());
+    //we can't save the signatures until we have the serial number
   }
 }
 
@@ -91,16 +92,16 @@ function mcapi_signatures_mcapi_transaction_delete($transaction) {
  * writes the signatures after the transaction is written
  */
 function mcapi_signatures_mcapi_transaction_insert($transaction) {
-  if (!isset($transaction->signatures)) return;
-  if ($transaction->parent->value) return;//only work with parent transactions
-  $uid = \Drupal::currentUser()->id();
-  $q = db_insert('mcapi_signatures')
-    ->fields(['serial', 'uid', 'signed']);
+  //we're only interested in parent transactions which have signatures
+  if (isset($transaction->signatures) && !$transaction->parent->value) {
+    $q = db_insert('mcapi_signatures')
+      ->fields(['serial', 'uid', 'signed']);
 
-  foreach ($transaction->signatures as $uid => $signed_unixtime) {
-    $q->values([$transaction->serial->value, $uid, $signed_unixtime]);
+    foreach ($transaction->signatures as $uid => $signed_unixtime) {
+      $q->values([$transaction->serial->value, $uid, $signed_unixtime]);
+    }
+    $q->execute();
   }
-  $q->execute();
 }
 
 /**
@@ -110,6 +111,7 @@ function mcapi_signatures_mcapi_transaction_insert($transaction) {
 function mcapi_signatures_mcapi_transaction_update($transaction) {
   if (!isset($transaction->signatures)) return;
   if (empty($transaction->parent)) return;
+die('merging');
   foreach ($transaction->signatures as $uid => $signed) {
     $q = db_merge('mcapi_signatures')
       ->keys([

@@ -89,8 +89,8 @@ class TransitionManager extends DefaultPluginManager {
   /**
    * ensure a plugin is loaded and in the list
    *
-   * @param type $id
-   * @param type $editable
+   * @param string $id
+   * @param \Drupal\mcapi\Entity\Transaction $transaction
    *
    * @return type
    */
@@ -104,8 +104,8 @@ class TransitionManager extends DefaultPluginManager {
 
   /**
    *
-   * @param type $id
-   * @param type $editable
+   * @param string $id
+   * @param boolean $editable
    *
    * @return Config
    *   editable or immutable

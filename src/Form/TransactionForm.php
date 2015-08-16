@@ -12,12 +12,8 @@ use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
-use Drupal\Core\Datetime\DrupalDateTime;
-use Drupal\action\Plugin\Action;
 use Drupal\user\Entity\User;
-use Drupal\mcapi\ViewBuilder\TransactionViewBuilder;
 use Drupal\mcapi\Entity\Transaction;
-use Drupal\mcapi\Exchanges;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class TransactionForm extends ContentEntityForm {
@@ -71,7 +67,6 @@ class TransactionForm extends ContentEntityForm {
       '#weight' => 20
     ];
     $form = parent::form($form, $form_state);
-
     return $form;
   }
 
@@ -86,28 +81,9 @@ class TransactionForm extends ContentEntityForm {
       'submit' => [
         '#type' => 'submit',
         '#value' => $this->t('Preview'),
-        '#validate' => ['::validate'],
-        '#submit' => ['::submitForm'],
+        '#submit' => ['::submitForm'],//does NOT save()
       ]
     ];
-  }
-
-  /**
-   * form validation callback
-   * @todo remove typedDataValidated flag after beta10
-   */
-  public function validate(array $form, FormStateInterface $form_state) {
-    //handles constraintValidation on all entity fields
-    //marks form fields as appropriate
-    $this->entity = parent::validate($form, $form_state);
-    //we have validated the entity properties corresponding to form fields
-    //now we validate the whole entity
-    //unfortunately that means validating some properties twice
-    foreach ($this->entity->validate() as $violation) {echo $v->getMessage();
-      $form_state->setErrorByName('', $violation->getMessage());
-    }
-    //now validated, this is what will go in the tempstore
-    $form_state->set('mcapi_validated', TRUE);
   }
 
   /**
@@ -116,13 +92,13 @@ class TransactionForm extends ContentEntityForm {
    * @param array $form
    * @param FormStateInterface $form_state
    *
-   * @note does NOT call parent. Does not save()
+   * @note does NOT call parent.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    parent::submitForm($form, $form_state);//set $this->entity
     $this->tempStore
       ->get('TransactionForm')
       ->set('mcapi_transaction', $this->entity);
-
     //Drupal\mcapi\ParamConverter\TransactionSerialConverter
     //then
     //Drupal\mcapi\Plugin\Transition\Create
@@ -139,16 +115,10 @@ class TransactionForm extends ContentEntityForm {
    */
   public function buildEntity(array $form, FormStateInterface $form_state) {
     $entity = parent::buildEntity($form, $form_state);
-
-    $values = $form_state->getValues();
     //if a valid creator uid was submitted then use that
     //is this the best place to be putting defaults? not in Transaction::precreate?
-    if (array_key_exists('creator', $values) && $account = User::load($values['creator'])) {
-      $entity->creator->target_id = $account->id();
-    }
-    else {
-      $entity->creator->target_id = $this->currentUser()->id();//MUST be a logged in user!
-    }
+    $uid = $form_state->getValue('creator') ? : \Drupal::currentUser()->id();
+    $entity->creator->entity = user::load($uid);
     return $entity;
   }
 

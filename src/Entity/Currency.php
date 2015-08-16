@@ -147,7 +147,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       'format' => ['$', 0, '.', '99'],
       'zero' => FALSE,
       'color' => '000',
-      'deletion' => SELF::MCAPI_UNDO_ERASE,
+      'deletion' => SELF::UNDO_ERASE,
       'weight' => 0,
       'uid' => \Drupal::CurrentUser()->id() ? : 1
     );

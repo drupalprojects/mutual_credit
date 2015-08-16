@@ -10,7 +10,6 @@ use Drupal\mcapi\TransactionInterface;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Component\Plugin\ConfigurablePluginInterface;
 use Drupal\Core\Config\ImmutableConfig;
 
 /**
@@ -47,7 +46,7 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     if ($this->transaction) {
       return $this->transaction;
     }
-    throw new \Exception ('Transition plugin not properly initiated. Transaction not set');
+    throw new \Exception ('Transition plugin not properly initiate');
   }
 
   /**

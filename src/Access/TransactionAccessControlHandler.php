@@ -10,10 +10,8 @@ namespace Drupal\mcapi\Access;
 use Drupal\Core\Entity\EntityAccessControlHandler;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
-use Symfony\Component\HttpFoundation\Request;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Access\AccessResult;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Defines an access controller option for the mcapi_transaction entity.
@@ -57,7 +55,6 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
    * @return AccessResult
    */
   public static function enoughWallets($account = NULL) {
-    Self::$result;
     if (!Self::$result) {
       if (!$account){
         $account = \Drupal::currentUser();

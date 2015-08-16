@@ -31,6 +31,8 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * @note $entity cannot have children - this must be called inside foreach($transaction->flatten)
    */
   public function postSave(EntityInterface $entity, $update = FALSE) {
+    
+echo 'TransactionIndexStorage::Postsave...';die();
     //alternatively how about a db_merge? would be quicker
     if ($update) {
       $this->database->delete('mcapi_transactions_index')

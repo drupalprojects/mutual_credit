@@ -57,7 +57,7 @@ class Worth extends FormElement {
     }
     else {
       if(empty($element['#default_value'])) {
-        //
+//@todo need to provide a wallet here
         $element['#allowed_curr_ids'] = array_keys(Exchange::currenciesAvailable());
       }
       $map = Self::curr_map($element['#default_value']);
@@ -222,14 +222,19 @@ class Worth extends FormElement {
       }
     }
     else {
+      $default = $element['#default_value'];
       //return the given #default_value plus allowed curr ids
-      $map = Self::curr_map((array)$element['#default_value']);
+      $map = Self::curr_map($default);
       foreach ($element['#allowed_curr_ids'] as $curr_id) {
-        $val = $element['#default_value'][$map[$curr_id]]['value'];
-        $output[] = [
-          'curr_id' => $curr_id,
-          'value' => $element['#config'] ? $val : intval($val)
-        ];
+        $val = 0;
+        if (isset($map[$curr_id])) {
+          $val = $default[$map[$curr_id]]['value'];
+        }       
+        //in config mode, $val could be a formula, otherwise it is a native integer
+        if (empty($element['#config'])) {
+          $val = intval($val);
+        }
+        $output[] = ['curr_id' => $curr_id,  'value' => $val];
       }
     }
     return $output;

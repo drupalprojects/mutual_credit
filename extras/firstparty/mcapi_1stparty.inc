@@ -25,6 +25,9 @@ function theme_1stpartyform($vars) {
     if ($fieldname == 'mywallet' && $tokens[$fieldname]['#type'] != 'value') {
       $tokens[$fieldname] = $renderer->render($form[$fieldname]);
     }
+    elseif($form[$fieldname]['#type'] == 'actions') {
+      $tokens[$fieldname] = \Drupal::service('renderer')->render($form[$fieldname]);
+    }
     //if it is in the template, render the token
     elseif (strpos($vars['twig_template'], '{{ '.$fieldname.' }}') !== FALSE) {
       $tokens[$fieldname] = mcapi_render_stripped($form[$fieldname]);
@@ -34,7 +37,6 @@ function theme_1stpartyform($vars) {
     }
     //add the rendered token to the hidden elements
     elseif (@$form[$fieldname]['widget']) {
-      //hide it with css
       $hidden[] = 'field-name-'.$fieldname;
     }
     //if it is required, and its not yet added as a token show an error
@@ -53,7 +55,7 @@ function theme_1stpartyform($vars) {
   }
   $content = \Drupal::service('twig')->
     renderInline(str_replace("\n", '<br />', $vars['twig_template']), $tokens);
-  return str_replace('</form>', $css . $content . '</form>', $renderer->render($form));
+  return str_replace('</form>', $content . '</form>', $renderer->render($form));
    
   
   //if we render this using the inline_template element, specifically
@@ -71,7 +73,7 @@ function theme_1stpartyform($vars) {
 function template_preprocess_1stpartyform(&$vars) {
   $form = &$vars['form'];
   //add the buttons at the end if they weren't in the twig template already
-  if (strpos($vars['twig'], '{{ actions }}') === FALSE) {
+  if (strpos($vars['twig_template'], '{{ actions }}') === FALSE) {
     $vars['twig_template'] .= "\n{{ actions }}";
   }
 
@@ -102,17 +104,16 @@ function template_preprocess_1stpartyform(&$vars) {
  *   HTML
  */
 function mcapi_render_stripped($element) {
-  if (array_key_exists('widget', $element)) {
-    $element = $element['widget'];
+  while ($children = Element::Children($element)) {
+    if (@$element['#type'] == 'worth')break;
+    $first_child = reset($children);
+    $element = $element[$first_child];
   }
-  $nostrip = ['checkbox', 'checkboxes', 'radios', 'actions', 'value'];
+  
+  $nostrip = ['checkbox', 'checkboxes', 'radios'];
 
   if (!in_array($element['#type'], $nostrip)) {
-    foreach (Element::children($element) as $child1) {
-      foreach (Element::children($element[$child1]) as $child2) {
-        unset($element[$child1][$child2]['#theme_wrappers']);
-      }
-    }
+    unset($element['#theme_wrappers']);
     //to make up for removing the wrapper
     $element['#prefix'] = '<div class = "form-item">';
     $element['#suffix'] = '</div>';
@@ -155,6 +156,7 @@ function mcapi_forms_default_transaction(ConfigEntityInterface $config) {
     $vars['payee'] = $partner;
   }
   foreach ($config->fieldapi_presets as $fieldname => $setting) {
+    if (!isset($setting['preset'])) drupal_Set_message('$fieldname has no preset');
     $vars[$fieldname] = $setting['preset'];
   }
 

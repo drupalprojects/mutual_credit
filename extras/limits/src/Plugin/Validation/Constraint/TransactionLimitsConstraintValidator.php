@@ -17,10 +17,9 @@ namespace Drupal\mcapi_limits\Plugin\Validation\Constraint;
 use Drupal\mcapi\Entity\Wallet;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Constraint;
-use Drupal\Core\DependencyInjection\DependencySerializationTrait;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class TransactionLimitsConstraintValidator extends ConstraintValidator {
+  
 
   private $currentUser;
   private $limiter;
@@ -28,25 +27,16 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator {
   private $replacements = [];
   private $diffs = [];
 
-  function __construct($currentUser, $limitManager, $limiter, $logger) {
-    $this->currentUser = \Drupal::service('current_user');
-    $this->limitManager = \Drupal::service('plugin.manager.mcapi_limits');
-    $this->limiter = \Drupal::service('mcapi_limits.wallet_limiter');
-    $this->logger = \Drupal::logger('mcapi_limits');
-  }
-
-  /*
-   * can't get this to fire.
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('current_user'),
-      $container->get('plugin.manager.mcapi_limits'),
-      $container->get('mcapi_limits.wallet_limiter'),
-      $container->get('logger.factory')
-    );
-  }
-   *
+  /**
+   * @todo I don't know how to get this object to inject
    */
+  function __construct() {
+    $container = \Drupal::getContainer();
+    $this->currentUser = $container->get('current_user');
+    $this->limitManager = $container->get('plugin.manager.mcapi_limits');
+    $this->limiter = \Drupal::service('mcapi_limits.wallet_limiter');
+    $this->logger = $container->get('logger.factory')->get('mcapi');
+  }
 
   /**
    * {@inheritdoc}

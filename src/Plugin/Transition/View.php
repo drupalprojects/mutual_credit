@@ -9,7 +9,6 @@
 
 namespace Drupal\mcapi\Plugin\Transition;
 
-use Drupal\mcapi\CurrencyInterface;
 use Drupal\mcapi\Plugin\TransitionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -22,8 +21,7 @@ use Drupal\Core\Config\ImmutableConfig;
  *   id = "view"
  * )
  */
-class View extends TransitionBase {//does it go without saying that this implements TransitionInterface
-
+class View extends TransitionBase {
 
   function __construct(array $configuration, $plugin_id, array $plugin_definition) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);

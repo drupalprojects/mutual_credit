@@ -11,10 +11,10 @@
 namespace Drupal\mcapi\Plugin;
 
 use Drupal\Core\Plugin\DefaultPluginManager;
-use Drupal\Core\Plugin\Discovery\AnnotatedClassDiscovery;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Config\ConfigFactory;
+use Drupal\mcapi\TransactionInterface;
 
 class TransactionRelativeManager extends DefaultPluginManager {
 

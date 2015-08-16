@@ -12,16 +12,13 @@ namespace Drupal\mcapi\Entity;
 use Drupal\mcapi\TransactionInterface;
 
 use Drupal\mcapi\Entity\Type;
-use Drupal\mcapi\Entity\State;
 use Drupal\mcapi\McapiEvents;
 use Drupal\mcapi\TransactionSaveEvents;
-use Drupal\mcapi\Access\WalletAccessControlHandler;
-use Drupal\user\Entity\User;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Cache\Cache;
+use Drupal\Core\Entity\EntityConstraintViolationList;
 
 /**
  * Defines the Transaction entity.
@@ -60,13 +57,12 @@ use Drupal\Core\Cache\Cache;
  *     "canonical" = "/transaction/{mcapi_transaction}"
  *   },
  *   constraints = {
- *     "Integrity" = {}
+ *     "TransactionIntegrity" = {}
  *   }
  * )
  */
 class Transaction extends ContentEntityBase implements TransactionInterface {
 
-  private $violations;
 
   private $mailPluginManager;
 
@@ -150,25 +146,23 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * Validate a transaction including children
    * The Drupal way has 'validate' and 'save' phases. We need to map those onto
    * this Transaction's needs which are 'add children', alter, validate, and save
-   * So we're putting 'add children' and 'alter' into the transaction validation.
    *
-   * @return \Symfony\Component\Validator\ConstraintViolationCollection[]
+   * @return \Drupal\Core\Entity\EntityConstraintViolationListInterface
    *
    */
   function validate() {
+    $violationList = $this->getTypedData()->validate();//@return \Symfony\Component\Validator\ConstraintViolationListInterface
     if ($this->parent->value == 0) {//just to be sure
       if (!$this->serial->value) {
         $this->preInsert();
       }
       foreach ($this->children as $entity) {
         foreach ($entity->validate() as $violation) {
-          $this->violations->add($violation);
+          $violationList->add($violation);
         }
       }
     }
-    //run validation on all the fields of this transaction
-    $this->violations = parent::validate();
-    return $this->violations;
+    return new EntityConstraintViolationList($this, iterator_to_array($violationList));
   }
 
   /**
@@ -324,15 +318,19 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   /**
    * {@inheritdoc}
    */
-  function flatten() {
-    $clone = clone($this);
-    $flatarray = [$clone];
-    if (!empty($clone->children)) {
-      foreach ($clone->children as $child) {
+  function flatten($clone = TRUE) {
+    if ($clone) {
+      $transaction = clone($this);
+    }
+    else {
+      $transaction = $this;
+    }
+    $flatarray = [$transaction];
+    if (!empty($transaction->children)) {
+      foreach ($transaction->children as $child) {
         $flatarray[] = $child;
       }
     }
-    unset($clone->children);
     return $flatarray;
   }
 
@@ -343,17 +341,14 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
   protected function invalidateTagsOnSave($update) {
     parent::invalidateTagsOnSave($update);
     //ensure that we invalidate tags only once if a wallet is involved in more
-    //than one transaction
-    foreach ($this->flatten() as $transaction) {
+    foreach ($this->flatten(FALSE) as $transaction) {
       foreach (['payer', 'payee'] as $actor) {
-        $wallet = reset($transaction->{$actor}->referencedEntities());
-        if (!isset($wallets[$wallet->target_id])) {
-          $wallets[$wallet->target_id] = $wallet;
-        }
+        $wallet = $transaction->{$actor}->entity;
+        $wallets[$wallet->id()] = $wallet;//prevent duplicates
       }
     }
     foreach ($wallets as $wallet) {
-      $wallet->invalidateTagsOnSave(TRUE);
+      $wallet->invalidateTagsOnSave($update);
     }
   }
 
