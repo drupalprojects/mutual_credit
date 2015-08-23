@@ -442,7 +442,8 @@ function get_transaction_vars(TransactionInterface $transaction) {
 
   //NB the transaction certificate, which uses entity_view_display overwrites field with display options, i.e. this one!
   //but this is needed for the sentence display'
-  $worth = $transaction->worth->view();
+  $worth = $transaction->worth->view(); 
+  $worth['#label_display'] = 'hidden';
   $vars['worth'] = \Drupal::service('renderer')->render($worth);
 
   $vars['created'] = format_date($transaction->created->value, 'medium');

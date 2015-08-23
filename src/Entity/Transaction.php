@@ -218,7 +218,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     //note that the worth field is field API because we can't define multiple cardinality fields in this entity.
     $fields['xid'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Transaction ID'))
-      ->setDescription(t('The unique transaction ID.'))
+      ->setDescription(t('The unique database key of the transaction'))
       ->setReadOnly(TRUE)
       ->setSetting('unsigned', TRUE);
 

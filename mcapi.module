@@ -58,11 +58,14 @@ function mcapi_help($route_name, $route_match) {
         t('Only unused currencies can be deleted.'),
       ]);
     case 'mcapi.admin.transactions':
-      return implode(' ', [
-        t('Workflow transitions move transactions of various types between states.'),
-        t('Modules can add more states and types'),
-        t('Each transition presents the user with confirmation form, which is configured on this page.')
-      ]);
+      $help = [
+        t("Transitions move transactions of various types between states, except for 'view', which is special"),
+        t('More states and types can be added as custom module configuration entities; no user interface exists for that.'),
+      ];
+      if (\Drupal::moduleHandler()->moduleExists('field_ui')) {
+        $help[] = t("N.B. 'Manage display' tab is hidden because transaction displays are all handled through configurable templates.");
+      }
+      return implode(' ', $help);
     case 'entity.mcapi_transaction.field_ui_fields':
       $settings_url = Url::fromRoute('mcapi.admin_misc');
       $transitions_url = Url::fromRoute('mcapi.admin.transactions');
@@ -279,8 +282,8 @@ function mcapi_entity_operation_alter(&$operations, $entity) {
 }
 
 /*
- * implements hook_form_alter().
- * automate and hide the 'required' checkbox for the worth field on Transactions
+ * implements hook_form_field_ui_field_edit_form_alter().
+ * automate and hide the 'required' checkbox for the Gransaction worth field API settings
  */
 function mcapi_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
   if ($form['#entity']->getEntityTypeId() == 'mcapi_transaction') {
@@ -436,50 +439,12 @@ function mcapi_mcapi_transaction_view(array &$build, $transaction, $display, $vi
 }
 
 /**
- * return the visible field definitions for any transaction field API fields
- * according to the default transaction entity_form_display
- * including worth, or course
- *
- * @return array
- *   field definitions and widgets keyed by field name
- */
-function mcapi_default_display_fields() {
-  //we need this to get the widgets for entering the defaults
-  $entity_display = EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.default');
-  $fieldAPI = [];
-  //get the field API fields showing according to the the default display
-  //and filter out the entity properties
-  //the entity_form_display does this more elegantly but function is protected
-  $definitions = \Drupal::entityManager()
-    ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
-  foreach($definitions as $field_name => $definition) {
-    if ($widget = $entity_display->getRenderer($field_name)) {
-      $fieldAPI[$field_name] = [
-        'definition' => $definition,
-        'widget' => $widget
-      ];
-    }
-  }
-  return $fieldAPI;
-}
-
-/**
- * convert a formatted currency value into a plain decimal number
- * suitable for use with google charts
- * @param string $formatted_value
- * return string
- *   hopefully a decimal value
- */
-function mcapi_decimalised($formatted_value) {
-  //convert 1hr 23mins to 1.23
-  //replace likely separators with dots
-  $str = preg_replace('/([.: ]+)/', '.', $formatted_value);
-  //remove everything except numbers and dots
-  return preg_replace('/([^0-9.]+)/', '', $str);
-}
-
-/**
- * take a worth value, typically from config and return true if all the currencies in it are zero
+ * take a worth value, typically from config and return true if all the
+ *  currencies in it are zero
+ * @param array $worth
+ *   a worth value expressed as an array of arrays with curr_id & value
+ * @return boolean
+ *   TRUE if all the items have a worth of zero
  */
 function empty_worth(array $worth) {
   return array_filter(

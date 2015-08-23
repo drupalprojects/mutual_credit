@@ -30,9 +30,8 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * save 2 rows per worth into the index tables
    * @note $entity cannot have children - this must be called inside foreach($transaction->flatten)
    */
-  public function postSave(EntityInterface $entity, $update = FALSE) {
+  public function doPostSave(EntityInterface $entity, $update = FALSE) {
     
-echo 'TransactionIndexStorage::Postsave...';die();
     //alternatively how about a db_merge? would be quicker
     if ($update) {
       $this->database->delete('mcapi_transactions_index')
@@ -42,17 +41,17 @@ echo 'TransactionIndexStorage::Postsave...';die();
 
     foreach ($entity->flatten() as $transaction) {
       $record = $this->mapToStorageRecord($transaction);
-
       $common = [
         'xid' => $transaction->id(),
         'serial' => $record->serial,
         'state' => $record->state,
         'type' => $record->type,
         'created' => $record->created,
+        'created' => $record->changed,
         'child' => intval((bool)$record->parent),
       ];
 
-      $fields = ['xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'child'];
+      $fields = ['xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'changed', 'child'];
       $query = $this->database->insert('mcapi_transactions_index')->fields($fields);
 
       foreach ($transaction->worth->getValue() as $worth) {
@@ -81,6 +80,7 @@ echo 'TransactionIndexStorage::Postsave...';die();
   
   /**
    * {@ineritdoc}
+   * @todo test this fires
    */
   protected function doDelete($entities) {
     //first of all we need to get a flat array of all the entities.

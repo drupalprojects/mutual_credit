@@ -86,7 +86,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
       ],
       '#attached' => [
         //for some reason in Renderer::updatestack, this bubbles up twice
-        'library' => ['mcapi/mcapi.transaction']
+        'libraries' => ['mcapi/mcapi.transaction']
       ]
     ];
     unset($build['#cache']);
@@ -94,26 +94,18 @@ class TransactionViewBuilder extends EntityViewBuilder {
     return $build;
   }
 
-function build(array $build) {
-  $build_list = array(
-    '#langcode' => $build['#langcode'],
-    0 => $build
-  );
+  function build(array $build) {
+    $build_list = array(
+      '#langcode' => $build['#langcode'],
+      0 => $build
+    );
 
-  if ($build['#view_mode'] == 'certificate') {
-    $build_list = $this->buildMultiple($build_list);
+    if ($build['#view_mode'] == 'certificate') {
+      $build_list = $this->buildMultiple($build_list);
+    }
+    return $build_list[0];
   }
-  return $build_list[0];
-}
 
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getCacheTags() {
-    return[];
-    return ['mcapi_transaction_view'];
-  }
 }
 
 
