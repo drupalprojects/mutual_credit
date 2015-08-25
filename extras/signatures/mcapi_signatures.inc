@@ -354,17 +354,16 @@ function mcapi_signatures_config($form, &$form_state) {
 function mcapi_sig_transaction_create($transaction, $really = 0) {
   //check the settings for this content type to see what signatures are required if any.
   $config = _signature_settings_default($transaction->type);
-  $uid = &$GLOBALS['user']->uid;
   if ($transaction->state == TRANSACTION_STATE_PENDING) {
     $transaction->pending_signatures = array();
     //put the signatures in the transaction object,
     if ($config['participants']) {
-      $transaction->pending_signatures[$transaction->payer] = $uid == $transaction->payer ? 0 : 1;
-      $transaction->pending_signatures[$transaction->payee] = $uid == $transaction->payee ? 0 : 1;
+      $transaction->pending_signatures[$transaction->payer] = $transaction->creator == $transaction->payer ? 0 : 1;
+      $transaction->pending_signatures[$transaction->payee] = $transaction->creator == $transaction->payee ? 0 : 1;
     }
     $config['countersignatories']= array_filter((array)$config['countersignatories']);
     foreach($config['countersignatories'] as $counter_uid) {
-      $transaction->pending_signatures[$counter_uid] = $uid == $counter_uid ? 0 : 1;
+      $transaction->pending_signatures[$counter_uid] = $transaction->creator == $counter_uid ? 0 : 1;
     }
     if ($really) {
       //save the signatures

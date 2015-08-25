@@ -44,5 +44,5 @@ function drawGauge() {
 google.setOnLoadCallback(drawGauge);
 </script>
 <div id ="<?php print $id; ?>" class = "limits-gauge" style ="width:<?php print $balance_gauge_pixels; ?>px; height:<?php print $balance_gauge_pixels; ?>px"></div>
-<div class = "limits">Min: <?php echo $min; ?> | Max: <?php echo $max; ?> hours</div>
+<div class = "limits">Min: <?php print theme('worth_item', array('currcode' => $currcode, 'quantity' => $min)); ?> | Max: <?php print theme('worth_item', array('currcode' => $currcode, 'quantity' => $max)); ?></div>
 

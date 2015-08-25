@@ -109,8 +109,9 @@ function transaction_form_validate($form, &$form_state) {
 
   //entity_form_submit_build_entity('transaction', NULL, $form, $form_state);
   $transaction = entity_create('transaction', $props);
-  if ($transaction->payer == 0 || $transaction->payee == 0) {
-    form_set_error('Cannote trade with user 0. This is a known error! please mail matslats@gmail.com and say what exactly you tried to do! ');
+  if (!$transaction->payer || !$transaction->payee) {
+    form_set_error('payer', 'Cannote trade with user 0. This is a known error! please mail matslats@gmail.com and say what exactly you tried to do! ');
+    return;
   }
   //validate the Field API fields
   field_attach_form_validate('transaction', $transaction, $form, $form_state);

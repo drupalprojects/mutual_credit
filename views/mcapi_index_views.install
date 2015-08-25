@@ -21,36 +21,36 @@ function mcapi_index_views_enable() {
   db_query("DROP VIEW IF EXISTS {mcapi_index}");
   db_query("CREATE ALGORITHM = UNDEFINED VIEW  {mcapi_index} AS
       SELECT
-          t.xid,
-          t.serial,
-          t.payer AS uid1,
-          t.payee AS uid2,
-          t.type,
-          0 AS income,
-          w.worth_quantity AS expenditure,
-          - w.worth_quantity AS diff,
-          w.worth_quantity AS volume,
-          w.worth_currcode AS currcode,
-          t.created
-        FROM {mcapi_transactions} t
-        RIGHT JOIN {field_data_worth} w ON t.xid = w.entity_id
-        WHERE state > 0
+        t.xid,
+        t.serial,
+        t.payer AS uid1,
+        t.payee AS uid2,
+        t.type,
+        0 AS income,
+        w.worth_quantity AS expenditure,
+        - w.worth_quantity AS diff,
+        w.worth_quantity AS volume,
+        w.worth_currcode AS currcode,
+        t.created
+      FROM {mcapi_transactions} t
+      RIGHT JOIN {field_data_worth} w ON t.xid = w.entity_id
+      WHERE state > 0
     UNION
       SELECT
-          t.xid,
-          t.serial,
-          t.payee AS uid1,
-          t.payer AS uid2,
-          t.type,
-          w.worth_quantity AS income,
-          0 AS expenditure,
-          w.worth_quantity AS diff,
-          w.worth_quantity AS volume,
-          w.worth_currcode AS currcode,
-          t.created
-        FROM {mcapi_transactions} t
-        RIGHT JOIN {field_data_worth} w ON t.xid = w.entity_id
-        WHERE state > 0"
+        t.xid,
+        t.serial,
+        t.payee AS uid1,
+        t.payer AS uid2,
+        t.type,
+        w.worth_quantity AS income,
+        0 AS expenditure,
+        w.worth_quantity AS diff,
+        w.worth_quantity AS volume,
+        w.worth_currcode AS currcode,
+        t.created
+      FROM {mcapi_transactions} t
+      RIGHT JOIN {field_data_worth} w ON t.xid = w.entity_id
+      WHERE state > 0"
   );
 }
 

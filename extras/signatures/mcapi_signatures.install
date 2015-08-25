@@ -107,7 +107,6 @@ function mcapi_signatures_update_7000() {
   }
   $insert->execute();
   drupal_set_message('copied signatures to new table');
-  db_drop_table('mc_unsigned');
 }
 
 /**
@@ -136,11 +135,16 @@ function mcapi_signatures_update_7001() {
     );
   }
   db_truncate('mcapi_signatures')->execute();
-  if ($values) {
-    db_insert('mcapi_signatures')->fields(array('serial', 'uid', 'pending'))->values($values)->execute();
-    signature_integrity_check();
-    drupal_set_message('updated and checked integrity of signatures');
+  if (!$values) {
+    foreach ($values as $row) {
+      db_insert('mcapi_signatures')
+        ->fields(array('serial', 'uid', 'pending'))
+        ->values($row)
+        ->execute();
+    }
   }
+  signature_integrity_check();
+  drupal_set_message('updated and checked integrity of signatures');
 }
 
 /**
@@ -217,4 +221,5 @@ function signature_integrity_check() {
   //delete any signatures that don't have transactions
   $serials = db_query("SELECT serial FROM {mcapi_transactions} WHERE state != 0")->fetchCol();
   db_delete('mcapi_signatures')->condition('serial', $serials, 'NOT IN')->execute();
+  db_drop_table('mc_unsigned');
 }

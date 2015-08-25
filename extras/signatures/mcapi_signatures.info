@@ -1,6 +1,6 @@
 ; $Id:
 name = Transaction signing
-description = Require signatures on certain transaction types before they move into 'finished' state. 
+description = Certain transaction type mays require signatures before transitioning into the finished state
 package = Community Accounting
 configure = admin/accounting/workflow/signatures
 core = 7.x

@@ -112,7 +112,7 @@ function mcapi_index_views_cron() {
           ':currcode' => $currcode
         )
       )->fetchfield();
-      $average_daily_sales = round($total_daily_sales / GRECO_SAMPLE_PERIOD_DAYS);
+      $average_daily_sales = $total_daily_sales / GRECO_SAMPLE_PERIOD_DAYS;
 
       if ($average_daily_sales) {
         $indicator = round($sum_of_all_debit_balances / $average_daily_sales, 1);
