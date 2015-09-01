@@ -20,7 +20,7 @@ use Drupal\Core\Url;
  */
 class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface {
 
-  var $walletConfig;
+  var $settings;
 
   var $derivatives = [];
 
@@ -28,8 +28,8 @@ class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface
    * {@inheritDoc}
    *
    */
-  public function __construct($configFactory) {
-    $this->walletConfig = $configFactory->get('mcapi.wallets');
+  public function __construct($settings) {
+    $this->settings = $settings;
   }
 
   /**
@@ -37,7 +37,7 @@ class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface
    */
   public static function create(ContainerInterface $container, $base_plugin_id) {
     return new static(
-      $container->get('config.factory')
+      $container->get('config.factory')->get('mcapi.settings')
     );
   }
 
@@ -46,8 +46,8 @@ class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface
    */
   public function getDerivativeDefinitions($base_plugin_definition) {
     //add wallet links can go in three locations
-    if ($this->walletConfig->get('add_link_location') != 'summaries') {
-      foreach($this->walletConfig->get('entity_types') as $entity_type_bundle => $max) {
+    if ($this->settings->get('add_link_location') != 'summaries') {
+      foreach($this->settings->get('entity_types') as $entity_type_bundle => $max) {
         if (!$max) continue;
         list($entity_type, $bundle_name) = explode(':', $entity_type_bundle);
         $key = "mcapi.wallet.add.{$bundle_name}.action";

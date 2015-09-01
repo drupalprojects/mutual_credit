@@ -42,7 +42,7 @@ class WalletSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->configFactory()->get('mcapi.wallets');
+    $config = $this->configFactory()->get('mcapi.settings');
 
     $form['add_link_location'] = [
       '#title' => $this->t("Location of 'new wallet' link"),
@@ -96,11 +96,19 @@ class WalletSettings extends ConfigFormBase {
     }
     $form['autoadd'] = [
       '#title' => $this->t('Auto-create'),
-      '#description' => $this->t('Each entity type above will be created with its own wallet.') .' '.t('This is not retroactive'),
+      '#description' => $this->t('A wallet will be auto-created for when entities of each wallet-holding type above is created.') .' '.t('This is not retroactive'),
       '#type' => 'checkbox',
       '#default_value' => $config->get('autoadd'),
       '#weight' => 3,
     ];
+    $form['render_unused'] = [
+      '#title' => $this->t('Render unused'),
+      '#description' => $this->t('Show unused currency stats in wallet view.') .' '.t('This is not retroactive'),
+      '#type' => 'checkbox',
+      '#default_value' => $config->get('render_unused'),
+      '#weight' => 4,
+    ];
+    
 
     $permissions = Exchange::walletPermissions();
 
@@ -182,7 +190,7 @@ class WalletSettings extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $vals = $form_state->getValues('values');
 
-    $this->configFactory->getEditable('mcapi.wallets')
+    $this->configFactory->getEditable('mcapi.settings')
       ->set('entity_types', $vals['entity_types'])
       ->set('add_link_location', $vals['add_link_location'])
       ->set('autoadd', $vals['autoadd'])
@@ -202,7 +210,7 @@ class WalletSettings extends ConfigFormBase {
   }
 
   protected function getEditableConfigNames() {
-    return ['mcapi.wallets'];
+    return ['mcapi.settings'];
   }
 
 }

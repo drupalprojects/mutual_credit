@@ -2,46 +2,55 @@
 /**
  * @file
  * Default theme implementation to display a wallet's balance history.
- * some javascript has been added in the header already
- *
- * id           #the unique id of the chart
- * functionname #the unique function name
- * incoming     #raw incoming value
- * outgoing     #raw outgoing value
- * show_in      #formatted incoming value
- * show_out     #formatted outgoing value
- * given        #translation of 'Gotten'
- * gotten       #translation of 'Given'
- * currency     #configEntity object
- * max
- * vaxislabels
+ * 
+ * label //of the wallet
+ * canonical //to the wallet uri
+ * log_link //to the wallet transaction listing
+ * width //in pixels
+ * currencies, each chart consisting of:
+ * -  id           #the unique id of the chart
+ * - functionname #the unique function name
+ * - incoming     #raw incoming value
+ * - outgoing     #raw outgoing value
+ * - show_in      #formatted incoming value
+ * - show_out     #formatted outgoing value
+ * - given        #translation of 'Gotten'
+ * - gotten       #translation of 'Given'
+ * - currency     #configEntity object
+ * - max
+ * - vaxislabels
  */
 #}
 
-<script type="text/javascript">
-google.load('visualization', '1.0', {'packages':['corechart']});
-google.setOnLoadCallback({{ functionname }});
-function {{ functionname }}() {
+<script type="text/javascript">google.load('visualization', '1.0', {'packages':['corechart']});</script>
+{% for chart in currencies %}
+google.setOnLoadCallback({{ chart.functionname }});
+function {{ chart.functionname }}() {
   var data = google.visualization.arrayToDataTable([
     ['', 'Given', 'Gotten'],
-    ['', {{ incoming }}, {{ outgoing }}]
+    ['', {{ chart.incoming }}, {{ chart.outgoing }}]
   ]);
   var options = {
-    title:"{{ currency.label }}",
+    title:"{{ chart.label }}",
     width: 150,
     height: 150 ,
     enableInteractivity: false,
     vAxis: {viewWindowMode: 'explicit'},
-    vAxis: {viewWindow: {min: 0, max: {{ max  }}}},
-    hAxis: {title: "{{ given }}, {{ gotten }}"},
+    vAxis: {viewWindow: {min: 0, max: {{ chart.max  }}}},
+    hAxis: {title: "{{ chart.given }}, {{ chart.gotten }}"},
     legend: {position: 'none'},
     colors: ['#2aab49', '#21a0db'],
-    vAxis: { ticks: [{% for tick in vaxislabels %}
+    vAxis: { ticks: [{% for tick in chart.vaxislabels %}
       {v:{{ tick.value }}, f:"{{ tick.label }}"},
       {% endfor %}
     ]}
   }
-  new google.visualization.ColumnChart(document.getElementById('{{ id }}')).draw(data, options);
+  new google.visualization.ColumnChart(document.getElementById('{{ chart.id }}')).draw(data, options);
 }
+{% endfor %}
 </script>
-<div class = "givengotten" id = "{{ id }}" style = "width:150px;"></div>
+<div class = "balance-bars">
+  {% for chart in currencies %}
+  <div class = "givengotten" id = "{{ chart.id }}" style = "width:{{ 150 }}px;"></div>
+  {% endfor %}
+</div>

@@ -12,7 +12,6 @@
 
 namespace Drupal\mcapi;
 
-use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\mcapi\Entity\Currency;
@@ -74,7 +73,7 @@ class Exchange {
           Self::$walletableBundles = Exchanges::walletableBundles($wallet, $open);
         }
         else {
-          $entityTypes = \Drupal::Config('mcapi.wallets')->get('entity_types');
+          $entityTypes = \Drupal::Config('mcapi.settings')->get('entity_types');
           foreach (array_keys(array_filter($entityTypes)) as $entity_bundle) {
             list($type, $bundle) = explode(':', $entity_bundle);
             Self::$walletableBundles[$type][] = $bundle;
@@ -94,7 +93,7 @@ class Exchange {
   /*
    * identify a new parent entity for a wallet
    */
-  public static function FindNewHolder(EntityOwnerInterface $previous_holder) {
+  public static function FindNewHolder(ContentEntityInterface $previous_holder) {
     if (Self::MultipleExchanges()) {
       return Exchanges::newHolder($previous_holder);
     }
@@ -202,19 +201,19 @@ class Exchange {
    */
   public static function walletOps() {
     $ops = [
-      'details' => [
+      Wallet::OP_DETAILS => [
         t('View transaction log'),
         t('View individual transactions this wallet was involved in')
       ],
-      'summary' => [
+      Wallet::OP_SUMMARY => [
         t('View summary'),
         t('The balance, number of transactions etc.')
       ],
-      'payin' => [
+      Wallet::OP_PAYIN => [
         t('Pay in'),
         t('Create payments into this wallet')
       ],
-      'payout' => [
+      Wallet::OP_PAYOUT => [
         t('Pay out'),
         t('Create payments out of this wallet')
       ]

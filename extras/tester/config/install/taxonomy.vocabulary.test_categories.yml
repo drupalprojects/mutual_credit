@@ -1,9 +1,0 @@
-langcode: en
-status: true
-dependencies: {  }
-name: Categories
-vid: test_categories
-description: 'Test vocabulary'
-hierarchy: '0'
-weight: 0
-

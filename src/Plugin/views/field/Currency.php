@@ -54,7 +54,7 @@ class Currency extends FieldPluginBase {
       return $value;
     }
     else {
-      return currency_load($value)->name;
+      return currency_load($value)->id();
     }
   }
 

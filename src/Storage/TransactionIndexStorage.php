@@ -17,10 +17,7 @@ namespace Drupal\mcapi\Storage;
 use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Database\Query\SelectInterface;
-use Drupal\Core\Database\Database;
-use Drupal\Core\Cache\Cache;
-use Drupal\mcapi\TransactionInterface;
-use Drupal\mcapi\Entity\State;
+use Drupal\mcapi\Entity\WalletInterface;
 
 
 abstract class TransactionIndexStorage extends SqlContentEntityStorage implements TransactionStorageInterface {
@@ -47,7 +44,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         'state' => $record->state,
         'type' => $record->type,
         'created' => $record->created,
-        'created' => $record->changed,
+        'changed' => $record->changed,
         'child' => intval((bool)$record->parent),
       ];
 
@@ -84,6 +81,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    */
   protected function doDelete($entities) {
     //first of all we need to get a flat array of all the entities.
+    $transactions = [];
     foreach ($entities as $entity) {
       $serials[] = $entity->serial->value;
       foreach($entity->flatten() as $transaction) {
@@ -174,7 +172,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   /**
    * {@inheritdoc}
    */
-  public function indexDrop($serials) {
+  public function indexDrop(array $serials) {
     $this->database->delete('mcapi_transactions_index')
       ->condition('serial', $serials, 'IN')
       ->execute();
@@ -249,16 +247,18 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   /**
    * {@inheritdoc}
    */
-  public function timesBalances($wallet_id, $curr_id, $since = 0) {
-    $history = [];
+  public function timesBalances(WalletInterface $wallet, $curr_id, $since = 0) {
+    
+    $history = [$wallet->created->value => 0];
     //this is a way to add up the results as we go along
     $this->database->query("SET @csum := 0");//not sure which databases it works on
     //I wish there was a better way to do this.
     //It is cheaper to do stuff in mysql
+    $wid = $wallet->id();
     $all_balances = $this->database->query(
       "SELECT created, (@csum := @csum + diff) as balance
         FROM {mcapi_transactions_index}
-        WHERE wallet_id = $wallet_id AND curr_id = '$curr_id'
+        WHERE wallet_id = $wid AND curr_id = '$curr_id'
         ORDER BY created"
     )->fetchAll();
     //having done the addition, we can chop the beginning off the array
@@ -270,6 +270,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       }
       $history[$point->created] = $point->balance;
     }
+    if (count($history) == 1) return [];
     return $history;
   }
 

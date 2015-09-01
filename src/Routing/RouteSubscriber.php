@@ -31,7 +31,7 @@ class RouteSubscriber extends RouteSubscriberBase {
    */
   protected function alterRoutes(RouteCollection $collection) {
     //add a route to add a wallet to each entity type
-    foreach(\Drupal::config('mcapi.wallets')->get('entity_types') as $entity_type_bundle => $max) {
+    foreach(\Drupal::config('mcapi.settings')->get('entity_types') as $entity_type_bundle => $max) {
       if ($max) {
         list($entity_type, $bundle_name) = explode(':', $entity_type_bundle);
         $canonical_path = $this->entityManager

@@ -24,7 +24,8 @@ class BalanceHistory extends McapiBlockBase {
 
   public function defaultConfiguration() {
     $conf = parent::defaultConfiguration();
-    return $conf += array('width' => 250);
+    //these are the same defaults as in hook_theme
+    return $conf += array('width' => 300, 'height' => 150);
   }
 
   public function blockForm($form, FormStateInterface $form_state) {
@@ -34,6 +35,14 @@ class BalanceHistory extends McapiBlockBase {
       '#type' => 'number',
       '#min' => 0,
       '#default_value' => $this->configuration['width'],
+      '#max_size' => 4,
+      '#required' => TRUE
+    );
+    $form['height'] = array(
+      '#title' => t('Height in pixels'),
+      '#type' => 'number',
+      '#min' => 0,
+      '#default_value' => $this->configuration['height'],
       '#max_size' => 4,
       '#required' => TRUE
     );
@@ -62,7 +71,8 @@ class BalanceHistory extends McapiBlockBase {
       '#attached' =>array('library' => array('http://www.google.com/jsapi')),//how to put this in the theme layer
       '#account' => $this->account,
       '#curr_ids' => $this->configuration['curr_ids'],
-      '#width' => $this->configuration['width']
+      '#width' => $this->configuration['width'],
+      '#height' => $this->configuration['height']
     );
   }
 }

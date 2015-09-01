@@ -2,7 +2,8 @@ langcode: en
 status: true
 dependencies: {  }
 id: veur
-name: 'Virtual Euro'
+name: Virtual Euro
+description: A promise to deliver one Euro's worth of value
 uid: 1
 issuance: commodity
 format:

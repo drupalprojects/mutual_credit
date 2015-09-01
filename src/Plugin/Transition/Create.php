@@ -28,8 +28,8 @@ class Create extends TransitionBase {
    */
   public function accessOp(AccountInterface $account) {
     return empty($this->transaction->get('xid')->value) &&
-      $this->transaction->payer->entity->access('payout') &&
-      $this->transaction->payee->entity->access('payin');
+      $this->transaction->payer->entity->access(Wallet::OP_PAYOUT) &&
+      $this->transaction->payee->entity->access(Wallet::OP_PAYIN);
   }
 
   /**

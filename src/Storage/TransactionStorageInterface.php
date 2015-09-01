@@ -8,6 +8,7 @@
 namespace Drupal\mcapi\Storage;
 
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\mcapi\Entity\WalletInterface;
 
 interface TransactionStorageInterface extends EntityStorageInterface {
 
@@ -29,7 +30,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    *
    * @param array $serials
    */
-  function indexDrop($serials);
+  function indexDrop(array $serials);
 
   /**
    * Filter by any field in the table; returns an array of serials keyed by xid
@@ -119,7 +120,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * Retrieve the full balance history
    * N.B if caching running balances remember to clear the cache whenever a transaction changes state or is deleted.
    *
-   * @param integer $wallet_id
+   * @param Wallet $wallet
    *
    * @param string $curr_id
    *
@@ -130,7 +131,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * @return array
    *   Balances keyed by timestamp
    */
-  function timesBalances($wallet_id, $curr_id, $since);
+  function timesBalances(WalletInterface $wallet, $curr_id, $since);
 
   /**
    * Return the ids of all the wallets which HAVE USED this currency

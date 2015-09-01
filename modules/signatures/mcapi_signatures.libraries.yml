@@ -1,0 +1,5 @@
+signatures:
+  version: VERSION
+  css:
+    component:
+      signatures.css: {}

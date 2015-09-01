@@ -1,0 +1,33 @@
+sentence_template: '[mcapi:payer] paid [mcapi:payee] [mcapi:worth] for [mcapi:description].'
+editable: false
+fields:
+  description: true
+  participants: true
+worths_delimiter: '|'
+zero_snippet: '<img src = "present.png" width = "31" />'
+counted:
+  done: true
+  undone: false
+mail_errors: true
+#these are populated in hook_modules_enabled
+active_relatives: { }
+active_transitions: { }
+entity_types:
+  'user:user': 1
+display_format: '!o'
+access_personalised: 0
+autoadd: 1
+render_unused: 1
+add_link_location: 
+  local_action: local_action
+  summaries: summaries
+payout:
+  o: 'o'
+details:
+  e: '2'
+summary:
+  2: '2'
+payin:
+  2: '2'
+threshhold: 5
+widget: select

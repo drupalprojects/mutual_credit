@@ -1,11 +1,15 @@
 {#
 /**
  * @file
- * Default theme implementation to for the wallet entity display
+ * Default theme implementation for the wallet wrapper
+ * label //linked wallet name
+ * element
+ * canonical
  */
 
 #}
-
-{{ label }}<br />
-{{ element }}<br />
-{{ links }}
+<div class="wallet-wrapper">
+  <div class="title">{{ label }}</div>
+  {{ element }}
+  View {{ canonical }}
+</div>

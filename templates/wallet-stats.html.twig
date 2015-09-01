@@ -6,7 +6,7 @@
  *   label //of the wallet
  *   wallet_link #to the wallet uri
  *   wallet_log_link #to the wallet transaction listing
- *   currdata is an array, keyed by currency code. each value is a set of results
+ *   currencies is an array, keyed by currency code. each value is a set of results
  *   The results are
  *   - currency (data object)
  *   - trades (number of)
@@ -18,33 +18,34 @@
  */
 #}
 <table border = "1" class = "wallet-stats">
-<tr><th>{{ wallet_link }}</th>
-{% for curr in currdata %}
-<th >{{ curr.label }}</th>
-{% endfor %}
-</tr><tr><th style="font-size: 150%">Balance</th>
-{% for curr in currdata %}
-<td style="font-size: 150%">{{ curr.balance }}</td>
-{% endfor %}
+<tr><th></th>
+  {% for curr in currencies %}
+  <th >{{ curr.label }}</th>
+  {% endfor %}
+</tr><tr>
+  <th style="font-size: 150%">Balance</th>
+  {% for curr in currencies %}
+  <td style="font-size: 150%">{{ curr.balance }}</td>
+  {% endfor %}
 </tr><tr><th>Gross income</th>
-{% for curr in currdata %}
-<td>{{ curr.gross_in }}</td>
-{% endfor %}
+  {% for curr in currencies %}
+  <td>{{ curr.gross_in }}</td>
+  {% endfor %}
 </tr><tr><th>Gross expenditure</th>
-{% for curr in currdata %}
-<td>{{ curr.gross_out }}</td>
-{% endfor %}
+  {% for curr in currencies %}
+  <td>{{ curr.gross_out }}</td>
+  {% endfor %}
 </tr><tr><th>Volume</th>
-{% for curr in currdata %}
-<td>{{ curr.volume }}</td>
-{% endfor %}
+  {% for curr in currencies %}
+  <td>{{ curr.volume }}</td>
+  {% endfor %}
 </tr><tr><th>partners</th>
-{% for curr in currdata %}
-<td>{{ curr.partners }}</td>
-{% endfor %}
+  {% for curr in currencies %}
+  <td>{{ curr.partners }}</td>
+  {% endfor %}
 </tr><tr><th>Trades</th>
-{% for curr in currdata %}
-<td>{{ curr.trades }}</td>
-{% endfor %}
+  {% for curr in currencies %}
+  <td>{{ curr.trades }}</td>
+  {% endfor %}
 </tr></table>
 

@@ -3,6 +3,7 @@
 /**
  * @file
  * Contains \Drupal\Core\Field\Plugin\Field\FieldFormatter\WorthFormatter.
+ * @todo this should be three different formatters
  */
 
 namespace Drupal\mcapi\Plugin\Field\FieldFormatter;
@@ -63,7 +64,11 @@ class WorthFormatter extends FormatterBase {
   public function viewElements(FieldItemListInterface $items) {
     $output = [];
     foreach ($items as $item) {
-      if ($item->value == 0) {
+      if ($item->value) {
+        $output[] = $item->currency->format($item->value, $this->getSetting('format'));
+      }
+      else {
+        //apply any special formatting for zero value transactions
         if ($item->currency->zero) {
           if ($this->getSetting('format') == 'normal') {
             $output[] = \Drupal::config('mcapi.misc')->get('zero_snippet');
@@ -74,18 +79,6 @@ class WorthFormatter extends FormatterBase {
         }
         else {
           drupal_set_message("Zero value shouldn't be possible in ".$item->curr_id, 'warning');
-        }
-      }
-      else {
-        switch($this->getSetting('format')) {
-          case 'native':
-            $output[] = $item->value;
-            break;
-          case 'normal':
-            $output[] = $item->currency->format($item->value);//@todo move this method out of the currency?
-            break;
-          case 'decimalised':
-            $output[] = mcapi_decimalised($item->currency->format($item->value));
         }
       }
     }

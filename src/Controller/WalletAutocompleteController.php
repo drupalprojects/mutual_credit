@@ -9,8 +9,6 @@ namespace Drupal\mcapi\Controller;
 
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
-use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -71,8 +69,8 @@ class WalletAutocompleteController extends ControllerBase{
     $results = $walletStorage->filter($conditions);
     if ($this->role) {
       $walletperm = $this->role == 'payer'
-          ? 'payout'
-          : 'payin';
+          ? Wallet::OP_PAYOUT
+          : Wallet::OP_PAYIN;
       $results = array_intersect(
         $results,
         $walletStorage->walletsUserCanActOn($walletperm, $this->currentUser())

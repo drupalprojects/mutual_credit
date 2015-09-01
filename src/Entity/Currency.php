@@ -65,17 +65,27 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   const TYPE_ACKNOWLEDGEMENT = 2;
   const TYPE_COMMODITY = 1;
   const TYPE_EXCHANGE = 0;
+  
+  const FORMAT_NATIVE = 1;//the raw integer value held in the database e.g.5400
+  const FORMAT_NORMAL = 2;//the text value for display eg 1hr 30 mins
+  const FORMAT_PLAIN = 3;//formatted to appear as a number but without e.g 1.30
     
   public $id;
 
   public $uuid;
 
   /**
-   * The name of the currency
+   * The name of the currency (plural)
    * Plain text, probabliy with the first char capitalised
    * @var string
    */
   public $name;
+
+  /**
+   * Something about what the currency is for
+   * @var string
+   */
+  public $description;
 
   /**
    * The owner user id
@@ -212,25 +222,36 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * {@inheritdoc}
    */
-  function format($raw_num) {
+  function format($raw_num, $format = FORMAT_NORMAL) {
+    //ensure its not a string
     $raw_num += 0;
-    if (!is_integer($raw_num + 0)) {
-      $this->loggerFactory('mcapi')->log(
-        \Psr\Log\LogLevel::ERROR,
-        'Attempting to format a currency value with a non-integer'
-      );
+    //we should probably ensure it is an integer as well
+    if (!is_integer($raw_num))drupal_set_message('non-integer in Currency::format', 'warning');
+    $raw_num = (int)$raw_num;
+    if ($format == FORMAT_NORMAL) {
+      return $raw_num;
     }
     //if there is a minus sign this needs to go before everything
     $minus_sign = $raw_num < 0 ? '-' : '';
     $parts = $this->formatted_parts(abs($raw_num));
     //now replace the parts back into the number format
-    $template = $this->format;
+    $output = $this->format;
     foreach ($parts as $key => $num) {
-      $template[$key] = $num;
+      $output[$key] = $num;
     }
-    return $minus_sign . implode('', $template);
+    if ($format == FORMAT_PLAIN) {
+      //convert 1hr 23mins to 1.23
+      //replace likely separators with decimal point dots
+      //hopefully that's all of them
+      $output = preg_replace('/([.: ]+)/', '.', $output);
+      //remove everything except numbers and dots
+      $output = preg_replace('/([^0-9.]+)/', '', $output);
+      //hopefully now we've got a machine readable number...
+    }
+    
+    return $minus_sign . implode('', $output);
   }
-
+  
   /**
    * {@inheritdoc}
    */

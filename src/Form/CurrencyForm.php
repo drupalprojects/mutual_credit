@@ -31,6 +31,13 @@ class CurrencyForm extends EntityForm {
       '#required' => TRUE,
       '#weight' => 0,
     ];
+    $form['description'] = [
+      '#type' => 'textarea',
+      '#title' => t('Description of the currency'),
+      '#description' => t('Use the plural'),
+      '#default_value' => $currency->description,
+      '#weight' => 1,
+    ];
 
     if ($currency->id()) {
       $form['id'] = [

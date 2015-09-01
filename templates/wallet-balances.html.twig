@@ -3,14 +3,18 @@
  * @file
  * Default theme implementation to display a (summary of a) wallet.
  * Variables:
- *   label //of the wallet
- *   wallet_link #to the wallet uri
- *   wallet_log_link #to the wallet transaction listing
- *   currencies //list
+ * label //of the wallet
+ * canonical //to the wallet uri
+ * log_link //to the wallet transaction listing
+ * delimiter //a separater character
+ * delimited the rendered worth values already in a string with the delimiter
+ * currencies, each of which consists of
+ * - balance
+ * - label
  */
+  @todo translate the heading
 #}
+<h3>Balances</h3>
 <div class = "wallet-balances">
-  {% for curr_sum in currencies %}
-    {{ curr_sum }}
-  {% endfor %}
+  {{ delimited }}
 </div>

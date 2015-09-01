@@ -23,20 +23,26 @@ class TransitionForm extends EntityConfirmFormBase {
 
   private $transition;
 
-  private $request;
+  private $destination;
 
   private $eventDispatcher;
 
-  function __construct($request, $route_match, $transitionManager, $event_dispatcher) {
-    $this->request = $request;
+  /**
+   * 
+   * @param \Drupal\Core\Routing\RouteMatch $route_match
+   * @param \Drupal\mcapi\Plugin\TransitionManager $transitionManager
+   * @param \Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher $event_dispatcher
+   * @param string $destination
+   */
+  function __construct($route_match, $transitionManager, $event_dispatcher, $destination) {
     $transitionId = $route_match->getparameter('transition') ? : 'view';
-    
     
     $this->transition = $transitionManager->getPlugin(
       $transitionId, 
       $route_match->getParameters()->get('mcapi_transaction')
     );
     $this->eventDispatcher = $event_dispatcher;
+    $this->destination = $destination->get();
   }
 
   /**
@@ -44,22 +50,21 @@ class TransitionForm extends EntityConfirmFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('request_stack'),
       $container->get('current_route_match'),
       $container->get('mcapi.transition_manager'),
-      $container->get('event_dispatcher')
+      $container->get('event_dispatcher'),
+      $container->get('redirect.destination')
     );
   }
 
   /**
    * calculate the route name and args
+   * 
    * @return Url
    */
   private function getDestinationPath() {
-    if ($this->request->getCurrentRequest()->query->has('destination')) {
-      //@todo test the transition destination
-      $path = $request->query->get('destination');
-      $request->query->remove('destination');//can't remember why
+    if ($this->destination) {
+      $path = $this->destination;
     }
     elseif ($redirect = $this->transition->getConfiguration('redirect')) {
       $path = strtr($redirect, [
@@ -205,9 +210,10 @@ class TransitionForm extends EntityConfirmFormBase {
       }
     }
     catch (\Exception $e) {
+      mdump($transition);//looking for label
       drupal_set_message($this->t(
         "Error performing @transition transition: @error",
-        ['@transition' => $this->transition->title, '@error' => $e->getMessage()]
+        ['@transition' => $this->transition->getConfiguration('title'), '@error' => $e->getMessage()]
       ), 'error');
       return;
     }

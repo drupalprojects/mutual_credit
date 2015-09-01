@@ -52,7 +52,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
 
   /**
    * {@inheritdoc}
-   * $ops are details, summary, payin, payout
+   * @see Wallet constants for the $ops
    *
    */
   public function checkAccess(EntityInterface $entity, $op, $langcode, AccountInterface $account) {
@@ -96,25 +96,27 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
   }
 
   /**
-   * determine whether a wallet can be added
+   * determine whether a holder can accept another wallet
+   * 
+   * @param ContentEntityInterface $holder
+   *   The entity holding the wallet
    *
-   * @return Boolean
+   * @return boolean
    *   TRUE if the $holder has less than the max wallets
    */
   function walletRoom($holder) {
-    $config = \Drupal::config('mcapi.wallets');
+    $config = \Drupal::config('mcapi.settings');
     $entity_type = $holder->getEntityTypeId();
-    $bundle = $entity_type.':'.$holder->bundle();
-    $max = $config->get('entity_types.'. $bundle);
     //quick check first for this common scenario
-    if ($entity_type == 'user' && $max == 1 && $config->get('autoadd_name')) {
+    if ($entity_type == 'user' && mcapi_one_wallet_per_user_mode() && $config->get('autoadd_name')) {
       return TRUE;
     }
     else {
+      $maxes = $config->get('entity_types)');
       $owned_wallets = \Drupal::entityManager()
         ->getStorage('mcapi_wallet')
         ->filter(['holder' => $holder]);
-      return count($owned_wallets) < $max;
+      return count($owned_wallets) < $maxes[$entity_type.':'.$holder->bundle()];
     }
   }
 }

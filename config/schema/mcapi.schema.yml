@@ -1,4 +1,4 @@
-mcapi.misc:
+mcapi.settings:
   type: mapping
   label: 'Other configuration'
   mapping:
@@ -45,11 +45,6 @@ mcapi.misc:
     active_transitions:
       type: sequence
       name: Active transition plugins
-
-mcapi.wallets:
-  type: mapping
-  label: Wallet settings
-  mapping:
     wallet_access:
       type: mapping
       label: Default wallet access setting
@@ -76,6 +71,9 @@ mcapi.wallets:
     autoadd:
       type: boolean
       label: 'Auto-create a wallet for every new user'
+    render_unused:
+      type: boolean
+      label: 'Show unused currency stats in wallet view.'
     add_link_location:
       type: mapping
       label: 'Location of the link to create new wallets under an entity'
@@ -118,6 +116,9 @@ mcapi.currency.*:
     name:
       type: label
       label: 'Currency Name'
+    description:
+      type: label
+      label: 'Description'
     uid:
       type: integer
       label: Comptroller

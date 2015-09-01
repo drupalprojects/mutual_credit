@@ -50,8 +50,9 @@ use Drupal\Core\Session\AccountInterface;
  *   },
  *   admin_permission = "configure mcapi",
  *   base_table = "mcapi_wallet",
- *   label_callback = "Drupal\mcapi\Entity\Wallet::walletFormatName",
+ *   label_callback = "Drupal\mcapi\Viewbuilder\WalletViewBuilder::DefaultLabel",
  *   entity_keys = {
+ *     "label" = "name",
  *     "id" = "wid",
  *     "uuid" = "uuid"
  *   },
@@ -70,6 +71,11 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   const ACCESS_AUTH = '2';//this is the role id
   const ACCESS_USERS = 'u';//user id is in the wallet access table
   const ACCESS_OWNER =  'o';//this is replaced with a named user MAYBE NOT NEEDED
+  
+  const OP_DETAILS = 'details';
+  const OP_SUMMARY = 'summary';
+  const OP_PAYIN = 'payin';
+  const OP_PAYOUT = 'payout';
   
   private $holder;
   private $stats = [];
@@ -126,34 +132,15 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   }
 
   /**
-   * entity_label_callback().
-   * default callback for wallet
-   * put the Holder entity's name with the wallet name in brackets if there is one
-   */
-  public static function walletFormatName($wallet) {
-    $output = $wallet->getHolder()->label();//what happens if the wallet is orphaned?
-
-    $name = $wallet->name->value;
-
-    if ($name == '_intertrade') {
-      $output .= ' '.t('Import/Export');
-    }
-    elseif($name) {
-      $output .= ' ('.$name.')';
-    }
-    return $output;
-  }
-
-  /**
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
     if (!array_key_exists('pid', $values) && array_key_exists('entity_type', $values)) {
       throw new Exception("new wallets must have an entity_type and a parent entity_id (pid)");
     }
-    $values += array('name' => '', 'orphaned' => 0);
+    $values += array('name' => '', 'orphaned' => 0, 'created' => REQUEST_TIME);
     //put the default values for the access here
-    $access_settings = \Drupal::config('mcapi.wallets')->getRawData();
+    $access_settings = \Drupal::config('mcapi.settings')->getRawData();
     foreach (Exchange::walletOps() as $op => $blurb) {
       if (!array_key_exists($op, $values)) {
         $values[$op] = key(array_filter($access_settings[$op]));
@@ -207,12 +194,12 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       ->setLabel(t('Holder entity ID'));
 
     $defaults = [
-      'details' => 'o',
-      'summary' => '2',
-      'payout' => 'o',
-      'payin' => '2',
+      SELF::OP_DETAILS => SELF::ACCESS_OWNER,
+      SELF::OP_SUMMARY => SELF::ACCESS_AUTH,
+      SELF::OP_PAYOUT => SELF::ACCESS_OWNER,
+      SELF::OP_PAYIN => SELF::ACCESS_AUTH,
     ];
-    if ($access_settings = \Drupal::config('mcapi.wallets')->getRawData()) {
+    if ($access_settings = \Drupal::config('mcapi.settings')->getRawData()) {
       foreach (array_keys($defaults) as $key) {
         $defaults[$key][2] = current(array_filter($access_settings[$key]));
       }
@@ -224,6 +211,12 @@ class Wallet extends ContentEntityBase implements WalletInterface {
         ->setSetting('default_value', array($defaults[$key]))
         ->setSetting('length', 1);
     }
+    $fields['created'] = BaseFieldDefinition::create('created')
+      ->setLabel(t('Created on'))
+      ->setDescription(t('The time that the wallet was created.'))
+      ->setRevisionable(FALSE)
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
     $fields['orphaned'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Orphaned'))
       ->setDescription(t('TRUE if this wallet is not currently held'))
@@ -311,12 +304,12 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    */
   public static function orphan(ContentEntityInterface $holder) {
     $new_holder_entity = Exchange::findNewHolder($holder);
-    $wallet_ids = Self::entityManager()
+    $wallet_ids = \Drupal::entityManager()
       ->getStorage('mcapi_wallet')
       ->filter(['holder' => $holder]);
     foreach (Self::loadMultiple($wallet_ids) as $wallet) {
       $criteria = ['involving' => $wallet->id()];
-      if (Self::entityManager()->getStorage('mcapi_transaction')->filter($criteria)) {
+      if (\Drupal::entityManager()->getStorage('mcapi_transaction')->filter($criteria)) {
         $new_name = $this->t(
           "Formerly !name's wallet: !label", ['!name' => $wallet->label(), '!label' => $wallet->label(NULL, FALSE)]
         );

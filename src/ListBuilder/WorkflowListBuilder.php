@@ -143,11 +143,11 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
         ],
       ],
       //@todo Attribute doesn't work according to the documentation https://api.drupal.org/api/drupal/core!includes!common.inc/function/drupal_attach_tabledrag/8
-      '#attributes' => new Attribute(['style' => 'width:100%', 'id' => 'transitions-table']),
       '#attributes' => [
         'id' => 'transitions-table',
         'style' => 'width:100%'
-      ]
+      ],
+      '#attributes' => new Attribute(['style' => 'width:100%', 'id' => 'transitions-table'])
     ];
     foreach ($this->transitionManager->getDefinitions() as $id => $definition) {
       $form['plugins'][$id] = $this->buildRow($id);

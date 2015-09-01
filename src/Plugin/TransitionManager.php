@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Plugin\TransitionManager.
+ * Definition of \Drupal\mcapi\Plugin\TransitionManager.
  */
 
 namespace Drupal\mcapi\Plugin;
@@ -79,7 +79,7 @@ class TransitionManager extends DefaultPluginManager {
     }
     $active = $this->config_factory->get('mcapi.misc')->get('active_transitions');
     foreach ($this->getDefinitions() as $id => $definition) {
-      if (!in_array($id, $exclude) and $active[$id]) {
+      if (!in_array($id, $exclude) && isset($active[$id])) {
         $output[$id] = $this->getPlugin($id, $transaction);
       }
     }
@@ -200,14 +200,18 @@ class TransitionManager extends DefaultPluginManager {
               ];
             }
           }
-          if(!$plugin->getConfiguration('redirect') && $transition != 'view'){
-            $path = $this->redirecter->get();
-
-            //die($path);//@todo stop removing leading slash when the redirect service does it properly
-            $renderable['#links'][$transition]['query'] = substr($path, 1);
+          elseif ($display != Self::CONFIRM_NORMAL && $transition != 'view') {        
+            //the link should redirect back to the current page, if not otherwise stated
+            if($dest = $plugin->getConfiguration('redirect')) {
+              $redirect = ['destination' => $dest];
+            }
+            else {
+              $redirect = $this->redirecter->getAsArray();
+            }
+            //@todo stop removing leading slash when the redirect service does it properly
+            $renderable['#links'][$transition]['query'] = $redirect;
           }
         }
-
       }
       if (array_key_exists('#links', $renderable)) {
         $renderable += [
@@ -223,48 +227,4 @@ class TransitionManager extends DefaultPluginManager {
   }
 
 }
-
-/* not working
-Array
-        (
-            [title] => Erase
-            [url] => Drupal\Core\Url Object
-                (
-                    [urlGenerator:protected] =>
-                    [urlAssembler:protected] =>
-                    [accessManager:protected] =>
-                    [routeName:protected] => mcapi.transaction.op
-                    [routeParameters:protected] => Array
-                        (
-                            [mcapi_transaction] => 99
-                            [transition] => erase
-                        )
-
-                    [options:protected] => Array
-                        (
-                        )
-
-                    [external:protected] =>
-                    [unrouted:protected] =>
-                    [uri:protected] =>
-                    [internalPath:protected] =>
-                    [_serviceIds:protected] => Array
-                        (
-                        )
-
-                )
-
-            [attributes] => Array
-                (
-                    [class] => Array
-                        (
-                            [0] => use-ajax
-                        )
-
-                    [data-accepts] => application/vnd.drupal-modal
-                    [data-dialog-options] => {"width":500}
-                )
-
-            [query] => transaction/99
- */
 

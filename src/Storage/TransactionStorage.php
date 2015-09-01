@@ -100,7 +100,6 @@ class TransactionStorage extends TransactionIndexStorage {
           ->condition('xid', $record->xid)
           ->execute();
         $this->resetCache([$entity->id()]);
-        $this->indexDrop($entity->serial->value);
       }
       $this->doSaveFieldItems($entity);
     }

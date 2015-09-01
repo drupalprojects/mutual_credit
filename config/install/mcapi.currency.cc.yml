@@ -3,6 +3,7 @@ status: true
 dependencies: {  }
 id: cc
 name: 'Community Coins'
+description: 'A measure of value and unit of exchange worth whatever the communitiy decides'
 uid: 1
 issuance: exchange
 format:

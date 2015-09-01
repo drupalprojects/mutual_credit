@@ -1,0 +1,131 @@
+<?php
+
+/**
+ * @file
+ * mcapi_exchanges.install
+ */
+
+use Drupal\mcapi_exchanges\Entity\Exchange;
+use Drupal\user\Entity\User;
+use Drupal\mcapi\Entity\Transaction;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
+
+/**
+ * implements hook_install
+ * ensure the default exchage has an intertrading wallet
+ */
+function mcapi_exchanges_install() {
+  //all entities with wallets must be given an audience field, 
+  $settings = \Drupal::config('mcapi.settings');
+  ensure_membership_fields($settings->get('entity_types'));
+  
+  $maxes = $settings->get('entity_types');
+  $maxes['mcapi_exchange:mcapi_exchange'] = 1;
+  $settings->set('entity_types', $maxes);
+  $settings->save();
+  
+  //create a default exchange
+  //according to the default settings this will have autocreated a wallet for the exchange !
+  $props = array(
+    'name' => t(
+      'First !sitename exchange',
+      ['!sitename' => \Drupal::config('system.site')->get('name')]
+    ),
+    'uid' => 1,
+    'mail' => \Drupal::config('system.site')->get('mail'),
+    'currencies' => array('cc')
+  );
+  $ex = Exchange::create($props);
+  $ex->save();
+  drupal_set_message(t('First exchange created: !name', array('!name' => $ex->link())));
+  
+  //NB this could cause memory problems might be better to hard-insert
+  //now put all the existing users in the first exchange
+  foreach (User::loadMultiple() as $account) {
+    if ($account->id() == 0) {
+      continue;
+    }
+    mcapi_exchange_join($ex->id(), array($account));
+    //this should happen automatically in mcapi_entity_update() assuming this module's hooks are working
+    //put_owned_wallets_in_exchange($account);
+  }
+  
+  //now put all the existing transactions in the first exchange
+  mcapi_exchange_join($ex->id(), Transaction::loadMultiple());
+
+}
+
+/**
+ * submit callback for wallet settings form
+ */
+function mcapi_exchanges_check_og_fields(&$form, &$form_state) {
+  
+  //note that these fields can never be removed
+  //ensure_membership_fields(array_filter($form_state->getValue('entity_types')));
+}
+
+/**
+ * utility
+ * create field storage and add fields to entitytypes
+ */
+function ensure_membership_fields($types) {
+  debug($types, 'enabling membership fields');
+  $field_storage = FieldStorageConfig::loadMultiple();
+  $field_config = FieldConfig::loadMultiple();
+  foreach(array_keys(array_filter($types)) as $combo) {
+    if ($combo == 'user:user')continue;
+    list($entity_type_id, $bundle) = explode(':', $combo);
+    //check the field storage exists for that entity
+    $id = $entity_type_id .'.'. EXCHANGE_OG_REF;
+    if (!array_key_exists($id, $field_storage)) {
+      $props = [
+        'id' => $id,
+        'dependencies' => ['module' => ['og', 'mcapi']],
+        'field_name' => EXCHANGE_OG_REF,
+        'entity_type' => $entity_type_id,
+        'type' => 'entity_reference',
+        'settings' => ['target_type' => 'mcapi_exchange'],
+        'module' => 'mcapi_exchanges',
+        'cardinality' => -1,
+        'translatable' => 'false',
+        'indexes' => []
+      ];
+      $new_storage = new FieldStorageConfig($props);
+      $new_storage->enforceIsNew(TRUE)->save();
+      echo("\nCreated new storage field for entity: $entity_type_id with id: $id\n");
+    }
+    else echo "\nStorage already exists for $id in fields ".implode(', ', array_keys($field_storage));
+    //ensure the bundle has the field attached
+    $id = $entity_type_id . '.'.$bundle.'.'.EXCHANGE_OG_REF;
+    if (!array_key_exists($id, $field_config)) {
+      $props = array(
+        'id' => $id,
+        'dependencies' => ['config' => ['field.storage.user.'.EXCHANGE_OG_REF]],
+        'field_name' => EXCHANGE_OG_REF,
+        'entity_type' => $entity_type_id,
+        'bundle' => $bundle,
+        'description' => t('Auto-added field for exchange membership'),
+        'translatable' => 'false',
+        'default_value_callback' => '',
+        'settings' => [],
+        //'third_party_settings' => [],
+        'field_type' => 'entity_reference'
+      );
+      $new_field = new FieldConfig($props);
+      $new_field->enforceIsNew(TRUE)->save();
+      echo ("\nCreated new field for bundle: $bundle\n");
+      drupal_set_message("Audience field given to $id but not populated");
+    }
+    else echo "\nField already exists for $id in fields ".implode(', ', array_keys($field_config));
+  }
+  /* field config settings, if needed
+  settings:
+    handler: default
+    handler_settings:
+      target_bundles: {  }
+      sort:
+        field: created
+        direction: DESC
+  */
+}

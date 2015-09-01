@@ -20,18 +20,17 @@ class AccountingAdmin extends SystemController {
   function systemAdminMenuBlockPage() {
     $renderable[] = parent::systemAdminMenuBlockPage();
     if (TransactionAccessControlHandler::enoughWallets($this->currentUser())->isForbidden()) {
-      $usermax = $this->config('mcapi.wallets')->get('entity_types')['user:user'];
       $message[] = $this->t("There aren't enough wallets for you to create a transaction.");
-      if ($usermax > 1) {
+      if (mcapi_one_wallet_per_user_mode()) {
         $message[] = $this->l(
-          $this->t("Give yourself a(nother) wallet."),
-          Url::fromRoute('mcapi.wallet.add.user', ['user' => $this->currentUser()->id()])
+          $this->t("Allow more wallets or more entities to own wallets."),
+          Url::fromRoute('mcapi.admin_wallets')
         );
       }
       else {
         $message[] = $this->l(
-          $this->t("Allow more wallets or more entities to own wallets."),
-          Url::fromRoute('mcapi.admin_wallets')
+          $this->t("Give yourself a(nother) wallet."),
+          Url::fromRoute('mcapi.wallet.add.user', ['user' => $this->currentUser()->id()])
         );
       }
       //don't both checking for create user access

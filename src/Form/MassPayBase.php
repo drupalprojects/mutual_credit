@@ -50,8 +50,7 @@ class MassPayBase extends EntityForm {
 
   public function step_1(array &$form, FormStateInterface $form_state) {
     if (empty($form_state->get('confirmed'))) {
-      $types = \Drupal::config('mcapi.wallets')->get('entity_types');
-      if ($types['user:user'] == 1) {
+      if (mcapi_one_wallet_per_user_mode()) {
         $mode_options = [
           $this->t('The named users'),
       	  $this->t("All users except those named"),

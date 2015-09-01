@@ -81,6 +81,7 @@ function mcapi_modules_installed() {
   //might need to clear some cache
 }
 
+
 /**
 use Drupal\field\Entity\FieldStorageConfig;
 FieldStorageConfig::load('mcapi_transaction.worth')->delete();
@@ -108,8 +109,7 @@ db_delete('config')->condition('name', [
 db_delete('key_value')->condition('name', '%mcapi%', 'LIKE')->execute();
 db_delete('key_value')->condition('value', '%mcapi%', 'LIKE')->execute();
 db_truncate('cache_config')->execute();
-$extension_config =  \Drupal::configFactory()->getEditable('core.extension');
-$extension_config
+Drupal::configFactory()->getEditable('core.extension')
 ->clear("module.mcapi")
 ->clear("module.mcapi_1stparty")
 ->clear("module.mcapi_limits")

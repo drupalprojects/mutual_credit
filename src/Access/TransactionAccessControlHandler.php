@@ -12,6 +12,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Access\AccessResult;
+use Drupal\mcapi\Entity\Wallet;
 
 /**
  * Defines an access controller option for the mcapi_transaction entity.
@@ -60,8 +61,8 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
         $account = \Drupal::currentUser();
       }
       $walletStorage = \Drupal::entityManager()->getStorage('mcapi_wallet');
-      $payin = $walletStorage->walletsUserCanActOn('payin', $account);
-      $payout = $walletStorage->walletsUserCanActOn('payout', $account);
+      $payin = $walletStorage->walletsUserCanActOn(Wallet::OP_PAYIN, $account);
+      $payout = $walletStorage->walletsUserCanActOn(Wallet::OP_PAYOUT, $account);
       //there must be at least one wallet in each (and they must be different!)
       Self::$result = ($payin && $payout && count(array_unique(array_merge($payin, $payout))) > 1) ?
         AccessResult::allowed()->cachePerUser() :
@@ -69,6 +70,5 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
     }
     return Self::$result;
   }
-
 
 }

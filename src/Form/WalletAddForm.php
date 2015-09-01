@@ -123,7 +123,7 @@ class WalletAddForm extends Formbase {
     ->fields('w', array('wid'))
     ->condition('name', $values['name']);
 
-    if (!\Drupal::config('mcapi.wallets')->get('unique_names')) {
+    if (!\Drupal::config('mcapi.settings')->get('unique_names')) {
       $query->condition('pid', $values['pid']);
       $query->condition('entity_type', $values['entity_type']);
     }

@@ -21,42 +21,42 @@ class WalletStorageSchema extends SqlContentEntityStorageSchema {
   protected function getEntitySchema(ContentEntityTypeInterface $entity_type, $reset = FALSE) {
     $schema = parent::getEntitySchema($entity_type, $reset = FALSE);
 
-    $schema['mcapi_wallet'] += array(
-      'foreign keys' => array(
-        'mcapi_transactions_payee' => array(
+    $schema['mcapi_wallet'] += [
+      'foreign keys' => [
+        'mcapi_transactions_payee' => [
           'table' => 'mcapi_transaction',
-          'columns' => array('wid' => 'payee'),
-        ),
-        'mcapi_transactions_payer' => array(
+          'columns' => ['wid' => 'payee'],
+        ],
+        'mcapi_transactions_payer' => [
           'table' => 'mcapi_transaction',
-          'columns' => array('wid' => 'payer'),
-        ),
-      ),
-    );
-    $schema['mcapi_wallets_access'] = array(
+          'columns' => ['wid' => 'payer'],
+        ],
+      ]
+    ];
+    $schema['mcapi_wallets_access'] = [
       'description' => "Access settings for wallet's operations",
-      'fields' => array(
-        'wid' => array(
+      'fields' => [
+        'wid' => [
           'description' => 'the unique wallet ID',
           'type' => 'int',
           'size' => 'normal',
           'not null' => TRUE,
-        ),
-        'operation' => array(
+        ],
+        'operation' => [
           'description' => 'One of list, summary, payin, payout, edit',
           'type' => 'varchar',
           'length' => '8',
-        ),
-        'uid' => array(
+        ],
+        'uid' => [
           'description' => 'A permitted user id',
           'type' => 'int',
           'length' => '8',
-        )
-      ),
-      'unique keys' => array(
-        'walletOpUser' => array('wid', 'operation', 'uid'),
-      ),
-    );
+        ]
+      ],
+      'unique keys' => [
+        'walletOpUser' => ['wid', 'operation', 'uid'],
+      ],
+    ];
 
     return $schema;
   }

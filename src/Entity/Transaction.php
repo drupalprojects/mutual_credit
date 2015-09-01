@@ -12,6 +12,7 @@ namespace Drupal\mcapi\Entity;
 use Drupal\mcapi\TransactionInterface;
 
 use Drupal\mcapi\Entity\Type;
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\McapiEvents;
 use Drupal\mcapi\TransactionSaveEvents;
 use Drupal\Core\Entity\ContentEntityBase;
@@ -254,7 +255,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setRequired(TRUE)
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE)
-      ->setConstraints(['CanActOn' => ['action' => 'payin']]);
+      ->setConstraints(['CanActOn' => ['action' => Wallet::OP_PAYIN]]);
 
     $fields['payee'] = BaseFieldDefinition::create('wallet')
       ->setLabel(t('Payee'))
@@ -264,7 +265,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setRequired(TRUE)
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE)
-      ->setConstraints(['CanActOn' => ['action' => 'payout']]);
+      ->setConstraints(['CanActOn' => ['action' => Wallet::OP_PAYOUT]]);
 
     $fields['creator'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Creator'))

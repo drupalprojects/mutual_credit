@@ -21,7 +21,7 @@ class WalletForm extends ContentEntityForm {
   private $walletConfig;
 
   public function __construct($config_factory) {
-    $this->walletConfig = $config_factory->get('mcapi.wallets');
+    $this->walletConfig = $config_factory->get('mcapi.settings');
 
     $this->permissions = Exchange::walletPermissions();
     if ($wallet->entity_type !== 'user') {

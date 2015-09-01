@@ -1,3 +1,4 @@
+uuid: 7130c554-ef71-40d4-8500-c1408a58d71c
 langcode: und
 status: true
 dependencies:
@@ -6,28 +7,19 @@ dependencies:
   module:
     - mcapi
 id: mcapi_wallet.mcapi_wallet.summary
-label: Wallet
 targetEntityType: mcapi_wallet
 bundle: mcapi_wallet
 mode: summary
 content:
-  name:
-    label: hidden
-    type: string
-    weight: -5
-    settings:
-      link_to_entity: false
-    third_party_settings: {  }
   stats:
     weight: 0
-  balances:
-    weight: 1
-  mcapi_limits_absolute:
-    weight: 3
+    settings: {  }
+    third_party_settings: {  }
 hidden:
+  balance_bars: true
+  balance_limits: true
+  balances: true
+  created: true
+  histories: true
   holder: true
   mcapi_limits_relative: true
-  balance_bars: true
-  histories: true
-third_party_settings: {  }
-
