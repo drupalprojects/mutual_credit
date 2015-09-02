@@ -12,7 +12,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Url;
-use Drupal\Core\Render\Element;
+use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\mcapi\WalletInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -64,36 +64,6 @@ class WalletViewBuilder extends EntityViewBuilder {
     $build['#attached'] = ['library' => ['mcapi/mcapi.wallets']];
     return $build;
   }
-  
-  //map the wallet extrafield names onto the methods in this class
-  //this is particularlt handy since all these functions take same arguments i.e. one wallet
-  function viewExtraField($component, $wallet) {
-    $props = [];
-    switch ($component) {
-      case 'histories':
-        $theme = 'wallet_history';
-        $props = ['#currencies' => $wallet->currenciesUsed()];
-        break;
-      case 'balance_bars':
-        $theme = 'balance_bars';
-        break;
-      case 'stats':
-        $theme = 'wallet_stats';
-        break;
-      case 'balances':
-        $theme = 'wallet_balances';
-        break;
-      case 'links':
-        return $this->viewLinks($wallet);
-        break;
-    }
-    return [
-      '#theme' => $theme,
-      '#wallet' => $wallet,
-      '#theme_wrappers' => ['wallet_wrapper']
-    ] + $props;
-  }
-  
 
   /**
    * present a wallet's local tasks as a set of links
@@ -106,6 +76,7 @@ class WalletViewBuilder extends EntityViewBuilder {
    * @todo Does this work? rename to viewLinks for consistency
    */
   function viewLinks(WalletInterface $wallet) {
+    echo ('viewLinks IS called!');mtrace();
     $links = [];
     $tree = $this->localTaskManager->getLocalTasksForRoute('entity.mcapi_wallet.canonical');
     //which is all very well but getTasksBuild assumes we are on the current route
@@ -147,5 +118,4 @@ class WalletViewBuilder extends EntityViewBuilder {
     }
     return $output;
   }
-  
 }

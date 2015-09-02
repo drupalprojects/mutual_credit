@@ -7,10 +7,7 @@
 
 namespace Drupal\mcapi\Plugin\views\field;
 
-use Drupal\views\Plugin\views\area\Result;
-use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
-use Drupal\views\ViewExecutable;
 
 /**
  * Field handler to provide running balance for a given transaction
@@ -18,9 +15,9 @@ use Drupal\views\ViewExecutable;
  *
  * @ingroup views_field_handlers
  *
- * @ViewsField("balance")
+ * @ViewsField("running_balance")
  */
-class Balance extends FieldPluginBase {
+class Balance extends Worth {
 
   private $wallet_id;
 
@@ -28,17 +25,26 @@ class Balance extends FieldPluginBase {
    * {@inheritdoc}
    */
   public function query() {
+    //all we need to do is determine the wallet id for which we want the balance
+    //it could from one of two args, or a filter
     $this->addAdditionalFields();
-    //we can't do this much earlier because the view->argument isn't there yet
-    $arg = array_search('wallet_id', array_keys($this->view->argument));
-    if (is_numeric($arg)) {
-      $this->wallet_id = $this->view->args[$arg];
+    $arg_names = array_keys($this->view->argument);
+    $arg_pos = array_search('held_wallet', $arg_names);
+    if ($arg_pos === FALSE) {
+      $arg_pos = array_search('wallet_id', $arg_names);
     }
-    elseif (isset($this->view->filter['wallet_id'])) {
-      $this->wallet_id = $this->view->filter['wallet_id']->value['value'];
+    
+    if ($arg_pos !== FALSE) {
+      $this->wallet_id = $this->view->args[$arg_pos];
     }
     else {
-      drupal_set_message("Running balance requires filter or contextual filter 'Transaction index: wallet_id'", 'error');
+      $arg_pos = array_search('wallet_id', array_keys($this->view->filter));
+      if ($arg_pos !== FALSE) 
+        {$this->wallet_id = $this->view->filter['wallet_id']->value['value'];
+      }
+      else {
+        drupal_set_message("Running balance requires filter or contextual filter 'Transaction index: wallet_id'", 'error');
+      }
     }
   }
 
@@ -46,23 +52,39 @@ class Balance extends FieldPluginBase {
    * {@inheritdoc}
    */
   public function render(ResultRow $values) {
-    $transaction = $this->getEntity($values);
-    $worth_field = $transaction->worth;
+    $worth_field = $this->getEntity($values)->worth;
+    //something bizarre is happening here. sometimes the entity associated with
+    //this row has and empty worth value. but it works if we reload it
+    if (!$worth_field->getValue()) {
+      drupal_set_message('reloading transaction '.$values->serial, 'warning');
+      $worth_field = \Drupal\mcapi\Entity\Transaction::load($values->serial)
+        ->worth;
+      if (!$worth_field) {
+        drupal_set_message('failed to reload '.$values->serial, 'error');
+        return array();
+      }
+    }
+    $vals = [];
     foreach ($worth_field->currencies() as $curr_id) {
-
-      //the running balance depends the order of the transactions
-      //we will assume the order of creation is what's wanted because that
-      //corresponds to the order of the xid
-      //note that it is possible to change the apparent creation date.
       $raw = \Drupal::entityManager()->getStorage('mcapi_transaction')->runningBalance(
-        $this->wallet_id,
-        $transaction->xid->value,
-        $curr_id
+        $values->wallet_id,
+        $curr_id,
+        $values->xid,
+        'xid'
       );
       $vals[] = ['curr_id' => $curr_id, 'value' => $raw];
     }
     $worth_field->setValue($vals);
-    return $worth_field->view();
+    $options = [
+      'label' => 'hidden',
+      'settings' => [
+        'format' => $this->options['format']
+      ]
+    ];
+    if (property_exists($values, 'curr_id')) {
+      $options['settings']['curr_ids'] = [$values->curr_id];
+    }
+    return $worth_field->view($options);
   }
 
 }

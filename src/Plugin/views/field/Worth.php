@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Plugin\views\field;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\mcapi\Entity\Currency;
 
 /**
  * When we look at transaction index table, we need to view one worth at a time
@@ -26,7 +27,7 @@ class Worth extends FieldPluginBase {
    */
   protected function defineOptions() {
     $options = parent::defineOptions();
-    $options['format'] = array('default' => 'normal');
+    $options['format'] = ['default' => Currency::FORMAT_NORMAL];
     return $options;
   }
 
@@ -38,21 +39,35 @@ class Worth extends FieldPluginBase {
       '#title' => t('Format'),
       '#decriptions' => $this->t('Not all formats support multiple cardinality.'),
       '#type' => 'radios',
-      '#options' => array(
-     	  'normal' => t('Normal'),
-        'decimal' => t('In base 10'),
-        'raw' => t('raw integer from the db')
-      ),
-      '#default_value' => !empty($this->options['format']),
+      '#options' => Currency::formats(),
+      '#default_value' => $this->options['format'],
     );
     parent::buildOptionsForm($form, $form_state);
   }
 
   /**
    * @note aggregation may cause problems with formatting
+   * @todo if there is a currency filter on this view, we would want to only show that currency
    */
   public function render(ResultRow $values) {
-    return $this->getEntity($values)->worth->view($this->options['format']);
+    $settings = [
+      'format' => $this->options['format']
+    ];
+    $worth_items = $this->getEntity($values)->worth;
+    if (property_exists($values, 'curr_id')) {
+      $val = [
+        'curr_id' => $values->curr_id, 
+        'value' => $this->getValue($values)
+      ];
+      $worth_items->setValue($val);
+    }
+    
+    return $worth_items->view(
+      [
+        'label' => 'hidden', 
+        'settings' => $settings
+      ]
+    );
   }
 
 }

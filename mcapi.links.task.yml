@@ -49,3 +49,9 @@ mcapi.masspay.many21:
   title: 'Many-to-one'
   base_route: mcapi.masspay.12many
   weight: 0
+
+mcapi.user.wallet.tab:
+  route_name: mcapi.user.wallet
+  title: Wallet
+  base_route: entity.user.canonical
+  weight: 5

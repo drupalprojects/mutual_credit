@@ -1,4 +1,3 @@
-uuid: 7130c554-ef71-40d4-8500-c1408a58d71c
 langcode: und
 status: true
 dependencies:
@@ -11,6 +10,8 @@ targetEntityType: mcapi_wallet
 bundle: mcapi_wallet
 mode: summary
 content:
+  links:
+    weight: 8
   stats:
     weight: 0
     settings: {  }

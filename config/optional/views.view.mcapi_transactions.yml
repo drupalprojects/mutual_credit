@@ -3,6 +3,8 @@ status: true
 dependencies:
   config:
     - field.storage.mcapi_transaction.worth
+    - system.menu.admin
+    - system.menu.main
     - user.role.authenticated
   module:
     - mcapi
@@ -295,7 +297,7 @@ display:
           hide_alter_empty: true
           link: 1
           entity_type: mcapi_wallet
-          plugin_id: mcapi_wallet_label
+          plugin_id: entity_label
         label:
           id: label
           table: mcapi_wallet
@@ -346,7 +348,7 @@ display:
           hide_alter_empty: true
           link: 1
           entity_type: mcapi_wallet
-          plugin_id: mcapi_wallet_label
+          plugin_id: entity_label
         description:
           id: description
           table: mcapi_transaction
@@ -1087,13 +1089,13 @@ display:
       field_langcode_add_to_query: null
       path: transactions/admin
       menu:
-        type: tab
-        title: Filter
-        description: ''
-        parent: ''
-        weight: 0
+        type: normal
+        title: Ledger
+        description: 'Filter and inspect all transactions'
+        parent: mcapi.admin
+        weight: 10
         context: '0'
-        menu_name: main
+        menu_name: admin
       exposed_form:
         type: input_required
         options:
@@ -1180,7 +1182,7 @@ display:
           hide_alter_empty: true
           link: 0
           entity_type: mcapi_wallet
-          plugin_id: mcapi_wallet_label
+          plugin_id: entity_label
         label:
           id: label
           table: mcapi_wallet
@@ -1231,7 +1233,7 @@ display:
           hide_alter_empty: true
           link: 0
           entity_type: mcapi_wallet
-          plugin_id: mcapi_wallet_label
+          plugin_id: entity_label
         description:
           id: description
           table: mcapi_transaction
@@ -1424,8 +1426,8 @@ display:
       field_langcode_add_to_query: null
       path: transactions
       menu:
-        type: 'default tab'
-        title: Log
+        type: normal
+        title: Transactions
         description: ''
         parent: ''
         weight: 0
@@ -1691,7 +1693,7 @@ display:
           hide_alter_empty: true
           link: 1
           entity_type: mcapi_wallet
-          plugin_id: mcapi_wallet_label
+          plugin_id: entity_label
         label:
           id: label
           table: mcapi_wallet
@@ -1742,7 +1744,7 @@ display:
           hide_alter_empty: true
           link: 1
           entity_type: mcapi_wallet
-          plugin_id: mcapi_wallet_label
+          plugin_id: entity_label
         description:
           id: description
           table: mcapi_transaction
@@ -1926,7 +1928,7 @@ display:
         type: normal
         title: Transactions
         description: ''
-        menu_name: 'main'
+        menu_name: main
         weight: 0
     cache_metadata:
       contexts:

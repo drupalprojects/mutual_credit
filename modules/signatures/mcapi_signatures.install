@@ -5,7 +5,7 @@ Use \Drupal\Core\Url;
 function mcapi_signatures_install() {
   module_set_weight('mcapi_signatures', 2);
   //enable the 'sign' transition but not the signall transition
-  $config = \Drupal::configFactory()->getEditable('mcapi.misc');
+  $config = \Drupal::configFactory()->getEditable('mcapi.settings');
   $active = $config->get('active_transitions');
   $active['sign'] = 'sign';
   $config->set('active_transitions', $active)->save();

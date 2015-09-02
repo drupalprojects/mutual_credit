@@ -48,7 +48,7 @@ class ExchangeTransactions extends FieldPluginBase {
    * {@inheritdoc}
    */
   public function render(ResultRow $values) {
-    $states = \Drupal::config('mcapi.misc')->get('counted');
+    $states = \Drupal::config('mcapi.settings')->get('counted');
     return $this->getEntity($values)->transactions($this->options['inclusive']);
   }
 

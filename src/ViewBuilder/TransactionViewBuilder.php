@@ -7,15 +7,11 @@
 
 namespace Drupal\mcapi\ViewBuilder;
 
-use Drupal\mcapi\TransactionInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
-use Drupal\Core\Template\Attribute;
-use Drupal\Core\Cache\Cache;
-use Drupal\Core\Url;
 
 /**
  * Render controller for transactions.
@@ -60,7 +56,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
         $build['#theme'] = 'certificate';
         break;
       case 'sentence':
-        $template = \Drupal::config('mcapi.misc')->get('sentence_template');
+        $template = \Drupal::config('mcapi.settings')->get('sentence_template');
         $build['transaction']['#markup'] = \Drupal::Token()->replace(
           $template,
           ['mcapi' => $entity],
@@ -86,7 +82,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
       ],
       '#attached' => [
         //for some reason in Renderer::updatestack, this bubbles up twice
-        'libraries' => ['mcapi/mcapi.transaction']
+        'library' => ['mcapi/mcapi.transaction']
       ]
     ];
     unset($build['#cache']);

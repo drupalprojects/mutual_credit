@@ -27,7 +27,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
   private $transitionManager;
 
   function __construct($config_factory, $transition_manager) {
-    $this->config = $config_factory->get('mcapi.misc');
+    $this->config = $config_factory->get('mcapi.settings');
     $this->transitionManager = $transition_manager;
   }
 

@@ -90,6 +90,8 @@ function mcapi_tester_make_transactions($num, $exchange = NULL) {
   //one per day
   db_query('UPDATE {mcapi_transaction} SET created = created-(serial*3600*12)');
   db_query('UPDATE {mcapi_transactions_index} SET created = created-(serial*3600*12)');
+  $days = $num/2;
+  db_query('UPDATE {mcapi_wallet} SET created  = :created', ['created' => strtotime(-$days.' days')]);
 }
 
 function mcapi_tester_make_inter_transactions($num) {

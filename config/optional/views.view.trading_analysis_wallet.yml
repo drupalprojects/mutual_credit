@@ -296,7 +296,7 @@ display:
           prefix: ''
           suffix: ''
           link: true
-          plugin_id: mcapi_wallet_label
+          plugin_id: entity_label
           provider: mcapi
         serial:
           id: serial
@@ -572,7 +572,7 @@ display:
           prefix: ''
           suffix: ''
           link: true
-          plugin_id: mcapi_wallet_label
+          plugin_id: entity_label
           provider: mcapi
         diff:
           id: diff
@@ -1092,7 +1092,7 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          plugin_id: mcapi_wallet_label
+          plugin_id: entity_label
           provider: mcapi
       defaults:
         fields: false

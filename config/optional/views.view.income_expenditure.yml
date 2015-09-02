@@ -22,7 +22,7 @@ display:
     provider: views
     display_options:
       access:
-        type: wallet
+        type: none
         options: {  }
       cache:
         type: none
@@ -581,7 +581,7 @@ display:
           hide_alter_empty: true
           link: 1
           entity_type: mcapi_wallet
-          plugin_id: mcapi_wallet_label
+          plugin_id: entity_label
       defaults:
         fields: false
         arguments: false
@@ -1023,7 +1023,7 @@ display:
           hide_alter_empty: false
           link: 1
           entity_type: mcapi_wallet
-          plugin_id: mcapi_wallet_label
+          plugin_id: entity_label
         worth:
           id: worth
           table: mcapi_transaction__worth

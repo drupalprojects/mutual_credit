@@ -34,7 +34,10 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     $this->relatives = \Drupal::service('mcapi.transaction_relative_manager')->active();
   }
 
-  function setTransaction(TransactionInterface $transaction) {
+  /**
+   * {@inheritdoc}
+   */
+  public function setTransaction(TransactionInterface $transaction) {
     $this->transaction = $transaction;
   }
   /**
@@ -112,21 +115,17 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
   }
 
   /**
-   * default access callback for transaction transition
-   * uses transaction relatives
-   *
-   * @return boolean
+   * {@inheritdoc}
    */
-  public function accessOp(AccountInterface $account, $arg2=null) {
-    //children can't be edited that would be too messy
-    if ($this->transaction->parent->value) {
-      return FALSE;
-    }
-    foreach (array_filter($this->configuration['access']) as $relative) {
-      //$check if the $acocunt is this relative to the transaction
-      $plugin = $this->relatives[$relative];
-      if ($plugin->isRelative($this->transaction, $account)) {
-        return TRUE;
+  public function accessOp(AccountInterface $account, $arg2 = NULL) {
+    if (!$this->transaction->parent->value) {
+      //children can't be edited that would be too messy
+      foreach (array_filter($this->configuration['access']) as $relative) {
+        //$check if the $account is this relative to the transaction
+        $plugin = $this->relatives[$relative];
+        if ($plugin->isRelative($this->transaction, $account)) {
+          return TRUE;
+        }
       }
     }
     return FALSE;

@@ -92,7 +92,6 @@ function mcapi_help($route_name, $route_match) {
  * @todo check the cache contexts because this contains a link to wallet creation.
  */
 function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode, $langcode) {
-
   if ($display->getComponent('wallets_summaries')) {
     //check the entity is of a type which can own a wallet.
     $key = 'entity_types.' . $entity->getEntityTypeId() .':'. $entity->bundle();
@@ -154,7 +153,7 @@ function mcapi_entity_label_list($entity_type_id, array $data = []) {
   }
   else $entities = $data;
   if (property_exists(current($entities), 'weight') && count($entities) > 1) {
-    uasort($list, 'mcapi_uasort_weight');
+    uasort($entities, 'mcapi_uasort_weight');
   }
   $list = [];
   foreach ($entities as $entity) {
@@ -190,7 +189,7 @@ function mcapi_element_info_alter(&$items) {
  * give a new wallet to new entities, if the settings require
  */
 function mcapi_entity_insert($entity) {
-  $config = \Drupal::config('mcapi.misc');
+  $config = \Drupal::config('mcapi.settings');
   //note that intertrading wallets are created not here but in Exchange::postSave
   if ($config->get('autoadd')) {
     $type = $entity->getEntityTypeId();
@@ -261,6 +260,10 @@ function mcapi_local_tasks_alter(&$tasks) {
   }
   //remove the parent tab as well.
   unset($tasks['field_ui.fields:display_overview_mcapi_transaction']);
+  
+  if (!mcapi_one_wallet_per_user_mode()) {
+    unset($tasks['mcapi.user.wallet.tab']);
+  }
 }
 
 
@@ -314,6 +317,7 @@ function mcapi_entity_extra_field_info() {
       ]
     ];
   }
+  
   $extra['mcapi_wallet']['mcapi_wallet']['display'] = [
     'stats' => [
       'label' => t('Trading stats'),
@@ -321,17 +325,17 @@ function mcapi_entity_extra_field_info() {
       'weight' => 5
     ],
     'balances' => [
-      'label' => t('Balance(s)'),
+      'label' => t('Balance'),
       'description' => t('Small thingy showing balances of all currencies'),
       'weight' => 6
     ],
     'histories' => [
-      'label' => t('History chart(s)'),
+      'label' => t('History chart'),
       'description' => t('One line chart per currency showing balance over time.'),
       'weight' => 7
     ],
     'balance_bars' => [
-      'label' => t('Balance bar charts'),
+      'label' => t('Given & gotten'),
       'description' => t('One barchart per currency showing incoming and outgoing volumes'),
       'weight' => 8
     ],
@@ -379,32 +383,19 @@ function mcapi_theme() {
     'template' => 'currency'
   ] + $file;
   
-  $items['wallet_wrapper'] = [
-    'render element' => 'element',
-  ] + $file;
-  
-  $items['wallet_balances'] = [
-    'render element' => 'element',
-  ] + $file;
-  
-  $items['wallet_balances_currency'] = [//@todo this this used?
-    'variables' => [
-      'wallet' => NULL,
-      'currency' => NULL,
-    ]
-  ] + $file;
-  
-  $items['balance_bars'] = [
-    'render element' => 'element',
-  ] + $file;
-  
-  $items['wallet_history'] = [
-    'render element' => 'element',
-  ] + $file;
-  
-  $items['wallet_stats'] = [
-    'render element' => 'element',
-  ] + $file;
+  $wallet_callbacks = [
+    'mcapi_wallet', 
+    'mcapi_wallet_component', 
+    'wallet_balances', 
+    'wallet_balance_bars', 
+    'wallet_histories', 
+    'wallet_stats'
+  ];
+  foreach ($wallet_callbacks as $callback) {
+    $items[$callback] = [
+      'render element' => 'element',
+    ] + $file;
+  }
   return $items;
 }
 
@@ -439,16 +430,23 @@ function mcapi_mcapi_transaction_view(array &$build, $transaction, $display, $vi
   }
 }
 
-/**n
+/**
  * implements hook_ENTITY_TYPE_view().
- * ecofsptln
+ * add components to the wallet display
  */
 function mcapi_mcapi_wallet_view(array &$build, $wallet, $display, $view_mode, $langcode) {
   $walletViewBuilder = \Drupal::entityManager()->getViewBuilder('mcapi_wallet');
+  $extra = mcapi_entity_extra_field_info()['mcapi_wallet']['mcapi_wallet']['display'];
   foreach (['balances', 'balance_bars', 'histories', 'stats'] as $component) {
     if ($info = $display->getComponent($component)) {
-      $build[$component] = $walletViewBuilder->viewExtraField($component, $wallet);
-      $build[$component]['#weight'] = $info['weight'];
+      $build[$component] = [
+        '#theme' => 'wallet_'.$component,
+        '#wallet' => $wallet,
+        '#attributes' => ['class' => ['component', $component]],
+        '#theme_wrappers' => ['mcapi_wallet_component'],
+        '#weight' => $info['weight'],
+        '#title' => $extra[$component]['label']
+      ];
     }
   }
 }
@@ -501,4 +499,18 @@ function mcapi_mcapi_form_list() {
 
 function mcapi_one_wallet_per_user_mode() {
   return \Drupal::config('mcapi.settings')->get('entity_types.user:user') == 1;
+}
+
+/**
+ * custom router access callback
+ * find the user's first wallet and grant accees to view its details
+ * @todo move this elsewhere?
+ */
+function user_wallet_details_access($user) {
+  $wids = \Drupal::entityManager()
+      ->getStorage('mcapi_wallet')
+      ->filter(['holder' => User::load($user)]);
+  $wallet = Wallet::load(reset($wids));
+  $result = $wallet->access(Wallet::OP_DETAILS, NULL, TRUE);
+  return $result;
 }

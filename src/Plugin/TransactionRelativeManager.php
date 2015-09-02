@@ -29,12 +29,12 @@ class TransactionRelativeManager extends DefaultPluginManager {
       '\Drupal\mcapi\Annotation\TransactionRelative'
     );
     $this->setCacheBackend($cache_backend, 'transaction_relatives');//don't know if this is important
-    $this->config = $config_factory->get('mcapi.misc')->get('active_relatives');
+    $this->config = $config_factory->get('mcapi.settings')->get('active_relatives');
     $this->plugins = [];
   }
 
   /*
-   * retrieve the plugins which are not disabled in Config mcapi.misc
+   * retrieve the plugins which are not disabled in Config mcapi.settings
    *
    * @todo would a collection be the proper way to do this?
    */

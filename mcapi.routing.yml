@@ -88,4 +88,12 @@ mcapi.masspay.many21:
   requirements:
     _permission: 'manage mcapi'
 
-
+#this must only show if there is one wallet per user.
+#@see
+mcapi.user.wallet:
+  path: '/user/{user}/wallet'
+  defaults: 
+    _controller: '\Drupal\mcapi\Controller\WalletController::log'
+    _title_callback: '\Drupal\mcapi\Controller\WalletController::userPageTitle'
+  requirements:
+    _custom_access: user_wallet_details_access

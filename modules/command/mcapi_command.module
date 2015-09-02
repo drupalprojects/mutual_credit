@@ -104,7 +104,7 @@ function mcapi_command_get_uid($string) {
   $or = db_or();
 
   //@todo we need some settings to determine how wallets will be identified from command strings.
-  //if mcapi.misc.one_wallet we can use the parent entity label, or email.
+  //if mcapi.settings.one_wallet we can use the parent entity label, or email.
   //otherwise might have to insist on the wallet wid only.
   $match_field = $config->get('match_field');
   if ($match_field == 'parent') {

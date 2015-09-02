@@ -4,24 +4,27 @@ dependencies:
   module:
     - mcapi
 id: mcapi_wallet.mcapi_wallet.default
-label: Wallet
 targetEntityType: mcapi_wallet
 bundle: mcapi_wallet
 mode: default
 content:
-  balances:
-    weight: 0
-  stats:
-    weight: 1
   balance_bars:
+    weight: 1
+    settings: {  }
+    third_party_settings: {  }
+  histories:
     weight: 2
+    settings: {  }
+    third_party_settings: {  }
   mcapi_limits_absolute:
     weight: 3
-  histories:
-    weight: 3
+  stats:
+    weight: 0
+    settings: {  }
+    third_party_settings: {  }
 hidden:
+  balances: true
+  created: true
   holder: true
-  mcapi_limits_relative: true
+  links: true
   name: true
-third_party_settings: {  }
-

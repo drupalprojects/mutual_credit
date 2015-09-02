@@ -111,7 +111,7 @@ class ExchangeWizard extends ExchangeForm {
         '#maxlength' => 80,
       ),
       'ticks' => array(
-        '#title' => t('Currency value, expressed in @units', array('@units' => \Drupal::config('mcapi.misc')->get('ticks_name'))),
+        '#title' => t('Currency value, expressed in @units', array('@units' => \Drupal::config('mcapi.settings')->get('ticks_name'))),
         '#type' => 'number',
         '#min' => 0,
         '#weight' => 6

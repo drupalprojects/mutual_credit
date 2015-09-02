@@ -30,19 +30,23 @@ class TransitionForm extends EntityConfirmFormBase {
   /**
    * 
    * @param \Drupal\Core\Routing\RouteMatch $route_match
+   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    * @param \Drupal\mcapi\Plugin\TransitionManager $transitionManager
    * @param \Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher $event_dispatcher
-   * @param string $destination
    */
-  function __construct($route_match, $transitionManager, $event_dispatcher, $destination) {
+  function __construct($route_match, $request_stack, $transitionManager, $event_dispatcher) {
     $transitionId = $route_match->getparameter('transition') ? : 'view';
-    
+
     $this->transition = $transitionManager->getPlugin(
       $transitionId, 
       $route_match->getParameters()->get('mcapi_transaction')
     );
     $this->eventDispatcher = $event_dispatcher;
-    $this->destination = $destination->get();
+    
+    $query = $request_stack->getCurrentRequest()->query;
+    if ($query->has('destination')) {
+      $this->destination = $query->get('destination');
+    }
   }
 
   /**
@@ -51,9 +55,9 @@ class TransitionForm extends EntityConfirmFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('current_route_match'),
+      $container->get('request_stack'),
       $container->get('mcapi.transition_manager'),
-      $container->get('event_dispatcher'),
-      $container->get('redirect.destination')
+      $container->get('event_dispatcher')
     );
   }
 
@@ -180,10 +184,6 @@ class TransitionForm extends EntityConfirmFormBase {
     parent::submitForm($form, $form_state);
     $values = $form_state->getValues();
 
-    //copy any fields from the form directly onto the transaction
-    //EntityFormDisplay::collectRenderDisplay(
-    //  $this->entity, 'admin'
-    //)->extractFormValues($this->entity, $form, $form_state);
     $this->transition->setTransaction($this->entity);
     try {
       //the op might have injected values into the form, so it needs to be able to access them
@@ -206,11 +206,11 @@ class TransitionForm extends EntityConfirmFormBase {
         $events
       );
       if(!$renderable) {
-        $renderable = ['#markup' => 'transition returned nothing renderable'];
+        $renderable = ['#markup' => 'Transition returned nothing renderable'];
       }
     }
     catch (\Exception $e) {
-      mdump($transition);//looking for label
+      print_r($transition);//looking for label
       drupal_set_message($this->t(
         "Error performing @transition transition: @error",
         ['@transition' => $this->transition->getConfiguration('title'), '@error' => $e->getMessage()]
@@ -222,13 +222,6 @@ class TransitionForm extends EntityConfirmFormBase {
     }
     $form_state->setRedirectUrl($this->getDestinationPath());
   }
-
-
-  protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
-    //parent::copyFormValuesToEntity($entity, $form_state);
-    //we are managing this function with $display->extractFormValues in $this->submitForm()
-  }
-
 
   /**
    * {@inheritdoc}

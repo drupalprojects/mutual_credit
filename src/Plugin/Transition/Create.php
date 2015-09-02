@@ -8,7 +8,7 @@
 namespace Drupal\mcapi\Plugin\Transition;
 
 use Drupal\mcapi\Plugin\TransitionBase;
-use Drupal\mcapi\CurrencyInterface;
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Config\ImmutableConfig;
@@ -28,8 +28,8 @@ class Create extends TransitionBase {
    */
   public function accessOp(AccountInterface $account) {
     return empty($this->transaction->get('xid')->value) &&
-      $this->transaction->payer->entity->access(Wallet::OP_PAYOUT) &&
-      $this->transaction->payee->entity->access(Wallet::OP_PAYIN);
+      $this->transaction->payer->entity->access(Wallet::OP_PAYOUT, $account) &&
+      $this->transaction->payee->entity->access(Wallet::OP_PAYIN, $account);
   }
 
   /**

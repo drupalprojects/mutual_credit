@@ -1,5 +1,8 @@
 <?php
 
+//@todo find a way to set the width of the chart using config
+const GCHART_HISTORY_WIDTH = 300;
+
 /**
  * @file
  * View and theme preprocessor functions
@@ -13,25 +16,30 @@ use Drupal\mcapi\History;
 use Drupal\mcapi\Entity\Currency;
 
 /**
- * implements hook_preprocess_THEMEHOOK for wallet_history
+ * implements hook_preprocess_THEMEHOOK for wallet_histories
  * generates the javascript for the gchart from the user's history of each currency
+ * 
  */
-function mcapi_preprocess_wallet_history(&$vars) {
+function mcapi_preprocess_wallet_histories(&$vars) {
+  $element = $vars['element'];
+  $wallet = $element['#wallet'];
+  $vars['width'] = GCHART_HISTORY_WIDTH;
+  $vars['height'] = $vars['width']/2;
   $histories = History::getAll(
-    $vars['wallet'],
-    $vars['currencies'], 
+    $wallet,
+    $wallet->currenciesUsed(), 
     $vars['width']
   );
-  foreach ($histories as $currency_id => $points) {
+  foreach ($histories as $curr_id => $points) {
     if (count($points) < 2 && !$vars['showall']) {
+      //don't draw the chart if it is empty
       continue;
     }
     unset($vars['showall']);
-    $currency = &$vars['currencies'][$currency_id];
-    $chart = &$vars['charts'][$currency_id];//todo use this
-    $vars['charts'][$currency_id]['currency'] = $currency;
-    $vars['charts'][$currency_id]['functionname'] = 'drawHistory' . $currency_id;
-    $vars['charts'][$currency_id]['id'] = 'wallet-' . $vars['wallet']->id() . '-' . $currency_id;
+    $currency = Currency::load($curr_id);
+    $vars['currencies'][$curr_id]['currency'] = $currency;
+    $vars['currencies'][$curr_id]['functionname'] = 'drawHistory' . $curr_id;
+    $vars['currencies'][$curr_id]['id'] = 'wallet-' . $wallet->id() . '-' . $curr_id;
     if ($points) {
       list($min, $middle, $max) = History::axes($points);
     }
@@ -40,7 +48,7 @@ function mcapi_preprocess_wallet_history(&$vars) {
       $middle = 0;
       $max = 10;
     }
-    $vars['charts'][$currency_id]['vaxislabels'] = [
+    $vars['currencies'][$curr_id]['vaxislabels'] = [
       [
         'value' => $min, 
         'label' => $currency->format($min, TRUE)
@@ -54,14 +62,14 @@ function mcapi_preprocess_wallet_history(&$vars) {
         'label' => $currency->format($max, TRUE)
       ]
     ];
-    $vars['charts'][$currency_id]['columns'] = [
+    $vars['currencies'][$curr_id]['columns'] = [
       'date' => t('Date'),
       'number' => $currency->label()
     ];
     //populate the javascript data object
     foreach ($points as $timestamp => $balance) {
       //this has a resolution of one day, not very satisfying perhaps
-      $vars['charts'][$currency_id]['daterows'][] = [
+      $vars['currencies'][$curr_id]['daterows'][] = [
         date('m/d/Y', $timestamp),
         $balance,
         $currency->format($balance, TRUE)
@@ -75,7 +83,7 @@ function mcapi_preprocess_wallet_history(&$vars) {
  */
 function template_preprocess_wallet_stats(&$vars) {
   $wallet = $vars['element']['#wallet'];
-  $unused = \Drupal::config('wallet.settings')->get('render_unused');
+  $unused = \Drupal::config('mcapi.settings')->get('render_unused');
   foreach ($wallet->getSummaries() as $curr_id => $data) {
     if ($unused || $data['trades']) {
       $currency = mcapi_currency_load($curr_id);
@@ -93,10 +101,17 @@ function template_preprocess_wallet_stats(&$vars) {
 /**
  * default preprocessor for theme wrapper callback 'wallet_wrapper'
  */
-function template_preprocess_wallet_wrapper(&$vars) {
-  $wallet = $vars['element']['#wallet'];
+function template_preprocess_mcapi_wallet(&$vars) {
+  $wallet = $vars['element']['#mcapi_wallet'];
   $vars['label'] = $wallet->label();
   $vars['canonical'] = $wallet->link();
+}
+
+/**
+ * default preprocessor for theme wrapper callback 'wallet_wrapper'
+ */
+function template_preprocess_mcapi_wallet_component(&$vars) {
+  $vars['title'] = $vars['element']['#title'];
 }
 
 /**
@@ -140,7 +155,7 @@ function ___template_preprocess_mcapi_wallets(&$vars) {
  * theme preprocessor for balances
  */
 function template_preprocess_wallet_balances(&$vars) {
-  $unused = \Drupal::config('wallet.settings')->get('render_unused');
+  $unused = \Drupal::config('mcapi.settings')->get('render_unused');
   $unused = 1;//TEMP!!
   $wallet = $vars['element']['#wallet'];
   foreach ($wallet->getSummaries() as $curr_id => $data) {
@@ -152,21 +167,22 @@ function template_preprocess_wallet_balances(&$vars) {
       $vars['delimited'][] = $balance;
     }
   }
-  $vars['delimiter'] = \Drupal::config('mcapi.misc')->get('worths_delimiter');
+  $vars['delimiter'] = \Drupal::config('mcapi.settings')->get('worths_delimiter');
   $vars['delimited'] = implode($vars['delimiter'], $vars['delimited']);
 }
 
 /**
  * theme preprocessor for balance_bars
  */
-function template_preprocess_balance_bars(&$vars) {
+function template_preprocess_wallet_balance_bars(&$vars) {
   $wallet = $vars['element']['#wallet'];
   foreach ($wallet->getSummaries() as $curr_id => $data) {
     $currency = Currency::load($curr_id);
     //if ($vars['data']['gross_in'] == 0 && $vars['data']['gross_out']) return;
     $vars['currencies'][$curr_id]['label'] = $currency->label();
-    $vars['currencies'][$curr_id]['id'] = "given-gotten-" . $curr_id . '-' . $wallet->id();
-    $vars['currencies'][$curr_id]['functionname'] = str_replace('-', '_', $vars['id']);
+    $id = "given-gotten-" . $curr_id . '-' . $wallet->id();
+    $vars['currencies'][$curr_id]['id'] = $id;
+    $vars['currencies'][$curr_id]['functionname'] = str_replace('-', '_', $id);
     $vars['currencies'][$curr_id]['incoming'] = $data['gross_in'];
     $vars['currencies'][$curr_id]['outgoing'] = $data['gross_out'];
     $vars['currencies'][$curr_id]['show_in'] = $currency->format($data['gross_in'], TRUE);
@@ -177,7 +193,7 @@ function template_preprocess_balance_bars(&$vars) {
     $vars['currencies'][$curr_id]['max'] = $max;
     $vars['currencies'][$curr_id]['vaxislabels'] = [
       ['value' => 0, 'label' => $currency->format(0, TRUE)],
-      ['value' => $max / 2, 'label' => $currency->format($max / 2, TRUE)],
+      ['value' => $max / 2, 'label' => $currency->format(intval($max / 2), TRUE)],
       ['value' => $max, 'label' => $currency->format($max), TRUE]
     ];
   }
@@ -253,19 +269,12 @@ function template_preprocess_certificate(&$vars) {
   //$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->get('type')->value;
 }
 
-
-/*
- * - $currency: Full mcapi_transaction entity
- * - $name: name of the currency (probably used in the page title)
- * - $created: unixtime of creation date.
- * - $holder: linked username of the holder
- * - $color: hex code
- * and a range of usage stats yet to be determined
- * - $transactions: the number of transactions using this currency
- * - $wallets: the number of wallets with this currency
- * - $exchanges: a list of links to exchanges (added by exchanges module)
+/**
+ * implements template_preprocess_THEMEHOOK for theme callback 'mcapi_currency'
+ * 
+ * @param array $vars
+ * @todo there is no currency view page yet!
  */
-
 function template_preprocess_mcapi_currency(&$vars) {
   $build = $vars['currency'];
   $currency = $build['#mcapi_currency'];

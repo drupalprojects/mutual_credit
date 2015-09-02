@@ -35,7 +35,7 @@ function mcapi_install() {
   }
 
   $zero_icon_uri = '/'. drupal_get_path('module', 'mcapi') . '/templates/present.png';
-  \Drupal::configFactory()->getEditable('mcapi.misc')
+  \Drupal::configFactory()->getEditable('mcapi.settings')
     ->set('zero_snippet', '<img src = "'. $zero_icon_uri .'" width = "31" />')
     ->save();
 
@@ -53,7 +53,7 @@ function mcapi_install() {
 function mcapi_modules_installed() {
   //ensure all new transactionRelatives and transitions are enabled by default
   $save = FALSE;
-  $conf = \Drupal::configFactory()->getEditable('mcapi.misc');
+  $conf = \Drupal::configFactory()->getEditable('mcapi.settings');
   $active = $conf->get('active_transitions');
   foreach (\Drupal::service('mcapi.transition_manager')->getDefinitions() as $id => $definition) {
     if (!array_key_exists($id, $active)) {

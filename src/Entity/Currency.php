@@ -8,13 +8,10 @@
 
 namespace Drupal\mcapi\Entity;
 
-use Drupal\mcapi\Plugin\Field\FieldType\Worth;
 use Drupal\mcapi\CurrencyInterface;
-use Drupal\mcapi\Exchanges;
 use Drupal\user\Entity\User;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\user\UserInterface;
-use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 
@@ -222,13 +219,12 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * {@inheritdoc}
    */
-  function format($raw_num, $format = FORMAT_NORMAL) {
+  function format($raw_num, $format = SELF::FORMAT_NORMAL) {
     //ensure its not a string
     $raw_num += 0;
-    //we should probably ensure it is an integer as well
-    if (!is_integer($raw_num))drupal_set_message('non-integer in Currency::format', 'warning');
+    if (!is_integer($raw_num))mtrace();
     $raw_num = (int)$raw_num;
-    if ($format == FORMAT_NORMAL) {
+    if ($format == SELF::FORMAT_NATIVE) {
       return $raw_num;
     }
     //if there is a minus sign this needs to go before everything
@@ -239,7 +235,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     foreach ($parts as $key => $num) {
       $output[$key] = $num;
     }
-    if ($format == FORMAT_PLAIN) {
+    if ($format == SELF::FORMAT_PLAIN) {
       //convert 1hr 23mins to 1.23
       //replace likely separators with decimal point dots
       //hopefully that's all of them
@@ -310,5 +306,13 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   //called in EntityViewBuilder::getBuildDefaults()
   function isDefaultRevision() {
     return TRUE;
+  }
+  
+  static function formats() {
+    return [
+      Currency::FORMAT_NORMAL => t('Normal'),
+      Currency::FORMAT_NATIVE => t('Native integer'),
+      Currency::FORMAT_PLAIN => t('Force decimal (Rarely needed)')
+    ];
   }
 }

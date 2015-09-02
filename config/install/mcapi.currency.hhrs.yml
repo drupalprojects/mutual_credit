@@ -1,7 +1,7 @@
 langcode: en
 status: true
 dependencies: {  }
-id: Hhrs
+id: hhrs
 name: 'Human Hours'
 description: 'An hour of the full presence of one human being'
 uid: 1

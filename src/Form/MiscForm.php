@@ -46,7 +46,7 @@ class MiscForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->configFactory->get('mcapi.misc');
+    $config = $this->configFactory->get('mcapi.settings');
     foreach (Exchange::transactionTokens(TRUE) as $token) {
       $tokens[] = "[mcapi:$token]";
     }
@@ -147,7 +147,7 @@ class MiscForm extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
-    $config = $this->configFactory->getEditable('mcapi.misc');
+    $config = $this->configFactory->getEditable('mcapi.settings');
 
     $config
       ->set('sentence_template', $values['sentence_template'])
@@ -175,7 +175,7 @@ class MiscForm extends ConfigFormBase {
   }
 
   protected function getEditableConfigNames() {
-    return ['mcapi.misc'];
+    return ['mcapi.settings'];
   }
 
 }

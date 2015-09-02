@@ -44,7 +44,6 @@ class TransactionViewsData extends EntityViewsData {
       $data['mcapi_transaction']['parent']['entity field']
     );
 
-
     $data['mcapi_transaction']['payer']['filter']['id'] = 'wallet_name';
     $data['mcapi_transaction']['payee']['filter']['id'] = 'wallet_name';
     $data['mcapi_transaction']['creator']['filter']['id'] = 'user_name';
@@ -178,11 +177,11 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'standard',
         'base' => 'mcapi_wallet',
         'base field' => 'wid',
-        'label' => t('1st wallet'),
+        'label' => t('Partner wallet'),
         'relationship field' => 'partner_id'
       ],
       'field' => [
-        'id' => 'mcapi_wallet_label',
+        'id' => 'standard',
       ],
       'filter' => [
         'id' => 'wallet_name',
@@ -240,8 +239,8 @@ class TransactionViewsData extends EntityViewsData {
       'title' => $this->t('Created year + month'),
       'help' => $this->t('Date in the form of YYYYMM.'),
       'argument' => [
-        'field' => 'created',
         'id' => 'date_year_month',
+        'field' => 'created'
       ],
     ];
 
@@ -249,8 +248,8 @@ class TransactionViewsData extends EntityViewsData {
       'title' => $this->t('Created year'),
       'help' => $this->t('Date in the form of YYYY.'),
       'argument' => [
-        'field' => 'created',
         'id' => 'date_year',
+        'field' => 'created'
       ],
     ];
     $data['mcapi_transactions_index']['incoming'] = [
@@ -260,9 +259,10 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'worth',
         'additional fields' => ['curr_id']
       ],
-      'filter' => [
+      /*'filter' => [
+        //@todo make a filter that knows not to show the native value 
         'id' => 'numeric',
-      ],
+      ],*/
       'sort' => [
         'id' => 'numeric',
       ],
@@ -274,9 +274,10 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'worth',
         'additional fields' => ['curr_id']
       ],
-      'filter' => [
+      /*'filter' => [
+        //@todo make a filter that knows not to show the native value 
         'id' => 'numeric',
-      ],
+      ],*/
       'sort' => [
         'id' => 'numeric',
       ],
@@ -317,6 +318,8 @@ class TransactionViewsData extends EntityViewsData {
       ],
       'filter' => [
         'id' => 'in_operator',
+        //a less blunt callback could be imagined
+        //or even a custom handler which would have access to the view
         'options callback' => 'mcapi_entity_label_list',
         'options arguments' => ['mcapi_currency']
       ],
@@ -341,8 +344,8 @@ class TransactionViewsData extends EntityViewsData {
       'title' => $this->t('Running balance'),
       'help' => $this->t("The sum of the wallet's previous transactions."),
       'field' => [
-        'id' => 'balance',
-        'additional fields' => ['curr_id']
+        'id' => 'running_balance',
+        'additional fields' => ['curr_id', 'wallet_id', 'serial', 'volume']
       ],
     ];
     $data['mcapi_transactions_index']['transitions'] = [
@@ -350,6 +353,14 @@ class TransactionViewsData extends EntityViewsData {
       'help' => $this->t('What the user can do to the transaction'),
       'field' => [
         'id' => 'transaction_transitions',
+      ]
+    ];
+    $data['mcapi_transactions_index']['held_wallet'] = [
+      'title' => $this->t('Held wallet'),
+      'help' => $this->t('Wallet held by the user'),
+      'argument' => [
+        'id' => 'mcapi_first_wallet',
+        'field' => 'wallet_id'
       ]
     ];
     return $data;

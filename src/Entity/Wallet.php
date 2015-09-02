@@ -18,7 +18,6 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Field\BaseFieldDefinition;
-use Drupal\Core\Session\AccountInterface;
 
 /**
  * Defines the wallet entity.
@@ -76,6 +75,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   const OP_SUMMARY = 'summary';
   const OP_PAYIN = 'payin';
   const OP_PAYOUT = 'payout';
+  //there is another possible operation, 'edit' for which a constant is not declared
   
   private $holder;
   private $stats = [];

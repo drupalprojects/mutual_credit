@@ -21,8 +21,8 @@
  * - vaxislabels
  */
 #}
-
-<script type="text/javascript">google.load('visualization', '1.0', {'packages':['corechart']});</script>
+{{ attach_library('mcapi/mcapi.gchart') }}
+<script type="text/javascript">google.load('visualization', '1.0', {'packages':['corechart']});
 {% for chart in currencies %}
 google.setOnLoadCallback({{ chart.functionname }});
 function {{ chart.functionname }}() {

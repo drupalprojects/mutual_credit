@@ -57,7 +57,7 @@ class Config extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
-    $config = $this->configFactory->getEditable('mcapi.misc');
+    $config = $this->configFactory->getEditable('mcapi.settings');
 
     $config
       ->set('ticks_name', $values['ticks_name'])

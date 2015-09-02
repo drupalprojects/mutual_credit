@@ -158,15 +158,20 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * get the balance of a given wallet, up to a given transaction id, for a
    * given currency
    *
-   * @param integer wallet id
+   * @param integer $wid
    *
-   * @param integer transaction id
+   * @param integer $xid
    *
-   * @param string currency id
+   * @param integer $until
+   *   the meaning of this depends on the $sort_field
+   * 
+   * @param string $sort_field
+   *   the field by which it should be less than, and sort descending. Note this
+   *   only works with fields in the base table coz its too complex for EntityQuery
    *
    * @return integer raw currency value
    *
    */
-  function runningBalance($wid, $xid, $curr_id);
+  function runningBalance($wid, $xid, $until, $sort_field);
 
 }

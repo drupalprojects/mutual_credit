@@ -44,7 +44,7 @@
 #}
 {{ attach_library('mcapi/mcapi.gchart') }}
 <script>google.load('visualization', '1.0', {'packages':['corechart']});
-{% for chart in charts %}
+{% for chart in currencies %}
   google.setOnLoadCallback({{ chart.functionname }});
   function {{ chart.functionname }}() {
     var data = new google.visualization.DataTable();
@@ -67,8 +67,8 @@ var options = {
 {% endfor %}
 </script>
         
-{% for chart in charts %}
-  <div id="{{ chart.id }}" class = "history-chart" style="width:300px; height:150px;"></div>
+{% for chart in currencies %}
+  <div id="{{ chart.id }}" class = "history-chart" style="width:{{ width }}px; height:{{ height }}px;"></div>
 {% endfor %}
 
     

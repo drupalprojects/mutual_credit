@@ -12,6 +12,7 @@ use Drupal\Component\Utility\String;
 use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\mcapi\Entity\Currency;
 
 /**
  * Plugin implementation of the 'worth' formatter.
@@ -27,6 +28,7 @@ use Drupal\Core\Form\FormStateInterface;
  */
 class WorthFormatter extends FormatterBase {
 
+  
   /**
    * {@inheritdoc}
    */
@@ -39,6 +41,7 @@ class WorthFormatter extends FormatterBase {
       '#required' => TRUE,
       '#default_value' => $this->getSetting('format'),
     ];
+    //at the moment the curr_id setting can only be determined in Drupal\mcapi\Plugin\views\field\Worth
     return $form;
   }
 
@@ -47,7 +50,8 @@ class WorthFormatter extends FormatterBase {
    */
   public static function defaultSettings() {
     $settings = parent::defaultSettings();
-    $settings['format'] = 'normal';
+    $settings['format'] = Currency::FORMAT_NORMAL;
+    $settings['curr_ids'] = [];
     return $settings;
   }
 
@@ -63,15 +67,20 @@ class WorthFormatter extends FormatterBase {
    */
   public function viewElements(FieldItemListInterface $items) {
     $output = [];
+//    echo ($this->options['format']);
+    $curr_ids = $this->getSetting('curr_ids');
     foreach ($items as $item) {
+      if ($curr_ids && !in_array($item->currency->id(), $curr_ids)) {
+         continue;
+      }
       if ($item->value) {
         $output[] = $item->currency->format($item->value, $this->getSetting('format'));
       }
       else {
         //apply any special formatting for zero value transactions
         if ($item->currency->zero) {
-          if ($this->getSetting('format') == 'normal') {
-            $output[] = \Drupal::config('mcapi.misc')->get('zero_snippet');
+          if ($this->getSetting('format') == Currency::FORMAT_NORMAL) {
+            $output[] = \Drupal::config('mcapi.settings')->get('zero_snippet');
           }
           else {
             $output[] = 0;
@@ -85,17 +94,13 @@ class WorthFormatter extends FormatterBase {
     //we're shovelling all the $items into 1 element because the have already
     //been rendered together, with a separator character
     $elements[0]['#markup'] = implode(
-      \Drupal::config('mcapi.misc')->get('worths_delimiter'),
+      \Drupal::config('mcapi.settings')->get('worths_delimiter'),
       $output
     );
     return $elements;
   }
 
   private function getOptions() {
-    return [
-      'normal' => $this->t('Normal'),
-      'native' => $this->t('Native integer'),
-      'decimalised' => $this->t('Force decimal (Rarely needed)')
-    ];
+    return Currency::formats();
   }
 }

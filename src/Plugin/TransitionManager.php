@@ -77,7 +77,7 @@ class TransitionManager extends DefaultPluginManager {
       //some deleteModes are not available for some currencies
       $exclude = array_merge($exclude, $this->deletemodes($transaction->worth->currencies(TRUE)));
     }
-    $active = $this->config_factory->get('mcapi.misc')->get('active_transitions');
+    $active = $this->config_factory->get('mcapi.settings')->get('active_transitions');
     foreach ($this->getDefinitions() as $id => $definition) {
       if (!in_array($id, $exclude) && isset($active[$id])) {
         $output[$id] = $this->getPlugin($id, $transaction);
@@ -170,15 +170,17 @@ class TransitionManager extends DefaultPluginManager {
       }
       foreach ($this->active($transaction, $exclude) as $transition => $plugin) {
         if ($transaction->access($transition)->isAllowed()) {
-          $route_name = $transition == 'view' ?
-            'entity.mcapi_transaction.canonical' :
-            'mcapi.transaction.transition';
+          $route_params = ['mcapi_transaction' => $transaction->serial->value];
+          if ($transition == 'view') {
+            $route_name = 'entity.mcapi_transaction.canonical';
+          }
+          else {
+            $route_name = 'mcapi.transaction.transition';
+            $route_params['transition'] = $transition;
+          }
           $renderable['#links'][$transition] = [
             'title' => $plugin->getConfiguration('title'),
-            'url' => Url::fromRoute($route_name, [
-              'mcapi_transaction' => $transaction->serial->value,
-              'transition' => $transition
-            ])
+            'url' => Url::fromRoute($route_name, $route_params)
           ];
           $display = $plugin->getConfiguration('display');
           if ($display != Self::CONFIRM_NORMAL) {

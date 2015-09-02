@@ -251,8 +251,8 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     
     $history = [$wallet->created->value => 0];
     //this is a way to add up the results as we go along
-    $this->database->query("SET @csum := 0");//not sure which databases it works on
-    //I wish there was a better way to do this.
+    $this->database->query("SET @csum := 0");
+    //have to calculate the whole history by adding up all the diffs
     //It is cheaper to do stuff in mysql
     $wid = $wallet->id();
     $all_balances = $this->database->query(
@@ -265,10 +265,9 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     //if two transactions happen on the same second, the latter running balance will be shown only
     foreach ($all_balances as $point) {
       //@todo find a more efficient way to filter an array where all the keys are < x
-      if ($point->created < $since) {
-        continue;
+      if ($point->created >= $since) {
+        $history[$point->created] = $point->balance;
       }
-      $history[$point->created] = $point->balance;
     }
     if (count($history) == 1) return [];
     return $history;
@@ -365,7 +364,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    */
   protected function countedStates($as_string = FALSE) {
     $counted_states = [];
-    $counted = array_keys(array_filter(\Drupal::config('mcapi.misc')->get('counted')));
+    $counted = array_keys(array_filter(\Drupal::config('mcapi.settings')->get('counted')));
     if ($as_string) {
       foreach ($counted as $state_id) {
         $counted_states[] = "'".$state_id."'";
@@ -391,16 +390,19 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   /**
    * {@inheritDoc}
    */
-  public function runningBalance($wid, $xid, $curr_id) {
+  public function runningBalance($wid, $curr_id, $until, $sort_field = 'xid') {
+    //the running balance depends the order of the transactions. we will assume
+    //the order of creation is what's wanted because that corresponds to the 
+    //order of the xid. NB it is possible to change the apparent creation date.
     return db_query(
       "SELECT SUM(diff) FROM {mcapi_transactions_index}
         WHERE wallet_id = :wallet_id
-        AND xid <= :xid
-        AND curr_id = :curr_id",
+        AND curr_id = :curr_id
+        AND $sort_field <= :until",
       array(
         ':wallet_id' => $wid,
-        ':xid' => $xid,
-        ':curr_id' => $curr_id
+        ':curr_id' => $curr_id,
+        ':until' => $until
       )
     )->fetchField();
   }

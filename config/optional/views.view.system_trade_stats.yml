@@ -175,7 +175,7 @@ display:
           hide_alter_empty: true
           link: 0
           entity_type: mcapi_transaction
-          plugin_id: mcapi_wallet_label
+          plugin_id: entity_label
         curr_id:
           id: curr_id
           table: mcapi_transactions_index
@@ -441,7 +441,7 @@ display:
           hide_alter_empty: true
           link: 0
           entity_type: mcapi_transaction
-          plugin_id: mcapi_wallet_label
+          plugin_id: entity_label
       block_description: 'Currency stats'
       allow:
         items_per_page: false

@@ -52,7 +52,6 @@ class View extends TransitionBase {
     unset(
       $form['sure']['button'],
       $form['sure']['cancel_button'],
-      $form['sure']['display'],
       $form['feedback'],
       $form['access']
     );
