@@ -922,10 +922,13 @@ function mcapi_transaction_mail_action_submit($form, &$form_state) {
  */
 function mcapi_transaction_entity_uid_form($context) {
   $context += array(
-    'mapping' => 'uidpays',
+    'direction' => 'uidpays',
     'transaction_types' => array(),
     'otheruser' => 1,
-    'worth_items' => array('worths' => array(), 'round' => 'down')
+    'worth_items' => array(
+      'worths' => array(), 
+      'round' => 'down'
+    )
   );
   $form['direction'] = array(
     '#title' => t('Direction'),
@@ -934,13 +937,13 @@ function mcapi_transaction_entity_uid_form($context) {
       'uidpays' => t('User pays reservoir account'),
       'paysuid' => t('Reservoir account pays user')
     ),
-    '#default_value' => isset($context['mapping']) ? $context['mapping'] : 'payerpays',
+    '#default_value' => $context['direction']
   );
 
   $currencies = currencies_load();
   $defaults = array();
   foreach (@$context['worth_items']['worths'] as $item) {
-    $defaults[$item['currcode']] = $item['quantity'];
+    $defaults[$item['currcode']] = $item['main_quant'];
   }
   $form['worth_items'] = array(
     '#title' => t('Worth'),

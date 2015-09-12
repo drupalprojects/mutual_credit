@@ -130,13 +130,11 @@ function mcapi_schema() {
       'payer' => array(
         'description' => 'the user id of the payer',
         'type' => 'int',
-        'size' => 'small',
         'not null' => TRUE,
       ),
       'payee' => array(
         'description' => 'the user id of the payee',
         'type' => 'int',
-        'size' => 'small',
         'not null' => TRUE,
       ),
       //quantity is done, perhaps controversially, but the field API
@@ -1122,4 +1120,18 @@ function mcapi_update_7025() {
     variable_set('mcapi_controller_delete_mode', MCAPI_CURRENCY_UNDO_ERASE);
   }
   cache_clear_all();
+}
+
+/**
+ * increase the size of the payer and payee fields in line with the uid field in the user table.
+ */
+function mcapi_update_7026() {
+  $spec = array(
+    'description' => 'the user id of the payer',
+    'type' => 'int',
+    'not null' => TRUE,
+  );
+  db_change_field('mcapi_transactions', 'payer', 'payer', $spec);
+  $spec['description'] = 'the user id of the payee';
+  db_change_field('mcapi_transactions', 'payee', 'payee', $spec);
 }

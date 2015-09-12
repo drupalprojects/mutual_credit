@@ -1109,6 +1109,9 @@ function mcapi_transaction_entity_uid($object = NULL, $context) {
     'type' => 'auto',
     'state' => TRANSACTION_STATE_FINISHED
   );
+  foreach($transaction['worth'] as $key => &$worth) {
+    $worth['quantity'] = $worth['main_quant'];
+  }
   if (isset($description)) {
     $transaction['description'] = $description;
   }
