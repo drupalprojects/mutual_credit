@@ -508,8 +508,8 @@ function mcapi_one_wallet_per_user_mode() {
  */
 function user_wallet_details_access($user) {
   $wids = \Drupal::entityManager()
-      ->getStorage('mcapi_wallet')
-      ->filter(['holder' => User::load($user)]);
+    ->getStorage('mcapi_wallet')
+    ->filter(['holder' => User::load($user)]);
   $wallet = Wallet::load(reset($wids));
   $result = $wallet->access(Wallet::OP_DETAILS, NULL, TRUE);
   return $result;

@@ -20,10 +20,10 @@ class McapiBlockBase extends BlockBase {
    * {@inheritdoc}
    */
   public function defaultConfiguration() {
-    return array(
+    return [
       'curr_ids' => [],
       'user_source' => 0,
-    );
+    ];
   }
 
   /**
@@ -50,7 +50,7 @@ class McapiBlockBase extends BlockBase {
    */
   public function blockForm($form, FormStateInterface $form_state) {
     parent::blockForm($form, $form_state);
-    $form['curr_ids'] = array(
+    $form['curr_ids'] = [
       '#title' => t('Currencies'),
       '#description' => t('Select none to select all'),//there must be a string in Drupal that says that already?
       '#title_display' => 'before',
@@ -58,8 +58,8 @@ class McapiBlockBase extends BlockBase {
       '#default_value' => $this->configuration['curr_ids'],
       '#options' => mcapi_entity_label_list('mcapi_currency', array('status' => TRUE)),
       '#multiple' => TRUE
-    );
-    $form['user_source'] = array(
+    ];
+    $form['user_source'] = [
       '#title' => t('User'),
       '#type' => 'radios',
       '#options' => array(
@@ -67,7 +67,7 @@ class McapiBlockBase extends BlockBase {
         MCAPIBLOCK_USER_MODE_CURRENT => t('Show for logged in user')
       ),
       '#default_value' => $this->configuration['user_source']
-    );
+    ];
     return $form;
   }
 

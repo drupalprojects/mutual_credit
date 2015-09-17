@@ -2,15 +2,12 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\ParamConverter\TransactionSerialConverter.
+ * Contains \Drupal\mcapi\TransactionSerialConverter.
  */
 
-namespace Drupal\mcapi\ParamConverter;
+namespace Drupal\mcapi;
 
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Route;
-use Drupal\Core\ParamConverter\EntityConverter;
-use Drupal\Core\ParamConverter\ParamConverterInterface;
 use Drupal\mcapi\Entity\Transaction;
 
 /**
@@ -29,8 +26,13 @@ use Drupal\mcapi\Entity\Transaction;
  * value for {bar}.
  * If transaction_serial is 0, the transaction will be pulled from the tempstore
  */
-class TransactionSerialConverter extends EntityConverter implements ParamConverterInterface {
+class TransactionSerialConverter extends \Drupal\Core\ParamConverter\EntityConverter {
 
+  /**
+   * don't inject EntityManager as the parent expects
+   */
+  function __construct(){}
+  
   /**
    * {@inheritdoc}
    */
@@ -49,9 +51,6 @@ class TransactionSerialConverter extends EntityConverter implements ParamConvert
    * {@inheritdoc}
    */
   public function applies($definition, $name, Route $route) {
-    if (parent::applies($definition, $name, $route)) {
-      return !empty($definition['serial']) && $definition['type'] === 'entity:mcapi_transaction';
-    }
-    return FALSE;
+    return $name == 'mcapi_transaction' && !empty($definition['serial']);
   }
 }

@@ -195,8 +195,6 @@ class FirstPartyFormDesigner extends EntityForm {
       ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
     $display = \Drupal\Core\Entity\Entity\EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.default');
 
-    module_load_include('inc', 'mcapi_1stparty');
-    $transaction = mcapi_forms_default_transaction($configEntity);
     $components = $display->getComponents();
     unset($components['payer'], $components['payee']);
     foreach (array_keys($components) as $field_name) {//created, categories, worth, description
@@ -208,7 +206,7 @@ class FirstPartyFormDesigner extends EntityForm {
         '#type' => 'details',
         '#group' => 'steps',
         'preset' => $display->getRenderer($field_name)
-          ->formElement($transaction->$field_name, 0, $element, $form, $form_state),
+          ->formElement($configEntity->makeDefaultTransaction()->$field_name, 0, $element, $form, $form_state),
         '#weight' => $w++
       ];
       $form['fieldapi_presets'][$field_name]['preset']['#title'] = 'Preset value';

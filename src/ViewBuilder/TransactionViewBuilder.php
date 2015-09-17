@@ -9,19 +9,33 @@ namespace Drupal\mcapi\ViewBuilder;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
-use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Render controller for transactions.
  */
 class TransactionViewBuilder extends EntityViewBuilder {
 
+  private $viewTransition;
+  private $settings;
 
-  public function __construct(EntityTypeInterface $entity_type, EntityManagerInterface $entity_manager, LanguageManagerInterface $language_manager) {
-    $this->config = \Drupal::config('mcapi.transition.view');
+  public function __construct($entity_type, $entity_manager, $language_manager, $config_factory) {
+    $this->viewTransition = $config_factory->get('mcapi.transition.view');
+    $this->settings = $config_factory->get('mcapi.transition.view');
     parent::__construct($entity_type, $entity_manager, $language_manager);
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
+    return new static(
+      $entity_type,
+      $container->get('entity.manager'),
+      $container->get('language_manager'),
+      $container->get('config.factory')
+    );
   }
 
   /**
@@ -45,18 +59,17 @@ class TransactionViewBuilder extends EntityViewBuilder {
     //if the view_mode is 'full' that means nothing was specified, which is the norm.
     //so we turn to the 'view' transition where the view mode is a configuration.
     if ($view_mode == 'full') {
-      $view_mode = $this->config->get('format');
+      $view_mode = $this->settings->get('format');
     }
     $build = parent::getBuildDefaults($entity, $view_mode, $langcode);
     $build['#theme_wrappers'][] = $build['#theme'];
     unset($build['#theme']);
-
     switch($view_mode) {
       case 'certificate':
         $build['#theme'] = 'certificate';
         break;
       case 'sentence':
-        $template = \Drupal::config('mcapi.settings')->get('sentence_template');
+        $template = $this->settings->get('sentence_template');
         $build['transaction']['#markup'] = \Drupal::Token()->replace(
           $template,
           ['mcapi' => $entity],
@@ -67,7 +80,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
         module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');
         $build['transaction'] = [
           '#type' => 'inline_template',
-          '#template' => _filter_autop($this->config->get('twig')),
+          '#template' => _filter_autop($this->settings->get('twig')),
           '#context' => get_transaction_vars($entity)
         ];
     }
@@ -90,12 +103,14 @@ class TransactionViewBuilder extends EntityViewBuilder {
     return $build;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   function build(array $build) {
-    $build_list = array(
+    $build_list = [
       '#langcode' => $build['#langcode'],
       0 => $build
-    );
-
+    ];
     if ($build['#view_mode'] == 'certificate') {
       $build_list = $this->buildMultiple($build_list);
     }

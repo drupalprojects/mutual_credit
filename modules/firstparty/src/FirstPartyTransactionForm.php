@@ -11,13 +11,10 @@ namespace Drupal\mcapi_1stparty;
 
 use Drupal\mcapi\Form\TransactionForm;
 use Drupal\mcapi\Plugin\TransitionManager;
-use Drupal\mcapi\Exchanges;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Type;
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
-use Drupal\Core\Template\Attribute;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
@@ -26,18 +23,17 @@ class FirstPartyTransactionForm extends TransactionForm {
   /*
    * the editform configEntity whos e defaults are used to build the tempalte transaction Entity
    */
-  private $id;
   private $configEntity;
+  private $overrides;
 
-  public function __construct(EntityManagerInterface $entity_manager, $tempstore, $request) {
+  public function __construct($entity_manager, $tempstore, $request) {
     parent::__construct($entity_manager, $tempstore);
-    //NB seems like injection doesn't happen
-    $this->id = $request->getCurrentRequest()
+    $this->overrides = $request->query->all();
+    $id = $request
       ->attributes->get('_route_object')
-      ->getOptions()['parameters']['firstparty_editform'];
-    $this->configEntity = entity_load('firstparty_editform', $this->id);
+      ->getOptions()['parameters']['firstparty_editform']['id'];
+    $this->configEntity = entity_load('firstparty_editform', $id);
   }
-
 
   /**
    * {@inheritdoc}
@@ -46,68 +42,26 @@ class FirstPartyTransactionForm extends TransactionForm {
     return new static(
       $container->get('entity.manager'),
       $container->get('user.private_tempstore'),
-      $container->get('request_stack')
+      $container->get('request_stack')->getCurrentRequest()
     );
   }
 
-  /**
-   * router callback
-   *
-   * @return array
-   *   a renderable array
-   *
-   * @todo contextual_links would be nice
-   */
-  public function loadForm() {
-    module_load_include('inc', 'mcapi_1stparty');
-    $form = \Drupal::service('entity.form_builder')//inject this...
-      ->getForm(
-        mcapi_forms_default_transaction($this->configEntity),
-        $this->id
-      );
-    //remove any items from the $form which are not in the template
-    $tokens = mcapi_1stparty_transaction_tokens();
-    foreach ($tokens as $token) {
-      if (strpos($this->configEntity->experience['twig'], $token) === FALSE) {
-        if (!isset($this->configEntity->{$token}['preset'])) {
-          unset($form[$token]);//we'll rely on the entity defaults
-        }
-      }
+  public function init($form_state) {
+    parent::init($form_state);
+    $this->entity = $this->configEntity->makeDefaultTransaction();
+    foreach ($this->overrides as $key => $value) {
+      $this->entity->{$key} = $value;
     }
-    $tokens[] = 'actions';
-
-    //pretty hard because it is designed to work only with templated themes,
-    //not theme functions as this has to be.
-    return [
-      '#theme'=> '1stpartyform',
-      '#form' => $form,
-      '#twig_tokens' => $tokens,
-      '#twig_template' => $this->configEntity->experience['twig'],
-      '#incoming' => $this->configEntity->incoming,
-      '#cache' => [
-        'contexts' => ['user']//@todo check this is working.
-      ]
-    ];
-    //the whole 1stparty cache would need clearing
-    //anytime any user changed any permission on any wallet
-    //it is still worth cachinh though because the form could be on every page
   }
-
-  /**
-   * Symfony routing callback
-   */
-  public function title() {
-    return $this->configEntity->title;
-  }
-
+  
   /**
    * Get the original transaction form and alter it according to
    * the 1stparty form settings saved in $this->configEntity.
    */
   public function form(array $form, FormStateInterface $form_state) {
     $config = $this->configEntity;
-    $form_state->set('config', $config);
     $form = parent::form($form, $form_state);
+    
     if ($config->get('incoming')) {
       $partner = &$form['payer'];
       $mywallet = &$form['payee']['widget'][0]['target_id'];
@@ -144,7 +98,7 @@ class FirstPartyTransactionForm extends TransactionForm {
       unset($partner['widget'][0]['target_id']['#options'][$my_one_wallet]);
     }
     //handle the description
-    //$form['description']['#placeholder'] = $config->description['placeholder'];
+    $form['description']['#placeholder'] = $config->description['placeholder'];
 
     //worth field needs special treatment.
     //The allowed_curr_ids provided by the widget need to be overwritten
@@ -164,6 +118,9 @@ class FirstPartyTransactionForm extends TransactionForm {
     $form['state']['#type'] = 'value';
     $form['state']['#value'] = Type::load($config->type)->start_state;
     unset($form['creator']);
+    $form_state->set('config', $config);//not sure if this is ever used.
+    
+    $form['#twig_template'] = $this->configEntity->experience['twig'];
     return $form;
   }
 
@@ -195,8 +152,18 @@ class FirstPartyTransactionForm extends TransactionForm {
         ];
       }
     }
-
+    $form['#cache']['contexts'][] = 'user';//@todo check this is working.
     return $actions;
   }
+ 
+  public function getFormId() {
+    return 'first_party_transaction_form';
+  }
 
+  /**
+   * Symfony routing callback
+   */
+  public function title() {
+    return $this->configEntity->title;
+  }
 }

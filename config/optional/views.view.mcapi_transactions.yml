@@ -1650,7 +1650,7 @@ display:
           relationship: payer
           group_type: group
           admin_label: ''
-          label: 'Payer wallet label'
+          label: 'Payer'
           exclude: false
           alter:
             alter_text: false
@@ -1701,7 +1701,7 @@ display:
           relationship: payee
           group_type: group
           admin_label: ''
-          label: 'Payee wallet label'
+          label: 'Payee'
           exclude: false
           alter:
             alter_text: false

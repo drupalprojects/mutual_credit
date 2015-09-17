@@ -22,19 +22,16 @@ function mcapi_tester_install() {
       'name' => $term_name,
     ))->save();
   }
-  echo "Created taxonomy terms";
 
 
   //now
   $uids = mcapi_tester_make_users(26);//should make wallets as well
-  echo "\nCreated users";
 
   if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
     multiple_exchanges();
   }
   //make some transactions within the exchanges.
   mcapi_tester_make_transactions(200);
-  echo "\n200 transactions created";
 
   \Drupal::configFactory()
     ->getEditable('system.site')
@@ -67,7 +64,6 @@ return;
   put_users_in_exchanges();
   //make some intertrading transactions
   mcapi_tester_make_transactions(25, TRUE);
-  echo "\n25 intertrading transactions created";
   //close the last exchange and disable its currency
   $last_exchange = Exchange::load(end($exchange_ids));
   drupal_set_message('Closing the last exchange: '. ($last_exchange->label()));
@@ -253,7 +249,6 @@ function mcapi_tester_make_exchanges() {
     mcapi_exchange_join($e->id(), array($user1));
     $ids[] = $e->id();
   }
-  echo "\nCreated exchanges";
   return $ids;
 }
 

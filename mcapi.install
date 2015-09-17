@@ -84,7 +84,8 @@ function mcapi_modules_installed() {
 
 /**
 use Drupal\field\Entity\FieldStorageConfig;
-FieldStorageConfig::load('mcapi_transaction.worth')->delete();
+$worth = FieldStorageConfig::load('mcapi_transaction.worth');
+if ($worth)$worth->delete();
 field_purge_batch(10000);//rows at a time
 
 db_drop_table('mcapi_transaction');

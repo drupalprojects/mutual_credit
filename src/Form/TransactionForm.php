@@ -9,9 +9,7 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\ContentEntityForm;
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Template\Attribute;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Transaction;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -20,7 +18,12 @@ class TransactionForm extends ContentEntityForm {
 
   private $tempstore;
 
-  public function __construct(EntityManagerInterface $entity_manager, $tempstore) {
+  /**
+   * 
+   * @param Drupal\Core\Entity\EntityManagerInterface $entity_manager
+   * @param \Drupal\user\PrivateTempStore $tempstore
+   */
+  public function __construct($entity_manager, $tempstore) {
     parent::__construct($entity_manager);
     $this->tempStore = $tempstore;
   }
@@ -88,10 +91,7 @@ class TransactionForm extends ContentEntityForm {
 
   /**
    * {@inheritdoc}
-   *
-   * @param array $form
-   * @param FormStateInterface $form_state
-   *
+   * 
    * @note does NOT call parent.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
@@ -99,7 +99,7 @@ class TransactionForm extends ContentEntityForm {
     $this->tempStore
       ->get('TransactionForm')
       ->set('mcapi_transaction', $this->entity);
-    //Drupal\mcapi\ParamConverter\TransactionSerialConverter
+    //Drupal\mcapi\TransactionSerialConverter
     //then
     //Drupal\mcapi\Plugin\Transition\Create
 

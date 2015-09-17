@@ -11,7 +11,6 @@ namespace Drupal\mcapi\Routing;
 use Drupal\Core\Routing\RouteSubscriberBase;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Routing\RoutingEvents;
 
 /**
@@ -19,11 +18,15 @@ use Drupal\Core\Routing\RoutingEvents;
  */
 class RouteSubscriber extends RouteSubscriberBase {
 
-  private $entityManager;
+  private $settings;
 
-  //I don't know where this is injected
-  function __construct($entityManager) {
-    $this->entityManager = $entityManager;
+  /**
+   * @param Drupal\Core\Entity\EntityManager $entity_manager
+   * @param \Drupal\Core\Config\ConfigFactory $configFactory
+   */
+  function __construct($entity_manager, $configFactory) {
+    $this->entityManager = $entity_manager;
+    $this->settings = $configFactory->get('mcapi.settings');
   }
 
   /**
@@ -31,7 +34,7 @@ class RouteSubscriber extends RouteSubscriberBase {
    */
   protected function alterRoutes(RouteCollection $collection) {
     //add a route to add a wallet to each entity type
-    foreach(\Drupal::config('mcapi.settings')->get('entity_types') as $entity_type_bundle => $max) {
+    foreach($this->settings->get('entity_types') as $entity_type_bundle => $max) {
       if ($max) {
         list($entity_type, $bundle_name) = explode(':', $entity_type_bundle);
         $canonical_path = $this->entityManager
@@ -80,7 +83,7 @@ class RouteSubscriber extends RouteSubscriberBase {
    * {@inheritdoc}
    */
   public static function getSubscribedEvents() {
-    $events[RoutingEvents::ALTER][] = array('onAlterRoutes', -1100);
+    $events[RoutingEvents::ALTER][] = ['onAlterRoutes', -1100];
     return $events;
   }
 

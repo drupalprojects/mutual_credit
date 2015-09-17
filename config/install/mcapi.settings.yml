@@ -11,7 +11,10 @@ counted:
 mail_errors: true
 #these are populated in hook_modules_enabled
 active_relatives: { }
-active_transitions: { }
+active_transitions:
+  - view
+  - erase
+  - edit
 entity_types:
   'user:user': 1
 display_format: '!o'

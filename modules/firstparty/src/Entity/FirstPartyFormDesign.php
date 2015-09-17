@@ -97,5 +97,34 @@ Direction: [mcapiform:direction]
     ];
 
   }
+  
+  /**
+  * Make a transaction entity loaded up with the defaults from the Designed form
+  *
+  * @return \Drupal\mcapi\Entity\Transaction Transaction
+  *   a (partially populated) transaction entity
+  */
+  function makeDefaultTransaction() {
+    //the partner is either the holder of the current page's entity, under certain circumstances
+    //or is taken from the form preset.
+    //or is yet to be determined.
+    $partner = $this->partner['preset'] ? : '';
+    //prepare a transaction using the defaults here
+    $vars = ['type' => $this->type];
+    //now handle the payer and payee, based on partner and direction
+    if ($this->incoming) {
+      $vars['payee'] = \Drupal::currentUser()->id();
+      $vars['payer'] = $partner;
+    }
+    else {
+      $vars['payer'] = \Drupal::currentUser()->id();
+      $vars['payee'] = $partner;
+    }
+    foreach ($this->fieldapi_presets as $fieldname => $setting) {
+      if (!isset($setting['preset'])) drupal_set_message('$fieldname has no preset');
+      $vars[$fieldname] = $setting['preset'];
+    }
+    return \Drupal\mcapi\Entity\Transaction::create($vars);
+  }
 
 }

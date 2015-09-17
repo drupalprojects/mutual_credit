@@ -24,13 +24,13 @@ function mcapi_1stparty_help($route_name) {
  */
 function mcapi_1stparty_entity_type_alter(array &$entity_types) {
   //there's a recursive problem doing loadMultiple configEntities during entity_type_alter
+  //foreach (FirstPartyFormDesign::loadMultiple() as $id => $configEntity) {
   //So this is a direct db query
   $template = 'mcapi_1stparty.editform.';
   $ids = db_select('config', 'c')
     ->fields('c', ['name'])
     ->condition('name', $template.'%', 'LIKE')
     ->execute()->fetchCol();
-  //foreach (FirstPartyFormDesign::loadMultiple() as $id => $configEntity) {
   foreach ($ids as $id) {
     $entity_types['mcapi_transaction']
       ->setFormClass(
@@ -79,7 +79,8 @@ function mcapi_1stparty_form_field_ui_form_display_overview_form_alter(&$form, $
  * implements hook_menu_links_discovered_alter().
  * adds menu links where the firstparty forms specify them
  *
- * @param unknown $definitions
+ * @param array $links
+ *   each link is an array
  */
 function mcapi_1stparty_menu_links_discovered_alter(&$links) {
   foreach (FirstPartyFormDesign::loadMultiple() as $id => $first_party_form) {
@@ -119,24 +120,27 @@ function mcapi_1stparty_entity_base_field_info_alter(&$fields, EntityTypeInterfa
   }
 }
 
-
 /**
  * implements hook_theme().
  */
 function mcapi_1stparty_theme() {
   return [
-    '1stpartyform'=> [
-      'function' => 'theme_1stpartyform',//no template is possible in this case
-      'variables' => [
-        'form' => [],
-        'twig_tokens' => [],
-        'twig_template' => '',
-        'incoming' => 0
-      ],
-      'file' => '/mcapi_1stparty.inc',
+    'first_party_transaction_form'=> [
+      'function' => 'theme_first_party_transaction_form',//no template is possible in this case
+      'render element' => 'form',
+      'file' => 'mcapi_1stparty.inc',
     ]
   ];
 }
+
+/**
+ * implements hook_dunno
+ * when a field is added, make sure it appears in the default display
+ */
+function dunno() {
+  
+}
+
 
 /**
  * implement mcapi hook_mcapi_form_list().

@@ -1,33 +1,31 @@
 services:
   mcapi.transition_manager:
     class: Drupal\mcapi\Plugin\TransitionManager
-    arguments: ['@container.namespaces', '@cache.entity', @module_handler, @config.factory, @redirect.destination]
+    arguments: [@container.namespaces, @cache.entity, @module_handler, @config.factory, @redirect.destination]
 
   mcapi.transaction_relative_manager:
     class: Drupal\mcapi\Plugin\TransactionRelativeManager
-    arguments: ['@container.namespaces', '@cache.entity', @module_handler, @config.factory]
+    arguments: [@container.namespaces, @cache.entity, @module_handler, @config.factory]
 
   paramconverter.mcapi_transaction_serial:
-    class: Drupal\mcapi\ParamConverter\TransactionSerialConverter
-    arguments: ['@entity.manager']
+    class: Drupal\mcapi\TransactionSerialConverter
     tags:
       - { name: paramconverter, priority: 10 }
 
   mcapi.route.subscriber:
     class: Drupal\mcapi\Routing\RouteSubscriber
-    arguments: ['@entity.manager']
+    arguments: [@entity.manager, @config.factory]
     tags:
      - { name: event_subscriber }
      
+  #transaction creation hooks
+  mcapi.transaction.create.subscriber:
+    class: Drupal\mcapi\TransactionSubscriber
+    tags:
+      - { name: event_subscriber }
+  
   #register a new logger channel
   logger.channel.mcapi:
     parent: logger.channel_base
     arguments: ['mcapi']
     
-  #transaction creation hooks
-  mcapi.transaction.create.subscriber:
-    class: Drupal\mcapi\TransactionSubscriber
-    arguments: []
-    tags:
-      - { name: event_subscriber }
-  

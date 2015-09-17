@@ -161,7 +161,7 @@ class TransitionManager extends DefaultPluginManager {
   function getLinks(TransactionInterface $transaction, $show_view = TRUE) {
     $renderable = [];
     //child transactions and unsaved transactions never show links
-    if (!$transaction->parent->value && $transaction->serial->value) {
+    if (!$transaction->isNew()) {
       $exclude = ['create'];
       //ideally we would remove view when the current url is NOT the canonical url
       //OR we need to NOT render links when the transaction is being previewed

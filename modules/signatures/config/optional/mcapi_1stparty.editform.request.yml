@@ -1,13 +1,13 @@
-id: pay
-path: 'transact/pay'
+id: request
+path: 'transact/request'
 menu:
-  title: 'Pay someone'
+  title: 'Request payment'
   menu_name: 'account'
   weight: 5
-title: 'Pay someone'
+title: 'Request payment'
 status: 1
-type: default
-incoming: 0
+type: signatures
+incoming: 1
 mywallet:
   unused: disabled
 partner:
@@ -20,7 +20,7 @@ fieldapi_presets:
         value: 0
   description: { }
 experience:
-  twig: "Description of the exchange:\r\n{{ description }}\r\nin category{{ category }}\r\nwith\r\n{{ partner }}\r\npaying the sum of\r\n{{ worth }}"
+  twig: "Description of the exchange:\r\n{{ description }}\r\nin category{{ category }}\r\nwith\r\n{{ partner }}\r\nrequesting the sum of\r\n{{ worth }}"
   button: Preview
   preview: page
 langcode: en

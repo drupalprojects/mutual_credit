@@ -30,7 +30,7 @@ class Worth extends FormElement {
     return [
       '#tree' => TRUE,
       '#process' => [
-        [$class, 'process_defaults'],
+        [$class, 'processDefaults'],
         [$class, 'process']
       ],
       '#element_validate' => [
@@ -51,7 +51,7 @@ class Worth extends FormElement {
    * - currencies used in the saved value
    * - currencies available to both wallets
    */
-  public static function process_defaults($element, FormStateInterface $form_state, $form) {
+  public static function processDefaults($element, FormStateInterface $form_state, $form) {
     if ($element['#value']) {
       $element['#default_value'] = $element['#value'];
     }
@@ -103,8 +103,12 @@ class Worth extends FormElement {
       extract($item);//creates $curr_id and $value
 
       $currency = CurrencyEntity::load($curr_id);
-      if ($element['#config'] && !is_numeric($value)) $parts = [];
-      else $parts = $currency->formatted_parts(abs(intval($value)));
+      if ($element['#config'] && !is_numeric($value)) {
+        $parts = [];
+      }
+      else {
+        $parts = $currency->formatted_parts(abs(intval($value)));
+      }
       $element[$delta]['curr_id'] = ['#type' => 'hidden', '#value' => $curr_id];
 
       $element[$delta]['#type'] = 'container';
@@ -176,7 +180,9 @@ class Worth extends FormElement {
 
       if ($element['#config']) {
         static $i = 0;
-        if (!$i)drupal_set_message('tweaking worth widget for config', 'warning', FALSE);
+        if (!$i) {
+          drupal_set_message('tweaking worth widget for config', 'warning', FALSE);
+        }
         $i++;
         foreach (Element::children($element) as $delta) {
           //this field will accept a formula, not just a number
@@ -187,12 +193,16 @@ class Worth extends FormElement {
     }
     //single values can inherit max and min from the top level of the element
     if (count($element['#default_value']) == 1) {
-      if (array_key_exists('#max', $element)) $element[$delta][1]['#max'] = $element['#max'];
-      if (array_key_exists('#min', $element)) $element[$delta][1]['#min'] = $element['#min'];
+      if (array_key_exists('#max', $element)) {
+        $element[$delta][1]['#max'] = $element['#max'];
+      }
+      if (array_key_exists('#min', $element)) {
+        $element[$delta][1]['#min'] = $element['#min'];
+      }
     }
     if (!$element['#required']) {
       $element['#config'] = TRUE;
-    }
+    }    
     return $element;
   }
 
@@ -248,7 +258,9 @@ class Worth extends FormElement {
     if ($element['#config']) {
       //test the formula
       foreach($element['#value'] as $delta => $worth) {
-        if (empty($worth['value'])) continue;
+        if (empty($worth['value'])) {
+          continue;
+        }
         $result = Self::calc($worth['value'], 100);
         if (!is_numeric($result)) {
           $form_state->setError($element[$delta], t('Invalid formula'));
@@ -300,7 +312,7 @@ class Worth extends FormElement {
     //we're going to extract the currencies keys, load the config entities, sort them
     //then sort one array by another
     //first create the helper array
-    foreach ($options as $key => $worth) {
+    foreach ($options as $worth) {
       $temp_options[$worth['curr_id']] = $worth;//we need the worths keyed by $curr_id
       $helper[] = $worth['curr_id'];
     }
@@ -308,7 +320,7 @@ class Worth extends FormElement {
     uasort($helper, 'mcapi_uasort_weight');
     //now we have sorted array keys
     //I'm a bit unsure how to sort one array by another but this is quick and dirty
-    foreach ($helper as $curr_id =>$currency) {
+    foreach (array_keys($helper) as $curr_id) {
       $new_options[] = $temp_options[$curr_id];
     }
     $options = $new_options;
