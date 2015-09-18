@@ -363,8 +363,8 @@ function mcapi_update_dependencies() {
     'mcapi' => array(
       '7000' => array(//needs the text module already installed.
         'system' => 7027,
-        'filter' => 7000,
-        'token' => 7000,
+        'filter' => 7010,
+        'token' => 7000
       ),
       '7001' => array(
         'system' => 7034
@@ -384,13 +384,14 @@ function mcapi_update_dependencies() {
  * import po files BEFORE running mcapi updates
  */
 function mcapi_update_6999() {
+  drupal_set_message('mcapi_update_6999');
   $languages = language_list('enabled');
   unset($languages[1]['en']);
   if (!count($languages[1])) return;
   require_once(DRUPAL_ROOT . '/includes/locale.inc');
   $language_list = join('|', array_keys($languages[1]));
   foreach (file_scan_directory(drupal_get_path('module', 'mcapi'), "/(^|\.)($language_list)\.po$/") as $po_file) {
-    drupal_set_message('importing transactions for Community Accounting.');
+    drupal_set_message('importing translations for Community Accounting.');
     _locale_import_read_po(
       'db-store',
       $po_file,
@@ -400,13 +401,13 @@ function mcapi_update_6999() {
     );
     drupal_set_message('Imported strings from '.$po_file->uri);
   }
-  module_enable(array('ctools'));
 }
 
 /**
  * create new tables and enable new modules
  */
 function mcapi_update_7000() {
+  drupal_set_message('mcapi_update_7000');
   $tables = mcapi_schema();
   if(!db_query("SHOW TABLES LIKE 'mcapi_currencies'")->fetchfield()) {
     db_create_table('mcapi_currencies', $tables['mcapi_currencies']);
@@ -414,7 +415,7 @@ function mcapi_update_7000() {
   if(!db_query("SHOW TABLES LIKE 'mcapi_transactions'")->fetchfield()) {
     db_create_table('mcapi_transactions', $tables['mcapi_transactions']);
   }
-  module_enable(array('mcapi_limits', 'accountant_ui', 'mcapi_forms', 'user_chooser'), TRUE);
+  module_enable(array('ctools', 'mcapi_limits', 'accountant_ui', 'mcapi_forms', 'user_chooser'), TRUE);
   drupal_set_message('Installed Community Accounting extra modules');
   drupal_static_reset('system_rebuild_module_data');
 }
