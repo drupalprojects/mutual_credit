@@ -111,7 +111,7 @@ function mcapi_render_stripped($element) {
  * helper function
  */
 function mcapi_strip_wrappers_recursive(&$element) {
-  unset($element['#theme_wrappers']);
+  //unset($element['#theme_wrappers']);
   foreach (Element::Children($element) as $delta) {
     mcapi_strip_wrappers_recursive($element[$delta]);
   }

@@ -16,12 +16,23 @@
   color:red;
 }
 
+div.form-item-worth {
+  display:inline-block;
+}
+div.form-item-worth div.multiple{
+  text-align: right;
+  margin-bottom: 3px;
+}
+div.form-item-worth div.multiple input{
+  text-align: end;
+}
+
 /* get rid of the spinners */
-input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
+div.form-item-worth input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
    display: none;
    -webkit-appearance: none;
    margin: 0;
 }
-input[type='number'] {
-    -moz-appearance:textfield;
+div.form-item-worth input[type='number'] {
+  -moz-appearance:textfield;
 }

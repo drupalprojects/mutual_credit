@@ -38,6 +38,7 @@ class Worth extends FormElement {
       ],
       '#theme_wrappers' => ['form_element'],
       '#attached' => ['library' => ['mcapi/mcapi.worth.element']],
+      '#attributes' => ['style' => 'display:inline-block'],
       '#minus' => FALSE,
       '#config' => FALSE,
     ];
