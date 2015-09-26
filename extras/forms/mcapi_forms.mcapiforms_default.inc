@@ -121,7 +121,7 @@ Payee: [mcapiform:payee]
  * implements hook_mcapiforms_default_alter
  * ensure that the transaction _description field is at least present on all default forms
  */
-function mcapi_forms_mcapiforms_default_alter($forms){
+function mcapi_forms_mcapiforms_default_alter(&$forms){
   if ($fieldname = variable_get('transaction_description_field')) {
     foreach ($forms as $fid => $mcapiform){
       if (isset($forms[$fid]->data[$fieldname])) continue;

@@ -951,20 +951,13 @@ function mcapi_transaction_entity_uid_form($context) {
     '#name' => 'worth_items',//this helps in the fieldset validation
     '#description' => t('What is the fixed value of this transaction?') .' '. t("This value will be overwritten if the passed entity has the 'worth' field"),
     '#tree' => TRUE,
+    //note that when this is saved it doesn't get validated with field_api
     'worths' => array(
       //'#title' => t('Worths'),
       '#type' => 'worths',
       '#default_value' => $defaults,
       '#preset' => TRUE,//ensures that all currencies are rendered
     )
-  );
-  $form['round'] = array(
-    '#title' => t('Rounding'),
-    '#description' => t('Used if this transaction depends on another transaction'),
-    '#type' => 'radios',
-    '#options' => array('up' => t('Up'), 'down' => t('Down')),
-    '#default_value' => isset($context['worth_items']['round']) ? $context['worth_items']['round'] : 'down',
-    '#weight' => 1
   );
 
   if (variable_get('transaction_description_field')) {

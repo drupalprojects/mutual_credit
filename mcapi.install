@@ -486,6 +486,7 @@ function mcapi_update_7001() {
     );
     drupal_write_record('mcapi_currencies', $row);
   }
+  drupal_set_message(t('@num currencies have been upgraded', array('@num' => count($old_currencies))));
 
   db_query("DELETE FROM {node_type} WHERE module = 'mcapi'");
   $instances = field_info_instances('node', 'exchange');
@@ -497,7 +498,6 @@ function mcapi_update_7001() {
   }
   db_query("UPDATE {field_config_instance} SET entity_type = 'transaction', bundle = 'transaction'
     WHERE entity_type = 'node' AND bundle = 'exchange'");
-  drupal_set_message(t('@num currencies have been upgraded', array('@num' => count($old_currencies))));
   variable_set('mcapi_currcode_update', $currcodes);
 }
 
@@ -624,7 +624,7 @@ function mcapi_update_7003(&$sandbox) {
   }
   else $sandbox['#finished'] = 1;
 
-  if (!empty($sandbox['#finished']) && $sandbox['#finished'] == 1) {
+  if (@$sandbox['#finished'] == 1) {
     mcapi_upgrade_transactions_finished();
     db_drop_table('mc_currencies');
     db_drop_table('mc_cache');
@@ -633,7 +633,14 @@ function mcapi_update_7003(&$sandbox) {
 }
 
 //batch callback
-function mcapi_upgrade_transactions($nids) {
+function mcapi_upgrade_transactions($all_nids) {
+  //check which transactions are not already written, in case a previous upgrade was interrupted
+  $already = db_select("mcapi_transactions", 't')
+    ->fields('t', array('xid'))
+    ->condition('xid', $all_nids)
+    ->execute()->fetchCol();
+  $nids = array_diff($all_nids, $already);
+  if (empty($nids))return end($all_nids);
   $currcodes = variable_get('mcapi_currcode_update', array('credunit'));
   $controller = entity_get_controller('transaction');
   $states = array(
@@ -724,7 +731,7 @@ function mcapi_user_presave(&$edit, $account, $category) {
  */
 function mcapi_update_7004() {
   module_enable(array('mcapi_signatures'));
-  mcapi_signatures_update_7000();
+  //mcapi_signatures_update_7000();
   drupal_set_message('completed mcapi_signatures_update_7000');
   mcapi_signatures_update_7001();
   drupal_set_message('completed mcapi_signatures_update_7001');
@@ -746,13 +753,13 @@ function mcapi_update_7004() {
   db_query("UPDATE {block} SET delta = '1stparty' WHERE delta = 'start_exchange'");
 
   //blocks from the mc_display view, user_rankings
+  $newblocknames = array('user_rankings-block_promiscuity', 'user_rankings-block_volumes', 'user_rankings-block_trades', 'user_rankings-block_incomes', 'user_rankings-block_expenditures', 'running_balance-block_run_bal', 'running_balance-block_user_sum', 'transactions-who_paid_whom', 'mcapi_pending-my_pending', 'mcapi_pending-user_pending');
+  db_delete('block')->condition('delta', $newblocknames)->execute();
   db_query("UPDATE {block} SET module = 'views', delta = 'user_rankings-block_promiscuity' WHERE delta = 'user_rankings-block_1'");
   db_query("UPDATE {block} SET module = 'views', delta = 'user_rankings-block_volumes' WHERE delta = 'user_rankings-block_2'");
   db_query("UPDATE {block} SET module = 'views', delta = 'user_rankings-block_trades' WHERE delta = 'user_rankings-block_3'");
   db_query("UPDATE {block} SET module = 'views', delta = 'user_rankings-block_incomes' WHERE delta = 'user_rankings-block_4'");
   db_query("UPDATE {block} SET module = 'views', delta = 'user_rankings-block_expenditures' WHERE delta = 'user_rankings-block_5'");
-  db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_run_bal' WHERE delta = 'mc_balance_history'");
-  db_query("UPDATE {block} SET module = 'views', delta = 'running_balance-block_user_sum' WHERE delta = 'balance_ometer'");
   db_query("UPDATE {block} SET module = 'views', delta = 'transactions-who_paid_whom' WHERE delta = 'mc_exchanges_all-block_1'");//who gave to whom?
   db_query("UPDATE {block} SET module = 'views', delta = 'mcapi_pending-my_pending' WHERE delta = 'mc_exchanges_pending-block_1'");//I must sign
   db_query("UPDATE {block} SET module = 'views', delta = 'mcapi_pending-user_pending' WHERE delta = 'mc_exchanges_pending-block_2'");//user must sign

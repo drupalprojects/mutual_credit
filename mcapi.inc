@@ -427,6 +427,7 @@ function mcapi_dependent_transaction_action($transaction, $settings) {
       break;
   }
   $child['description'] = @$settings['presets']['description'];
+
   return entity_create('transaction', $child);
 }
 
@@ -668,42 +669,49 @@ function _worths_element_process($element, &$form_state) {
  * this function is included because the worths process callback includes mcapi.inc
  */
 function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
-  if ($edit == FALSE) return;
   $value = array();
-
-  foreach ($edit as $delta => $item) {
-    $value[$delta]['currcode'] = $item['currcode'];
-
-    if (!strlen($item['main_quant']) && empty($item['div_quant'])) {
-      $value[$delta]['quantity'] = '';
-    }
-    elseif (is_numeric($item['main_quant']) || empty($item['main_quant'])) {
-      $value[$delta]['quantity'] = floatval($item['main_quant']);
-      if (!empty($item['div_quant'])) {
-        $value[$delta]['quantity'] += ($item['div_quant'] + 0) / 100;
+  if ($edit) {
+    foreach ($edit as $delta => $item) {
+      $val = form_type_worth_value($element[$delta], $item, $form_state);
+      if (!is_null($val)) {
+        $value[] =  $val;
       }
     }
-    elseif ($element['#calc']) {
-      $value[$delta]['quantity'] = $item['main_quant'];
-    }
-
-    //set the value to zero if the field is empty and the currency allows it
-    $currency = currency_load($item['currcode']);
-    if (empty($value[$delta]['quantity']) && $currency->display['zero']) {
-      $value[$delta]['quantity'] = '0';
-    }
-    elseif(empty($value[$delta]['quantity']) && empty($element['#preset'])) {
-      unset($value[$delta]);
-    }
   }
-  //renumber the items or field_API will break!
-  $value = array_values($value);
-  //we have to set the form_state[values] here because they have probably already been set by the parent element
-  //they are only set automatically if they haven't been set at all
-  //drupal_array_set_nested_value($form_state['values'], $element['#array_parents'], @$value);
-  return $value;
+  return $value ? $value : $element['#default_value'];
 }
 
+/**
+ * implements form_type_ELEMENT_NAME_value
+ */
+function form_type_worth_value(&$element, $edit = FALSE, &$form_state) {
+  if (empty($edit['currcode'])) {
+    return $element['#default_value'];
+  }
+  $item = array('currcode' => $edit['currcode']);
+  if (!strlen($edit['main_quant']) && empty($edit['div_quant'])) {
+    $item['quantity'] = '';
+  }
+  elseif (is_numeric($edit['main_quant']) || empty($edit['main_quant'])) {
+    $item['quantity'] = floatval($edit['main_quant']);
+    if (!empty($item['div_quant'])) {
+      $item['quantity'] += ($edit['div_quant'] + 0) / 100;
+    }
+  }
+  elseif ($element['#calc']) {
+    $item['quantity'] = $edit['main_quant'];
+  }
+  //set the value to zero if the field is empty and the currency allows it
+  $currency = currency_load($edit['currcode']);
+  if (empty($item['quantity']) && $currency->display['zero']) {
+    //empty field will be saved as valid transaction
+    $item['quantity'] = '0';
+  }
+  elseif(empty($item['quantity']) && empty($element['#preset'])) {
+    return;//this empty field is note to 0, but ignored
+  }
+  return $item;
+}
 
 function _worth_element_process($element, &$form_state) {
   $element['#title_display'] = 'attribute';
@@ -812,6 +820,7 @@ function theme_worth_element($variables) {
   $curr_select = drupal_render($element['currcode']);
   $quant_field = drupal_render($element['main_quant']);
   if ($element['currcode']['#type'] == 'hidden' || $element['currcode']['#theme'] == 'hidden') {//if the currency is preset, then we can use its own display format
+//print_r($element['#value']);die();
     $currcode = isset($element['#value']) ? $element['#value']['currcode'] : $element['#default_value']['currcode'];
     $currency_display = currency_load($currcode)->display;
     if (isset($element['div_quant'])) {
