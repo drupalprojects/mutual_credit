@@ -174,7 +174,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    */
   public function indexDrop(array $serials) {
     $this->database->delete('mcapi_transactions_index')
-      ->condition('serial', $serials, 'IN')
+      ->condition('serial[]', $serials)
       ->execute();
   }
 
@@ -322,7 +322,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         case 'type':
         case 'state':
         case 'curr_id':
-            $query->condition($field, $value, is_array($value) ? 'IN' : NULL);
+            $query->condition($field.'[]', (array)$value);
           break;
         case 'involving':
           $value = (array)$value;

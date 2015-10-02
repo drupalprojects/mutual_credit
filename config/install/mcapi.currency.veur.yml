@@ -5,7 +5,7 @@ id: veur
 name: Virtual Euro
 description: A promise to deliver one Euro's worth of value
 uid: 1
-issuance: commodity
+issuance: 1
 format:
   - €
   - '000'

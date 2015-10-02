@@ -214,9 +214,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Created on'))
       ->setDescription(t('The time that the wallet was created.'))
-      ->setRevisionable(FALSE)
-      ->setDisplayConfigurable('form', TRUE)
-      ->setDisplayConfigurable('view', TRUE);
+      ->setRevisionable(FALSE);
     $fields['orphaned'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Orphaned'))
       ->setDescription(t('TRUE if this wallet is not currently held'))

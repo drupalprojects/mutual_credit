@@ -23,6 +23,15 @@ class WalletLimiter {//couldn't be bothered to make an interface for this
    * Needed in every public function
    */
   private $limits;
+  
+  /**
+   * The database 
+   */
+  private $database;
+  
+  public function __construct($database) {
+    $this->database = $database;
+  }
 
   public function setWallet(WalletInterface $wallet){
     $this->wallet = $wallet;
@@ -166,7 +175,7 @@ class WalletLimiter {//couldn't be bothered to make an interface for this
     }
     if (empty($overridable_curr_ids))return [];
     //if there is no override value saved, nothing will be returned
-    $limits = db_select('mcapi_wallets_limits', 'l')
+    $limits = $this->database->select('mcapi_wallets_limits', 'l')
       ->fields('l', array('curr_id', 'max', 'value', 'editor', 'date'))
       ->condition('wid', $this->wallet->id())
       ->condition('curr_id', $overridable_curr_ids)

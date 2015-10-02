@@ -363,6 +363,7 @@ class TransactionViewsData extends EntityViewsData {
         'field' => 'wallet_id'
       ]
     ];
+    
     return $data;
   }
 

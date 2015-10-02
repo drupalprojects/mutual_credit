@@ -161,6 +161,7 @@ class TransactionStorage extends TransactionIndexStorage {
     if (array_key_exists('value', $conditions) || array_key_exists('curr_id', $conditions)) {
       $query->join('mcapi_transaction__worth', 'w', 'x.xid = w.entity_id');
     }
+    
     $conditions += ['state' => Self::countedStates()];
     foreach($conditions as $field => $value) {
       if (!$value) continue;
@@ -173,18 +174,18 @@ class TransactionStorage extends TransactionIndexStorage {
       	case 'creator':
       	case 'state':
       	case 'type':
-            $query->condition($field, $value, is_array($value) ? 'IN' : NULL);
+            $query->condition($field.'[]', (array)$value);
       	  break;
       	case 'involving':
       	  $value = (array)$value;
       	  $cond_group = count($value) == 1 ? db_or() : db_and();
       	  $query->condition($cond_group
-    	      ->condition('payer', $value, 'IN')
-    	      ->condition('payee', $value, 'IN')
+    	      ->condition('payer[]', $value)
+    	      ->condition('payee[]', $value)
       	  );
           break;
       	case 'curr_id':
-          $query->condition('w.worth_curr_id', (array)$value, 'IN');
+          $query->condition('w.worth_curr_id[]', (array)$value);
           break;
       	case 'since':
           $query->condition('created', $value, '>');

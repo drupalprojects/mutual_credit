@@ -11,16 +11,15 @@
 namespace Drupal\mcapi\Plugin;
 
 use Drupal\Core\Plugin\DefaultPluginManager;
-use Drupal\Core\Cache\CacheBackendInterface;
-use Drupal\Core\Extension\ModuleHandlerInterface;
-use Drupal\Core\Config\ConfigFactory;
 use Drupal\mcapi\TransactionInterface;
 
 class TransactionRelativeManager extends DefaultPluginManager {
 
   private $active = [];
+  private $config;
+  private $database;
 
-  public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler, ConfigFactory $config_factory) {
+  public function __construct($namespaces, $cache_backend, $module_handler, $config_factory, $database) {
     parent::__construct(
       'Plugin/TransactionRelative',
       $namespaces,
@@ -31,6 +30,7 @@ class TransactionRelativeManager extends DefaultPluginManager {
     $this->setCacheBackend($cache_backend, 'transaction_relatives');//don't know if this is important
     $this->config = $config_factory->get('mcapi.settings')->get('active_relatives');
     $this->plugins = [];
+    $this->database = $database;
   }
 
   /*
@@ -56,7 +56,6 @@ class TransactionRelativeManager extends DefaultPluginManager {
     }
     return $names;
   }
-
 
   /**
    *

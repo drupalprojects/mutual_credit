@@ -58,10 +58,10 @@ function mcapi_signatures_mcapi_transaction_presave($transaction) {
  * put the signatories into the transaction entity
  */
 function mcapi_signatures_mcapi_transaction_load($entities) {
-  $serials = [];
+  $xids = [];
   foreach ($entities as $xid => $e) {
     if ($e->parent->value == 0) {
-      $serials[$e->serial->value] = $xid;
+      $xids[$e->serial->value] = $xid;
     }
   }
   //we load these regardless of settings, just in case settings have changed
@@ -69,10 +69,10 @@ function mcapi_signatures_mcapi_transaction_load($entities) {
   //no matter everything will be cached
   $signatures = db_select('mcapi_signatures', 's')
     ->fields('s', ['serial', 'uid', 'signed'])
-    ->condition('serial', array_keys($serials), 'IN')
+    ->condition('serial', array_keys($xids), 'IN')
     ->execute()->fetchAll();
   foreach ($signatures as $sig) {
-    $entities[$serials[$sig->serial]]->signatures[$sig->uid] = $sig->signed;
+    $entities[$xids[$sig->serial]]->signatures[$sig->uid] = $sig->signed;
   }
 }
 

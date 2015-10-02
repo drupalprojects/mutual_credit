@@ -156,7 +156,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       'color' => '000',
       'deletion' => SELF::UNDO_ERASE,
       'weight' => 0,
-      'uid' => \Drupal::CurrentUser()->id() ? : 1
     );
   }
 
@@ -167,7 +166,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     $serials = [];
     if ($this->id()) {
       $conditions += array('curr_id' => $this->id());
-      $serials = \Drupal::entityManager()
+      $serials = $this->entityManager()
         ->getStorage('mcapi_transaction')
         ->filter($conditions);
       if ($serial) {
@@ -313,6 +312,17 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       Currency::FORMAT_NORMAL => t('Normal'),
       Currency::FORMAT_NATIVE => t('Native integer'),
       Currency::FORMAT_PLAIN => t('Force decimal (Rarely needed)')
+    ];
+  }
+  
+  /**
+   * look up function
+   */
+  public function issuances() {
+    return [
+      Currency::TYPE_ACKNOWLEDGEMENT => t('Acknowledgement', [], ['context' => 'currency-type']),
+      Currency::TYPE_EXCHANGE => t('Exchange', [], ['context' => 'currency-type']),
+      Currency::TYPE_COMMODITY => t('Backed by a commodity', [], ['context' => 'currency-type']),
     ];
   }
 }

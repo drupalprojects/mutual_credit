@@ -4,5 +4,5 @@ services:
     arguments: ['@container.namespaces', '@module_handler', '@cache.default']
   mcapi_limits.wallet_limiter:
     class: Drupal\mcapi_limits\WalletLimiter
-    arguments: []
+    arguments: ['@database']
 

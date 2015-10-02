@@ -89,7 +89,7 @@ class WalletStorage extends SqlContentEntityStorage {
   private function dropIndex(array $wallets) {
     if ($wids = array_keys($wallets)) {
       $this->database->delete('mcapi_wallets_access')
-        ->condition('wid', $wids, 'IN')
+        ->condition('wid[]', $wids)
         ->execute();
     }
   }

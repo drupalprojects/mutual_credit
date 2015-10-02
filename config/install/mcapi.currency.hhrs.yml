@@ -5,7 +5,7 @@ id: hhrs
 name: 'Human Hours'
 description: 'An hour of the full presence of one human being'
 uid: 1
-issuance: acknowledgement
+issuance: 2
 format:
   - Hr
   - '00'

@@ -45,12 +45,8 @@ class CurrencyListBuilder extends DraggableListBuilder {
       return;
     }
     $row['title'] = ['#markup' => $entity->link(NULL, 'canonical')];
-    $type_names = array(
-      Currency::TYPE_ACKNOWLEDGEMENT => t('Acknowledgement'),
-      Currency::TYPE_EXCHANGE => t('Exchange'),
-      Currency::TYPE_COMMODITY => t('Commodity')
-    );
-    $type = $entity->issuance ? $entity->issuance : CURRENCY_TYPE_ACKNOWLEDGEMENT;
+
+    $type = $entity->issuance ? $entity->issuance : Currency::TYPE_ACKNOWLEDGEMENT;
 
     $count = $entity->transactions(array('curr_id' => $entity->id()));
     //this includes deleted transactions
@@ -63,7 +59,7 @@ class CurrencyListBuilder extends DraggableListBuilder {
       '#markup' => $entity->format($entity->volume(array('state' => NULL)))
     );
     $row['issuance'] = array(
-      '#markup' => $type_names[$type],
+      '#markup' => Currency::issuances()[$type],
     );
     //make sure that a currency with transactions in the database can't be deleted.
     if ($count) {

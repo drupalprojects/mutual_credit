@@ -5,7 +5,7 @@ services:
 
   mcapi.transaction_relative_manager:
     class: Drupal\mcapi\Plugin\TransactionRelativeManager
-    arguments: [@container.namespaces, @cache.entity, @module_handler, @config.factory]
+    arguments: [@container.namespaces, @cache.entity, @module_handler, @config.factory, @database]
 
   paramconverter.mcapi_transaction_serial:
     class: Drupal\mcapi\TransactionSerialConverter

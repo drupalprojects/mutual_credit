@@ -18,7 +18,7 @@ class WalletAddForm extends Formbase {
 
   private $holder;
   private $pluginManager;
-
+  
   /**
    * {@inheritdoc}
    */
@@ -29,10 +29,11 @@ class WalletAddForm extends Formbase {
   /**
    * {@inheritdoc}
    */
-  public function __construct($route_match, $entity_manager) {
+  public function __construct($route_match, $entity_manager, $database) {
     $this->holder = $entity_manager
       ->getStorage($route_match->getParameters()->getIterator()->key())
       ->load($route_match->getParameters()->getIterator()->current());
+    $this->database = $database;
   }
 
   /**
@@ -41,7 +42,8 @@ class WalletAddForm extends Formbase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('current_route_match'),
-      $container->get('entity.manager')
+      $container->get('entity.manager'),
+      $container->get('database')
     );
   }
 
@@ -119,7 +121,7 @@ class WalletAddForm extends Formbase {
     //just check that the name isn't the same
     //if there was a wallet storage controller this unique checking would happen there.
     $values = $form_state->getValues();
-    $query = db_select('mcapi_wallet', 'w')
+    $query = $this->database->select('mcapi_wallet', 'w')
     ->fields('w', array('wid'))
     ->condition('name', $values['name']);
 

@@ -65,16 +65,21 @@ class WorthFormatter extends FormatterBase {
   /**
    * {@inheritdoc}
    */
-  public function viewElements(FieldItemListInterface $items) {
+  public function viewElements(FieldItemListInterface $items, $langcode) {
     $output = [];
-//    echo ($this->options['format']);
     $curr_ids = $this->getSetting('curr_ids');
+    $delimiter = \Drupal::config('mcapi.settings')->get('worths_delimiter');
     foreach ($items as $item) {
-      if ($curr_ids && !in_array($item->currency->id(), $curr_ids)) {
+      $curr_id = $item->currency->id();
+      if ($curr_ids && !in_array($curr_id, $curr_ids)) {
          continue;
       }
       if ($item->value) {
-        $output[] = $item->currency->format($item->value, $this->getSetting('format'));
+        $formatted = $item->currency->format($item->value, $this->getSetting('format'));
+        //we don't have the luxury of a theme callback here so just going to shoehorn in the div wrapper
+        //needed to do different css on worths per currency
+        $tag = $delimiter ? 'span' : 'div';
+        $output[] = "<$tag class = \"worth-\"{$curr_id}\">" . $formatted . "</$tag>";
       }
       else {
         //apply any special formatting for zero value transactions
@@ -93,8 +98,9 @@ class WorthFormatter extends FormatterBase {
     }
     //we're shovelling all the $items into 1 element because the have already
     //been rendered together, with a separator character
+    //@todo this isn't #markup coz its safe already
     $elements[0]['#markup'] = implode(
-      \Drupal::config('mcapi.settings')->get('worths_delimiter'),
+      $delimiter,
       $output
     );
     return $elements;

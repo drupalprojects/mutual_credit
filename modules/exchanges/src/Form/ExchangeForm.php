@@ -77,8 +77,10 @@ class ExchangeForm extends ContentEntityForm {
 
     return $form;
   }
-
-  public function validate(array $form, FormStateInterface $form_state) {
+  /**
+   * {@inheritdoc}
+   */
+  public function validateForm(array $form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     $samename = entity_load_multiple_by_properties('mcapi_exchange', array('name' => $values['name']));
     $values = $form_state->getValues();

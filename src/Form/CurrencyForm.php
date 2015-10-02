@@ -133,11 +133,7 @@ class CurrencyForm extends EntityForm {
       '#title' => t('Basis of issuance'),
       '#description' => t('Currently only affects visualisation.'),
       '#type' => 'radios',
-      '#options' => [
-        Currency::TYPE_ACKNOWLEDGEMENT => t('Acknowledgement', [], ['context' => 'currency-type']),
-        Currency::TYPE_EXCHANGE => t('Exchange', [], ['context' => 'currency-type']),
-        Currency::TYPE_COMMODITY => t('Backed by a commodity', [], ['context' => 'currency-type']),
-      ],
+      '#options' => Currency::issuances(),
       '#default_value' => property_exists($currency, 'issuance') ? $currency->issuance : 'acknowledgement',
       //this should have an API function to work with other transaction controllers
       //disable this if transactions have already happened
@@ -192,7 +188,7 @@ class CurrencyForm extends EntityForm {
       '#type' => 'textfield',
       '#default_value' => implode('', $currency->format),
       '#element_validate' => [
-        [$this, 'validate_format']
+        [$this, 'validateFormat']
       ],
       '#max_length' => 16,
       '#size' => 10,
@@ -229,7 +225,7 @@ class CurrencyForm extends EntityForm {
   /**
    * element validation callback
    */
-  function validate_format(&$element, FormStateInterface $form_state) {
+  function validateFormat(&$element, FormStateInterface $form_state) {
     $nums = preg_match_all('/[0-9]+/', $element['#value'], $chars);
     if (!is_array($this->submit_format($element['#value'])) || $nums[0] != 0) {
       $this->errorHandler()->setErrorByName($element['#name'], $form_state, t('Bad Format'));

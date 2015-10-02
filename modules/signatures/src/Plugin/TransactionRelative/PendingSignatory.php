@@ -28,7 +28,7 @@ class PendingSignatory extends PluginBase implements TransactionRelativeInterfac
    * {@inheritdoc}
    */
   public function isRelative(TransactionInterface $transaction, AccountInterface $account) {
-    return array_key_exists($account->id(), $transaction->signatories) && $transaction->signatories[$account->id()] == 0;
+    return $this->database->select($account->id(), $transaction->signatories) && $transaction->signatories[$account->id()] == 0;
   }
 
   /**

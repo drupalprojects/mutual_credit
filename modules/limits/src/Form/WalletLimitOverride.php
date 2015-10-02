@@ -14,14 +14,22 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Exchange;
-use Drupal\Core\Render\Element;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class WalletLimitOverride extends FormBase {
 
-  function __construct() {
-    if ($wid = \Drupal::routeMatch()->getParameter('mcapi_wallet')) {
+  function __construct($routeMatch, $database) {
+    if ($wid = $routeMatch->getParameter('mcapi_wallet')) {
       $this->wallet = Wallet::load($wid);
     }
+    $this->database = $database;
+  }
+  
+  static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('current.route_match'),
+      $container->get('database')
+    );
   }
 
   /**
@@ -114,8 +122,13 @@ class WalletLimitOverride extends FormBase {
     //clear db and rewrite
     try {
       $t = db_transaction();
-      db_delete('mcapi_wallets_limits')->condition('wid', $wid)->execute();
-      $q = db_insert('mcapi_wallets_limits')->fields(array('wid', 'curr_id', 'max', 'value', 'editor', 'date'));
+      $this->database
+        ->delete('mcapi_wallets_limits')
+        ->condition('wid', $wid)
+        ->execute();
+      $q = $this->database
+        ->insert('mcapi_wallets_limits')
+        ->fields(array('wid', 'curr_id', 'max', 'value', 'editor', 'date'));
       $values = $form_state->getValues();
       //rearrange the values so they are easier to save currency by currency
       foreach ($values as $curr_id => $minmax) {
