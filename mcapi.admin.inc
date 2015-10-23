@@ -959,24 +959,26 @@ function mcapi_transaction_entity_uid_form($context) {
       '#preset' => TRUE,//ensures that all currencies are rendered
     )
   );
-
   if (variable_get('transaction_description_field')) {
     $form['description'] = array(
       '#title' => t('Transaction description text'),
       '#type' => 'textfield',
-      '#default_value' => @$context['worth_items']['description'],
+      '#default_value' => @$context['description'],
     );
   }
   return $form;
 }
+
 /**
  * configuration action submit callback
  */
 function mcapi_transaction_entity_uid_submit($form, &$form_state) {
   form_state_values_clean($form_state);
+  //for some reason form_type_worth_value() is having no effect
+  //time for a hack
+  $form_state['values']['worth_items']['worths'][0]['quantity'] = $form_state['values']['worth_items']['worths'][0]['main_quant'];
   return $form_state['values'];
 }
-
 
 /**
  * Settings form callback for mcapi_pay_someone_action

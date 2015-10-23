@@ -692,14 +692,14 @@ function form_type_worth_value(&$element, $edit = FALSE, &$form_state) {
   if (!strlen($edit['main_quant']) && empty($edit['div_quant'])) {
     $item['quantity'] = '';
   }
+  elseif ($element['#calc']) {
+    $item['quantity'] = $edit['main_quant'];
+  }
   elseif (is_numeric($edit['main_quant']) || empty($edit['main_quant'])) {
     $item['quantity'] = floatval($edit['main_quant']);
     if (!empty($item['div_quant'])) {
       $item['quantity'] += ($edit['div_quant'] + 0) / 100;
     }
-  }
-  elseif ($element['#calc']) {
-    $item['quantity'] = $edit['main_quant'];
   }
   //set the value to zero if the field is empty and the currency allows it
   $currency = currency_load($edit['currcode']);

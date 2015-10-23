@@ -1441,7 +1441,7 @@ function _worthitems_to_worths(array $worthitems) {
   $worths = array();
   foreach ($worthitems as $worth_item) {
     if (isset($currencies[$worth_item['currcode']])) {
-      $worths[$worth_item['currcode']] = array_key_exists('quantity', $worth_item) ? $worth_item['quantity'] : @$worth_item['main_quant'];
+      $worths[$worth_item['currcode']] = isset($worth_item['quantity']) ? $worth_item['quantity'] : @$worth_item['main_quant'];
     }
   }
   return $worths;
@@ -1486,7 +1486,7 @@ function mcapi_sentence_default() {
 
 /*
  * implements restws module's hook_restws_response_alter().
- * After creating a transaction return not the transaction enttity key,
+ * After creating a transaction return not the transaction entity key,
  * as presumed by restws_resource_uri()
  * but the serial number, which is what the client needs to view the transaction.
  */

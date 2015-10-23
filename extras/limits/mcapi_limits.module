@@ -1,7 +1,7 @@
 <?php
 // $Id:
 
-/*
+/**
  * returns an array of min and max, if the keys are unset that means there is no limit.
  */
 function limits_get($currcode, $uid){
@@ -40,8 +40,8 @@ function limits_get_adjusted($currcode, $uid, $balance = NULL) {
   }
 }
 
-/*
- * implements hook_field_extra_fields
+/**
+ * implements hook_field_extra_fields().
  */
 function mcapi_limits_field_extra_fields() {
   return array(
@@ -66,7 +66,7 @@ function mcapi_limits_field_extra_fields() {
   );
 }
 
-/*
+/**
  * implements mcapi hook_accounting_validate
  * runs only on transaction insertion
  * takes the transaction cluster and makes a projection of the sum of these plus all saved transactions in a positive state.
@@ -158,7 +158,7 @@ function mcapi_limits_accounting_validate(array $cluster) {
 }
 
 
-/*
+/**
  * utility parse the error messages which hitherto, were coded.
  */
 function mcapi_limits_exception_parse($errors) {
@@ -189,7 +189,7 @@ function mcapi_limits_exception_parse($errors) {
   return implode('; ', $messages);
 }
 
-/*
+/**
  * implements hook_form_ctools_export_ui_edit_item_form_alter
  * Add the limits section to the currency form
  * I've got a feeling if I was a OO programmer then functions like this would be quite different.
@@ -202,7 +202,7 @@ function mcapi_limits_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_
   }
 }
 
-/*
+/**
  * implements hook_mcapi_limits_info
  * declare callbacks for determining the balance limits
  * each callback is a function name for calculating the limts
@@ -216,7 +216,7 @@ function mcapi_limits_mcapi_limits_info() {
   );
 }
 
-/*
+/**
  * implements hook_form_user_profile_form_alter
  * if the current user has permission for each currency that requires it
  * put the limits field on the user profile form
@@ -251,7 +251,7 @@ function mcapi_limits_form_user_profile_form_alter(&$form, &$form_state) {
     );
   }
 }
-/*
+/**
  * implements hook_user_presave
  * save the currency limits into the $account object
  */
@@ -269,7 +269,7 @@ function mcapi_limits_user_presave(&$edit, $account, $category) {
   }
 }
 
-/*
+/**
  * Implements views hook_views_api
  */
 function mcapi_limits_views_api() {
@@ -279,7 +279,7 @@ function mcapi_limits_views_api() {
   );
 }
 
-/*
+/**
  * Implements hook_theme
  */
 function mcapi_limits_theme($existing, $type, $theme, $path){
@@ -307,7 +307,7 @@ function mcapi_limits_theme($existing, $type, $theme, $path){
   );
 }
 
-/*
+/**
  * Implements views hook_block_list
  */
 function mcapi_limits_block_info() {
@@ -322,7 +322,7 @@ function mcapi_limits_block_info() {
   return $blocks;
 }
 
-/*
+/**
  * Implements views hook_block_view
  */
 function mcapi_limits_block_view($delta) {
@@ -339,7 +339,7 @@ function mcapi_limits_block_view($delta) {
   }
 }
 
-/*
+/**
  * Implements views hook_block_configure
  */
 function mcapi_limits_block_configure($delta) {
@@ -354,15 +354,15 @@ function mcapi_limits_block_configure($delta) {
   return $form;
 }
 
-/*
+/**
  * Implements views hook_block_save
  */
 function mcapi_limits_block_save($delta, $values) {
   mcapi_block_save($delta, $values);
 }
 
-/*
- * Implements variable module's hook_variable_info
+/**
+ * Implements variable module's hook_variable_info().
  * only block settings really
  */
 function mcapi_limits_variable_info() {
@@ -378,14 +378,14 @@ function mcapi_limits_variable_info() {
   }
   return $vars;
 }
-/*
- * implements hook_element_info_alter
+/**
+ * implements hook_element_info_alter().
  */
 function mcapi_limits_element_info_alter(&$elements) {
   $elements['wallet']['#pre_render'][] = 'mcapi_limits_pre_render_wallet';
 }
 
-/*
+/**
  * prerender callback for element 'wallet'
  * show the balance limits
  */
@@ -405,7 +405,7 @@ function mcapi_limits_pre_render_wallet($element) {
   return $element;
 }
 
-/*
+/**
  * callback to return render array showing how much credit / debit is available to the user
  */
 function trading_limits_view($uid, $currcodes = array()) {
@@ -432,7 +432,7 @@ function trading_limits_view($uid, $currcodes = array()) {
   return $renderable;
 }
 
-/*
+/**
  * implements hook_form_mcapi_misc_options_form_alter
  * TODO implement this
  */
