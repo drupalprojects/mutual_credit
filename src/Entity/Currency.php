@@ -318,7 +318,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * look up function
    */
-  public function issuances() {
+  public static function issuances() {
     return [
       Currency::TYPE_ACKNOWLEDGEMENT => t('Acknowledgement', [], ['context' => 'currency-type']),
       Currency::TYPE_EXCHANGE => t('Exchange', [], ['context' => 'currency-type']),

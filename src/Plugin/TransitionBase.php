@@ -33,6 +33,10 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
     $this->moduleHandler = \Drupal::service('module_handler');
     $this->relatives = \Drupal::service('mcapi.transaction_relative_manager')->active();
   }
+  
+  function label() {
+    return $this->getConfiguration('title');
+  }
 
   /**
    * {@inheritdoc}
@@ -45,11 +49,11 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    * @return TransactionInterface
    * @throws \Exception
    */
-  function getTransaction() {
+  private function getTransaction() {
     if ($this->transaction) {
       return $this->transaction;
     }
-    throw new \Exception ('Transition plugin not properly initiate');
+    throw new \Exception ('Transition plugin not properly initiated');
   }
 
   /**
@@ -100,7 +104,8 @@ abstract class TransitionBase extends PluginBase implements TransitionInterface 
    * {@inheritdoc}
    */
   public function accessState(AccountInterface $account) {
-    return isset($this->configuration['states'][$this->transaction->state->target_id]);
+    $state = $this->transaction->state->target_id;
+    return isset($this->configuration['states'][$state]);
   }
 
   /**

@@ -41,7 +41,7 @@ class Types extends Radios {
    * @return array
    *   the processed $element
    */
-  static function mcapi_process_types($element) {
+  static function mcapi_process_types($element, $form_state) {
     $element['#options'] = mcapi_entity_label_list('mcapi_type');
     if ($element['#multiple']) {
       $element['#theme_wrappers'] = ['checkboxes'];

@@ -123,7 +123,6 @@ function mcapi_tester_make_inter_transactions($num) {
     //does key() advance the array cursor?
     $currencies = Exchanges::currencies(array(key($wids1), key($wids1)), $ticks = FALSE);
     if (empty($currencies)) {
-      debug('No currencies in exchange(s) '.$exchange_id);
       continue;
     }
     $props['worth'] = array(

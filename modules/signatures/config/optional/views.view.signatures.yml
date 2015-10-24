@@ -230,12 +230,6 @@ display:
           not: false
           plugin_id: user_uid
       display_extenders: {  }
-    cache_metadata:
-      contexts:
-        - 'languages:language_content'
-        - 'languages:language_interface'
-        - url
-      cacheable: false
   my_pending:
     display_plugin: block
     id: my_pending
@@ -246,12 +240,6 @@ display:
       display_description: ''
       block_description: 'Pending transactions'
       block_category: 'Community Accounting'
-    cache_metadata:
-      contexts:
-        - 'languages:language_content'
-        - 'languages:language_interface'
-        - url
-      cacheable: false
   my_sig_needed:
     display_plugin: block
     id: my_sig_needed
@@ -349,12 +337,6 @@ display:
         groups:
           1: AND
       block_description: 'My signature needed'
-    cache_metadata:
-      contexts:
-        - 'languages:language_content'
-        - 'languages:language_interface'
-        - url
-      cacheable: false
   other_sig_needed:
     display_plugin: block
     id: other_sig_needed
@@ -452,9 +434,3 @@ display:
         groups:
           1: AND
       block_description: 'Waiting for another signature'
-    cache_metadata:
-      contexts:
-        - 'languages:language_content'
-        - 'languages:language_interface'
-        - url
-      cacheable: false

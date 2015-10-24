@@ -310,12 +310,6 @@ display:
           plugin_id: standard
       display_extenders: {  }
       group_by: true
-    cache_metadata:
-      contexts:
-        - 'languages:language_interface'
-        - url
-        - url.query_args
-      cacheable: false
   block_1:
     display_plugin: block
     id: block_1
@@ -446,11 +440,6 @@ display:
       allow:
         items_per_page: false
       display_description: ''
-    cache_metadata:
-      contexts:
-        - 'languages:language_interface'
-        - url
-      cacheable: false
   page_1:
     display_plugin: page
     id: page_1
@@ -463,9 +452,4 @@ display:
       defaults:
         arguments: false
       display_description: ''
-    cache_metadata:
-      contexts:
-        - 'languages:language_interface'
-        - url.query_args
-      cacheable: false
 

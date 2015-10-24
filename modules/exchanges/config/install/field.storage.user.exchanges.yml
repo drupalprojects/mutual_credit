@@ -2,7 +2,6 @@ id: user.exchanges
 status: true
 dependencies:
   module:
-    - entity_reference
     - mcapi
 langcode: en
 field_name: exchanges
@@ -10,7 +9,7 @@ entity_type: user
 type: entity_reference
 settings:
   target_type: mcapi_exchange
-module: entity_reference
+module: ''
 locked: false
 cardinality: '-1'
 translatable: false

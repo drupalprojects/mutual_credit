@@ -17,6 +17,11 @@ use Drupal\Component\Plugin\ConfigurablePluginInterface;
 interface TransitionInterface extends ConfigurablePluginInterface {
 
   /**
+   * get the title from config
+   */
+  function label();
+  
+  /**
    * Because we can't pass the transaction as an argument when initialising the
    * plugin, we use this function instead
    *
@@ -63,7 +68,7 @@ interface TransitionInterface extends ConfigurablePluginInterface {
    * The method in the base class handles the mail notifications
    *
    * @param array $context
-   *   the $form_state->values, the plugin 'config', the transation 'old_state'
+   *   the 'values' => $form_state->getValues(), state => the transaction 'old_state' id
    *
    * @return array
    *   a renderable array

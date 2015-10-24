@@ -79,11 +79,8 @@ class CurrencyForm extends EntityForm {
         '#value' => 1
       ];
     }
-    $form['css'] = [
-    	'#markup' => '<style>#edit-acknowledgement, #edit-exchange, #edit-commodity{float:right;width:50%;margin-left:1em;}'
-        //this is because the classy theme puts radio buttons display:table cell, which goes under the float
-        . 'form#mcapi-currency-edit-form #edit-issuance--wrapper{display:inherit;}</style>'
-    ];
+    $form['#attached']['library'][] = 'mcapi/currency-form';
+
     $form['acknowledgement'] = [
       '#type' => 'container',
       '#children' => implode(" ", [//<br /> breaks don't work here

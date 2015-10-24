@@ -348,7 +348,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
           $query->condition('volume', $value, '<=');
           break;
       	default:
-          debug('filtering on unknown field: '.$field);
+          drupal_set_message('filtering on unknown field: '.$field, 'warning');
       }
     }
   }

@@ -147,6 +147,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * Validate a transaction including children
    * The Drupal way has 'validate' and 'save' phases. We need to map those onto
    * this Transaction's needs which are 'add children', alter, validate, and save
+   * 
+   * @see https://drupalwatchdog.com/volume-5/issue-2/introducing-drupal-8s-entity-validation-api
    *
    * @return \Drupal\Core\Entity\EntityConstraintViolationListInterface
    *

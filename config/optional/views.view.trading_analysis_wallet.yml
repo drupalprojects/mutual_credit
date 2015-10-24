@@ -439,11 +439,6 @@ display:
       field_langcode_add_to_query: null
       group_by: true
       display_extenders: {  }
-    cache_metadata:
-      contexts:
-        - 'languages:language_interface'
-        - url
-      cacheable: false
   block_1:
     display_plugin: block
     id: block_1
@@ -814,11 +809,6 @@ display:
           entity_type: mcapi_transaction
           plugin_id: worth
       block_category: 'Community Accounting'
-    cache_metadata:
-      contexts:
-        - 'languages:language_interface'
-        - url
-      cacheable: false
   wallet_stats:
     display_plugin: block
     id: wallet_stats
@@ -1101,9 +1091,4 @@ display:
       block_description: 'Wallet summary per currency'
       display_comment: '@todo render the currency name instead of the machine name'
       display_extenders: {  }
-    cache_metadata:
-      contexts:
-        - 'languages:language_interface'
-        - url
-      cacheable: false
 

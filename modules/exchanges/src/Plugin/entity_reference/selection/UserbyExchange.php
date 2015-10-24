@@ -2,16 +2,16 @@
 
 /**
  * @file
- * Contains \Drupal\user\Plugin\entity_reference\selection\UserByExchange.
+ * Contains \Drupal\exchanges\Plugin\entity_reference\selection\UserByExchange.
  * @todo NOT TESTED
  */
 
-namespace Drupal\user\Plugin\entity_reference\selection;
+namespace Drupal\exchanges\Plugin\entity_reference\selection;
 
 use Drupal\Core\Database\Database;
 use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
-use Drupal\entity_reference\Plugin\entity_reference\selection\SelectionBase;
+use Drupal\Core\Entity\Plugin\EntityReferenceSelection\SelectionBase;
 use Drupal\user\Entity\User;
 
 /**

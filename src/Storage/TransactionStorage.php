@@ -203,7 +203,7 @@ class TransactionStorage extends TransactionIndexStorage {
           $query->condition('w.worth_value', $value, '<=');
           break;
       	default:
-          debug('filtering on unknown field: '.$field);
+          drupal_set_message('filtering on unknown field: '.$field);
       }
     }
   }

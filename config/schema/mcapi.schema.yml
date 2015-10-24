@@ -105,7 +105,7 @@ mcapi.settings:
 
 mcapi.currency.*:
   type: config_entity
-  label: 'Currency configuration'
+  label: 'Currency'
   mapping:
     id:
       type: string

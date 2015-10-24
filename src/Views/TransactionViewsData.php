@@ -14,11 +14,11 @@ class TransactionViewsData extends EntityViewsData {
 
   /**
    * {@inheritdoc}
+   * 
    * @todo see Drupal\taxonomy\TermViewsData to see how an index table can be incporated after beta 11
    */
   public function getViewsData() {
     $data = parent::getViewsData();
-
     $data['mcapi_transaction']['table']['base']['defaults']['field'] = 'xid';
     $data['mcapi_transaction']['table']['wizard_id'] = 'transactions';
     $data['mcapi_transaction']['table']['access query tag'] = 'mcapi_views_access';
@@ -96,6 +96,14 @@ class TransactionViewsData extends EntityViewsData {
       //'label' => 'Payee wallet',
       'title' => 'Payee',
       'id' => 'standard'
+    ];
+    
+    $data['mcapi_transaction']['transaction_bulk_form'] = [
+      'title' => t('Bulk update'),
+      'help' => t('A form element that lets you run operations on multiple transactiona.'),
+      'field' => [
+        'id' => 'mcapi_transaction_bulk_form',
+      ],
     ];
 
     /**

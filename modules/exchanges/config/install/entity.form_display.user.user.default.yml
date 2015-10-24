@@ -10,6 +10,5 @@ hidden:
   timezone: true
 status: true
 dependencies:
-  module:
-    - entity_reference
+  module: { }
  

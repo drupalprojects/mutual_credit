@@ -633,12 +633,6 @@ display:
       display_extenders: {  }
       group_by: false
       use_ajax: true
-    cache_metadata:
-      contexts:
-        - 'languages:language_interface'
-        - url
-        - url.query_args
-      cacheable: false
   embedded_in_route_mcapi_dot_wallet_log:
     display_plugin: embed
     id: embedded_in_route_mcapi_dot_wallet_log
@@ -648,12 +642,6 @@ display:
       field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
       display_extenders: {  }
-    cache_metadata:
-      contexts:
-        - 'languages:language_interface'
-        - url
-        - url.query_args
-      cacheable: false
   page_1:
     display_plugin: page
     id: page_1
@@ -671,9 +659,3 @@ display:
         context: '1'
         menu_name: account
       enabled: false
-    cache_metadata:
-      contexts:
-        - 'languages:language_interface'
-        - url
-        - url.query_args
-      cacheable: false

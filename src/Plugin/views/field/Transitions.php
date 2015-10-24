@@ -10,8 +10,7 @@ namespace Drupal\mcapi\Plugin\views\field;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\views\Plugin\views\display\DisplayPluginBase;
-use Drupal\views\ViewExecutable;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Field handler to show transaction transitions according to context
@@ -22,6 +21,27 @@ use Drupal\views\ViewExecutable;
  */
 class Transitions extends FieldPluginBase {
 
+  private $transitionManager;
+
+
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, $transition_manager) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->transitionManager = $transition_manager;
+  }
+  
+    /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('mcapi.transition_manager')
+    );
+  }
+
+  
   /**
    * {@inheritdoc}
    */
@@ -32,13 +52,6 @@ class Transitions extends FieldPluginBase {
     return $options;
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
-    parent::init($view, $display, $options);
-    $this->transitionManager = \Drupal::service('mcapi.transition_manager');
-  }
 
   /**
    * {@inheritdoc}
@@ -67,7 +80,6 @@ class Transitions extends FieldPluginBase {
    */
   public function query() {
     $this->addAdditionalFields();
-    $this->viewBuilder = \Drupal::EntityManager()->getViewBuilder('mcapi_transaction');
   }
 
   /**
@@ -76,6 +88,13 @@ class Transitions extends FieldPluginBase {
   function render(ResultRow $values) {
     return $this->transitionManager
       ->getLinks($this->getEntity($values, TRUE));
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  protected function allowAdvancedRender() {
+    return FALSE;
   }
 
 }

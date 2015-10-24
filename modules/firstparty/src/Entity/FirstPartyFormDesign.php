@@ -121,8 +121,9 @@ Direction: [mcapiform:direction]
       $vars['payee'] = $partner;
     }
     foreach ($this->fieldapi_presets as $fieldname => $setting) {
-      if (!isset($setting['preset'])) drupal_set_message('$fieldname has no preset');
-      $vars[$fieldname] = $setting['preset'];
+      if (isset($setting['preset'])) {
+        $vars[$fieldname] = $setting['preset'];
+      }
     }
     return \Drupal\mcapi\Entity\Transaction::create($vars);
   }

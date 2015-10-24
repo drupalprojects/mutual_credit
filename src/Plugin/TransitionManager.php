@@ -63,11 +63,11 @@ class TransitionManager extends DefaultPluginManager {
   /*
    * retrieve the plugins which are not disabled
    *
-   * @param array $exclude
+   * @param TransactionInterface $transaction
    *   the names of the active plugins not to return
    *
-   * @param FieldInterface $worth
-   *   a worth fieldlist instance from which to extract the currencies
+   * @param array $exclude
+   *   the names of the active plugins not to return
    *
    * @todo use a collection?
    */
@@ -81,6 +81,17 @@ class TransitionManager extends DefaultPluginManager {
     foreach ($this->getDefinitions() as $id => $definition) {
       if (!in_array($id, $exclude) && isset($active[$id])) {
         $output[$id] = $this->getPlugin($id, $transaction);
+      }
+    }
+    return $output;
+  }
+  
+  
+  public function active_names(array $exclude = []) {
+    $active = $this->config_factory->get('mcapi.settings')->get('active_transitions');
+    foreach ($this->getDefinitions() as $id => $definition) {
+      if (!in_array($id, $exclude) && isset($active[$id])) {
+        $output[$id] = $this->getConfig($id)->get('title');
       }
     }
     return $output;
@@ -170,6 +181,7 @@ class TransitionManager extends DefaultPluginManager {
       }
       foreach ($this->active($transaction, $exclude) as $transition => $plugin) {
         if ($transaction->access($transition)->isAllowed()) {
+          
           $route_params = ['mcapi_transaction' => $transaction->serial->value];
           if ($transition == 'view') {
             $route_name = 'entity.mcapi_transaction.canonical';

@@ -62,7 +62,7 @@ class CurrencyRouteProvider implements EntityRouteProviderInterface {
     $route = (new Route('/admin/accounting/currencies/{mcapi_currency}/delete'))
       ->setDefaults([
         '_entity_form' => 'mcapi_currency.delete',
-        '_title' => 'New currency',
+        '_title' => 'Delete currency',
       ])
       ->setRequirement('_permission', 'configure mcapi')
       ->setOption('_admin_route', TRUE);

@@ -5,7 +5,6 @@ dependencies:
     - field.instance.mcapi_exchange.mcapi_exchange.currencies
     - field.instance.mcapi_exchange.mcapi_exchange.logo
   module:
-    - entity_reference
     - image
     - mcapi
 id: mcapi_exchange.mcapi_exchange.default

@@ -176,11 +176,6 @@ display:
       link_url: ''
       link_display: income
       display_extenders: {  }
-    cache_metadata:
-      contexts:
-        - 'languages:language_content'
-        - 'languages:language_interface'
-      cacheable: false
   expenditure:
     display_plugin: attachment
     id: expenditure
@@ -693,12 +688,6 @@ display:
       inherit_pager: true
       inherit_exposed_filters: true
       display_extenders: {  }
-    cache_metadata:
-      contexts:
-        - 'languages:language_content'
-        - 'languages:language_interface'
-        - url
-      cacheable: false
   income:
     display_plugin: page
     id: income
@@ -1217,9 +1206,3 @@ display:
           plugin_id: standard
           provider: views
       display_extenders: {  }
-    cache_metadata:
-      contexts:
-        - 'languages:language_content'
-        - 'languages:language_interface'
-        - url
-      cacheable: false

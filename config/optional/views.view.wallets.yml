@@ -186,12 +186,6 @@ display:
       field_langcode_add_to_query: null
       display_extenders: {  }
       display_comment: 'Its all about the Contextual filter default'
-    cache_metadata:
-      contexts:
-        - 'languages:language_interface'
-        - url
-        - url.query_args
-      cacheable: false
   block_1:
     display_plugin: block
     id: block_1
@@ -249,12 +243,6 @@ display:
       defaults:
         arguments: false
       display_extenders: {  }
-    cache_metadata:
-      contexts:
-        - 'languages:language_interface'
-        - url
-        - url.query_args
-      cacheable: false
   embed_full_wallet:
     display_plugin: embed
     id: embed_full_wallet
@@ -318,12 +306,6 @@ display:
           plugin_id: standard
           provider: views
       display_description: ''
-    cache_metadata:
-      contexts:
-        - 'languages:language_interface'
-        - url
-        - url.query_args
-      cacheable: false
   owned_wallets:
     display_plugin: block
     id: owned_wallets
@@ -379,9 +361,3 @@ display:
       defaults:
         arguments: false
       display_extenders: {  }
-    cache_metadata:
-      contexts:
-        - 'languages:language_interface'
-        - url
-        - url.query_args
-      cacheable: false

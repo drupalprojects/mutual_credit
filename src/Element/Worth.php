@@ -41,6 +41,7 @@ class Worth extends FormElement {
       '#attributes' => ['style' => 'display:inline-block'],
       '#minus' => FALSE,
       '#config' => FALSE,
+      '#allowed_curr_ids' => []
     ];
   }
 

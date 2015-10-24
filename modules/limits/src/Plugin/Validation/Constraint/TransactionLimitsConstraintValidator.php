@@ -58,19 +58,35 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator {
         $this->replacements = ['@currency' => $currency->name];
         $config = $plugin->getConfiguration();
         if ($config['skip']['user1'] && $this->currentUser->id() == 1) {
-          $this->watchdog("Skipped @currency balance limit check because you are user 1.");
+          $this->logger->log(
+            'notice', 
+            'Skipped @currency balance limit check because you are user 1.', 
+            $this->replacements
+          );
+          return;
         }
         elseif ($config['skip']['owner'] && $this->currentUser->id() == $currency->uid) {
-          $this->watchdog("Skipped @currency balance limit check because you are the currency owner.");
+          $this->logger->log(
+            'notice', 
+            'Skipped @currency balance limit check because you are the currency owner.', 
+            $this->replacements
+          );
+          return;
         }
         elseif ($config['skip']['auto'] && $transaction->type->target_id == 'auto') {
-          $this->watchdog("Skipped balance limit checks for @currency.");
+          $this->logger->log(
+            'notice', 
+            'Skipped balance limit checks for @currency.', 
+            $this->replacements
+          );
+          return;
         }
         elseif ($config['skip']['mass'] && $transaction->type->target_id == 'mass') {
-          $this->watchdog("Skipped balance limit checks for @currency.");
-        }
-
-        if ($this->skip) {
+          $this->logger->log(
+            'notice', 
+            'Skipped balance limit checks for @currency.', 
+            $this->replacements
+          );
           return;
         }
 
@@ -103,11 +119,6 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator {
         }
       }
     }
-  }
-
-  private function watchdog($message) {
-    $this->skip = TRUE;
-    $this->logger->log('notice', $message, $this->replacements);
   }
 
   /**

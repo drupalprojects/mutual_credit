@@ -291,7 +291,6 @@ function put_users_in_exchanges() {
   $accounts = User::loadMultiple();
   unset($accounts[0], $accounts[1]);
   $usersperexchange = floor(count($accounts)/count($all_exchange_ids));
-  debug($usersperexchange.' users per exchange');
   foreach ($accounts as $account) {
     //give the first user in each exchange the manager role and the second the helper
     $memnum = ($account->id() + 1) % $usersperexchange;
@@ -299,7 +298,6 @@ function put_users_in_exchanges() {
     elseif ($memnum == 1) $account->addRole($helper_role->id());
     //we'll put the users sequentially into the exchanges so that its easy to guess where they are
     $exchange_id = $all_exchange_ids[$account->id() % $usersperexchange];
-    debug('putting user '.$account->id(). ' in exchange '.$exchange_id);
     mcapi_exchange_join($exchange_id, array($account));//saves the account
     if ($memnum == 1) {//tell the exchange that it is owned by the manager
       $exchange = Exchange::load($exchange_id);

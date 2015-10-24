@@ -2,8 +2,6 @@ title: Unerase
 tooltip: 'Restore the transaction to its former state'
 states:
   erased: erased
-  done: 0
-  pending: 0
 page_title: 'Are you sure you want to restore the transaction?'
 format: certificate
 twig: ''

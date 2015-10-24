@@ -13,6 +13,11 @@ mcapi.wallets:
   css:
     component:
       css/wallets.css: {}
+mcapi.currency-form:
+  version: VERSION
+  css:
+    component:
+      css/currency-form.css: {}
 mcapi.worth.element:
   version: VERSION
   css:
