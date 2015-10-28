@@ -29,7 +29,7 @@ class FirstPartyEditFormAccessControlHandler extends EntityAccessControlHandler 
   /**
    * {@inheritdoc}
    */
-  protected function checkAccess(EntityInterface $entity, $op, $langcode, AccountInterface $account) {
+  protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
     return AccessResult::allowedIfHasPermission($account, 'configure mcapi');
   }
 }

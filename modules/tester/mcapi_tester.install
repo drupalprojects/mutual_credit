@@ -25,13 +25,20 @@ function mcapi_tester_install() {
 
 
   //now
-  $uids = mcapi_tester_make_users(26);//should make wallets as well
+  $batch = [
+    'title' => t('Creating demo accounting data'),
+    'operations' => [
+      ['mcapi_tester_make_users', 26],//should make wallets as well
+    ]
+  ];
+  
 
   if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-    multiple_exchanges();
+    $batch['operations'][] = ['multiple_exchanges'];
   }
   //make some transactions within the exchanges.
-  mcapi_tester_make_transactions(200);
+  $batch['operations'][] = ['mcapi_tester_make_transactions', 100];
+  $batch['operations'][] = ['mcapi_tester_make_transactions', 100];
 
   \Drupal::configFactory()
     ->getEditable('system.site')
@@ -44,6 +51,8 @@ function mcapi_tester_install() {
     ->set('ui.show.advanced_column', 1)
     ->set('ui.show.master_display', 1)
     ->save();
+  
+  batch_set($batch);
 }
 
 function mcapi_tester_modules_installed($modules) {

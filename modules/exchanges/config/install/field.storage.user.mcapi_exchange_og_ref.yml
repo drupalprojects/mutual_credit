@@ -2,7 +2,6 @@ langcode: en
 status: true
 dependencies:
   module:
-    - entity_reference
     - mcapi
 id: user.mcapi_exchange_og_ref
 field_name: mcapi_exchange_og_ref

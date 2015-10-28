@@ -91,7 +91,7 @@ function mcapi_help($route_name, $route_match) {
  *
  * @todo check the cache contexts because this contains a link to wallet creation.
  */
-function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode, $langcode) {
+function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
   if ($display->getComponent('wallets_summaries')) {
     //check the entity is of a type which can own a wallet.
     $key = 'entity_types.' . $entity->getEntityTypeId() .':'. $entity->bundle();

@@ -1,4 +1,4 @@
-name: '_Tester Environment'
+name: '_Example data'
 description: Creates users, currencies, wallets, couple of blocks and views. Works with and without 'Multiple exchanges' module
 core: 8.x
 package: Community Accounting

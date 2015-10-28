@@ -88,7 +88,7 @@ class CanActOn extends Constraint implements ConstraintValidatorInterface {
     $wallets = $items->referencedEntities();
     $access = \Drupal::entityManager()
       ->getAccessControlHandler('mcapi_wallet')
-      ->checkAccess(reset($wallets), $this->action, NULL, \Drupal::currentUser());
+      ->checkAccess(reset($wallets), $this->action, \Drupal::currentUser());
     //might want to inject the currentuser?
     if (!$access) {
       $this->context->addViolation($this->{$$action}, []);

@@ -55,13 +55,13 @@ class TransactionViewBuilder extends EntityViewBuilder {
    *
    * @return array
    */
-  protected function getBuildDefaults(EntityInterface $entity, $view_mode, $langcode) {
+  protected function getBuildDefaults(EntityInterface $entity, $view_mode) {
     //if the view_mode is 'full' that means nothing was specified, which is the norm.
     //so we turn to the 'view' transition where the view mode is a configuration.
     if ($view_mode == 'full') {
       $view_mode = $this->settings->get('format');
     }
-    $build = parent::getBuildDefaults($entity, $view_mode, $langcode);
+    $build = parent::getBuildDefaults($entity, $view_mode);
     $build['#theme_wrappers'][] = $build['#theme'];
     unset($build['#theme']);
     switch($view_mode) {

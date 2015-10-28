@@ -31,7 +31,7 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
   /**
    * {@inheritdoc}
    */
-  public function access(EntityInterface $transaction, $transition, $langcode = LanguageInterface::LANGCODE_DEFAULT, AccountInterface $account = NULL, $return_as_object = false) {
+  public function access(EntityInterface $transaction, $transition, AccountInterface $account = NULL, $return_as_object = false) {
     if ($transition == 'transition') {
       $transition = $this->routeMatch->getParameter('transition');
     }

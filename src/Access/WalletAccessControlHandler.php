@@ -55,7 +55,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
    * @see Wallet constants for the $ops
    *
    */
-  public function checkAccess(EntityInterface $entity, $op, $langcode, AccountInterface $account) {
+  public function checkAccess(EntityInterface $entity, $op, AccountInterface $account) {
     if ($result = $this->initialChecks($entity, $op, $account)) {
       return $result;
     }

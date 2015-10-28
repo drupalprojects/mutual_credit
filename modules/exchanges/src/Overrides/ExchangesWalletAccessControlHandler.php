@@ -30,13 +30,13 @@ class ExchangesWalletAccessControlHandler extends WalletAccessControlHandler {
    * {@inheritdoc}
    * $ops are details, summary, payin, payout, constants defined in Wallet
    */
-  public function checkAccess(EntityInterface $entity, $op, $langcode, AccountInterface $account) {
+  public function checkAccess(EntityInterface $entity, $op, AccountInterface $account) {
     
     if ($result = $this->initialChecks($entity, $op, $account)) {
       return $result;
     }
     
-    $result = parent::checkAccess($entity, $op, $langcode, $account);
+    $result = parent::checkAccess($entity, $op, $account);
     //if the result isn't conclusive then we handle it
     if ($result->isNeutral() && $entity->access[$op] == WALLET_ACCESS_EXCHANGE) {
       $user_is_in = Exchanges::in(NULL, TRUE);

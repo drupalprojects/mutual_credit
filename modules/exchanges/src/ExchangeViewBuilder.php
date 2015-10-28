@@ -21,8 +21,8 @@ class ExchangeViewBuilder extends EntityViewBuilder {
   /**
    * {@inheritdoc}
    */
-  public function getBuildDefaults(EntityInterface $entity, $view_mode, $langcode) {
-    $build = parent::getBuildDefaults($entity, $view_mode, $langcode);
+  public function getBuildDefaults(EntityInterface $entity, $view_mode) {
+    $build = parent::getBuildDefaults($entity, $view_mode);
     //we shouldn't have to build all of this stuff until the entity display has been processed
     //instead of using <br> here, isn't there a nicer way to make each render array into a div or something like that
     $link = Url::fromUri('base://exchange/' . $entity->id() . '/members');

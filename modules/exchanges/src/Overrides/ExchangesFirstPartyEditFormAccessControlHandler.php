@@ -23,8 +23,8 @@ class ExchangesFirstPartyEditFormAccessControlHandler extends FirstPartyEditForm
   /**
    * {@inheritdoc}
    */
-  protected function checkAccess(EntityInterface $entity, $op, $langcode, AccountInterface $account) {
-    $result = parent::checkAccess($entity, $op, $langcode, $account);
+  protected function checkAccess(EntityInterface $entity, $op, AccountInterface $account) {
+    $result = parent::checkAccess($entity, $op, $account);
     if (Exchange::in() && $entity->exchange) {
       //only the exchange owner can edit the form
       if (entity_load('mcapi_exchange', $entity->exchange)->getOwnerId() == $account->id()) {

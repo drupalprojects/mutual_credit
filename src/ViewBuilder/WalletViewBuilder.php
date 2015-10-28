@@ -58,8 +58,8 @@ class WalletViewBuilder extends EntityViewBuilder {
    * {@inheritdoc}
    * For multiple nice wallets see theme callback 'mcapi_wallets'
    */
-  protected function getBuildDefaults(EntityInterface $entity, $view_mode, $langcode) {
-    $build = parent::getBuildDefaults($entity, $view_mode, $langcode);
+  protected function getBuildDefaults(EntityInterface $entity, $view_mode) {
+    $build = parent::getBuildDefaults($entity, $view_mode);
     //add the css
     $build['#attached'] = ['library' => ['mcapi/mcapi.wallets']];
     return $build;
