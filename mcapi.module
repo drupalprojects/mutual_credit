@@ -400,7 +400,7 @@ function mcapi_search_execute($keys = NULL, $conditions = NULL) {
   foreach ($find as $item) {
     // Render the node.
     $transaction = transaction_load($item->sid);//sid is actually the serial number
-    if (!transaction_operation_access('view', $transaction, $GLOBALS['user'])) continue;
+    if (!transaction_operation_access('view', $transaction)) continue;
     $uri = entity_uri('transaction', $transaction);
     $results[$item->sid] = array(
       'link' => url($uri['path'], array_merge($uri['options'], array('absolute' => TRUE))),
