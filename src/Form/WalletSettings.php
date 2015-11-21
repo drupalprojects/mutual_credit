@@ -103,7 +103,7 @@ class WalletSettings extends ConfigFormBase {
     ];
     $form['render_unused'] = [
       '#title' => $this->t('Render unused'),
-      '#description' => $this->t('Show unused currency stats in wallet view.') .' '.t('This is not retroactive'),
+      '#description' => $this->t('Show stats for unused currencies in wallet.'),
       '#type' => 'checkbox',
       '#default_value' => $config->get('render_unused'),
       '#weight' => 4,

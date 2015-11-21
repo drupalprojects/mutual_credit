@@ -2,7 +2,7 @@
 
 /**
  * @file
- *  Contains Drupal\mcapi\Plugin\TransactionRelative\Payer
+ *  Contains Drupal\mcapi\Plugin\TransactionRelative\Anon
  */
 
 namespace Drupal\mcapi\Plugin\TransactionRelative;
@@ -19,7 +19,8 @@ use Drupal\Core\Plugin\PluginBase;
  * @TransactionRelative(
  *   id = "anon",
  *   label = @Translation("Anonymous users"),
- *   description = @Translation("Anyone on the Internet")
+ *   description = @Translation("Anyone on the Internet"),
+ *   weight = -2
  * )
  */
 class Anon extends PluginBase implements TransactionRelativeInterface {

@@ -51,8 +51,8 @@ class MiscForm extends ConfigFormBase {
       $tokens[] = "[mcapi:$token]";
     }
     $form['sentence_template'] = [
-      '#title' => $this->t('Default transaction sentence'),
-      '#description' => $this->t('Use the following tokens to define how the transaction will read when displayed in sentence mode: @tokens', array('@tokens' => implode(', ', $tokens))),
+      '#title' => $this->t('Sentence view mode.'),
+      '#description' => $this->t('Use the following tokens to define how the transaction will read when displayed in sentence view mode: @tokens', array('@tokens' => implode(', ', $tokens))),
       '#type' => 'textfield',
       '#default_value' => $config->get('sentence_template'),
       '#weight' => 2
@@ -115,16 +115,16 @@ class MiscForm extends ConfigFormBase {
       'active_relatives' => [
         '#type' => 'checkboxes',
         '#description' => $this->t(
-          'Warning: unchecking these may make other settings unviable'
+          'Warning: Unchecking these may make other settings unviable.'
         ),
         '#options' => $options,
-        '#default_value' => $config->get('relatives'),
+        '#default_value' => $config->get('active_relatives'),
       ],
     ];
 
     $form['rebuild_mcapi_index'] = [
       '#title' => $this->t('Rebuild index'),
-      '#description' => $this->t('The transaction index table stores the transactions in an alternative format which is helpful for building views'),
+      '#description' => $this->t('The index table stores the transactions in an views-friendly format. It should never need rebuilding on a working system.'),
       '#type' => 'fieldset',
       '#weight' => 15,
       'button' => [

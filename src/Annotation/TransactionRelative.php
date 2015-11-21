@@ -24,5 +24,7 @@ class TransactionRelative extends Plugin {
   public $label;
 
   public $description;
+  
+  public $weight;
 
 }

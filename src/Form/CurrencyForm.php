@@ -10,7 +10,7 @@ namespace Drupal\mcapi\Form;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
-use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\Cdeleurrency;
 
 class CurrencyForm extends EntityForm {
 
@@ -158,18 +158,6 @@ class CurrencyForm extends EntityForm {
       $form['zero']['#description'] = t("Leave blank to disallow zero value transactions");
     }
 
-    $form['deletion'] = [
-      '#title' => t('Deletion'),
-      '#type' => 'radios',
-      '#options' => [
-        Currency::UNDO_REVERSE => $this->t('Transactions are permanent (and deleting creates a reverse transaction in the cluster)'),
-    	  Currency::UNDO_ERASE => $this->t('keep transaction in a deleted state'),
-    	  Currency::UNDO_DELETE => $this->t('remove completely from the database'),
-      ],
-      '#default_value' => $currency->deletion,
-      '#required' => TRUE,
-      '#weight' => 8
-    ];
     $form['display'] = [
       '#title' => t('Appearance'),
       '#type' => 'fieldset',

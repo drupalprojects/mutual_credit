@@ -1,0 +1,32 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - mcapi
+id: transaction_erase
+label: 'Erase a transaction'
+type: mcapi_transaction
+plugin: mcapi_transaction.erase_action
+configuration:
+  type: mcapi_transaction
+  title: Erase
+  tooltip: 'Change the transaction state to ''erased'''
+  states:
+    done: done
+    pending: pending
+    erased: 0
+  access:
+    manager: manager
+    payer: 0
+    payee: 0
+    creator: 0
+    authenticated: 0
+    anon: 0
+  page_title: 'Are you sure you want to erase this transaction?'
+  format: certificate
+  twig: ''
+  display: 2
+  button: Erase
+  cancel_link: Cancel
+  message: ''
+

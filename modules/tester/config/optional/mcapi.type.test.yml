@@ -2,11 +2,14 @@ id: test
 label: Testing
 description: Created by the tester module
 start_state: done
-status: true
-dependencies: { }
+provider: mcapi_tester
+view:
+  authenticated: authenticated
+edit: { }
+dependencies:
+  module:
+    - mcapi_signatures
 third_party_settings:
   mcapi_signatures:
     signatures: { }
-dependencies:
-  module:
-    - mcapi_tester
+

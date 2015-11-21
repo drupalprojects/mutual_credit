@@ -5,10 +5,8 @@ dependencies:
     - field.storage.mcapi_transaction.worth
     - system.menu.admin
     - system.menu.main
-    - user.role.authenticated
   module:
     - mcapi
-    - user
 id: mcapi_transactions
 label: Transactions
 module: views
@@ -98,7 +96,7 @@ display:
             created: created
             type: type
             state: state
-            transitions: transitions
+            operations: operations
           info:
             xid:
               sortable: false
@@ -161,7 +159,7 @@ display:
               separator: ''
               empty_column: false
               responsive: ''
-            transitions:
+            operations:
               sortable: false
               default_sort_order: asc
               align: ''
@@ -633,17 +631,14 @@ display:
           hide_alter_empty: true
           plugin_id: mcapi_state
           provider: mcapi
-        transitions:
-          id: transitions
+        operations:
+          id: operations
           table: mcapi_transaction
-          field: transitions
+          field: operations
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - mcapi
-          label: Transitions
+          label: Operations
           exclude: false
           alter:
             alter_text: false
@@ -662,7 +657,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: null
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -684,14 +679,13 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          mode: ajax
-          view: 1
-          plugin_id: transaction_transitions
-          provider: mcapi
-        transaction_bulk_form:
-          id: transaction_bulk_form
+          destination: true
+          entity_type: mcapi_transaction
+          plugin_id: entity_operations
+        mcapi_transaction_bulk_form:
+          id: mcapi_transaction_bulk_form
           table: mcapi_transaction
-          field: transaction_bulk_form
+          field: mcapi_transaction_bulk_form
           relationship: none
           group_type: group
           admin_label: ''
@@ -737,10 +731,10 @@ display:
           empty_zero: false
           hide_alter_empty: true
           action_title: 'With selection'
-          include_exclude: include
+          include_exclude: exclude
           selected_actions: {  }
           entity_type: mcapi_transaction
-          plugin_id: mcapi_transaction_bulk_form
+          plugin_id: bulk_form
       filters:
         description:
           id: description
@@ -1124,6 +1118,15 @@ display:
         groups:
           1: AND
       display_extenders: {  }
+    cache_metadata:
+      max-age: 0
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+      tags:
+        - 'config:field.storage.mcapi_transaction.worth'
   admin:
     display_plugin: page
     id: admin
@@ -1161,6 +1164,15 @@ display:
       exposed_form_options: null
       display_description: ''
       display_extenders: {  }
+    cache_metadata:
+      max-age: 0
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+      tags:
+        - 'config:field.storage.mcapi_transaction.worth'
   block_1:
     display_plugin: block
     id: block_1
@@ -1448,6 +1460,13 @@ display:
         groups:
           1: AND
       block_category: 'Community Accounting'
+    cache_metadata:
+      max-age: 0
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url.query_args
+      tags: {  }
   simple:
     display_plugin: page
     id: simple
@@ -1683,7 +1702,7 @@ display:
           relationship: payer
           group_type: group
           admin_label: ''
-          label: 'Payer'
+          label: Payer
           exclude: false
           alter:
             alter_text: false
@@ -1734,7 +1753,7 @@ display:
           relationship: payee
           group_type: group
           admin_label: ''
-          label: 'Payee'
+          label: Payee
           exclude: false
           alter:
             alter_text: false
@@ -1900,17 +1919,14 @@ display:
           field_api_classes: false
           plugin_id: field
           provider: field
-        transitions:
-          id: transitions
+        operations:
+          id: operations
           table: mcapi_transaction
-          field: transitions
+          field: operations
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - mcapi
-          label: Transitions
+          label: Operations
           exclude: false
           alter:
             alter_text: false
@@ -1929,7 +1945,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: null
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1951,10 +1967,9 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          mode: ajax
-          view: 1
-          plugin_id: transaction_transitions
-          provider: mcapi
+          destination: true
+          entity_type: mcapi_transaction
+          plugin_id: entity_operations
       display_description: ''
       display_extenders: {  }
       tab_options:
@@ -1963,3 +1978,12 @@ display:
         description: ''
         menu_name: main
         weight: 0
+    cache_metadata:
+      max-age: 0
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.mcapi_transaction.worth'

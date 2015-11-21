@@ -71,15 +71,6 @@ class TransactionViewsData extends EntityViewsData {
      *
      */
 
-    //virtual fields
-    $data['mcapi_transaction']['transitions'] = [
-      'title' => $this->t('Transitions'),
-      'help' => $this->t('What the user can do to the transaction'),
-      'field' => [
-        'id' => 'transaction_transitions',
-      ]
-    ];
-
     //@todo I don't know why these relationships aren't coming automatically when 'creator' is
     $data['mcapi_transaction']['payer']['help'] = $this->t('The wallet which was debited');
     $data['mcapi_transaction']['payer']['relationship'] = [
@@ -97,15 +88,15 @@ class TransactionViewsData extends EntityViewsData {
       'title' => 'Payee',
       'id' => 'standard'
     ];
-    
+    /*
     $data['mcapi_transaction']['transaction_bulk_form'] = [
       'title' => t('Bulk update'),
-      'help' => t('A form element that lets you run operations on multiple transactiona.'),
+      'help' => t('A form element that lets you run operations on multiple transactions.'),
       'field' => [
-        'id' => 'mcapi_transaction_bulk_form',
+        'id' => 'bulk_form',
       ],
     ];
-
+*/
     /**
     //@todo consider why the index table isn't being found by views
     // Load all typed data definitions of all fields. This should cover each of
@@ -272,7 +263,7 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'numeric',
       ],*/
       'sort' => [
-        'id' => 'numeric',
+        'id' => 'groupby_numeric',
       ],
     ];
     $data['mcapi_transactions_index']['outgoing'] = [
@@ -287,7 +278,7 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'numeric',
       ],*/
       'sort' => [
-        'id' => 'numeric',
+        'id' => 'groupby_numeric',
       ],
     ];
     $data['mcapi_transactions_index']['diff'] = [
@@ -301,7 +292,7 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'numeric',
       ],
       'sort' => [
-        'id' => 'numeric',
+        'id' => 'groupby_numeric',
       ],
     ];
     $data['mcapi_transactions_index']['volume'] = [
@@ -315,7 +306,7 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'numeric',
       ],
       'sort' => [
-        'id' => 'numeric',
+        'id' => 'groupby_numeric',
       ],
     ];
     $data['mcapi_transactions_index']['curr_id'] = [
@@ -355,13 +346,6 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'running_balance',
         'additional fields' => ['curr_id', 'wallet_id', 'serial', 'volume']
       ],
-    ];
-    $data['mcapi_transactions_index']['transitions'] = [
-      'title' => $this->t('Transitions'),
-      'help' => $this->t('What the user can do to the transaction'),
-      'field' => [
-        'id' => 'transaction_transitions',
-      ]
     ];
     $data['mcapi_transactions_index']['held_wallet'] = [
       'title' => $this->t('Held wallet'),

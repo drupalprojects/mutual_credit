@@ -2,15 +2,15 @@
 
 /**
  * @file
- *  Contains Drupal\mcapi\Plugin\TransactionRelative\Signatory
+ *  Contains Drupal\mcapi_signatures\Plugin\TransactionRelative\Signatory
  */
 
 namespace Drupal\mcapi_signatures\Plugin\TransactionRelative;
 
-use Drupal\mcapi\Plugin\TransactionRelativeInterface;
 use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\Plugin\TransactionRelativeInterface;
 use Drupal\Core\Entity\Query\QueryInterface;
-use Drupal\Core\Sessions\AccountInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Plugin\PluginBase;
 
 /**
@@ -27,21 +27,21 @@ class Signatory extends PluginBase implements TransactionRelativeInterface {
   /**
    * {@inheritdoc}
    */
-  public function isRelative(TransactionInterface $transaction, AccountInterface $account) {
+  function isRelative(TransactionInterface $transaction, AccountInterface $account) {
     return array_key_exists($account->id(), $transaction->signatories);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function condition(QueryInterface $query) {
+  function condition(QueryInterface $query) {
 
   }
   
   /**
    * {@inheritdoc}
    */
-  public function getUsers(TransactionInterface $transaction) {
+  function getUsers(TransactionInterface $transaction) {
     return $this->database->select('mcapi_signatures', 's')->fields('s', ['uid'])
       ->condition('serial', $transaction->serial->value)
       ->execute()->fetchCol();

@@ -46,10 +46,19 @@ class RouteSubscriber extends RouteSubscriberBase {
           $route->setDefaults([
             '_form' => '\Drupal\mcapi\Form\WalletAddForm',
             '_title_callback' => '\Drupal\mcapi\Form\WalletAddForm::title'
+          ])
+          ->setRequirement('_entity_create_access', 'mcapi_wallet:mcapi_wallet')
+          ->setOptions([
+            'parameters' => [
+              'user' => [
+                'type' => 'entity:user',
+              ]
+            ],
+            '_route_enhancers' => [
+              'route_enhancer.param_conversion', 'route_enhancer.entity'
+            ]
           ]);
-          $route->setRequirements([
-            '_entity_create_access' => 'mcapi_wallet:mcapi_wallet'
-          ]);
+
           //see Plugin/Derivative/WalletLocalAction...
           $collection->add("mcapi.wallet.add.$bundle_name", $route);
         }
@@ -74,7 +83,7 @@ class RouteSubscriber extends RouteSubscriberBase {
           $routes[$canonical_path] = $bundle_name;
         }
       }
-    }
+    }    
     return $routes;
   }
 

@@ -9,7 +9,7 @@
 namespace Drupal\mcapi\Plugin\Transition;
 
 use Drupal\mcapi\Entity\Transaction;
-use Drupal\mcapi\Plugin\TransitionBase;
+use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\Session\AccountInterface;
@@ -23,7 +23,7 @@ use Drupal\Core\Config\ImmutableConfig;
  *   id = "edit"
  * )
  */
-class Edit extends TransitionBase {
+class Edit extends TransactionActionBase {
 
   /**
    * {@inheritdoc}
@@ -91,7 +91,7 @@ class Edit extends TransitionBase {
   /**
    * {@inheritdoc}
    */
-  public function execute(array $values) {
+  public function execute() {
     //consider making this string configurable
     return ['#markup' => 'The transaction has been re-saved!'];
   }

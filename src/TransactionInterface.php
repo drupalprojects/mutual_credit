@@ -7,11 +7,7 @@
 
 namespace Drupal\mcapi;
 
-use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\Core\Entity\ContentEntityDatabaseStorage;
-use Drupal\Core\Entity\EntityTypeInterface;
-
-interface TransactionInterface extends ContentEntityInterface {
+interface TransactionInterface extends \Drupal\Core\Entity\ContentEntityInterface {
 
   /**
    * load many transactions and key them by serial number instead of xid

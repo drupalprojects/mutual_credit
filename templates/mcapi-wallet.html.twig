@@ -2,12 +2,14 @@
 /**
  * @file
  * Default theme implementation for the wallet wrapper
- * label //linked wallet name
+ * label 
  * element
  * canonical
  */
 
 #}
 <div class="wallet">
+  <h3>{{ label }}</h3>
+  <a href="{{ canonical }}">{% trans " Visit wallet" %}</a>
   {{ element }}
 </div>

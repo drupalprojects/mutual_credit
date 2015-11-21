@@ -33,4 +33,5 @@ third_party_settings:
 dependencies:
   module:
     - mcapi_tester
+    - mcapi_1stparty
 

@@ -27,7 +27,7 @@ class WalletAutocompleteController extends ControllerBase{
   private $role;
 
   function __construct($routeMatch) {
-    $this->role == $routeMatch->getParameter('role');
+    $this->role = $routeMatch->getParameter('role');
   }
 
   public static function create(ContainerInterface $container) {
@@ -44,6 +44,12 @@ class WalletAutocompleteController extends ControllerBase{
     return $this->returnWallets($wids);
   }
 
+  /**
+   * Get a list of wallet ids from params in the current route
+   * 
+   * @param Request $request
+   * @return integer[]
+   */
   protected function getWalletIds(Request $request) {
     //there are three different ways offered here, none of which is perfect
     //because of the different ways that wallet names can be construed

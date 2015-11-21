@@ -4,6 +4,9 @@ description: Simplest transaction type
 start_state: done
 status: true
 provider: mcapi
+view:
+  authenticated: authenticated
+edit: { }
 dependencies: 
   module:
     - mcapi

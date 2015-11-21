@@ -26,7 +26,7 @@ class TransactionSubscriber implements EventSubscriberInterface {
   public static function getSubscribedEvents() {
     return [
       McapiEvents::CHILDREN => ['onmakeChildren'],
-      McapiEvents::TRANSITION => ['onTransactionTransition']
+      McapiEvents::ACTION => ['onTransactionAction']
     ];
   }
 
@@ -50,13 +50,13 @@ class TransactionSubscriber implements EventSubscriberInterface {
    * Does things with a transactions and returns a render array in $events->output
    *
    * @param TransactionSaveEvents $events
-   *   $events->getArguments() yields form_values, old_state and transition
+   *   $events->getArguments() yields form_values, old_state and operation name, or action
    *   $events->getSubject() gives the transaction
    * @param string $eventName
    * @param ContainerAwareEventDispatcher $container
    */
-  function onTransactionTransition(TransactionSaveEvents $events, $eventName, ContainerAwareEventDispatcher $container) {
-    $events->addMessage('onTransactionTransition');
+  function onTransactionAction(TransactionSaveEvents $events, $eventName, ContainerAwareEventDispatcher $container) {
+    $events->addMessage('onTransactionAction: '.$eventName);
   }
 
 }

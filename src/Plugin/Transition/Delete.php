@@ -10,7 +10,7 @@ namespace Drupal\mcapi\Plugin\Transition;
 
 use Drupal\mcapi\CurrencyInterface;
 use Drupal\mcapi\Entity\State;
-use Drupal\mcapi\Plugin\TransitionBase;
+use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -21,10 +21,10 @@ use Drupal\Core\Form\FormStateInterface;
  *   id = "delete"
  * )
  */
-class Delete extends TransitionBase {
+class Delete extends TransactionActionBase {
 
   /**
-   * @see \Drupal\mcapi\TransitionBase::buildConfigurationForm()
+   * @see \Drupal\mcapi\TransactionActionBase::buildConfigurationForm()
    */
   static function settingsFormTweak(array &$form, FormStateInterface $form_state, ImmutableConfig $config) {
     unset($form['access'][TRANSACTION_STATE_ERASED]);

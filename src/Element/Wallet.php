@@ -12,7 +12,7 @@ use Drupal\Core\Entity\Element\EntityAutocomplete;
 use Drupal\Component\Utility\Tags;
 
 /**
- * Provides a widget to select wallets, using autocomplete
+ * Provides a widget to select wallet references by name, using autocomplete
  *
  * @FormElement("select_wallet")
  *

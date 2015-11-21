@@ -1,10 +1,10 @@
-id: test1
-path: 'transact/exchange1'
+id: test2
+path: 'transact/exchange2'
 menu:
-  title: 'Pay someone in exchange 1'
+  title: 'Pay someone in exchange 2'
   menu_name: Tools
   weight: 5
-title: 'Pay someone in exchange 1'
+title: 'Pay someone in exchange 2'
 status: 1
 type: default
 outgoing: true
@@ -29,7 +29,8 @@ experience:
 langcode: en
 dependencies: {  }
 third_party_settings: 
-  exchange: 1
+  exchange: 2
 dependencies:
   module:
     - mcapi_tester
+    - mcapi_1stparty

@@ -81,7 +81,7 @@ function mcapi_limits_entity_extra_field_info() {
  * implement hook_ENTITY_TYPE_view().
  * adds the extra_fields to the wallet view according to the display settings
 */
-function mcapi_limits_mcapi_wallet_view(&$build, WalletInterface $wallet, EntityViewDisplayInterface $display, $view_mode, $langcode) {
+function mcapi_limits_mcapi_wallet_view(&$build, $wallet, $display, $view_mode) {
   if ($display->getComponent('balance_limits')) {
     module_load_include('inc', 'mcapi_limits');
     $build += mcapi_view_limits($wallet);

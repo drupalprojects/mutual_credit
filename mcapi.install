@@ -51,33 +51,17 @@ function mcapi_install() {
 }
 
 function mcapi_modules_installed() {
-  //ensure all new transactionRelatives and transitions are enabled by default
+  //ensure all new transactionRelatives are enabled by default
   $save = FALSE;
   $conf = \Drupal::configFactory()->getEditable('mcapi.settings');
-  $active = $conf->get('active_transitions');
-  foreach (\Drupal::service('mcapi.transition_manager')->getDefinitions() as $id => $definition) {
-    if (!array_key_exists($id, $active)) {
-      $active[$id] = $id;
-      //drupal_set_message('enabled transition '.$id);
-    }
-    //this may result in more than one save, but it won't result in saving unchanged values
-    $conf->set('active_transitions', $active)->save();
-  }
-
   $active = $conf->get('active_relatives');
   foreach (\Drupal::service('mcapi.transaction_relative_manager')->getDefinitions() as $id => $definition) {
     if (!array_key_exists($id, $active)) {
       $active[$id] = $id;
-      //drupal_set_message('enabled relative '.$id);
     }
     //this may result in more than one save, but it won't result in saving unchanged values
     $conf->set('active_relatives', $active)->save();
   }
-  //ensure that all states are checked in the view transition
-  $view_transition = \Drupal::configFactory()->getEditable('mcapi.transition.view');
-  $states = array_keys(Drupal\mcapi\Entity\State::loadMultiple());
-  $view_transition->set('states', array_combine($states, $states));
-  $view_transition->save();
   //might need to clear some cache
 }
 
@@ -99,6 +83,7 @@ db_drop_table('mcapi_transaction__worth');
 db_drop_table('mcapi_exchange__currencies');
 db_drop_table('mcapi_signatures');
 db_delete('config')->condition('name', '%mcapi%', 'LIKE')->execute();
+db_delete('config')->condition('name', 'system.action.transaction%', 'LIKE')->execute();
 db_delete('config')->condition('name', [
  'views.view.wallets',
  'views.view.wallet_log',

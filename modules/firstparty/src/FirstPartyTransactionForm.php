@@ -10,9 +10,9 @@
 namespace Drupal\mcapi_1stparty;
 
 use Drupal\mcapi\Form\TransactionForm;
-use Drupal\mcapi\Plugin\TransitionManager;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Type;
+use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -46,7 +46,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     );
   }
 
-  public function init($form_state) {
+  public function init(FormStateInterface $form_state) {
     parent::init($form_state);
     $this->entity = $this->configEntity->makeDefaultTransaction();
     foreach ($this->overrides as $key => $value) {
@@ -59,10 +59,12 @@ class FirstPartyTransactionForm extends TransactionForm {
    * the 1stparty form settings saved in $this->configEntity.
    */
   public function form(array $form, FormStateInterface $form_state) {
-    $config = $this->configEntity;
+      
     $form = parent::form($form, $form_state);
     
-    if ($config->get('incoming')) {
+    $config = $this->configEntity;
+    $form['#incoming'] = $config->get('incoming');
+    if ($form['#incoming']) {
       $partner = &$form['payer'];
       $mywallet = &$form['payee']['widget'][0]['target_id'];
     }
@@ -98,8 +100,9 @@ class FirstPartyTransactionForm extends TransactionForm {
       unset($partner['widget'][0]['target_id']['#options'][$my_one_wallet]);
     }
     //handle the description
-    $form['description']['#placeholder'] = $config->description['placeholder'];
-
+    if (isset($config->fieldapi_presets['description']['placeholder'])) {
+      $form['description']['#placeholder'] = $config->fieldapi_presets['description']['placeholder'];
+    }
     //worth field needs special treatment.
     //The allowed_curr_ids provided by the widget need to be overwritten
     //by the curr_ids in the designed form, if any.
@@ -134,16 +137,16 @@ class FirstPartyTransactionForm extends TransactionForm {
 
     $preview_mode = $this->configEntity->experience['preview'];
 
-    if ($preview_mode != TransitionManager::CONFIRM_NORMAL) {
+    if ($preview_mode != TransactionActionBase::CONFIRM_NORMAL) {
       $actions['submit']['#attached']['library'][] = 'core/drupal.ajax';
-      if ($preview_mode == TransitionManager::CONFIRM_MODAL) {
+      if ($preview_mode == TransactionActionBase::CONFIRM_MODAL) {
         $actions['submit']['#attributes'] = [
           'class' => ['use-ajax'],
           'data-accepts' => 'application/vnd.drupal-modal',
           'data-dialog-options' => Json::encode(['width' => 500])
         ];
       }
-      elseif($display == TransitionManager::CONFIRM_AJAX) {
+      elseif($display == TransactionActionBase::CONFIRM_AJAX) {
         //curious how, to make a ajax link it seems necessary to put the url in 2 places
         $actions['submit']['#ajax'] = [
           'wrapper' => 'mcapi-transaction-1stparty-form',

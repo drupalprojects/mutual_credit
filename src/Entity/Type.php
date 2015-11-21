@@ -48,18 +48,25 @@ class Type extends ConfigEntityBase {
   public $description;
 
   /**
-   * start of which to start with.
+   * first state of a new transaction
    *
    * @var integer
    */
   public $start_state;
 
   /**
-   * start of which to start with.
+   * transaction relatives who can view transactions of this type
    *
    * @var integer
    */
-  public $provider;
+  public $view;
+  
+  /**
+   * transaction relatives who can edit transactions of this type
+   *
+   * @var integer
+   */
+  public $edit;
   
   /**
    * {@inheritdoc}

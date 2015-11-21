@@ -42,12 +42,11 @@ class TransactionForm extends ContentEntityForm {
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
   public function form(array $form, FormStateInterface $form_state) {
-
+    $form = parent::form($form, $form_state);
     //the masspay form doesn't provide a transaction via the router or the paramConverter
     $transaction = $this->entity->getEntityTypeId() == 'mcapi_transaction'
       ? $this->entity
       : Transaction::Create();
-
 
     $form['type'] = [
       '#title' => t('Transaction type'),
@@ -69,7 +68,6 @@ class TransactionForm extends ContentEntityForm {
       '#default_value' => User::load(\Drupal::currentUser()->id()),
       '#weight' => 20
     ];
-    $form = parent::form($form, $form_state);
     return $form;
   }
 
@@ -77,7 +75,7 @@ class TransactionForm extends ContentEntityForm {
    * {@inheritdoc}
    * @note we are overriding here because this form is neither for saving nor deleting
    * and because previewing is compulsory. The created entitiy is passed to the
-   * 'create' transition form where it is saved.
+   * 'create' operation form where it is saved.
    */
   protected function actions(array $form, FormStateInterface $form_state) {
     return [
@@ -94,19 +92,18 @@ class TransactionForm extends ContentEntityForm {
    * 
    * @note does NOT call parent.
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
+  final public function submitForm(array &$form, FormStateInterface $form_state) {
     parent::submitForm($form, $form_state);//set $this->entity
     $this->tempStore
       ->get('TransactionForm')
       ->set('mcapi_transaction', $this->entity);
     //Drupal\mcapi\TransactionSerialConverter
     //then
-    //Drupal\mcapi\Plugin\Transition\Create
-
+    //Drupal\mcapi\Plugin\Transition\Create 
     //now we divert to the transition confirm form
     $form_state->setRedirect(
-      'mcapi.transaction.transition',
-      ['mcapi_transaction' => 0, 'transition' => 'create']);
+      'mcapi.transaction.operation',
+      ['mcapi_transaction' => 0, 'operation' => 'create']);
   }
 
   /**

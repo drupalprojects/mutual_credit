@@ -1,0 +1,32 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - mcapi
+id: transaction_unerase
+label: 'Erase a transaction'
+type: mcapi_transaction
+plugin: mcapi_transaction.unerase_action
+configuration:
+  type: mcapi_transaction
+  title: Unerase
+  tooltip: 'Revert the transaction to its former state'
+  states:
+    done: 0
+    pending: 0
+    erased: erased
+  access:
+    manager: manager
+    payer: 0
+    payee: 0
+    creator: 0
+    authenticated: 0
+    anon: 0
+  page_title: 'Are you sure you want to unerase this transaction?'
+  format: certificate
+  twig: ''
+  display: 2
+  button: Unerase
+  cancel_link: Cancel
+  message: ''
+

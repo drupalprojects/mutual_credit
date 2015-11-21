@@ -118,4 +118,26 @@ class WalletViewBuilder extends EntityViewBuilder {
     }
     return $output;
   }
+  
+   /** 
+   * {@inheritdoc}
+   */
+  public function buildComponents(array &$build, array $entities, array $displays, $view_mode) {
+    parent::buildComponents($build, $entities, $displays, $view_mode);
+    foreach ($entities as $id => $wallet) {
+      $extra = mcapi_entity_extra_field_info()['mcapi_wallet']['mcapi_wallet']['display'];
+      foreach (['balances', 'balance_bars', 'histories', 'stats'] as $component) {
+        if ($info = $displays[$wallet->bundle()]->getComponent($component)) {
+          $build[$id][$component] = [
+            '#theme' => 'wallet_'.$component,
+            '#wallet' => $wallet,
+            '#attributes' => ['class' => ['component', $component]],
+            '#theme_wrappers' => ['mcapi_wallet_component'],
+            '#weight' => $info['weight'],
+            '#title' => $extra[$component]['label']
+          ];
+        }
+      }
+    }
+  }
 }

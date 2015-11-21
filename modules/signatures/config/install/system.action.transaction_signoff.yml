@@ -1,0 +1,26 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - mcapi_signatures
+id: transaction_signoff
+label: 'Sign off a transaction'
+type: mcapi_transaction
+plugin: mcapi_transaction.signoff_action
+configuration:
+  type: mcapi_transaction
+  title: Sign Off
+  tooltip: Add all remaining signatures to this transaction
+  states:
+    done: 0
+    pending: pending
+    erased: 0
+  access: { }
+  page_title: 'Are you sure you want to sign this transaction off?'
+  format: certificate
+  twig: ''
+  display: 2
+  button: I''m sure!
+  cancel_link: Cancel
+  message: ''
+

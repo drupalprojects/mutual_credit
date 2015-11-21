@@ -8,7 +8,7 @@
 namespace Drupal\mcapi;
 
 /**
- * Contains all events for creating transactions and transitioning them between states
+ * Contains all events for creating transactions and transitioning them between workflow states
  */
 final class McapiEvents {
 
@@ -32,6 +32,6 @@ final class McapiEvents {
   /**
    * This hook is good for triggering notifications
    */
-  const TRANSITION = 'mcapi.transaction.transition';
+  const ACTION = 'mcapi.transaction.action';
 
 }

@@ -18,7 +18,9 @@ fieldapi_presets:
       -
         curr_id: cc
         value: 0
-  description: { }
+  description: 
+    preset:
+      placeholder: blah
 experience:
   twig: "Description of the exchange:\r\n{{ description }}\r\nin category{{ category }}\r\nwith\r\n{{ partner }}\r\npaying the sum of\r\n{{ worth }}"
   button: Preview

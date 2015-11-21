@@ -98,7 +98,6 @@ class WalletStorage extends SqlContentEntityStorage {
    * {@inheritdoc}
    */
   function walletsUserCanActOn($operation, $account) {
-    $wallets = [];
     $or = db_or();
     //wallets the user owns
     $or->condition(db_and()
@@ -121,6 +120,7 @@ class WalletStorage extends SqlContentEntityStorage {
       ->condition('operation', $operation)
       ->condition('uid', $account->id())
       ->execute();
+    
     return array_unique(array_merge($w1->fetchCol(), $w2->fetchCol()));
   }
 
@@ -171,31 +171,33 @@ class WalletStorage extends SqlContentEntityStorage {
       //entityTypes!
       foreach ($conditions['entity_types'] as $entity_type_id) {
         //might be better practice to get the EntityType object from the entity than the Definition from the entityManager
-        $entity_info = \Drupal::entityManager()->getDefinition($entity_type_id, TRUE);
-        //we need to make a different alias for every entity type we join to
-        $alias = $entity_type_id;
-        $entity_table = $entity_info->getDataTable() ? : $entity_info->getBaseTable();
-
+        $entity_info = $this->entityManager->getDefinition($entity_type_id, TRUE);
+        
         if ($entity_type_id == 'user') {
+          //don't know why the user entity doesn't use the name field as its entity label
           $label_key = 'name';
         }
-        else {
-          $label_key = $entity_info->getKey('label');
-        }
-
-        if ($label_key) {
-          $query->leftjoin($entity_table, $alias, "w.pid = $alias.uid");
-          $namelike->condition($alias.'.'.$label_key, $string, 'LIKE');
+        elseif ($label_key = $entity_info->getKey('label')) {
         }
         else {
-          drupal_set_message("Can't filter on ".$entity_type_id .' because there is no label field for that entityType', 'warning');
+          //this won't work in ajax
+          \Drupal::logger('mcapi')
+            ->error("Can't filter on ".$entity_type_id .' because there is no label field for that entityType');
+          continue;
         }
+        
+        //we need to make a different alias for every entity type we join to
+        $entity_table = $entity_info->getDataTable() ? : $entity_info->getBaseTable();
+        $query->leftjoin($entity_table, $entity_type_id, "w.entity_type = '$entity_type_id' AND w.pid = $entity_type_id.uid");
+        $namelike->condition($entity_type_id.'.'.$label_key, $string, 'LIKE');
+        
         /*
+        //use hook_query_walletFilter_alter() to further restrict by og
         //We are joining both to the entity table and to its exchanges reference
         //and to the exchanges table itself to check the exchange is enabled.
         $ref_table = $entity_type_id.'__'. EXCHANGE_OG_REF;//the entity reference field table name
-        $ref_alias = "x{$alias}";//an alias for the entity reference field table
-        $join_clause = "$ref_alias.entity_id = $alias.". $entity_info->getKey('id');
+        $ref_alias = "x{$entity_type_id}";//an alias for the entity reference field table
+        $join_clause = "$ref_alias.entity_id = $entity_type_id.". $entity_info->getKey('id');
         $query->leftjoin($ref_table, $ref_alias, $join_clause);
         //and ANOTHER join to ensure that the referenced exchange is enabled.
         $ex_alias = "mcapi_exchange_".$entity_type_id;
@@ -205,11 +207,10 @@ class WalletStorage extends SqlContentEntityStorage {
         */
       }
     }
-    //we know that user is is one of the entities in this query
+    //we know that user is one of the entities in this query
     if ($like) {
       $query->condition($namelike);
     }
-
     if ($limit) {
       //passing $limit = NULL gets converted to limit = 0, which is bad
       //however it is safe to say that if there is no limit there is no offset, right?

@@ -10,12 +10,13 @@ use \Drupal\Core\Render\Element;
  */
 function template_preprocess_first_party_transaction_form(&$vars) {  
   //add the buttons at the end if they weren't in the twig template already
-  if (strpos($vars['twig_template'], '{{ actions }}') === FALSE) {
-    $twig_template = $vars['form']['#twig_template'] . "\n{{ actions }}";
+  $form = &$vars['form'];
+  if (strpos($form['#twig_template'], '{{ actions }}') === FALSE) {
+    $twig_template = $form['#twig_template'] . "\n{{ actions }}";
   }
-
+  
   //replace the partner and mywallet with payer and payee
-  if ($vars['form']['#incoming']) {
+  if ($form['#incoming']) {
     $replacements = [
       '{{ partner }}' => '{{ payer }}',
       '{{ mywallet }}' => '{{ payee }}',
@@ -43,6 +44,7 @@ function theme_first_party_transaction_form($vars) {
   $tokens = ['hidden_elements' => []];
   //append everything not rendered onto the last rendered thing.
   $vars['twig_template'] .= '{{ hidden_elements }}';
+  $hidden = '';
   foreach (Element::children($form) as $fieldname) {
     //mywallet is never stripped because its visibility in the template is
     //context sensitive.
@@ -56,32 +58,34 @@ function theme_first_party_transaction_form($vars) {
     elseif (strpos($vars['twig_template'], '{ '.$fieldname.' }}')) {
       $tokens[$fieldname] = mcapi_render_stripped($form[$fieldname]);
     }
-    elseif($form[$fieldname]['#type'] == 'hidden' or $form[$fieldname]['#type'] == 'value') {
-      //nothing, these will be rendered automatically
+    elseif($form[$fieldname]['#type'] == 'hidden' || $form[$fieldname]['#type'] == 'token') {
+      $hidden .= $renderer->render($form[$fieldname]);
+    }
+    elseif($form[$fieldname]['#type'] == 'value') {
+        drupal_set_message($fieldname);
     }
     //add the rendered token to the hidden elements
-    elseif (@$form[$fieldname]['widget']) {
-      $hidden[] = 'field-name-'.$fieldname;
+    elseif (isset($form[$fieldname]['widget'])) {
+        drupal_set_message($fieldname);
+      //can't remember what this is for
+      //$hidden[] = 'field-name-'.$fieldname;
     }
     //if it is required, and its not yet added as a token show an error
     elseif ($form[$fieldname]['#required']) {
       //@todo unset and move message to watchdog
       drupal_set_message(t(
-        'No default value for required hidden element @name',
+        "No default value for required hidden element '@name'",
         ['@name' => $fieldname]
       ), 'error');
     }
   }
-  //unset any form elements which have tokens
-  foreach (array_keys($tokens) as $fieldname) {
-    unset($form[$fieldname]);
-  }
-  $template = _filter_autop($vars['twig_template']);
   $renderable = [
     '#type' => 'inline_template',
-    '#template' => $template,
+    '#template' => _filter_autop($vars['twig_template']) . $hidden,
     '#context' => $tokens
   ];
+  return $renderer->render($renderable);
+  
   //if we render this using the inline_template element, specifically
   //InlineTemplate::preRenderInlineTemplate($element)
   //the form elements are filtered out later by drupal_render
@@ -102,7 +106,7 @@ function mcapi_render_stripped($element) {
   if (isset($element['widget'])) {
     $element = $element['widget'];
   }
-  if (!in_array($element['#type'], ['checkbox', 'checkboxes', 'radios'])) {
+  if (isset($element['#type']) && !in_array($element['#type'], ['checkbox', 'checkboxes', 'radios'])) {
     mcapi_strip_wrappers_recursive($element);
   }
   return \Drupal::service('renderer')->render($element);

@@ -28,7 +28,6 @@ class TransactionFormAccessCheck extends EntityAccessCheck {
    *
    */
   public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
-
     $user = User::load($account->id());
     return \Drupal\mcapi\Access\TransactionAccessControlHandler::enoughWallets($user);
   }

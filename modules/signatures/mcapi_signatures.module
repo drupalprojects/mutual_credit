@@ -78,7 +78,7 @@ function mcapi_signatures_mcapi_transaction_load($entities) {
 
 /**
  * implement mcapi hook_ENTITY_delete
- * this doesn't happen with the undo transition, which merely changes the state.
+ * this doesn't happen with the undo action, which merely changes the state.
  * delete the signature data when a transaction is deleted
  */
 function mcapi_signatures_mcapi_transaction_delete($transaction) {
@@ -140,7 +140,7 @@ function mcapi_signatures_theme() {
  * implements hook_ENTITY_TYPE_view().
  * show the signatures on the transaction certificate.
  */
-function mcapi_signatures_mcapi_transaction_view(array &$build, $transaction, $display, $view_mode, $langcode) {
+function mcapi_signatures_mcapi_transaction_view(array &$build, $transaction, $display, $view_mode) {
   if ($view_mode == 'certificate' && isset($transaction->signatures) && in_array('mcapi_signatures', $display->getComponents())) {
     $build['mcapi_signatures'] = [
       '#theme' => 'mcapi_signatures',
@@ -190,7 +190,7 @@ function mcapi_signatures_entity_extra_field_info() {
  * Implements hook_ENTITY_TYPE_view() for user entities.
  * add the extraField
  */
-function mcapi_signatures_user_view(array &$build, UserInterface $account, EntityViewDisplayInterface $display) {
+function mcapi_signatures_user_view(array &$build, $account, $display) {
   if ($display->getComponent('mcapi_signatures')) {
     $build['mcapi_signatures'][] = views_embed_view(
       'mcapi_pending_signatures',

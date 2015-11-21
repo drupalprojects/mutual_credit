@@ -53,6 +53,7 @@ mcapi_1stparty.editform.*:
     fieldapi_presets:
       type: mapping
       label: 'Other presets'
+      mapping: { }
     experience:
       type: mapping
       label: 'Experience'

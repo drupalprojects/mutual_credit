@@ -79,11 +79,6 @@ function mcapi_token_info() {
       'description' => $def->getDescription()
     );
   }
-  //add a couple more tokens for virtual fields
-  $info['tokens']['mcapi']['links'] =  array(
-    'name' => t('Links'),
-    'description' => t("Links to transaction transitions"),
-  );
   $info['tokens']['mcapi']['url'] =  array(
     'name' => t('URL'),
   );

@@ -471,17 +471,14 @@ display:
           hide_alter_empty: true
           plugin_id: mcapi_state
           provider: mcapi
-        transitions:
-          id: transitions
+        operations:
+          id: operations
           table: mcapi_transaction
-          field: transitions
+          field: operations
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - mcapi
-          label: Transitions
+          label: Operations
           exclude: false
           alter:
             alter_text: false
@@ -500,7 +497,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: null
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -522,10 +519,9 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          mode: ajax
-          view: 0
-          plugin_id: transaction_transitions
-          provider: mcapi
+          destination: true
+          entity_type: mcapi_transaction
+          plugin_id: entity_operations
         label:
           id: label
           table: mcapi_wallet
@@ -1134,17 +1130,14 @@ display:
           hide_alter_empty: true
           plugin_id: mcapi_state
           provider: mcapi
-        transitions:
-          id: transitions
+        operations:
+          id: operations
           table: mcapi_transaction
-          field: transitions
+          field: operations
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            module:
-              - mcapi
-          label: Transitions
+          label: Operations
           exclude: false
           alter:
             alter_text: false
@@ -1163,7 +1156,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: null
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1185,10 +1178,9 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          mode: ajax
-          view: 0
-          plugin_id: transaction_transitions
-          provider: mcapi
+          destination: true
+          entity_type: mcapi_transaction
+          plugin_id: entity_operations
       display_description: ''
       enabled: true
       relationships:

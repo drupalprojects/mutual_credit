@@ -7,9 +7,11 @@
 
 namespace Drupal\mcapi\ViewBuilder;
 
+use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
+use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -17,11 +19,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class TransactionViewBuilder extends EntityViewBuilder {
 
-  private $viewTransition;
   private $settings;
 
   public function __construct($entity_type, $entity_manager, $language_manager, $config_factory) {
-    $this->viewTransition = $config_factory->get('mcapi.transition.view');
     $this->settings = $config_factory->get('mcapi.transition.view');
     parent::__construct($entity_type, $entity_manager, $language_manager);
   }
@@ -116,6 +116,116 @@ class TransactionViewBuilder extends EntityViewBuilder {
     }
     return $build_list[0];
   }
+  
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function buildComponents(array &$build, array $entities, array $displays, $view_mode) {
+    parent::buildComponents($build, $entities, $displays, $view_mode);
+    foreach ($entities as $id => $transaction) {
+      if (!$transaction->noLinks) {
+        $view_link = \Drupal::routeMatch()->getRouteName() != 'entity.mcapi_transaction.canonical';
+        foreach ($this->buildActionlinks($transaction, $view_link) as $op) {
+          $items[] = [
+            '#type' => 'link',
+            '#title' => $op['title'],
+            '#url' => $op['url']
+          ];
+        }
+        $build[$id]['links'] = [
+          //'#title' => t('Operations...'),
+          '#theme' => 'item_list',
+          '#list_type' => 'ul',
+          '#items' => $items,
+          '#attributes' => ['class' => ['transaction-operations']]
+        ];
+      }
+    }
+  }
+  
+  /**
+   *
+   * @param TransactionInterface $transaction
+   * @param string $view_mode
+   * @param string $dest_type
+   *   whether the links should go to a new page, a modal box, or an ajax refresh
+   *
+   * @return array
+   *   A renderable array
+   */
+  function buildActionlinks(TransactionInterface $transaction, $show_view = TRUE) {
+    $operations = [];
+    //edit is not an action entity, but it does belong with these links.
+    if ($transaction->access('update')) {
+      $operations['edit'] = [
+        'title' => t('Edit'),
+        'weight' => 3,
+        'url' => $transaction->urlInfo('edit-form'),
+      ];
+    }
+    
+    foreach (mcapi_load_transaction_actions() as $action_name => $action) {
+      $plugin = $action->getPlugin();
+      if ($plugin->access($transaction)) {
+        $route_params = ['mcapi_transaction' => $transaction->serial->value];
+        if ($action_name == 'transaction_view') {
+          $route_name = 'entity.mcapi_transaction.canonical';
+        }
+        else {
+          $route_name = $action->getPlugin()->getPluginDefinition()['confirm_form_route_name'];
+          $route_params['operation'] = substr($action_name, 12);
+        }
+        
+        //there is a way of doing this for actions which might yield a different URL
+        $operations[$action_name] = [
+          'title' => $plugin->getConfiguration()['title'],
+          'url' => Url::fromRoute($route_name, $route_params)
+        ];
+        
+        
+        $display = $plugin->getConfiguration('display');
+        if ($display != TransactionActionBase::CONFIRM_NORMAL) {
+          if ($display == TransactionActionBase::CONFIRM_MODAL) {
+            $renderable['#attached']['library'][] = 'core/drupal.ajax';
+            $operations[$action_name]['attributes'] = [
+              'class' => ['use-ajax'],
+              'data-dialog-type' => 'modal',
+              'data-dialog-options' => Json::encode(['width' => 500]),
+            ];
+          }
+          elseif($display == TransactionActionBase::CONFIRM_AJAX) {
+            //curious how, to make a ajax link it seems necessary to put the url in 2 places
+            $operations[$action_name]['ajax'] = [
+              //there must be either a callback or a path
+              'wrapper' => 'transaction-'.$transaction->serial->value,
+              'method' => 'replace',
+              'path' => $operations[$action_name]['url']->getInternalPath()
+            ];
+          }
+        }
+        elseif ($display != TransactionActionBase::CONFIRM_NORMAL && $action_name != 'view') {        
+          //the link should redirect back to the current page, if not otherwise stated
+          if($dest = $plugin->getConfiguration('redirect')) {
+            $redirect = ['destination' => $dest];
+          }
+          else {
+            $redirect = $this->redirecter->getAsArray();
+          }
+          //@todo stop removing leading slash when the redirect service does it properly
+          $operations[$action_name]['query'] = $redirect;
+        }
+      }
+    }
+    
+    $operations += \Drupal::moduleHandler()->invokeAll('entity_operation', [$transaction]);
+    \Drupal::moduleHandler()->alter('entity_operation', $operations, $transaction);
+    //@todo check the order is sensible
+    uasort($operations, '\Drupal\Component\Utility\SortArray::sortByWeightElement');
+    return $operations;
+  }
+
+  
 
 }
 

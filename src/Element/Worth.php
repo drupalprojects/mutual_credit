@@ -63,19 +63,21 @@ class Worth extends FormElement {
         $element['#allowed_curr_ids'] = array_keys(Exchange::currenciesAvailable());
       }
       $map = Self::curr_map($element['#default_value']);
-      //restrict the defaults according to the allowed currencies
-      if ($not_allowed = array_diff(array_keys($map), $element['#allowed_curr_ids'])) {
-        //message only shows the FIRST not allowed currency
-        drupal_set_message(
-          t(
-            'Passed default @currency is not one of the allowed currencies',
-            ['@currency' => CurrencyEntity::load(reset($not_allowed))->label()]
-          ),
-          'warning'
-        );
+      if (!empty($element['#allowed_curr_ids'])) {
+        //restrict the defaults according to the allowed currencies
+        if ($not_allowed = array_diff(array_keys($map), $element['#allowed_curr_ids'])) {
+          //message only shows the FIRST not allowed currency
+          drupal_set_message(
+            t(
+              'Passed default @currency is not one of the allowed currencies',
+              ['@currency' => CurrencyEntity::load(reset($not_allowed))->label()]
+            ),
+            'warning'
+          );
+        }
       }
       $blank = $element['#config'] ? '' : 0;
-      //ensure each allowed currencies has a default value, which is used for building the widget
+      //ensure each allowed currency has a default value, which is used for building the widget
       foreach (array_diff($element['#allowed_curr_ids'], array_keys($map)) as $curr_id) {
         if (array_search($curr_id, array_keys($map)) === FALSE) {
           $val = intval($element['#default_value'][$map[$curr_id]]['value']);

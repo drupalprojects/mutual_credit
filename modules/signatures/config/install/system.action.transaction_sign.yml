@@ -1,0 +1,26 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - mcapi
+id: transaction_sign
+label: 'Sign a transaction'
+type: mcapi_transaction
+plugin: mcapi_transaction.sign_action
+configuration:
+  type: mcapi_transaction
+  title: Sign
+  tooltip: Add your signature to this transaction
+  states:
+    done: done
+    pending: pending
+    erased: 0
+  access: { }
+  page_title: 'Are you sure you want to sign?'
+  format: certificate
+  twig: ''
+  display: 2
+  button: I''m sure!
+  cancel_link: Cancel
+  message: ''
+

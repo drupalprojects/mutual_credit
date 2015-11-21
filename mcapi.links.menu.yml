@@ -14,7 +14,7 @@ entity.mcapi_currency.collection.link:
 
 mcapi.admin.transactions:
   title: Transactions
-  description: Configuration around transaction states, types and transitions
+  description: Configuration around transaction states, types and actions
   route_name: mcapi.admin.transactions
   parent: mcapi.admin
   weight: 6
@@ -28,10 +28,34 @@ mcapi.admin_wallets:
 
 mcapi.admin.transactions:
   title: Workflow
-  description: Configure workflow and user experience for each transaction transition
+  description: Configure workflow and user experience for each transaction action
   route_name: mcapi.admin.transactions
   parent: mcapi.admin
   weight: 15
+  
+mcapi.admin.access:
+  title: Access
+  description: Determine view and edit access to transactions, by transaction type
+  route_name: mcapi.admin.access.op
+  route_parameters: 
+    op: view
+  parent: mcapi.admin
+  weight: 16
+  
+mcapi.admin.access.view:
+  title: View
+  route_name: mcapi.admin.access.op
+  route_parameters:
+    op: view
+  parent: mcapi.admin.access
+  weight: 0
+mcapi.admin.access.edit:
+  title: Edit
+  route_name: mcapi.admin.access.op
+  route_parameters:
+    op: edit
+  parent: mcapi.admin.access
+  weight: 1
 
 mcapi.admin_misc:
   title: Other configuration

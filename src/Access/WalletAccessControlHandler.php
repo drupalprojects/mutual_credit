@@ -112,7 +112,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
       return TRUE;
     }
     else {
-      $maxes = $config->get('entity_types)');
+      $maxes = $config->get('entity_types');
       $owned_wallets = \Drupal::entityManager()
         ->getStorage('mcapi_wallet')
         ->filter(['holder' => $holder]);

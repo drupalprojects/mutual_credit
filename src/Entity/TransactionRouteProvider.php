@@ -8,34 +8,29 @@
 namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Entity\Routing\EntityRouteProviderInterface;
 use Symfony\Component\Routing\Route;
-use Symfony\Component\Routing\RouteCollection;
 
 /**
  * Provides routes for the user entity.
  */
-class TransactionRouteProvider implements EntityRouteProviderInterface {
+class TransactionRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider {
 
   /**
    * {@inheritdoc}
    */
   public function getRoutes(EntityTypeInterface $entity_type) {
-    $route_collection = new RouteCollection();
+    $route_collection = parent::getRoutes($entity_type);
 
-    $parameters = [
-      'mcapi_transaction' => [
-        'serial' => TRUE
-      ]
-    ];
-    $route = (new Route('/transaction/{mcapi_transaction}'))
-      ->setDefaults([
-        '_entity_view' => 'mcapi_transaction.full',
-        '_title_callback' => 'Drupal\mcapi\Controller\TransactionController::pageTitle',
-      ])
-      ->setRequirement('_entity_access', 'mcapi_transaction.view')
-      ->setOption('parameters', $parameters);
-    $route_collection->add('entity.mcapi_transaction.canonical', $route);
+    $options = $route_collection
+      ->get('entity.mcapi_transaction.canonical')->getOptions();
+    $options['parameters']['mcapi_transaction']['serial'] = TRUE;
+    
+    $route_collection
+      ->get('entity.mcapi_transaction.canonical')
+      ->setOptions($options);
+    $route_collection
+      ->get('entity.mcapi_transaction.edit_form')
+      ->setOptions($options);
 
     $route = (new Route('/transaction/log'))
       ->setDefaults([
@@ -47,13 +42,14 @@ class TransactionRouteProvider implements EntityRouteProviderInterface {
       ->setOption('_admin_route', TRUE);
     $route_collection->add('mcapi.transaction_log', $route);
 
-    $route = (new Route('/transaction/{mcapi_transaction}/{transition}'))
+    $route = (new Route('/transaction/{mcapi_transaction}/{operation}'))
       ->setDefaults([
-        '_entity_form' => 'mcapi_transaction.transition',
+        '_entity_form' => 'mcapi_transaction.operation',
       ])
-      ->setRequirement('_entity_access', 'mcapi_transaction.transition')
-      ->setOption('parameters', $parameters);
-    $route_collection->add('mcapi.transaction.transition', $route);
+      ->setRequirement('_entity_access', 'mcapi_transaction.operation')
+      ->setOptions($options);
+    $route_collection->add('mcapi.transaction.operation', $route);
+
     return $route_collection;
   }
 

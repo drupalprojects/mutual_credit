@@ -59,7 +59,7 @@ function mcapi_help($route_name, $route_match) {
       ]);
     case 'mcapi.admin.transactions':
       $help = [
-        t("Transitions move transactions of various types between states, except for 'view', which is special"),
+        t("Special 'actions' move transactions of various types between states, except for 'view', which is special"),
         t('More states and types can be added as custom module configuration entities; no user interface exists for that.'),
       ];
       if (\Drupal::moduleHandler()->moduleExists('field_ui')) {
@@ -68,7 +68,7 @@ function mcapi_help($route_name, $route_match) {
       return implode(' ', $help);
     case 'entity.mcapi_transaction.field_ui_fields':
       $settings_url = Url::fromRoute('mcapi.admin_misc');
-      $transitions_url = Url::fromRoute('mcapi.admin.transactions');
+      $action_url = Url::fromRoute('mcapi.admin.transactions');
       $message = [
         t('These transaction display settings should always be overridden.'),
         t('To configure the certificate, override certificate.html.twig in your theme'),
@@ -77,8 +77,8 @@ function mcapi_help($route_name, $route_match) {
           ['!link' => \Drupal::l($settings_url->toString(), $settings_url)]
         ),
         t(
-          'Custom Twig can be used for display on the transition settings pages: !link.',
-          ['!link' => \Drupal::l($transitions_url->toString(), $transitions_url)]
+          'Custom Twig can be used for display on the action settings pages: !link.',
+          ['!link' => \Drupal::l($action_url->toString(), $action_url)]
         ),
       ];
       return implode(' ', $message);
@@ -93,18 +93,14 @@ function mcapi_help($route_name, $route_match) {
  */
 function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
   if ($display->getComponent('wallets_summaries')) {
-    //check the entity is of a type which can own a wallet.
-    $key = 'entity_types.' . $entity->getEntityTypeId() .':'. $entity->bundle();
     $wallets = [];
-    if (\Drupal::config('mcapi.settings')->get($key)) {
-      //get the wallets belonging to this entity
-      $wids = \Drupal::EntityManager()
-        ->getStorage('mcapi_wallet')
-        ->filter(['holder' => $entity]);
-      foreach (Wallet::loadMultiple($wids) as $wid => $wallet) {
-        if ($wallet->access(Wallet::OP_SUMMARY)) {
-          $wallets[] = $wallet;
-        }
+    //get the wallets belonging to this entity
+    $wids = \Drupal::EntityManager()
+      ->getStorage('mcapi_wallet')
+      ->filter(['holder' => $entity]);
+    foreach (Wallet::loadMultiple($wids) as $wid => $wallet) {
+      if ($wallet->access(Wallet::OP_SUMMARY)) {
+        $wallets[] = $wallet;
       }
     }
     if ($wallets) {
@@ -113,9 +109,6 @@ function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDis
           ->getViewBuilder('mcapi_wallet')
           //the wallet 'summary' view mode is provided in this module's default config
           ->viewMultiple($wallets, 'summary'),
-        //@todo Why does this wrap other components? why the article tag
-        '#prefix' => '<div class = "mcapi-wallets">',
-        '#suffix' => '</div>'
       ];
     }
   }
@@ -268,6 +261,15 @@ function mcapi_local_tasks_alter(&$tasks) {
 
 
 /**
+ * implements hook_entity_type_alter().
+ * Change the action list controller to a wrapper which hides this modules operation actions
+ */
+function mcapi_entity_type_alter(array &$entity_types) {
+  $entity_types['action']
+    ->setListBuilderClass('Drupal\mcapi\Controller\ActionListOverride');
+}
+
+/**
  * implements hook_entity_operation_alter().
  * prevent the transaction view modes from being tampered with
  */
@@ -399,7 +401,6 @@ function mcapi_theme() {
   return $items;
 }
 
-
 /**
  * Determine whether the system architecture allows an entity to hold wallets.
  * which is to say, whether it is a contentEntity with an audience field
@@ -424,30 +425,9 @@ function walletable($entity) {
  * implements hook_ENTITY_TYPE_view().
  * put the stamp for erased transactions
  */
-function mcapi_mcapi_transaction_view(array &$build, $transaction, $display, $view_mode, $langcode) {
+function mcapi_mcapi_transaction_view(array &$build, $transaction, $display, $view_mode) {
   if ($view_mode == 'certificate' && $transaction->state->target_id == 'erased') {
     $build['stamp'] = $transaction->state->entity->label;//this is translated
-  }
-}
-
-/**
- * implements hook_ENTITY_TYPE_view().
- * add components to the wallet display
- */
-function mcapi_mcapi_wallet_view(array &$build, $wallet, $display, $view_mode, $langcode) {
-  $walletViewBuilder = \Drupal::entityManager()->getViewBuilder('mcapi_wallet');
-  $extra = mcapi_entity_extra_field_info()['mcapi_wallet']['mcapi_wallet']['display'];
-  foreach (['balances', 'balance_bars', 'histories', 'stats'] as $component) {
-    if ($info = $display->getComponent($component)) {
-      $build[$component] = [
-        '#theme' => 'wallet_'.$component,
-        '#wallet' => $wallet,
-        '#attributes' => ['class' => ['component', $component]],
-        '#theme_wrappers' => ['mcapi_wallet_component'],
-        '#weight' => $info['weight'],
-        '#title' => $extra[$component]['label']
-      ];
-    }
   }
 }
 
@@ -460,10 +440,12 @@ function mcapi_mcapi_wallet_view(array &$build, $wallet, $display, $view_mode, $
  *   TRUE if all the items have a worth of zero
  */
 function empty_worth(array $worth) {
-  return array_filter(
-    $worth,
-    function ($val) {return $val['value'];} 
-  );
+  foreach ($worth as $item) {
+    if ($item['value']) {
+      return FALSE;
+    }
+  }
+  return TRUE;
 }
 
 /**
@@ -514,3 +496,34 @@ function user_wallet_details_access($user) {
   $result = $wallet->access(Wallet::OP_DETAILS, NULL, TRUE);
   return $result;
 }
+
+/**
+ * utility function
+ * loads any of the transaction operation actions
+ */
+function mcapi_transaction_action_load($operation) {
+  //sometimes the $operation is from the url so it is shortened, and sometimes is the id of an action.
+  //there is a convention that all transaction actions take the form transaction_ONEWORD
+  if ($operation == 'operation') {//take the oneword from the given path
+    $operation = \Drupal::routeMatch()->getParameter('operation');
+  }
+  if (substr($operation, 0, 12) != 'transaction_') {
+    $action_name = 'transaction_'.$operation;
+  }
+  else $action_name = $operation;
+  if ($action = \Drupal\system\Entity\Action::load($action_name)) {
+    return $action;
+  }
+  throw new \Exception("No action with name '$operation'");
+}
+
+/**
+ * utility function
+ * load those special transaction operations which are also actions
+ */
+function mcapi_load_transaction_actions() {
+  return \Drupal::entityManager()
+    ->getStorage('action')
+    ->loadByProperties(['type' => 'mcapi_transaction']);
+}
+

@@ -1,5 +1,5 @@
 name: Transaction signing
-description: Certain transaction types may require signatures before transitioning into the finished state
+description: Certain transaction types may require signatures before being counted
 package: Community Accounting
 configure: mcapi.admin.signatures
 core: 8.x

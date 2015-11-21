@@ -9,7 +9,7 @@ namespace Drupal\mcapi\Plugin\Action;
 
 
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\rules\Engine\RulesActionBase;
+use Drupal\rules\Core\RulesActionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\Session\AccountInterface;

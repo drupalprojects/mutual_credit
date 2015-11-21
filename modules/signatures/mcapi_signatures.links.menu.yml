@@ -1,6 +1,6 @@
 mcapi.admin.signatures.link:
-  title: Signatures and counter-signing
+  title: Signatures
   description: Determine which transactions need approval and by whom
   route_name: mcapi.admin.signatures
-  parent: mcapi.admin.transactions
+  parent: mcapi.admin
   weight: 5

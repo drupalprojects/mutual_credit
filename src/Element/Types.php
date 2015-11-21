@@ -26,7 +26,7 @@ class Types extends Radios {
       '#input' => TRUE,
       '#title_display' => 'before',
       '#process' => [
-        [$class, 'mcapi_process_types'],
+        [$class, 'processTypes'],
       ],
       '#pre_render' => [
         [$class, 'preRenderCompositeFormElement'],
@@ -41,7 +41,7 @@ class Types extends Radios {
    * @return array
    *   the processed $element
    */
-  static function mcapi_process_types($element, $form_state) {
+  static function processTypes($element, $form_state) {
     $element['#options'] = mcapi_entity_label_list('mcapi_type');
     if ($element['#multiple']) {
       $element['#theme_wrappers'] = ['checkboxes'];

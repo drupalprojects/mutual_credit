@@ -1,10 +1,13 @@
-langcode: en
-status: true
-provider: mcapi
-dependencies:
-  module:
-    - mcapi
 id: auto
 label: Automated
 description: 'Created automatically'
 start_state: done
+status: true
+provider: mcapi
+view:
+  authenticated: authenticated
+edit: { }
+dependencies:
+  module:
+    - mcapi
+third_party_settings: { }

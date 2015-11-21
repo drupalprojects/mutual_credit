@@ -4,17 +4,7 @@ Use \Drupal\Core\Url;
 
 function mcapi_signatures_install() {
   module_set_weight('mcapi_signatures', 2);
-  //enable the 'sign' transition but not the signall transition
-  $config = \Drupal::configFactory()->getEditable('mcapi.settings');
-  $active = $config->get('active_transitions');
-  $active['sign'] = 'sign';
-  $config->set('active_transitions', $active)->save();
   
-  //make pending transactions viewable
-  $config = \Drupal::configFactory()->getEditable('mcapi.transition.view');
-  $states = $config->get('states');
-  $states['pending'] = 'pending';
-  $config->set('states', $states)->save();
 }
 
 function mcapi_signatures_modules_installed($modules) {

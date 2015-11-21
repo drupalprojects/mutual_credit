@@ -47,8 +47,8 @@ class FirstParty extends BlockBase {
       if (substr($route_name, 0, 14) == 'mcapi.1stparty') {
         $access = AccessResult::forbidden();
       }
-      //or a transition form (including 'view' which is a transition)
-      elseif($route_name == 'mcapi.transaction.transition') {
+      //or an operation form)
+      elseif($route_name == 'mcapi.transaction.operation') {
         $access = AccessResult::forbidden();
       }
       //@todo check access settings of the form itself

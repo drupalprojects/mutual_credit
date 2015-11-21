@@ -55,9 +55,6 @@ use Drupal\Core\Entity\EntityStorageInterface;
 
 class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwnerInterface {
   
-  const UNDO_DELETE = 2;
-  const UNDO_ERASE = 1;
-  const UNDO_REVERSE = 0;
   
   const TYPE_ACKNOWLEDGEMENT = 2;
   const TYPE_COMMODITY = 1;
@@ -116,15 +113,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * @var integer
    */
   public $weight;
-
-  /**
-   * The delete mode of transactions using this currency.
-   * Note that transactions with multiple currencies will be deleted in the
-   * least destructive way
-   *
-   * @var type
-   */
-  public $deletion;
 
   /*
    * the $format is an intricately formatted expression which tells the system

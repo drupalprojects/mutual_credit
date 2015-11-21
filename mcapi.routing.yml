@@ -28,25 +28,14 @@ mcapi.admin.transactions:
   options:
     _admin_route: TRUE
 
-mcapi.admin.workflow.toggle:
-  path: '/admin/accounting/transactions/{transition}/toggle'
+#these have tabs. not sure whether they can be one
+mcapi.admin.access.op:
+  path: /admin/accounting/access/{op}
   defaults:
-    _form: 'Drupal\mcapi\Form\TransitionToggle'
-    _title_callback: 'Drupal\mcapi\Form\TransitionToggle::title'
+    _form: 'Drupal\mcapi\Form\AccessSettings'
+    _title: 'Transaction Access'
   requirements:
     _permission: 'configure mcapi'
-  options:
-    _admin_route: TRUE
-
-mcapi.workflow_settings:
-  path: '/admin/accounting/transactions/{transition}'
-  defaults:
-    _form: 'Drupal\mcapi\Form\TransitionSettingsForm'
-    _title_callback: 'Drupal\mcapi\Form\TransitionSettingsForm::title'
-  requirements:
-    _permission: 'configure mcapi'
-  options:
-    _admin_route: TRUE
 
 mcapi.admin_wallets:
   path: '/admin/accounting/wallets'
@@ -97,3 +86,11 @@ mcapi.user.wallet:
     _title_callback: '\Drupal\mcapi\Controller\WalletController::userPageTitle'
   requirements:
     _custom_access: user_wallet_details_access
+
+mcapi.wallet_log:
+  path: /wallet/{mcapi_wallet}/log
+  defaults: 
+    _controller: Drupal\mcapi\Controller\WalletController::log
+    _title_callback: Drupal\mcapi\Controller\WalletController::pageTitle
+  requirements:
+    _entity_access: mcapi_wallet.details

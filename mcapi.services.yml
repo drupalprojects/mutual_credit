@@ -1,11 +1,7 @@
 services:
-  mcapi.transition_manager:
-    class: Drupal\mcapi\Plugin\TransitionManager
-    arguments: [@container.namespaces, @cache.entity, @module_handler, @config.factory, @redirect.destination]
-
   mcapi.transaction_relative_manager:
     class: Drupal\mcapi\Plugin\TransactionRelativeManager
-    arguments: [@container.namespaces, @cache.entity, @module_handler, @config.factory, @database]
+    arguments: [@container.namespaces, @cache.entity, @module_handler, @config.factory]
 
   paramconverter.mcapi_transaction_serial:
     class: Drupal\mcapi\TransactionSerialConverter

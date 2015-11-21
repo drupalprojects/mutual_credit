@@ -74,14 +74,15 @@ class WalletAddForm extends Formbase {
       '#default_value' => '',
     );
     $form['entity_type'] = array(
-    	'#type' => 'value',
+      '#type' => 'value',
       '#value' => $this->holder->getEntityTypeId()
     );
     $form['pid'] = array(
-    	'#type' => 'value',
+      '#type' => 'value',
       '#value' => $this->holder->id()
     );
 /*
+ * @todo should we do wallet permission on the walletAddForm?
     foreach ($this->pluginManager->getDefinitions() as $def) {
       $plugins[$def['id']] = $def['label'];
     }

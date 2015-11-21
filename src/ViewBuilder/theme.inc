@@ -104,7 +104,8 @@ function template_preprocess_wallet_stats(&$vars) {
 function template_preprocess_mcapi_wallet(&$vars) {
   $wallet = $vars['element']['#mcapi_wallet'];
   $vars['label'] = $wallet->label();
-  $vars['canonical'] = $wallet->link();
+  $vars['canonical'] = 'wallet/'.$wallet->id();
+  //$vars['canonical'] = $wallet->toUrl()->toString();//@todo
 }
 
 /**
@@ -209,7 +210,7 @@ function _mcapi_get_axis_max($val) {
 
 /**
  * implements template_preprocess_THEMEHOOK for theme callback 'mcapi_transaction'
- * DO NOT OVERRIDE, javascript transitions depend on the classes defined here
+ * DO NOT OVERRIDE, javascript transaction operations depend on the classes defined here
  * override certificate or change the mcapi_sentence variable instead
  */
 function template_preprocess_mcapi_transaction(&$vars, $hook, $info) {
@@ -223,19 +224,13 @@ function template_preprocess_mcapi_transaction(&$vars, $hook, $info) {
   }
   if ($element['#view_mode'] == 'certificate') {
     foreach (['watermark', 'stamp'] as $overlay) {
-      if (@$element[$overlay]) {
+      if (isset($element[$overlay]) && $element[$overlay]) {
         $vars['overlay'] = $element[$overlay];
         $vars['overlay_class'] = $overlay;
       }
     }
   }
-  //@todo consider other approaches rather than the noLinks undeclared variable
-  //these should never be cached, but seem nonetheless to be cached!
-  if (!$transaction->noLinks) {
-    $view_link = \Drupal::routeMatch()->getRouteName() != 'entity.mcapi_transaction.canonical';
-    $vars['links'] = \Drupal::service('mcapi.transition_manager')
-      ->getLinks($transaction, $view_link);
-  }
+  $vars['links'] = render($element['links']);
 }
 
 /**
@@ -320,3 +315,5 @@ function get_transaction_vars(TransactionInterface $transaction) {
   $vars['url'] = $transaction->url('canonical');
   return $vars;
 }
+
+

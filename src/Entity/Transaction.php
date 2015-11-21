@@ -17,6 +17,8 @@ use Drupal\mcapi\McapiEvents;
 use Drupal\mcapi\TransactionSaveEvents;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\EntityChangedInterface;
+use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityConstraintViolationList;
@@ -33,12 +35,14 @@ use Drupal\Core\Entity\EntityConstraintViolationList;
  *     "storage" = "Drupal\mcapi\Storage\TransactionStorage",
  *     "storage_schema" = "Drupal\mcapi\Storage\TransactionStorageSchema",
  *     "view_builder" = "Drupal\mcapi\ViewBuilder\TransactionViewBuilder",
+ *     "list_builder" = "\Drupal\mcapi\ListBuilder\TransactionListBuilder",
  *     "access" = "Drupal\mcapi\Access\TransactionAccessControlHandler",
  *     "form" = {
- *       "transition" = "Drupal\mcapi\Form\TransitionForm",
+ *       "operation" = "Drupal\mcapi\Form\TransitionForm",
  *       "12many" = "Drupal\mcapi\Form\One2Many",
  *       "many21" = "Drupal\mcapi\Form\Many2One",
  *       "admin" = "Drupal\mcapi\Form\TransactionForm",
+ *       "edit" = "Drupal\mcapi\Form\TransactionEditForm"
  *     },
  *     "views_data" = "Drupal\mcapi\Views\TransactionViewsData",
  *     "route_provider" = {
@@ -55,15 +59,17 @@ use Drupal\Core\Entity\EntityConstraintViolationList;
  *   field_ui_base_route = "mcapi.admin.transactions",
  *   translatable = FALSE,
  *   links = {
- *     "canonical" = "/transaction/{mcapi_transaction}"
+ *     "canonical" = "/transaction/{mcapi_transaction}",
+ *     "edit-form" = "/transaction/{mcapi_transaction}/edit",
  *   },
  *   constraints = {
  *     "TransactionIntegrity" = {}
  *   }
  * )
  */
-class Transaction extends ContentEntityBase implements TransactionInterface {
+class Transaction extends ContentEntityBase implements TransactionInterface, EntityChangedInterface {
 
+  use EntityChangedTrait;
 
   private $mailPluginManager;
 
@@ -154,7 +160,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    *
    */
   function validate() {
-    $violationList = $this->getTypedData()->validate();//@return \Symfony\Component\Validator\ConstraintViolationListInterface
+    $violationList = parent::validate();
     if ($this->parent->value == 0) {//just to be sure
       if (!$this->serial->value) {
         $this->preInsert();
@@ -165,7 +171,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         }
       }
     }
-    return new EntityConstraintViolationList($this, iterator_to_array($violationList));
+    return $violationList;
   }
 
   /**
@@ -234,7 +240,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setLabel(t('Description'))
       ->setDescription(t('A one line description of what was exchanged.'))
       ->setRequired(TRUE)
-      ->setSettings(array('default_value' => '', 'max_length' => 255))//this could be a setting.
+      ->setDefaultValue('')
+      ->setSettings(['max_length' => 255])//this could be a setting.
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE);
 
@@ -246,6 +253,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $fields['parent'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Parent xid'))
       ->setDescription(t('Parent transaction that created this transaction.'))
+      ->setDefaultValue(0)
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 

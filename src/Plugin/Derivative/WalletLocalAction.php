@@ -7,13 +7,9 @@
 
 namespace Drupal\mcapi\Plugin\Derivative;
 
-use Drupal\mcapi\Routing\RouteSubscriber;
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
-use Drupal\Core\Routing\RouteProviderInterface;
 use Drupal\Component\Plugin\Derivative\DeriverBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Core\Url;
 
 /**
  * Provides local action definitions to create a wallet for all entities of types configured.
@@ -48,7 +44,9 @@ class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface
     //add wallet links can go in three locations
     if ($this->settings->get('add_link_location') != 'summaries') {
       foreach($this->settings->get('entity_types') as $entity_type_bundle => $max) {
-        if (!$max) continue;
+        if (!$max) {
+          continue;
+          }
         list($entity_type, $bundle_name) = explode(':', $entity_type_bundle);
         $key = "mcapi.wallet.add.{$bundle_name}.action";
         //assumes bundle names don't clash!

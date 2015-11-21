@@ -37,8 +37,8 @@ Normal users should always enter transactions using a more appropriate form, suc
 Its possible to add a description, or a date, or an image or categories to your transaction object
 You can see the 'states' and 'types' which comprise the workflow map
 The transaction 'type' determines the 'start state' and hence the workflow path.
-When you 'configure workflow' you can see the 'transitions' which are the workflow vectors.
-Each transition is fully configurable for you to decide the user experience.
+When you 'configure workflow' you can see the 'actions' which are the workflow vectors.
+Each action is fully configurable for you to decide the user experience.
 Use the 1stparty_forms module to design forms for users to use under different circumstances.
 
 Explore admin/accounting/misc
@@ -107,12 +107,11 @@ Intended for Drupal developers
 1. Transaction processing hooks
 
 2. Transaction workflow.
-There is no built in way to 'edit' transactions, since such transitions should be strictly controlled.
-There is a hook system for defining transaction states and defining the permission callbacks for the transitions to move between states.
+
+Workflow is built up using mcapi_type and mcapi_state entities, with a special type of action being used as the workflow transition
 By default, transactions are created in FINISHED state, and the 'undo' transition is visible only to permitted users.
-The signatures module shows how a transaction workflow can be created using transitions, states, and $transaction->type
-It declares another state, 'pending', and 2 transitions, 'sign' and 'sign off' (plus various other logic & config).
-Transitions show on the transaction as a field, and work through ajax. Each transition defined in hook_transaction_operations specifies the strings and callbacks needed. Each one determines under what circumstances it should appear and has an opportunity to inject elements into the confirm_form.
+The signatures module shows how transaction workflow can be augmented with a new type, a new state, and two actions
+These actions are also used for entity operations
 
 3. Firstparty forms
 Of course you can build your own forms using modules for creating transactions, but this powerful form builder is provided. Each form has its own address in the menu system, access control, and can be available as a block also.

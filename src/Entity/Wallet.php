@@ -8,7 +8,6 @@
 namespace Drupal\mcapi\Entity;
 
 use Drupal\mcapi\Exchange;
-use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\WalletInterface;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\ContentEntityBase;
@@ -44,12 +43,12 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *     },
  *     "views_data" = "Drupal\mcapi\Views\WalletViewsData",
  *     "route_provider" = {
- *       "html" = "Drupal\mcapi\Entity\WalletRouteProvider",
+ *       "html" = "Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider",
  *     },
  *   },
  *   admin_permission = "configure mcapi",
  *   base_table = "mcapi_wallet",
- *   label_callback = "Drupal\mcapi\Viewbuilder\WalletViewBuilder::DefaultLabel",
+ *   label_callback = "Drupal\mcapi\ViewBuilder\WalletViewBuilder::DefaultLabel",
  *   entity_keys = {
  *     "label" = "name",
  *     "id" = "wid",
@@ -180,7 +179,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       ->setLabel(t('Wallet name'))
       ->setDescription(t("Set by the wallet's owner"))
       ->addConstraint('max_length', 64)
-      ->setSetting('default_value', array(0 => '')); //if we leave the default to be NULL it is difficult to filter with mysql
+      ->setDefaultValue('');//if we leave the default to be NULL it is difficult to filter with mysql
     //->setDisplayConfigurable('view', TRUE)
     //->setDisplayConfigurable('form', TRUE);
 
@@ -208,7 +207,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       $fields[$key] = BaseFieldDefinition::create('string')
         ->setLabel($info[0])
         ->setDescription($info[1])
-        ->setSetting('default_value', array($defaults[$key]))
+        ->setDefaultValue($defaults[$key])
         ->setSetting('length', 1);
     }
     $fields['created'] = BaseFieldDefinition::create('created')
@@ -218,7 +217,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     $fields['orphaned'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Orphaned'))
       ->setDescription(t('TRUE if this wallet is not currently held'))
-      ->setSetting('default_value', array(0 => '0'));
+      ->setDefaultValue(0);
     return $fields;
   }
 
@@ -308,7 +307,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     foreach (Self::loadMultiple($wallet_ids) as $wallet) {
       $criteria = ['involving' => $wallet->id()];
       if (\Drupal::entityManager()->getStorage('mcapi_transaction')->filter($criteria)) {
-        $new_name = $this->t(
+        $new_name = t(
           "Formerly !name's wallet: !label", ['!name' => $wallet->label(), '!label' => $wallet->label(NULL, FALSE)]
         );
         $wallet->set('name', $new_name)
@@ -317,8 +316,8 @@ class Wallet extends ContentEntityBase implements WalletInterface {
           ->save();
         //@note this implies the number of wallets an exchange can own to be unlimited.
         //or more likely that this max isn't checked during orphaning
-        drupal_set_message($this->t(
-          "!name's wallets are now owned by exchange !exchange", [
+        drupal_set_message(t(
+          "!name's wallets are now owned by @entity_type !entity_label", [
           '!name' => $wallet->label(),
           '!exchange' => \Drupal::l($new_holder_entity->label(), $exchange->url())
             ]

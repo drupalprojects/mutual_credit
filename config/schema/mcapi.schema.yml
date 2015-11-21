@@ -42,9 +42,6 @@ mcapi.settings:
     active_relatives: 
       type: sequence
       name: Transaction relatives
-    active_transitions:
-      type: sequence
-      name: Active transition plugins
     wallet_access:
       type: mapping
       label: Default wallet access setting
@@ -137,9 +134,6 @@ mcapi.currency.*:
     weight:
       type: integer
       label: 'Weight'
-    deletion:
-      type: integer
-      label: Delete options
         
 mcapi.state.*:
   type: config_entity
@@ -174,10 +168,24 @@ mcapi.type.*:
     start_state:
       type: string
       label: Initial workflow state
+    provider:
+      type: string
+      label: Module
+    view:
+      type: transaction_relatives
+      label: View access
+    edit:
+      type: transaction_relatives
+      label: Edit access
+
+transaction_relatives:
+  type: sequence
+  label: Relatives
+  sequence: { }
   
-mcapi.transition.*:
-  type: config_entity
-  label: Transition settings
+action.configuration.mcapi_transaction.*:
+  type: mapping
+  label: Transition action settings
   mapping: 
     title:
       'type': label
@@ -203,25 +211,16 @@ mcapi.transition.*:
     button:
       'type': text
       'label': Button text
-    cancel_button:
+    cancel_link:
       'type': text
       'label': Cancel button text
-    format2:
-      'type': string
-      'label': Confirm form transaction display
-    redirect:
-      'type': string
-      'label': Redirect path
-    twig2:
-      'type': string
-      'label': Template
     message:
       'type': text
       'label': Success message
     weight:
       'type': integer
       'label': Weight
-    access:
-      'type': sequence
-      'label': Access settings
-    #third_party_settings included in definition of config_entity core.data_types.schema.yml
+    #this is transaction_relatives by default
+    access: { }
+  
+  

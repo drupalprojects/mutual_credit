@@ -10,11 +10,13 @@ counted:
   undone: false
 mail_errors: true
 #these are populated in hook_modules_enabled
-active_relatives: { }
-active_transitions:
-  - view
-  - erase
-  - edit
+active_relatives: 
+  - anon
+  - authenticated
+  - manager
+  - creator
+  - payer
+  - payee
 entity_types:
   'user:user': 1
 display_format: '!o'

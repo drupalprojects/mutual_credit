@@ -2,7 +2,7 @@
 
 /**
  * @file
- *  Contains Drupal\mcapi\Plugin\TransactionRelative\Payer
+ *  Contains Drupal\mcapi\Plugin\TransactionRelative\Authenticated
  */
 
 namespace Drupal\mcapi\Plugin\TransactionRelative;
@@ -19,7 +19,8 @@ use Drupal\Core\Plugin\PluginBase;
  * @TransactionRelative(
  *   id = "authenticated",
  *   label = @Translation("Authenticated users"),
- *   description = @Translation("Anyone who is logged in")
+ *   description = @Translation("Anyone who is logged in"),
+ *   weight = -1
  * )
  */
 class Authenticated extends PluginBase implements TransactionRelativeInterface {

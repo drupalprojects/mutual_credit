@@ -28,7 +28,7 @@ class States extends Radios {
       '#input' => TRUE,
       '#title_display' => 'before',
       '#process' => [
-        [get_class($this), 'mcapi_process_states'],
+        [get_class($this), 'processStates'],
       ],
       '#multiple' => FALSE,
       '#pre_render' => [
@@ -37,7 +37,7 @@ class States extends Radios {
     ];
   }
 
-  public static function mcapi_process_states(&$element, FormStateInterface $form_state, &$complete_form) {
+  public static function processStates(&$element, FormStateInterface $form_state, &$complete_form) {
     $element['#options'] = mcapi_entity_label_list('mcapi_state');
     if ($element['#multiple']) {
       $element['#theme_wrappers'] = ['checkboxes'];

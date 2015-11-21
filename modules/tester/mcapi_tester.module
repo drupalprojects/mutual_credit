@@ -12,9 +12,8 @@ use Drupal\user\Entity\User;
  * implements hook_mcapi_exchange_view()
  * adds extra_fields
  */
-function mcapi_tester_mcapi_exchange_view(&$build, $entity, $mode, $language) {
+function __mcapi_tester_mcapi_exchange_view(&$build, $entity, $mode, $language) {
   //@todo this role should be an og role
-  return;
   if ($roles = user_role_names(TRUE, 'exchange helper')) {
     $helpernames = [];
     //get all the helper users in this exchange
@@ -36,7 +35,7 @@ function mcapi_tester_mcapi_exchange_view(&$build, $entity, $mode, $language) {
   }
 }
 
-function mcapi_tester_make_transactions($num, $exchange = NULL) {
+function mcapi_tester_make_transactions($num, $exchange = NULL, &$sandbox) {
   //choose an exchange and get the wids in it
   $exchange_ids = [];
   if ($exchange) {//assume the mcapi_exchanges module is enabled
@@ -53,14 +52,17 @@ function mcapi_tester_make_transactions($num, $exchange = NULL) {
     $q->condition('g.gid', $exchange->id());
     $q->condition('g.entity_type', 'mcapi_wallet');
     $wids = $q->execute()->fetchCol();
+    if (count($wids) < 2) {
+     throw new \Exception('Not enough wallets to trade: in exchange '.$exchange);
+    } 
   }
   else {
     $wallets = \Drupal::EntityManager()->getStorage('mcapi_wallet')->loadByProperties(['entity_type' => 'user']);
     //quick way to select non-intertrading wallets
     $wids = array_keys($wallets);
-  }
-  if (count($wids) < 2) {
-    throw new \Exception('Not enough wallets to trade: '.($inter ? 'intertrading' : 'normal'));
+    if (count($wids) < 2) {
+      throw new \Exception('Not enough wallets to trade.');
+    }
   }
 
   for ($i = 1; $i <= $num; $i++) {
@@ -91,7 +93,10 @@ function mcapi_tester_make_transactions($num, $exchange = NULL) {
   db_query('UPDATE {mcapi_transaction} SET created = created-(serial*3600*12)');
   db_query('UPDATE {mcapi_transactions_index} SET created = created-(serial*3600*12)');
   $days = $num/2;
-  db_query('UPDATE {mcapi_wallet} SET created  = :created', ['created' => strtotime(-$days.' days')]);
+  db_query(
+    'UPDATE {mcapi_wallet} SET created  = :created', 
+    ['created' => strtotime(-$days.' days')]
+  );
 }
 
 function mcapi_tester_make_inter_transactions($num) {
@@ -140,4 +145,36 @@ function mcapi_tester_firstparty_editform_load($entities) {
   foreach ($entities as &$firstpartyform) {
   //  if
   }
+}
+
+
+/**
+ * Create up to 26 users and put them EACH IN ONE exchange
+ * Note that users will have a wallet created automatically according to the wallet settings
+ *
+ * @param integer $num
+ *   the number of users to create, max 26
+ * @param array $exchange_ids
+ *   the ids of exchanges the new members can join.
+ * @return array
+ *   the $account->id()s created
+ */
+function mcapi_tester_make_users($num = 26) {
+
+  //create users
+  $first = array('Alice', 'Bobby', 'Carry', 'Dave', 'Ebeneezer', 'Fanny', 'Garry', 'Harry', 'Isa', 'Josephine', 'Kerry', 'Larry', 'Mathieu', 'Nancy', 'Oliver', 'Perry', 'Quentin', 'Ruby', 'Sylvester', 'Trudy', 'Ursula', 'Veronica', 'William', 'Xanadu', 'Yuri', 'Zoe');
+  $last = array('Arachnid', 'Boulder', 'Castaway', 'Deathwish', 'Emerald', 'Frogleg', 'Golden', 'Handiman', 'Indignado', 'Janitor', 'Kant', 'Landrover', 'Mandrake', 'Nakomoto', 'Orwell', 'Python', 'Quarkson', 'Rhodes', 'Smythe', 'Trenchfoot', 'Ustinov', 'Victor', 'Wellington', 'X', 'Ypres', 'Zenithson');
+  shuffle($last);
+  for ($i = 0; $i < $num; $i++) {
+    $props = array(
+      'name' => $first[$i] .' '. $last[$i],
+      'mail' => 'test_'.strtolower($first[$i]).'@matslats.net',
+      'pass' => 'a',
+      'status' => 1,
+    );
+    $u = User::create($props);
+    $u->save();
+    $uids[] = $u->id();
+  }
+  return $uids;
 }
