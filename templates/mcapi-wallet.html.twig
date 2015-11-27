@@ -5,11 +5,11 @@
  * label 
  * element
  * canonical
+ * view_mode
  */
 
 #}
-<div class="wallet">
+<div class="wallet {{ view_mode }}">
   <h3>{{ label }}</h3>
-  <a href="{{ canonical }}">{% trans " Visit wallet" %}</a>
   {{ element }}
 </div>

@@ -8,7 +8,7 @@
 namespace Drupal\mcapi\Entity;
 
 use Drupal\mcapi\Exchange;
-use Drupal\mcapi\WalletInterface;
+use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\ContentEntityInterface;
@@ -40,10 +40,12 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *     "access" = "Drupal\mcapi\Access\WalletAccessControlHandler",
  *     "form" = {
  *       "edit" = "Drupal\mcapi\Form\WalletForm",
+ *       "create" = "Drupal\mcapi\Form\WalletAddForm",
+ *       "delete" = "Drupal\Core\Entity\ContentEntityDeleteForm",
  *     },
  *     "views_data" = "Drupal\mcapi\Views\WalletViewsData",
  *     "route_provider" = {
- *       "html" = "Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider",
+ *       "html" = "Drupal\mcapi\Entity\WalletRouteProvider",
  *     },
  *   },
  *   admin_permission = "configure mcapi",
@@ -58,33 +60,37 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *   links = {
  *     "canonical" = "/wallet/{mcapi_wallet}",
  *     "log" = "/wallet/{mcapi_wallet}/log",
- *     "inex" = "/wallet/{mcapi_wallet}/inex"
+ *     "inex" = "/wallet/{mcapi_wallet}/inex",
+ *     "delete-form" = "/wallet/{mcapi_wallet}/delete",
+ *     "edit-form" = "/wallet/{mcapi_wallet}/manage"
  *   },
  *   field_ui_base_route = "mcapi.admin_wallets"
  * )
  */
 class Wallet extends ContentEntityBase implements WalletInterface {
   
-  const ACCESS_ANY = '1';//this is the role id
-  const ACCESS_AUTH = '2';//this is the role id
-  const ACCESS_USERS = 'u';//user id is in the wallet access table
-  const ACCESS_OWNER =  'o';//this is replaced with a named user MAYBE NOT NEEDED
+  const ACCESS_ANY = 'a';//anonymous users
+  const ACCESS_MEMBERS = 'm';//authenticated users
+  const ACCESS_USERS = 'u';//refer to wallet_access table
+  const ACCESS_OG = 'g';//same groups as wallet owner
+  const ACCESS_OWNER = 'o';//in memory only - this is saved as u with the wallet owner 
   
   const OP_DETAILS = 'details';
   const OP_SUMMARY = 'summary';
   const OP_PAYIN = 'payin';
   const OP_PAYOUT = 'payout';
-  //there is another possible operation, 'edit' for which a constant is not declared
+  const OP_MANAGE = 'manage';
   
   private $holder;
   private $stats = [];
+  private $access = [];
 
   /**
    * {@inheritDoc}
    */
   public function getHolder() {
     if (!isset($this->holder)) {
-      $this->holder = $this->entityManager()
+      $this->holder = $this->entityTypeManager()
         ->getStorage($this->entity_type->value)
         ->load($this->pid->value);
       //in the impossible event that there is no owner, set
@@ -117,9 +123,9 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * {@inheritdoc}
    */
   public static function heldBy(ContentEntityInterface $entity) {
-    return \Drupal::EntityManager()
-        ->getStorage('mcapi_wallet')
-        ->filter(['holder' => $entity]);
+    return \Drupal::entityTypeManager()
+      ->getStorage('mcapi_wallet')
+      ->filter(['holder' => $entity]);
   }
 
 
@@ -137,14 +143,36 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     if (!array_key_exists('pid', $values) && array_key_exists('entity_type', $values)) {
       throw new Exception("new wallets must have an entity_type and a parent entity_id (pid)");
     }
-    $values += array('name' => '', 'orphaned' => 0, 'created' => REQUEST_TIME);
+    $values += [
+      'name' => '', 
+      'orphaned' => 0, 
+      'created' => REQUEST_TIME
+    ];
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function postCreate(\Drupal\Core\Entity\EntityStorageInterface $storage) {
     //put the default values for the access here
-    $access_settings = \Drupal::config('mcapi.settings')->getRawData();
-    foreach (Exchange::walletOps() as $op => $blurb) {
-      if (!array_key_exists($op, $values)) {
-        $values[$op] = key(array_filter($access_settings[$op]));
+    //@todo inject settings
+    $settings = \Drupal::config('mcapi.settings');
+    //at the point of creation the wallet has no settings of its own, so we use the defaults from settings
+    //many defaults are possible so we try them in order of caution
+    foreach (array_keys(Exchange::walletOps()) as $op) {
+      $setting = $settings->get($op);
+      foreach (['a', 'm', 'g', 'o', 'u'] as $p) {//@todo use the constants
+        if ($setting[$p]) {
+          $val = $p;
+          if ($p === 'o') {
+            $val = \Drupal::currentUser()->id();
+          }
+          $this->{$op}->value = $val;
+          continue 2;
+        }
       }
     }
+    if (empty($wallet->name->value)) $wallet->name->value == '';
   }
 
   /**
@@ -174,14 +202,12 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       ->setLabel(t('UUID'))
       ->setDescription(t('The wallet UUID.'))
       ->setReadOnly(TRUE);
-
     $fields['name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Wallet name'))
       ->setDescription(t("Set by the wallet's owner"))
-      ->addConstraint('max_length', 64)
+      ->setSetting('max_length', 64)
+      ->setSetting('default', '')
       ->setDefaultValue('');//if we leave the default to be NULL it is difficult to filter with mysql
-    //->setDisplayConfigurable('view', TRUE)
-    //->setDisplayConfigurable('form', TRUE);
 
     $fields['entity_type'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Holder entity type'))
@@ -192,22 +218,10 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     $fields['pid'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Holder entity ID'));
 
-    $defaults = [
-      SELF::OP_DETAILS => SELF::ACCESS_OWNER,
-      SELF::OP_SUMMARY => SELF::ACCESS_AUTH,
-      SELF::OP_PAYOUT => SELF::ACCESS_OWNER,
-      SELF::OP_PAYIN => SELF::ACCESS_AUTH,
-    ];
-    if ($access_settings = \Drupal::config('mcapi.settings')->getRawData()) {
-      foreach (array_keys($defaults) as $key) {
-        $defaults[$key][2] = current(array_filter($access_settings[$key]));
-      }
-    }
     foreach (Exchange::walletOps() as $key => $info) {
       $fields[$key] = BaseFieldDefinition::create('string')
         ->setLabel($info[0])
         ->setDescription($info[1])
-        ->setDefaultValue($defaults[$key])
         ->setSetting('length', 1);
     }
     $fields['created'] = BaseFieldDefinition::create('created')
@@ -240,7 +254,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    */
   public function getSummaries() {
     if (!$this->stats) {
-      $this->stats = $this->entityManager()
+      $this->stats = $this->entityTypeManager()
         ->getStorage('mcapi_transaction')
         ->summaryData($this->id());
       //ensure there is a value for all available currencies.
@@ -293,7 +307,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     if ($to) {
       $conditions['to'] = $to;
     }
-    return $this->entitymanager()->getStorage('mcapi_transaction')->filter($conditions);
+    return $this->entityTypeManager()->getStorage('mcapi_transaction')->filter($conditions);
   }
 
   /**
@@ -301,12 +315,12 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    */
   public static function orphan(ContentEntityInterface $holder) {
     $new_holder_entity = Exchange::findNewHolder($holder);
-    $wallet_ids = \Drupal::entityManager()
+    $wallet_ids = \Drupal::entityTypeManager()
       ->getStorage('mcapi_wallet')
       ->filter(['holder' => $holder]);
     foreach (Self::loadMultiple($wallet_ids) as $wallet) {
       $criteria = ['involving' => $wallet->id()];
-      if (\Drupal::entityManager()->getStorage('mcapi_transaction')->filter($criteria)) {
+      if (\Drupal::entityTypeManager()->getStorage('mcapi_transaction')->filter($criteria)) {
         $new_name = t(
           "Formerly !name's wallet: !label", ['!name' => $wallet->label(), '!label' => $wallet->label(NULL, FALSE)]
         );
@@ -341,14 +355,11 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * {@inheritDoc}
    */
   public function invalidateTagsOnSave($update) {
-    //invalidate the parent, especially the entity view, see mcapi_entity_view()
-    $tags = Cache::mergeTags(
-        $this->getEntityType()->getListCacheTags(), [$this->entity_type->value . ':' . $this->pid->value]
-    );
-    if ($update) {
-      // An existing entity was updated, also invalidate its unique cache tag.
-      $tags = Cache::mergeTags($tags, $this->getCacheTags());
-    }
+    parent::invalidateTagsOnSave($update);
+    //invalidate tags for the previous and current parents
+    $tags = [
+      $this->entity_type->value . ':' . $this->pid->value
+    ];
     Cache::invalidateTags($tags);
   }
 

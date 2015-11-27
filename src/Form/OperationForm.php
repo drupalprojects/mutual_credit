@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Form\TransitionForm.
+ * Definition of Drupal\mcapi\Form\OperationForm.
  */
 namespace Drupal\mcapi\Form;
 
@@ -14,15 +14,14 @@ use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 //I don't know if it is a good idea to extend the confirm form if we want ajax.
-class TransitionForm extends ContentEntityConfirmFormBase {
+class OperationForm extends ContentEntityConfirmFormBase {
 
   private $action;
   private $plugin;
   private $config;
-
-  private $destination;
-
   private $eventDispatcher;
+  private $destination;
+  private $entityTypeManager;
 
   /**
    * 
@@ -30,7 +29,8 @@ class TransitionForm extends ContentEntityConfirmFormBase {
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    * @param \Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher $event_dispatcher
    */
-  function __construct($route_match, $request_stack, $event_dispatcher) {
+  function __construct($entity_type_manager, $route_match, $request_stack, $event_dispatcher) {
+    $this->entityTypeManager = $entity_type_manager;
     $this->action = mcapi_transaction_action_load($route_match->getparameter('operation'));
     $this->plugin = $this->action->getPlugin();
     $this->config = $this->plugin->getConfiguration();
@@ -46,31 +46,11 @@ class TransitionForm extends ContentEntityConfirmFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
+      $container->get('entity_type.manager'),
       $container->get('current_route_match'),
       $container->get('request_stack'),
       $container->get('event_dispatcher')
     );
-  }
-
-  /**
-   * calculate the route name and args
-   * 
-   * @return Url
-   */
-  private function getDestinationPath() {
-    if ($this->destination) {
-      $path = $this->destination;
-    }
-    elseif ($redirect = $this->config['redirect']) {
-      $path = strtr($redirect, [
-        '[uid]' => $this->currentUser()->id(),
-        '[serial]' => $this->entity->serial->value
-      ]);
-    }
-    else {
-      $path = 'transaction/'.$this->entity->serial->value;
-    }
-    return Url::fromUri('base:'.$path);
   }
 
   /**
@@ -114,7 +94,7 @@ class TransitionForm extends ContentEntityConfirmFormBase {
    */
   public function getDescription() {
     $this->entity->noLinks = TRUE;
-    //this provides the transaction_view part of the form as defined in the transition settings
+    //this provides the transaction_view part of the form as defined in the action settings
     $format = $this->config['format'];
     if ($format == 'twig') {
       module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');
@@ -125,7 +105,7 @@ class TransitionForm extends ContentEntityConfirmFormBase {
       ];
     }
     else {
-      $renderable = $this->entityManager
+      $renderable = $this->entityTypeManager
         ->getViewBuilder('mcapi_transaction')
         ->view($this->entity, $format);
     }
@@ -138,13 +118,7 @@ class TransitionForm extends ContentEntityConfirmFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildForm($form, $form_state);
-
-    //rename the confirmForm description field so it can't clash with the transaction description field
-    //@see Edit transition
-    $form['preview'] = $form['description'];
-    unset($form['description']);
-    $form['preview']['#weight'] = -1;
-
+    $form['description']['#weight'] = -1;
     //not sure why this is sometimes not included from TransactionViewBuilder
     $form['#attached']['library'][] = 'mcapi/mcapi.transaction';
     $form['#attributes']['class'][] = 'transaction-operation-form';
@@ -162,8 +136,13 @@ class TransitionForm extends ContentEntityConfirmFormBase {
     try {
       //the op might have injected values into the form, so it needs to be able to access them
       $this->plugin->execute($this->entity);
-      if ($this->action->id() != 'transaction_delete') {
-        $this->entity->setValidationRequired(FALSE)->save();
+      if ($this->action->id() == 'transaction_delete') { 
+        if (!$this->destination) {
+          $this->destination = '/';//front page
+        }
+      }
+      else {
+        $this->entity->save();
       }
       $events = new TransactionSaveEvents(
         clone($this->entity),
@@ -174,7 +153,7 @@ class TransitionForm extends ContentEntityConfirmFormBase {
         ]
       );
       $this->eventDispatcher->dispatch(McapiEvents::ACTION, $events);
-      if ($message = $this->config['messsage']) {
+      if ($message = $this->config['message']) {
         drupal_set_message($message);
       }
     }
@@ -191,8 +170,16 @@ class TransitionForm extends ContentEntityConfirmFormBase {
     if ($message = $events->getMessage()) {
       drupal_set_message($message);
     }
-    $form_state->setRedirectUrl($this->getDestinationPath());
+        
+    if ($this->destination) {
+      $path = $this->destination;
+    }
+    else {
+      $path = 'transaction/'.$this->entity->serial->value;
+    }
+    $form_state->setRedirectUrl(Url::fromUri('base:'.$path));
   }
+
 
 }
 

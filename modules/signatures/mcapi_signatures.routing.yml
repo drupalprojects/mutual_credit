@@ -7,7 +7,7 @@ mcapi.signall:
     _custom_access: '\Drupal\mcapi_signatures\SignAllConfirm::access'
 
 mcapi.admin.signatures:
-  path: /admin/accounting/signatures
+  path: /admin/accounting/workflow/signatures
   defaults:
     _form: 'Drupal\mcapi_signatures\Form\Settings'
     _title: 'Signatures'

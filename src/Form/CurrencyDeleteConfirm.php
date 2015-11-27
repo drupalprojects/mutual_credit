@@ -28,7 +28,7 @@ class CurrencyDeleteConfirm extends EntityDeleteForm {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     parent::submitForm($form, $form_state);
-    \Drupal::EntityManager()->getStorage('mcapi_transaction')->wipeslate($this->entity->id());
+    \Drupal::entityTypeManager()->getStorage('mcapi_transaction')->wipeslate($this->entity->id());
   }
 
 }

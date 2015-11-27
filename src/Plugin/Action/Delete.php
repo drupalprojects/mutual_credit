@@ -39,23 +39,11 @@ class Delete extends \Drupal\mcapi\Plugin\TransactionActionBase {
    * {@inheritdoc}
    */
   public function execute($object = NULL) {
-    //$object is always Transaction entity
     $object->delete();
-  }
-  
-  
-  /**
-   * {@inheritdoc}
-   */
-  public function isConfigurable() {die('isConfigurable');
-    //prevents this action being added multiple times on admin/config/system/actions
-    return FALSE;
-  }
-
-  
-  public function executeMultiple(array $objects) {
-      parent::executeMultiple();
-      die('Delete::executeMultiple()');
+    if ($this->configuration['message']) {
+      drupal_set_message($this->configuration['message']);
+    }
+    //@todo how to redirect?
   }
   
 }

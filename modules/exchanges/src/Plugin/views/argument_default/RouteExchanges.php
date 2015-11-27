@@ -25,9 +25,9 @@ class RouteExchanges extends ArgumentDefaultPluginBase {
 
   /**
    * Return the default argument.
+   * @todo inject the service
    */
   public function getArgument() {
-    $entityManager = \Drupal::EntityManager();
     //there's no validator in core either for ANY entity or for ANY contentEntity or ANY Owned Entity
     //only for ONE given specific entityType
     //so this function needs to decide whether to return an argument

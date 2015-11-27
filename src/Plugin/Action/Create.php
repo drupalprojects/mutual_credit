@@ -25,8 +25,12 @@ class Create extends \Drupal\mcapi\Plugin\TransactionActionBase {
 
     
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
-    if ($object->id()) $result = FALSE;
-    else $result = \Drupal\mcapi\Access\TransactionAccessControlHandler::enoughWallets($account);
+    if ($object->id()) {
+      $result = FALSE;
+    }
+    else {
+      $result = $this->entityTypeManager->getAccessControlHandler('mcapi_transaction')->enoughWallets($account);
+    }
     if ($return_as_object) {
       return $result ? AccessResult::allowed() : AccessResult::forbidden();
     }

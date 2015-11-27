@@ -7,7 +7,7 @@
 
 namespace Drupal\mcapi_signatures\Plugin\TransactionRelative;
 
-use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Plugin\TransactionRelativeInterface;
 use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\Core\Session\AccountInterface;

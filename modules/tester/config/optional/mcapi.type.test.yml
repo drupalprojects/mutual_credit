@@ -1,7 +1,7 @@
 id: test
 label: Testing
 description: Created by the tester module
-start_state: done
+start_state: pending
 provider: mcapi_tester
 view:
   authenticated: authenticated

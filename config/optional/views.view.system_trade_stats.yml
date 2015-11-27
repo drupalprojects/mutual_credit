@@ -1,6 +1,8 @@
 langcode: en
 status: true
-dependencies: {  }
+dependencies:
+  module:
+    - mcapi
 id: system_trade_stats
 label: 'System trade stats'
 module: views

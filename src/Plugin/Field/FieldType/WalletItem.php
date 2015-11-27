@@ -22,9 +22,6 @@ use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
  *   no_ui = TRUE,
  *   default_formatter = "entity_reference_label",
  *   list_class = "\Drupal\Core\Field\EntityReferenceFieldItemList",
- *   constraints = {
- *     "ValidReference" = {}
- *   }
  * )
  */
 class WalletItem extends EntityReferenceItem {

@@ -1,10 +1,3 @@
-#sits next to the transaction field ui tabs
-mcapi.admin_tab:
-  route_name: mcapi.admin.transactions
-  title: Workflow
-  base_route: mcapi.admin.transactions
-  weight: 0
-
 #sits next to the wallet field ui tabs
 mcapi.admin_wallet_tab:
   route_name: mcapi.admin_wallets
@@ -20,16 +13,10 @@ mcapi.wallet.view.tab:
   weight: 0
 
 mcapi.wallet.edit.tab:
-  route_name: mcapi.wallet_edit
-  title: 'Edit'
+  route_name: entity.mcapi_wallet.edit_form
+  title: 'Manage'
   base_route: entity.mcapi_wallet.canonical
   weight: 5
-  
-mcapi.wallet.log.tab:
-  route_name: mcapi.wallet_log
-  title: 'Statement'
-  base_route: entity.mcapi_wallet.canonical
-  weight: 6
 
 #a default tab for editing a currency, lest more should be needed
 mcapi.currency.edit.tab:
@@ -50,8 +37,32 @@ mcapi.masspay.many21:
   base_route: mcapi.masspay.12many
   weight: 0
 
-mcapi.user.wallet.tab:
-  route_name: mcapi.user.wallet
-  title: Wallet
-  base_route: entity.user.canonical
-  weight: 5
+#default tab
+mcapi.admin_workflow_default_tab:
+  route_name: mcapi.admin.workflow
+  title: Workflow
+  base_route: mcapi.admin.workflow
+  weight: 0
+#edit view and edit access
+mcapi.admin.workflow.view_tab:
+  title: View access
+  route_name: mcapi.admin.access.op
+  route_parameters:
+    op: view
+  base_route: mcapi.admin.workflow
+  weight: 0
+mcapi.admin.workflow.edit_tab:
+  title: Edit access
+  route_name: mcapi.admin.access.op
+  route_parameters:
+    op: edit
+  base_route: mcapi.admin.workflow
+  weight: 1
+  
+
+mcapi.admin.transactions.default_tab:
+  title: Ledger
+  route_name: view.mcapi_transactions.admin
+  base_route: view.mcapi_transactions.admin
+  weight: 0
+  

@@ -8,6 +8,7 @@
 namespace Drupal\mcapi\ViewBuilder;
 
 use Drupal\mcapi\Plugin\TransactionActionBase;
+use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
@@ -32,7 +33,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
     return new static(
       $entity_type,
-      $container->get('entity.manager'),
+      $container->get('entity_type.manager'),
       $container->get('language_manager'),
       $container->get('config.factory')
     );
@@ -67,6 +68,9 @@ class TransactionViewBuilder extends EntityViewBuilder {
     switch($view_mode) {
       case 'certificate':
         $build['#theme'] = 'certificate';
+        if ($transaction->state->target_id == 'erased') {
+          $build['stamp']['#markup'] = $entity->state->entity->label;//this is translated
+        }
         break;
       case 'sentence':
         $template = $this->settings->get('sentence_template');
@@ -102,21 +106,6 @@ class TransactionViewBuilder extends EntityViewBuilder {
     //@todo we might need to use the post-render cache to get the links right instead of template_preprocess_mcapi_transaction
     return $build;
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  function build(array $build) {
-    $build_list = [
-      '#langcode' => $build['#langcode'],
-      0 => $build
-    ];
-    if ($build['#view_mode'] == 'certificate') {
-      $build_list = $this->buildMultiple($build_list);
-    }
-    return $build_list[0];
-  }
-  
   
   /**
    * {@inheritdoc}
@@ -147,12 +136,13 @@ class TransactionViewBuilder extends EntityViewBuilder {
   /**
    *
    * @param TransactionInterface $transaction
-   * @param string $view_mode
-   * @param string $dest_type
-   *   whether the links should go to a new page, a modal box, or an ajax refresh
+   * @param boolean $show_view
+   *   whether to include the 'view' link
    *
    * @return array
-   *   A renderable array
+   *   A renderable array of links
+   * 
+   * @todo what's going on with $show_view here?
    */
   function buildActionlinks(TransactionInterface $transaction, $show_view = TRUE) {
     $operations = [];

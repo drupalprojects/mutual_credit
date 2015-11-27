@@ -29,7 +29,7 @@ use Drupal\mcapi\Entity\Transaction;
 class TransactionSerialConverter extends \Drupal\Core\ParamConverter\EntityConverter {
 
   /**
-   * don't inject EntityManager as the parent expects
+   * don't bother injecting EntityTypeManager as the parent expects
    */
   function __construct(){}
   

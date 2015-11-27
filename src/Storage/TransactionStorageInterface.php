@@ -81,7 +81,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * @return array
    *   keys are trades, gross_in, gross_out, balance, volume, partners
    *
-   * @see \Drupal\mcapi\WalletInterface::getSummaries()
+   * @see \Drupal\mcapi\Entity\WalletInterface::getSummaries()
    */
   function summaryData($wallet_id, array $filters);
 

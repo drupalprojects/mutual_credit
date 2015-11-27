@@ -7,10 +7,8 @@
 
 namespace Drupal\mcapi\Plugin\Condition;
 
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Condition\ConditionPluginBase;
 use Drupal\Core\Form\FormStateInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a 'Transaction is in state' condition.

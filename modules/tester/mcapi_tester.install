@@ -53,7 +53,6 @@ function mcapi_tester_modules_installed($modules) {
 
 
 function multiple_exchanges() {
-
   $exchange_ids = mcapi_tester_make_exchanges();
 die('multiple exchanges not working yet');
 return;
@@ -70,7 +69,6 @@ return;
 /**
  * implements hook_uninstall().
  *
-  FieldStorageConfig::load('mcapi_transaction.categories')->delete();
  
  db_delete('config')->condition(
    'name',
@@ -94,14 +92,17 @@ return;
  \Drupal::configFactory()->getEditable('core.extension')
   ->clear("module.mcapi_tester")
   ->save();
- foreach user:loadMultiple()
+ foreach (\Drupal\user\Entity\User::loadMultiple() as $user) {
+   if ($user->id() > 1)$user->delete();
+ }
+ foreach (\Drupal\mcapi\Entity\Transaction::loadMultiple() as $transaction) {
+   $transaction->delete();
+ }
   drupal_flush_all_caches();
  */
 function mcapi_tester_uninstall() {
-
   //in case drush is running
   \Drupal::CurrentUser()->setAccount(User::load(1));
-
   module_load_install('mcapi_tester');
   mcapi_tester_delete_transactions();
 
@@ -188,7 +189,7 @@ function mcapi_exchanges_uninstall() {
 }
 
 function mcapi_tester_delete_transactions() {
-  $storage = \Drupal::EntityManager()->getStorage('mcapi_transaction');
+  $storage = \Drupal::entityTypeManager()->getStorage('mcapi_transaction');
   $transactions = $storage->loadByProperties(array('type' => 'test'));
   $storage->delete($transactions);
 }

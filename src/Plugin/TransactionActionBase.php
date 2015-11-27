@@ -8,36 +8,53 @@
  */
 namespace Drupal\mcapi\Plugin;
 
-use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Action\ConfigurableActionBase;
 use Drupal\Core\Access\AccessResult;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 
 /**
  * Base class for transaction actions 
  */
-abstract class TransactionActionBase extends ConfigurableActionBase {
+abstract class TransactionActionBase extends ConfigurableActionBase implements ContainerFactoryPluginInterface {
 
   private $relatives;
   protected $entityFormBuilder;
   protected $moduleHandler;
+  protected $entityTypeManager;
+  private $entityDisplayRepository;
   
   const CONFIRM_NORMAL = 0;
   const CONFIRM_AJAX = 1;
   const CONFIRM_MODAL = 2;
 
+  function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_type_manager, $entity_display_respository) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->entityFormBuilder = $entity_form_builder;
+    $this->moduleHandler = $module_handler;
+    $this->relatives = $relative_active_plugins;
+    $this->entityTypeManager = $entity_type_manager;
+    $this->entityDisplayRespository = $entity_display_respository;
+  }
+  
   /**
    * {@inheritdoc}
    */
-  function __construct(array $configuration, $plugin_id, array $plugin_definition) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
-    //can't work out how to inject these
-    $this->entityFormBuilder = \Drupal::service('entity.form_builder');
-    $this->moduleHandler = \Drupal::service('module_handler');
-    $this->relatives = \Drupal::service('mcapi.transaction_relative_manager')->activePlugins();
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration, 
+      $plugin_id,
+      $plugin_definition,
+      $container->get('entity.form_builder'),
+      $container->get('module_handler'),
+      $container->get('mcapi.transaction_relative_manager')->activePlugins(),
+      $container->get('entity_type.manager'),
+      $container->get('entity_display.repository')
+    );
   }
-
 
   /**
    * {@inheritdoc}
@@ -55,7 +72,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase {
   /**
    * Check whether this action is applicable for the current state of the transaction
    *
-   * @param TransactionInterface $object
+   * @param TransactionInterface $transaction
    * @param AccountInterface $account
    * 
    * @return boolean
@@ -82,7 +99,9 @@ abstract class TransactionActionBase extends ConfigurableActionBase {
       foreach (array_filter($this->configuration['access']) as $relative) {
         //check if the $account is this relative to the transaction
         $plugin = $this->relatives[$relative];
-        if (is_null($account))$account = \Drupal::currentUser();
+        if (is_null($account)) {
+          $account = \Drupal::currentUser();
+        }
         if ($plugin->isRelative($transaction, $account)) {
           return TRUE;
         }
@@ -95,7 +114,6 @@ abstract class TransactionActionBase extends ConfigurableActionBase {
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state){
-
     $elements['title'] = [
       '#title' => t('Name of action to show on transaction'),
       '#type' => 'textfield',
@@ -152,7 +170,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase {
       '#required' => TRUE,
       '#weight' => 6
     ];
-    foreach (\Drupal::entityManager()->getViewModes('mcapi_transaction') as $id => $def) {
+    foreach ($this->entityDisplayRespository->getViewModes('mcapi_transaction') as $id => $def) {
       $elements['sure']['format']['#options'][$id] = $def['label'];
     }
 
@@ -218,11 +236,6 @@ abstract class TransactionActionBase extends ConfigurableActionBase {
       '#required' => TRUE
     ];
 
-    $elements['feedback']= [
-      '#title' => $this->t('Feedback'),
-      '#type' => 'fieldset',
-      '#weight' => 6
-    ];
     $elements['message']= [
       '#title' => $this->t('Success message'),
       '#description' => $this->t('Appears in the message box along with the reloaded transaction certificate.') . 'TODO: put help for user and mcapi_transaction tokens, which should be working',
@@ -248,16 +261,18 @@ abstract class TransactionActionBase extends ConfigurableActionBase {
     }
     //@todo this is overriden by the main form's save()
     //@todo how does this play with the views operations field which offers to add a redirect to the link to the operation?
-    $form_state->setRedirect('mcapi.admin.transactions');
+    $form_state->setRedirect('mcapi.admin.workflow');
   }
 
   /**
    * {@inheritdoc}
    */
   public function execute($object = NULL) {
-    //if this IS NOT overridden the transaction be saved as it was loaded
-    drupal_set_message('executing');
+    //if this IS NOT overridden the transaction will be saved as it was loaded
     $object->save();
+    if ($this->configuration['message']) {
+      drupal_set_message($this->configuration['message']);
+    }
   }
 
   /**
@@ -288,7 +303,6 @@ abstract class TransactionActionBase extends ConfigurableActionBase {
       'access' => '',
       'button' => '',
       'cancel_link' => '',
-      'redirect' => '',
       'message' => '',
     ];
   }

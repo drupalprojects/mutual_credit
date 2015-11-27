@@ -76,7 +76,7 @@ class SelectWalletWidget extends EntityReferenceAutocompleteWidget {
     $referenced_entities = $items->referencedEntities();
     $op = $this->getSetting('role') == 'payer' ? Wallet::OP_PAYOUT : Wallet::OP_PAYIN;
     //@todo inject entityMansger
-    $wids = \Drupal::entityManager()
+    $wids = \Drupal::entityTypeManager()
       ->getStorage('mcapi_wallet')
       ->walletsUserCanActOn($op, \Drupal::currentUser());
 

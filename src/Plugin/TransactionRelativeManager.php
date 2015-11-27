@@ -11,7 +11,7 @@
 namespace Drupal\mcapi\Plugin;
 
 use Drupal\Core\Plugin\DefaultPluginManager;
-use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\Entity\TransactionInterface;
 
 class TransactionRelativeManager extends DefaultPluginManager {
 

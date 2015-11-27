@@ -53,7 +53,7 @@ function mcapi_views_query_mcapi_transaction_alter(ViewExecutable $view, QueryPl
 
     //or if we are logged in
     if ($uid = \Drupal::CurrentUser()->id()) {
-      $wallet_operations->condition($details_field, Wallet::ACCESS_AUTH);
+      $wallet_operations->condition($details_field, Wallet::ACCESS_MEMBERS);
       //or if the current user is named
       $wallet_operations->condition(
         db_and()

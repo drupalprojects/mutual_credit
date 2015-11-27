@@ -7,11 +7,11 @@
 
 namespace Drupal\mcapi\Plugin\Search;
 
-use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Database\Query\Condition;
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessibleInterface;
 use Drupal\Core\Access\AccessResult;
@@ -19,7 +19,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Search\SearchQuery;
 use Drupal\search\Plugin\SearchIndexingInterface;
-use Drupal\search\Plugin\SearchPluginBase;
 use Drupal\search\Plugin\ConfigurableSearchPluginBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Component\Utility\SafeMarkup;
@@ -45,9 +44,9 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
   /**
    * The entity manager.
    *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  protected $entityManager;
+  protected $entityTypeManager;
 
   /**
    * The Renderer service to format the username and node.
@@ -84,7 +83,7 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
   static public function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
     return new static(
       $container->get('database'),
-      $container->get('entity.manager'),
+      $container->get('entity_type.manager'),
       $container->get('renderer'),
       $configuration,
       $plugin_id,
@@ -97,7 +96,7 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
    *
    * @param Connection $database
    *   The database connection.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity manager.
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.
@@ -106,9 +105,9 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
    * @param array $plugin_definition
    *   The plugin implementation definition.
    */
-  public function __construct(Connection $database, EntityManagerInterface $entity_manager, RendererInterface $renderer, array $configuration, $plugin_id, array $plugin_definition) {
+  public function __construct(Connection $database, EntityTypeManagerInterface $entity_type_manager, RendererInterface $renderer, array $configuration, $plugin_id, array $plugin_definition) {
     $this->database = $database;
-    $this->entityManager = $entity_manager;
+    $this->entityTypeManager = $entity_type_manager;
     $this->renderer = $renderer;
     parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
@@ -264,7 +263,7 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
       // Render the transaction.
       $tx = Transaction::load($item->sid);
       $build = ['#markup' => SafeMarkup::escape($tx->description->value)]
-        + $this->entityManager
+        + $this->entityTypeManager
         ->getViewBuilder('mcapi_transaction')
         ->view($tx, 'search_result');
 
@@ -336,7 +335,7 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
       return;
     }
 
-    $storage = $this->entityManager->getStorage('mcapi_transaction');
+    $storage = $this->entityTypeManager->getStorage('mcapi_transaction');
     foreach ($storage->loadMultiple($xids) as $tx) {
       //index only parent transactions
       if ($tx->parent->value) {

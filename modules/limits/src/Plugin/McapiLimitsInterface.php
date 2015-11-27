@@ -7,7 +7,7 @@
 
 namespace Drupal\mcapi_limits\Plugin;
 
-use \Drupal\mcapi\WalletInterface;
+use \Drupal\mcapi\Entity\WalletInterface;
 use Drupal\Component\Plugin\ConfigurablePluginInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
 

@@ -31,8 +31,8 @@ class State extends FieldPluginBase {
 
   function render(ResultRow $values) {
     $raw = $this->getValue($values);
-    //@todo make some nice css for each of the default states, maybe using dingbats coz consistent clipart would be hard
-    return '<span class = "'.$raw.'">'.$this->states[$raw].'</span>';
+    //should be translated
+    return ['#markup' => '<span class = "mcapi-state-'.$raw.'">'.$this->states[$raw].'</span>'];
   }
 
 }

@@ -8,8 +8,6 @@
 namespace Drupal\mcapi\Storage;
 
 use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
-use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\mcapi\WalletInterface;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Exchange;
 use Drupal\Core\Entity\EntityInterface;
@@ -21,21 +19,20 @@ class WalletStorage extends SqlContentEntityStorage {
    * add the access setting to each wallet
    */
   function mapFromStorageRecords(array $records, $load_from_revision = false) {
+    \Drupal::logger('mcapi')->debug(key($records));
     $entities = parent::mapFromStorageRecords($records);
-    //populate the access property with the single char values
-    foreach(array_keys(Exchange::walletOps()) as $op) {
-      foreach ($records as $key => $record) {
-        if (!in_array($record->{$op}, [Wallet::ACCESS_OWNER, Wallet::ACCESS_USERS])) {
-          $entities[$key]->access[$op] = $record->{$op};
-        }
-      }
-    }
-    //populate the access property with the specific user values
+    //populate the access property with uids when there is a reference in the access table
     $q = $this->database->select('mcapi_wallets_access', 'a')
       ->fields('a', array('wid', 'operation', 'uid'))
       ->condition('wid', array_keys($records), 'IN');
-    foreach ($q->execute() as $row) {
-      $entities[$row->wid]->access[$row->operation][] = $row->uid;
+    
+    foreach ($q->execute()->fetchAll() as $row) {
+      $changes[$row->wid][$row->operation][] = $row->uid;
+    }
+    foreach ($changes as $wid => $ops) {
+      foreach ($ops as $op_name => $uids) {
+        $entities[$wid]->set($op_name, implode(',', $uids));
+      }
     }
     //hopefully by now there is a string or array for each of the 4 access operations
     return $entities;
@@ -46,8 +43,39 @@ class WalletStorage extends SqlContentEntityStorage {
    * write the wallet's access settings and the wallet holder index table
    */
   function doSave($wid, EntityInterface $wallet) {
-    parent::doSave($wid, $wallet);
     $this->reIndex(array($wallet->id() => $wallet));
+    foreach (Exchange::walletOps() as $op_name => $label) {
+      if (is_numeric(substr($wallet->{$op_name}->value, 0, 1))) {
+        $ops[$op_name] = explode(',', $wallet->{$op_name}->value);
+        $wallet->{$op_name}->value = Wallet::ACCESS_USERS;
+      }
+    }
+    parent::doSave($wid, $wallet);
+    $this->saveUserAccess($wallet, $ops);
+    //@todo remove this once we work out how to write empty strings by default
+    if ($wallet->name->value == '') {
+      $this->database->update('mcapi_wallet')->fields(['name' => ''])->condition('wid', $wallet->id())->execute();
+    }
+  }
+  
+  private function saveUserAccess($wallet, $ops) {
+    $this->database
+      ->delete('mcapi_wallets_access')
+      ->condition('wid', $wallet->id())
+      ->condition('operation', $op)
+      ->execute();
+    if (empty($uids)) {
+      $uids[] = \Drupal::currentUser()->id();
+    }
+    $query = \Drupal::database()
+      ->insert('mcapi_wallets_access')
+      ->fields(['wid', 'operation', 'uid']);
+    foreach ($ops as $op => $uids) {
+      foreach ($uids as $uid) {
+        $query->values(['wid' => $wallet->id(), 'operation' => $op, 'uid' => $uid]);
+      }
+    }
+    $query->execute();
   }
 
   /**
@@ -104,19 +132,20 @@ class WalletStorage extends SqlContentEntityStorage {
       ->condition('entity_type', 'user')
       ->condition('pid', $account->id()));
     //or wallets which can be acted on by all, including anon
-    $or->condition($operation, 1);
+    $or->condition($operation, Wallet::ACCESS_ANY);
     //wallets which can be acted on by authenticated users
     if ($account->id()) {
-      $or->condition($operation, 2);
+      $or->condition($operation, Wallet::ACCESS_MEMBERS);
     }
-    //query to get all the wallets this user can act on
+    //query to get all the wallets this user can $operate on
     $w1 = $this->database->select('mcapi_wallet', 'w')
       ->fields('w', ['wid'])
       ->condition($or)
       ->execute();
     //query to get all the wallets this user can act on as a named user.
-    $w2 = $this->database->select('mcapi_wallets_access', 'w')
-      ->fields('w', ['wid'])
+    //we don't need to join the tables.
+    $w2 = $this->database->select('mcapi_wallets_access', 'wa')
+      ->fields('wa', ['wid'])
       ->condition('operation', $operation)
       ->condition('uid', $account->id())
       ->execute();
@@ -128,7 +157,7 @@ class WalletStorage extends SqlContentEntityStorage {
    * {@inheritdoc}
    */
   function filter(array $conditions, $offset = 0, $limit = NULL) {
-    $query = db_select('mcapi_wallet', 'w')->fields('w', array('wid'));
+    $query = \Drupal::database()->select('mcapi_wallet', 'w')->fields('w', array('wid'));
     $namelike = db_or();
     $like = FALSE;
 
@@ -170,7 +199,8 @@ class WalletStorage extends SqlContentEntityStorage {
       //we are searching against. Hopefully this will work for all well-formed
       //entityTypes!
       foreach ($conditions['entity_types'] as $entity_type_id) {
-        //might be better practice to get the EntityType object from the entity than the Definition from the entityManager
+        //might be better practice to get the EntityType object from the entity than the Definition from the entityTypeManager
+        //@todo check the parent property entityManager and update to entityTypeManager
         $entity_info = $this->entityManager->getDefinition($entity_type_id, TRUE);
         
         if ($entity_type_id == 'user') {
@@ -211,6 +241,7 @@ class WalletStorage extends SqlContentEntityStorage {
     if ($like) {
       $query->condition($namelike);
     }
+    echo $query;
     if ($limit) {
       //passing $limit = NULL gets converted to limit = 0, which is bad
       //however it is safe to say that if there is no limit there is no offset, right?

@@ -9,8 +9,7 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\user\Entity\User;
-use Drupal\mcapi\Entity\Cdeleurrency;
+use Drupal\mcapi\Entity\Currency;
 
 class CurrencyForm extends EntityForm {
 

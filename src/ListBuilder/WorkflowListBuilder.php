@@ -13,8 +13,9 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Form\FormInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\system\Entity\Action;
+use Drupal\mcapi\Entity\Type;
+use Drupal\mcapi\Entity\State;
 
 /**
  * Displays the workflow page in the management menu admin/accounting/workflow
@@ -80,9 +81,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
    * {@inheritDoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    drupal_set_message('@todo make \Drupal\mcapi\Controller\WorkflowListBuilder table draggable');
-    //reset the form fresh
-    $form = [];
+    $form[] = $this->visualise();
     $form['plugins'] = [
       '#type' => 'table',
       '#header' => $this->buildHeader(),
@@ -142,6 +141,37 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
    */
   public function getFormId() {
     return 'workflow_draggable_plugin_list';
+  }
+
+    
+  private function visualise() {
+    foreach (Type::loadMultiple() as $type => $info) {
+      $types[] = '<dt>'.$info->label.'</dt><dd>'.$info->description.'</dd>';
+    }
+    $renderable['types'] = [
+      '#type' => 'container',
+      '#attributes' => new Attribute(['style' => 'display:inline-block; vertical-align:top;']),
+      'title' => [
+        '#markup' => "<h4>".t('Transaction types')."</h4>"
+      ],
+      'states' => [
+        '#markup' => "<dl>".implode("\n\t", $types) . '</dl>'
+      ]
+    ];
+    foreach (State::loadMultiple() as $id => $info) {
+      $states[] = '<dt>'.$info->label.'</dt><dd>'.$info->description.'</dd>';
+    }
+    $renderable['states'] = [
+      '#type' => 'container',
+      '#attributes' => new Attribute(['style' => 'display:inline-block; margin-left:5em; vertical-align:top;']),
+      'title' => [
+        '#markup' => "<h4>".t('Workflow states')."</h4>"
+      ],
+      'states' => [
+        '#markup' => "<dl>".implode("\n\t", $states) . '</dl>'
+      ]
+    ];
+    return $renderable;
   }
 
 

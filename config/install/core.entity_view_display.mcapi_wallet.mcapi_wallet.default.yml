@@ -8,23 +8,29 @@ targetEntityType: mcapi_wallet
 bundle: mcapi_wallet
 mode: default
 content:
+  balances:
+    weight: 0
+    settings: {  }
+    third_party_settings: {  }
   balance_bars:
     weight: 1
     settings: {  }
     third_party_settings: {  }
-  histories:
+  stats:
     weight: 2
     settings: {  }
     third_party_settings: {  }
-  mcapi_limits_absolute:
+  histories:
     weight: 3
-  stats:
-    weight: 0
     settings: {  }
     third_party_settings: {  }
 hidden:
-  balances: true
   created: true
   holder: true
   links: true
   name: true
+  wallet_log: true
+  income_expenditure: true
+  mcapi_limits_relative: true
+  mcapi_limits_absolute: true
+

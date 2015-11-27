@@ -2,32 +2,29 @@ langcode: und
 status: true
 dependencies:
   config:
-    - core.entity_view_mode.mcapi_wallet.summary
+    - core.entity_view_mode.mcapi_wallet.mini
   module:
     - mcapi
-id: mcapi_wallet.mcapi_wallet.summary
+id: mcapi_wallet.mcapi_wallet.mini
 targetEntityType: mcapi_wallet
 bundle: mcapi_wallet
-mode: summary
+mode: mini
 content:
-  balance_bars:
-    weight: 1
-    settings: {  }
-    third_party_settings: {  }
-  balances:
+  stats:
     weight: 0
     settings: {  }
     third_party_settings: {  }
   canonical_link:
-    weight: 2
+    weight: 1
     settings: {  }
     third_party_settings: {  }
 hidden:
-  balance_limits: true
+  balance_bars: true
+  balances: true
   created: true
   histories: true
   holder: true
-  stats: true
+  name: true
   wallet_log: true
   income_expenditure: true
   mcapi_limits_absolute: true

@@ -25,11 +25,11 @@ class TransactionFormAccessCheck extends EntityAccessCheck {
    * Designed to be overriden by the mcapi_exchanges module
    *
    * @return AccessResultInterface
-   *
+   * @todo inject EntityTypeManager
    */
   public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
     $user = User::load($account->id());
-    return \Drupal\mcapi\Access\TransactionAccessControlHandler::enoughWallets($user);
+    return \Drupal::entityTypeManager()->getAccessControlHandler('mcapi_transaction')->enoughWallets($user);
   }
 }
 

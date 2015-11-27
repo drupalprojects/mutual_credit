@@ -19,16 +19,14 @@ use Drupal\system\Entity\Action;
  */
 class TransactionAccessControlHandler extends EntityAccessControlHandler {
 
-  private $routeMatch;
   static $result;
 
-  public function __construct() {
-    $this->routeMatch = \Drupal::RouteMatch();
-  }
-  
-  
+
+  /**
+   * {@inheritdoc}
+   */
   public function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = NULL) {
-    die('transaction checkCreateAccess');
+    return $this->enoughWallets($account);
   }
   
   /**
@@ -42,7 +40,9 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
       if ($return_as_object) {
         return $bool ? AccessResult::allowed()->cachePerUser() : AccessResult::forbidden()->cachePerUser();
       }
-      else return $bool;
+      else {
+        return $bool;
+      }
     }
     elseif ($operation == 'update') {
       $allRelatives = \Drupal::Service('mcapi.transaction_relative_manager')->activePlugins();
@@ -65,17 +65,17 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
 
 
   /**
-   * router access callback
-   * Find out if the user has access to enough wallets to be able to transact
+   * Find out if the user can payin to at least one wallet and payout of at least one wallet
    *
    * @return AccessResult
+   * @todo make this private only accessible throught entity_create_access?
    */
-  public static function enoughWallets($account = NULL) {
+  public function enoughWallets($account = NULL) {
     if (!Self::$result) {
       if (!$account){
         $account = \Drupal::currentUser();
       }
-      $walletStorage = \Drupal::entityManager()->getStorage('mcapi_wallet');
+      $walletStorage = \Drupal::entityTypeManager()->getStorage('mcapi_wallet');
       $payin = $walletStorage->walletsUserCanActOn(Wallet::OP_PAYIN, $account);
       $payout = $walletStorage->walletsUserCanActOn(Wallet::OP_PAYOUT, $account);
       if (empty($payin) || empty($payout)) {

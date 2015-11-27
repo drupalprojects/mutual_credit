@@ -7,7 +7,7 @@
 
 namespace Drupal\mcapi\Plugin;
 
-use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Entity\Query\QueryInterface;
 

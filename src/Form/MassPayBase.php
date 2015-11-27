@@ -39,7 +39,7 @@ class MassPayBase extends EntityForm {
 
     }
     else {
-      $viewBuilder = \Drupal::entityManager()->getViewBuilder('mcapi_transaction');
+      $viewBuilder = \Drupal::entityTypeManager()->getViewBuilder('mcapi_transaction');
       foreach ($form_state->get('validated_transactions') as $transaction) {
         $form['preview'][] = $viewBuilder->view($transaction, 'sentence');
       }

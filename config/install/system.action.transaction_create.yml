@@ -3,31 +3,21 @@ status: true
 dependencies:
   module:
     - mcapi
-id: transaction_delete
-label: Delete transaction
+id: transaction_create
+label: Create transaction
 type: mcapi_transaction
-plugin: mcapi_transaction.delete_action
+plugin: mcapi_transaction.create_action
 configuration:
-  title: 'Delete'
-  tooltip: 'Remove transaction from the leger. Wallet balances will be affected!'
-  states:
-    done: done
-    pending: pending
-    erased: 0
-  page_title: 'Delete transaction'
+  title: 'Create'
+  tooltip: 'Confirm new transaction'
+  states: { }
+  page_title: 'Are you sure?'
   format: certificate
   twig: ''
   display: 0
-  button: Delete
+  button: Confirm
   cancel_link: Back
-  message: 'Transaction was deleted.'
+  message: 'Transaction was created.'
   weight: 0
-  access:
-    anon: 0
-    creator: 0
-    payee: 0
-    payer: 0
-    manager: manager
-    pending_signatory: 0
-    signatory: 0
+  access: { }
 

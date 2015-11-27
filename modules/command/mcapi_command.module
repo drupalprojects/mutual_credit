@@ -13,7 +13,7 @@ function process_mcapi_command($message, $sender_account = NULL, $really = FALSE
   $transaction = mcapi_command_execute($message, $sender_account);
   //this has no idea whether the transaction is pending.
   if ($really) {
-    $storage = \Drupal::entityManager()->getStorage('mcapi_transaction');
+    $storage = \Drupal::entityTypeManager()->getStorage('mcapi_transaction');
     $stats = $wallet->getStats(\Drupal::config('mcapi.command')->get('curr_id'));
 
     return t('Transaction created.').' '.

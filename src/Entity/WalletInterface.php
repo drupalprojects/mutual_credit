@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\WalletInterface.
+ * Contains \Drupal\mcapi\Entity\WalletInterface.
  */
 
-namespace Drupal\mcapi;
+namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\user\EntityOwnerInterface;

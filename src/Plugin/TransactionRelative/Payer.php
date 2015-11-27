@@ -8,7 +8,7 @@
 namespace Drupal\mcapi\Plugin\TransactionRelative;
 
 use Drupal\mcapi\Plugin\TransactionRelativeInterface;
-use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Plugin\PluginBase;

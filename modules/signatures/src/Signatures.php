@@ -7,8 +7,8 @@
 
 namespace Drupal\mcapi_signatures;
 
-use Drupal\mcapi\WalletInterface;
-use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Type;
 use Drupal\Core\Session\AccountInterface;

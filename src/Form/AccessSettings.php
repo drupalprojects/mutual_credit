@@ -24,7 +24,6 @@ class AccessSettings extends ConfigFormBase {
   }
 
   public function __construct($route_match) {
-    $this->entityManager = $entity_manager;
     $this->op = $route_match->getParameters()->get('op');
     $ops = [
       'view' => t('View'),

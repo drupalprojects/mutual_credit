@@ -9,11 +9,11 @@ namespace Drupal\mcapi\ViewBuilder;
 
 use Drupal\Core\Entity\EntityViewBuilder;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\mcapi\WalletInterface;
+use Drupal\mcapi\Entity\WalletInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -29,13 +29,18 @@ class WalletViewBuilder extends EntityViewBuilder {
    *
    * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
    *   The entity type definition.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity manager service.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The language manager.
    */
-  public function __construct(EntityTypeInterface $entity_type, EntityManagerInterface $entity_manager, LanguageManagerInterface $language_manager, $local_task_manager, $access_manager) {
-    parent::__construct($entity_type, $entity_manager, $language_manager);
+  public function __construct(EntityTypeInterface $entity_type, EntityTypeManagerInterface $entity_type_manager, LanguageManagerInterface $language_manager, $local_task_manager, $access_manager, $entity_manager) {
+    //@todo use the parent when the entityTypeManager is applied
+    $this->entityTypeId = $entity_type->id();
+    $this->entityType = $entity_type;
+    $this->entityManager = $entity_manager;
+    $this->languageManager = $language_manager;
+    //parent::__construct($entity_type, $entity_type_manager, $language_manager);
     $this->localTaskManager = $local_task_manager;
     $this->accessManager = $access_manager;
   }
@@ -46,10 +51,11 @@ class WalletViewBuilder extends EntityViewBuilder {
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
     return new static(
       $entity_type,
-      $container->get('entity.manager'),
+      $container->get('entity_type.manager'),
       $container->get('language_manager'),
       $container->get('plugin.manager.menu.local_task'),
-      $container->get('access_manager')
+      $container->get('access_manager'),
+      $container->get('entity.manager')//deprecated
     );
   }
   
@@ -65,40 +71,6 @@ class WalletViewBuilder extends EntityViewBuilder {
     return $build;
   }
 
-  /**
-   * present a wallet's local tasks as a set of links
-   *
-   * @param WalletInterface $wallet
-   *
-   * @return []
-   *   a render array
-   *
-   * @todo Does this work? rename to viewLinks for consistency
-   */
-  function viewLinks(WalletInterface $wallet) {
-    echo ('viewLinks IS called!');mtrace();
-    $links = [];
-    $tree = $this->localTaskManager->getLocalTasksForRoute('entity.mcapi_wallet.canonical');
-    //which is all very well but getTasksBuild assumes we are on the current route
-    foreach ($tree[0] as $child) {
-      $route_name = $child->getRouteName();
-      $route_parameters = [
-        //arg_0 can be removed when views args are working with the symfony router
-        'arg_0' => $wallet->id(),//this is for view.wallet_statement.page_1
-        'mcapi_wallet' => $wallet->id()
-      ];
-      if ($this->accessManager->checkNamedRoute($route_name, $route_parameters)) {
-        $links[$route_name] = [
-          'title' => $child->getTitle(),
-          'url' => Url::fromRoute($route_name, $route_parameters)
-        ];
-      }
-    }
-    return [
-      '#theme' => 'links',
-      '#links' => $links,
-    ];
-  }
 
   /**
    * entity_label_callback().
@@ -137,6 +109,20 @@ class WalletViewBuilder extends EntityViewBuilder {
             '#title' => $extra[$component]['label']
           ];
         }
+      }
+      if ($info = $displays[$wallet->bundle()]->getComponent('wallet_log')) {
+        $build[$id]['wallet_log'] = views_embed_view('wallet_log', 'embed', $wallet->id());
+      }
+      if ($info = $displays[$wallet->bundle()]->getComponent('income_expenditure')) {
+        $build[$id]['income_expenditure'] = views_embed_view('income_expenditure', 'income_embed', $wallet->id());
+      }
+      if ($info = $displays[$wallet->bundle()]->getComponent('canonical_link')) {
+        $build[$id]['canonical_link'] = [
+          '#type' => 'link',
+          '#title' => $this->t('Visit wallet'),
+          '#url' => Url::fromRoute('entity.mcapi_wallet.canonical', ['mcapi_wallet' => $wallet->id()]),
+          '#weight' => $info['weight']
+        ];
       }
     }
   }

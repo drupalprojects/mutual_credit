@@ -5,14 +5,9 @@
  * mcapi.module
  */
 
-use Drupal\Core\Template\Attribute;
 use Drupal\Core\Url;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Entity\Entity\EntityFormDisplay;
-use Drupal\field\Entity\FieldConfig;
-use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Exchange;
@@ -31,7 +26,7 @@ function mcapi_requirements($phase) {
       'title' => t('Transaction index table'),
     ];
     //check that the index table is integral
-    if (\Drupal::entityManager()->getStorage('mcapi_transaction')->indexCheck()) {
+    if (\Drupal::entityTypeManager()->getStorage('mcapi_transaction')->indexCheck()) {
       $result['severity'] = REQUIREMENT_OK;
       $result['description'] = t('Index table adds up');
     }
@@ -49,7 +44,7 @@ function mcapi_requirements($phase) {
 /**
  * implements hook_help().
  */
-function mcapi_help($route_name, $route_match) {
+function mcapi_help($route_name) {
   switch ($route_name) {
     case 'entity.mcapi_currency.collection':
       return implode(' ', [
@@ -57,7 +52,7 @@ function mcapi_help($route_name, $route_match) {
         t('Retired currencies can no longer be used, but transactions are still visible.'),
         t('Only unused currencies can be deleted.'),
       ]);
-    case 'mcapi.admin.transactions':
+    case 'mcapi.admin.workflow':
       $help = [
         t("Special 'actions' move transactions of various types between states, except for 'view', which is special"),
         t('More states and types can be added as custom module configuration entities; no user interface exists for that.'),
@@ -68,7 +63,7 @@ function mcapi_help($route_name, $route_match) {
       return implode(' ', $help);
     case 'entity.mcapi_transaction.field_ui_fields':
       $settings_url = Url::fromRoute('mcapi.admin_misc');
-      $action_url = Url::fromRoute('mcapi.admin.transactions');
+      $action_url = Url::fromRoute('mcapi.admin.workflow');
       $message = [
         t('These transaction display settings should always be overridden.'),
         t('To configure the certificate, override certificate.html.twig in your theme'),
@@ -91,11 +86,11 @@ function mcapi_help($route_name, $route_match) {
  *
  * @todo check the cache contexts because this contains a link to wallet creation.
  */
-function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
+function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display) {
   if ($display->getComponent('wallets_summaries')) {
     $wallets = [];
     //get the wallets belonging to this entity
-    $wids = \Drupal::EntityManager()
+    $wids = \Drupal::entityTypeManager()
       ->getStorage('mcapi_wallet')
       ->filter(['holder' => $entity]);
     foreach (Wallet::loadMultiple($wids) as $wid => $wallet) {
@@ -105,7 +100,7 @@ function mcapi_entity_view(array &$build, EntityInterface $entity, EntityViewDis
     }
     if ($wallets) {
       $build += [
-        'wallets_summaries' => \Drupal::entityManager()
+        'wallets_summaries' => \Drupal::entityTypeManager()
           ->getViewBuilder('mcapi_wallet')
           //the wallet 'summary' view mode is provided in this module's default config
           ->viewMultiple($wallets, 'summary'),
@@ -136,15 +131,17 @@ function mcapi_currency_load($id) {
  */
 function mcapi_entity_label_list($entity_type_id, array $data = []) {
   if (empty($data)) {
-    $entities = \Drupal::entityManager()->getStorage($entity_type_id)->loadMultiple();
+    $entities = \Drupal::entityTypeManager()->getStorage($entity_type_id)->loadMultiple();
   }
   elseif(is_string(key($data))) {
     $entities = entity_load_multiple_by_properties($entity_type_id, $data);
   }
   elseif(is_numeric(reset($data))) {
-    $entities = \Drupal::entityManager()->getStorage($entity_type_id)->loadMultiple($data);
+    $entities = \Drupal::entityTypeManager()->getStorage($entity_type_id)->loadMultiple($data);
   }
-  else $entities = $data;
+  else {
+    $entities = $data;
+  }
   if (property_exists(current($entities), 'weight') && count($entities) > 1) {
     uasort($entities, 'mcapi_uasort_weight');
   }
@@ -190,11 +187,12 @@ function mcapi_entity_insert($entity) {
     $maxes = $config->get('entity_types');
     if ($max = @$maxes[$type .':'. $entity->bundle()]) {
       //no need to check what the max is, since this is the first wallet created for this entity
-      $wallet = Wallet::create(array(
+      $wallet = Wallet::create([
         'entity_type' => $type,
         'pid' => $entity->id(),
+        'name' => '',
         //will inherit default access controls
-      ));
+      ]);
       $wallet->save();
       \Drupal::logger('mcapi')->notice(
         'Wallet @wid autocreated for @entitytype @id',
@@ -211,7 +209,7 @@ function mcapi_entity_insert($entity) {
  */
 function mcapi_entity_update($entity) {
   if (walletable($entity)) {
-    $storage = \Drupal::EntityManager()->getStorage('mcapi_wallet');
+    $storage = \Drupal::entityTypeManager()->getStorage('mcapi_wallet');
     if ($wids = $storage->filter(['holder' => $entity])) {
       $storage->reIndex(Wallet::loadMultiple($wids));
     }
@@ -246,6 +244,7 @@ function mcapi_module_implements_alter(&$implementations, $hook) {
  * implements hook_local_tasks_alter().
  *
  * prevent the three fixed transaction display modes from being edited
+ * Remove any unneeded wallet tabs
  */
 function mcapi_local_tasks_alter(&$tasks) {
   foreach (['default', 'certificate', 'twig', 'sentence'] as $mode) {
@@ -254,8 +253,12 @@ function mcapi_local_tasks_alter(&$tasks) {
   //remove the parent tab as well.
   unset($tasks['field_ui.fields:display_overview_mcapi_transaction']);
   
-  if (!mcapi_one_wallet_per_user_mode()) {
-    unset($tasks['mcapi.user.wallet.tab']);
+  $settings = \Drupal::config('mcapi_settings');
+  if (!$settings->get('wallet_inex_tab')) {
+    unset($tasks['views_view:view.income_expenditure.income_page']);
+  }
+  if (!$settings->get('wallet_log_tab')) {
+    unset($tasks['views_view:view.wallet_log.page']);
   }
 }
 
@@ -312,7 +315,7 @@ function mcapi_entity_extra_field_info() {
         'display' => [
           'wallets_summaries' => [
             'label' => \Drupal::translation()->formatPlural($max, 'Wallet summary', 'Wallets summaries'),
-            'description' => t("Statistics from the user's wallets"),
+            'description' => t("The 'summary' view of all the entity's wallets."), //' '.l('admin/accounting/wallets/fields', Url::fromUri('admin/accounting/wallets/fields'),
             'weight' => 5,
           ],
         ]
@@ -341,16 +344,27 @@ function mcapi_entity_extra_field_info() {
       'description' => t('One barchart per currency showing incoming and outgoing volumes'),
       'weight' => 8
     ],
-    'links' => [
-      'label' => t("Links to the wallet"),
-      'description' => t("Canonical, edit & log links"),
-      'weight' => 8
+    'wallet_log' => [
+      'label' => t('Transaction_log'),
+      'description' => t('List of transactions (view)'),
+      'weight' => 9
+    ],
+    'income_expenditure' => [
+      'label' => t('Income & expenditure (view)'),
+      'description' => t('Two tables showing transactions in either direction'),
+      'weight' => 10
+    ],
+    'canonical_link' => [
+      'label' => t("Link to canonical view"),
+      'description' => t("Link to canonical view"),
+      'weight' => 11
     ]
   ];
   //most of the transaction fields appear on the display
   //@todo isn't this specified in the field definitioni itself?
-  $props = \Drupal::entityManager()->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
-  $fields = ['payer', 'payee', 'description', 'state', 'type'];
+  $props = \Drupal::service('entity_field.manager')
+      ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
+  $fields = ['payer', 'payee', 'description', 'state', 'type'];//these are all base fields on transaction entity
   foreach ($fields as $weight => $fieldname) {
     $extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = [
       'label' => $props[$fieldname]['label'],
@@ -391,7 +405,7 @@ function mcapi_theme() {
     'wallet_balances', 
     'wallet_balance_bars', 
     'wallet_histories', 
-    'wallet_stats'
+    'wallet_stats',
   ];
   foreach ($wallet_callbacks as $callback) {
     $items[$callback] = [
@@ -421,15 +435,6 @@ function walletable($entity) {
     && in_array($entity->bundle(), $bundles[$type_id]);
 }
 
-/**
- * implements hook_ENTITY_TYPE_view().
- * put the stamp for erased transactions
- */
-function mcapi_mcapi_transaction_view(array &$build, $transaction, $display, $view_mode) {
-  if ($view_mode == 'certificate' && $transaction->state->target_id == 'erased') {
-    $build['stamp'] = $transaction->state->entity->label;//this is translated
-  }
-}
 
 /**
  * take a worth value, typically from config and return true if all the
@@ -460,7 +465,7 @@ function empty_worth(array $worth) {
 function mcapi_mcapi_form_list() {
   $forms['default'] = [
     'title' => t('Default'),
-    'route' => 'mcapi.transaction_log',
+    'route' => 'mcapi.transaction.add',
     'route_parameters' => [],
     'operations' => []
   ];
@@ -481,20 +486,6 @@ function mcapi_mcapi_form_list() {
 
 function mcapi_one_wallet_per_user_mode() {
   return \Drupal::config('mcapi.settings')->get('entity_types.user:user') == 1;
-}
-
-/**
- * custom router access callback
- * find the user's first wallet and grant accees to view its details
- * @todo move this elsewhere?
- */
-function user_wallet_details_access($user) {
-  $wids = \Drupal::entityManager()
-    ->getStorage('mcapi_wallet')
-    ->filter(['holder' => User::load($user)]);
-  $wallet = Wallet::load(reset($wids));
-  $result = $wallet->access(Wallet::OP_DETAILS, NULL, TRUE);
-  return $result;
 }
 
 /**
@@ -522,8 +513,7 @@ function mcapi_transaction_action_load($operation) {
  * load those special transaction operations which are also actions
  */
 function mcapi_load_transaction_actions() {
-  return \Drupal::entityManager()
+  return \Drupal::entityTypeManager()
     ->getStorage('action')
     ->loadByProperties(['type' => 'mcapi_transaction']);
 }
-

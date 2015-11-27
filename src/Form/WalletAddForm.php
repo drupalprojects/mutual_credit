@@ -8,13 +8,12 @@
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Form\FormBase;
+use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Routing\RouteMatch;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
-class WalletAddForm extends Formbase {
+class WalletAddForm extends ContentEntityForm {
 
   private $holder;
   private $pluginManager;
@@ -29,10 +28,11 @@ class WalletAddForm extends Formbase {
   /**
    * {@inheritdoc}
    */
-  public function __construct($route_match, $entity_manager, $database) {
-    $this->holder = $entity_manager
-      ->getStorage($route_match->getParameters()->getIterator()->key())
-      ->load($route_match->getParameters()->getIterator()->current());
+  public function __construct($route_match, $entity_type_manager, $database) {
+    $params = $route_match->getParameters();
+    $this->holder = $entity_type_manager
+      ->getStorage($params->getIterator()->key())
+      ->load($params->getIterator()->current()->id());
     $this->database = $database;
   }
 
@@ -42,7 +42,7 @@ class WalletAddForm extends Formbase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('current_route_match'),
-      $container->get('entity.manager'),
+      $container->get('entity_type.manager'),
       $container->get('database')
     );
   }
@@ -52,7 +52,7 @@ class WalletAddForm extends Formbase {
    */
   public function title() {
     return
-      t("New wallet for @entity_type '!title'",
+      $this->t("New wallet for @entity_type '!title'",
       array(
        '@entity_type' => $this->holder->getEntityType()->getLabel(),
        '!title' => $this->holder->label()
@@ -142,7 +142,7 @@ class WalletAddForm extends Formbase {
    * {@inheritdoc}
    */
   function submitForm(array &$form, FormStateInterface $form_state) {
-    $form_state->cleanValues();;
+    $form_state->cleanValues();
     $wallet = Wallet::create($form_state->getValues());
     $wallet->save();
     $form_state->setRedirectUrl($wallet->getHolder()->urlInfo());

@@ -191,7 +191,7 @@ class FirstPartyFormDesigner extends EntityForm {
         Url::fromRoute('entity.entity_form_display.mcapi_transaction.default')
       );
 
-    $definitions = \Drupal::entityManager()
+    $definitions = \Drupal::entityTypeManager()
       ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
     $display = \Drupal\Core\Entity\Entity\EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.default');
 
@@ -268,7 +268,7 @@ class FirstPartyFormDesigner extends EntityForm {
       "N.B The confirmation page is configured separately, at !link",
       ['!link' => $this->l(
         'admin/accounting/workflow/create',
-        Url::fromRoute('mcapi.workflow_settings', ['transition' => 'create'])
+        Url::fromRoute('entity.action.edit_form', ['action' => 'transaction_create'])
       )]
     );
     return $form;
@@ -358,7 +358,7 @@ class FirstPartyFormDesigner extends EntityForm {
   //@todo see if there is another function for this
   public static function unique_path(&$element, FormStateInterface $form_state) {
     $values = $form_state->getValues();
-    $dupe = db_select('router', 'r')
+    $dupe = \Drupal::database()->select('router', 'r')
       ->fields('r', ['name'])
       ->condition('name', 'mcapi.1stparty.'.$values['id'], '<>')
       ->condition('path', $values['path'])

@@ -16,7 +16,7 @@ use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Wallet;
-use Drupal\mcapi\WalletInterface;
+use Drupal\mcapi\Entity\WalletInterface;
 
 use Drupal\mcapi_exchanges\Exchanges;
 
@@ -34,10 +34,10 @@ class Exchange {
    */
   public static function walletPermissions() {
     $perms = [
-      Wallet::ACCESS_OWNER => t('The wallet owner'),
-      Wallet::ACCESS_AUTH => t('Any logged in users'),
+      Wallet::ACCESS_MEMBERS => t('Any logged in users'),
       Wallet::ACCESS_ANY => t('Anyone on the internet'),
-      Wallet::ACCESS_USERS => t('Named users...')
+      Wallet::ACCESS_USERS => t('Named users...'),
+      Wallet::ACCESS_OG => t('Members of the same organic groups')
     ];
     if (Self::MultipleExchanges()) {
       //we could take this to the parent::walletPermissions()...
@@ -149,7 +149,7 @@ class Exchange {
    *   names of replicable elements in the transaction
    */
   public static function transactionTokens($include_virtual = FALSE) {
-    $tokens = \Drupal::entityManager()
+    $tokens = \Drupal::service('entity_field.manager')
       ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
     unset(
       $tokens['uuid'],

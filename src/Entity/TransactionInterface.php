@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\TransactionInterface.
+ * Contains \Drupal\mcapi\Entity\TransactionInterface.
  */
 
-namespace Drupal\mcapi;
+namespace Drupal\mcapi\Entity;
 
 interface TransactionInterface extends \Drupal\Core\Entity\ContentEntityInterface {
 
@@ -18,11 +18,6 @@ interface TransactionInterface extends \Drupal\Core\Entity\ContentEntityInterfac
    *   an array of transaction entities or one transaction entity, depending on the input
    */
   static function loadBySerials($serials);
-  
-  /**
-   * delete, reverse or erase the transaction, according to the deletemodes of its currencies
-   */
-  function undo();
 
   /**
    * returns a clone of the transaction as an array with the children next to the parent

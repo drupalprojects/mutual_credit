@@ -14,6 +14,7 @@
 namespace Drupal\mcapi\Plugin\Action;
 
 use Drupal\Core\Form\FormStateInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Changes the transaction state to 'erased'.
@@ -25,8 +26,26 @@ use Drupal\Core\Form\FormStateInterface;
  *   confirm_form_route_name = "mcapi.transaction.operation"
  * )
  */
-class Erase extends \Drupal\mcapi\Plugin\TransactionActionBase {
+class Erase extends \Drupal\mcapi\Plugin\TransactionActionBase implements \Drupal\Core\Plugin\ContainerFactoryPluginInterface{
     
+  private $keyValue;
+  
+  function __construct($configuration, $plugin_id, $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_manager, $key_value) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_manager);
+    $this->keyValue = $key_value;
+  }
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration, 
+      $plugin_id,
+      $plugin_definition,
+      $container->get('entity.form_builder'),
+      $container->get('module_handler'),
+      $container->get('mcapi.transaction_relative_manager')->activePlugins(),
+      $container->get('entity_type.manager'),
+      $container->get('keyvalue.database')
+    );
+  }
   /**
    * {@inheritdoc}
    */
@@ -43,7 +62,7 @@ class Erase extends \Drupal\mcapi\Plugin\TransactionActionBase {
    */
   public function execute($object = NULL) {
     //keep a separate record of the previous state of erased transactions, so they can be unerased
-    $key_value_store = \Drupal::service('keyvalue.database')
+    $key_value_store = $this->keyValue
       ->get('mcapi_erased')
       ->set($object->serial->value, $object->state->target_id);
 
@@ -52,19 +71,5 @@ class Erase extends \Drupal\mcapi\Plugin\TransactionActionBase {
 
   }
   
-  
-  /**
-   * {@inheritdoc}
-   */
-  public function isConfigurable() {die('isConfigurable');
-    //prevents this action being added multiple times on admin/config/system/actions
-    return FALSE;
-  }
-
-  
-  public function executeMultiple(array $objects) {
-      parent::executeMultiple();
-      die('Delete::executeMultiple()');
-  }
 
 }

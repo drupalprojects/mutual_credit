@@ -11,18 +11,18 @@ mcapi.admin:
 mcapi.admin_misc:
   path: '/admin/accounting/misc'
   defaults:
-    _form: 'Drupal\mcapi\Form\MiscForm'
+    _form: 'Drupal\mcapi\Form\SettingsForm'
     _title: 'Other configuration'
   requirements:
     _permission: 'configure mcapi'
   options:
     _admin_route: TRUE
 
-mcapi.admin.transactions:
-  path: '/admin/accounting/transactions'
+mcapi.admin.workflow:
+  path: '/admin/accounting/workflow'
   defaults:
     _controller: 'Drupal\mcapi\ListBuilder\WorkflowListBuilder::render'
-    _title: 'Transactions'
+    _title: 'Transaction workflow'
   requirements:
     _permission: 'access administration pages'
   options:
@@ -50,7 +50,7 @@ mcapi.wallets.autocomplete:
   defaults:
     _controller: 'Drupal\mcapi\Controller\WalletAutocompleteController::autocomplete'
   requirements:
-    _custom_access: 'Drupal\mcapi\Access\TransactionAccessControlHandler::enoughWallets'
+    _permission: 'access user profiles'
 
 mcapi.admin.transaction_form.list:
   path: '/admin/accounting/forms'
@@ -76,21 +76,3 @@ mcapi.masspay.many21:
     _title: 'Many wallets pay one'
   requirements:
     _permission: 'manage mcapi'
-
-#this must only show if there is one wallet per user.
-#@see
-mcapi.user.wallet:
-  path: '/user/{user}/wallet'
-  defaults: 
-    _controller: '\Drupal\mcapi\Controller\WalletController::log'
-    _title_callback: '\Drupal\mcapi\Controller\WalletController::userPageTitle'
-  requirements:
-    _custom_access: user_wallet_details_access
-
-mcapi.wallet_log:
-  path: /wallet/{mcapi_wallet}/log
-  defaults: 
-    _controller: Drupal\mcapi\Controller\WalletController::log
-    _title_callback: Drupal\mcapi\Controller\WalletController::pageTitle
-  requirements:
-    _entity_access: mcapi_wallet.details

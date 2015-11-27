@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Form\MiscForm.
+ * Contains \Drupal\mcapi\Form\SettingsForm.
  *
  */
 namespace Drupal\mcapi\Form;
@@ -13,9 +13,8 @@ use Drupal\mcapi\Exchange;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
-class MiscForm extends ConfigFormBase {
+class SettingsForm extends ConfigFormBase {
 
-  private $entityManager;
   private $moduleHandler;
   private $transactionRelativeManager;
 
@@ -26,9 +25,8 @@ class MiscForm extends ConfigFormBase {
     return 'mcapi_misc_options_form';
   }
 
-  public function __construct(ConfigFactoryInterface $configFactory, $module_handler, $entity_manager, $transaction_relative_manager) {
+  public function __construct(ConfigFactoryInterface $configFactory, $module_handler, $transaction_relative_manager) {
     $this->setConfigFactory($configFactory);
-    $this->entityManager = $entity_manager;
     $this->moduleHandler = $module_handler;
     $this->transactionRelativeManager = $transaction_relative_manager;
   }
@@ -37,7 +35,6 @@ class MiscForm extends ConfigFormBase {
     return new static(
       $container->get('config.factory'),
       $container->get('module_handler'),
-      $container->get('entity.manager'),
       $container->get('mcapi.transaction_relative_manager')
     );
   }
@@ -169,7 +166,7 @@ class MiscForm extends ConfigFormBase {
 
   static function rebuild_mcapi_index(array &$form, FormStateInterface $form_state) {
     //not sure where to put this function
-    \Drupal::entityManager()->getStorage('mcapi_transaction')->indexRebuild();
+    \Drupal::entityTypeManager()->getStorage('mcapi_transaction')->indexRebuild();
     drupal_set_message("Index table is rebuilt");
     $form_state->setRedirect('system.status');
   }

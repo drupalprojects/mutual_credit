@@ -62,13 +62,11 @@ function theme_first_party_transaction_form($vars) {
       $hidden .= $renderer->render($form[$fieldname]);
     }
     elseif($form[$fieldname]['#type'] == 'value') {
-        drupal_set_message($fieldname);
+      
     }
     //add the rendered token to the hidden elements
     elseif (isset($form[$fieldname]['widget'])) {
-        drupal_set_message($fieldname);
-      //can't remember what this is for
-      //$hidden[] = 'field-name-'.$fieldname;
+      
     }
     //if it is required, and its not yet added as a token show an error
     elseif ($form[$fieldname]['#required']) {
@@ -85,12 +83,6 @@ function theme_first_party_transaction_form($vars) {
     '#context' => $tokens
   ];
   return $renderer->render($renderable);
-  
-  //if we render this using the inline_template element, specifically
-  //InlineTemplate::preRenderInlineTemplate($element)
-  //the form elements are filtered out later by drupal_render
-  return \Drupal::service('twig')->
-    renderInline($template, $tokens);
 }
 
 /**

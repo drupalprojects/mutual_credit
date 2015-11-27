@@ -4,13 +4,11 @@ use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Exchanges;
 use Drupal\mcapi\Entity\Transaction;
-use Drupal\mcapi\TransactionInterface;
-use Drupal\mcapi\WalletInterface;
+use Drupal\mcapi\Entity\TransactionInterface;
+use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\mcapi_exchanges\Entity\Exchange;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\user\Entity\user;
-use Drupal\og\Entity\OgMembership;
 
 
 const EXCHANGE_OG_REF = 'mcapi_exchange_og_ref';
@@ -34,7 +32,7 @@ function mcapi_exchanges_entity_type_alter(array &$entity_types) {
   $entity_types['mcapi_currency']
     ->setListbuilderClass($path.'CurrencyListBuilderExchanges');
   $entity_types['mcapi_wallet']
-    ->setAccessClass($path.'ExchangesWalletAccessControlHandler')
+    ->setAccessClass($path.'ExchangesWalletAccessControlHandler');
   }
 
 /**
@@ -542,13 +540,33 @@ function mcapi_exchanges_1stparty_preprocess(&$vars) {
   }
 }
 
-
-
 /**
  * implement hook_FORM_first_party_editform_ALTER().
  *
  */
 function mcapi_exchanges_form_first_party_editform_alter(&$form, FormStateInterface $form_state) {
+  
+  $configEntity = $form_state->getFormObject()->entity;
+  //ensure the worth field is showing all possible currencies ()
+  $exchange = $configEntity->exchange ?
+    entity_load('mcapi_exchange', $configEntity->exchange) :
+    NULL;
+
+  if ($exchange) {//for the exchange
+    foreach($exchange->currencies->referencedEntities() as $entity) {
+      $form['fieldapi_presets']['worth']['preset']['#allowed_curr_ids'][] = $entity->id();
+    }
+    $form['partner']['preset']['#description'] = $this->t("Wallet holder must be in, or be, an exchange '!name'.", ['!name' => $exchange->label]);
+  }
+  $form['menu']['#states'] = [
+    'visible' => [
+      ':input[name="exchange"]' => ['value' => ''],
+    ]
+  ];
+
+  
+  
+  
   //since this is an entity form, we need to get the $config from the $entity.
   $config = $form_state->getBuildInfo()['callback_object']->getEntity();
   $account = User::load(\Drupal::currentuser()->id());
@@ -681,7 +699,7 @@ function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $
  * put a warning on the wallet limits form
  */
 function mcapi_exchanges_form_wallet_limits_form_alter(&$form, $form_state) {
-  if (!Exchanges::in($form_state->getFormObject()->wallet->getHolder();)) {
+  if (!Exchanges::in($form_state->getFormObject()->wallet->getHolder())) {
     drupal_set_message(t("!name is not currently in any active exchange", array('!name' => $owner->label())));
   }
 }
@@ -701,27 +719,6 @@ function mcapi_exchanges_form_transaction_transition_edit_form(&$form, &$form_st
   }
 }
 
-function mcapi_exchanges_form_first_party_editform_alter($form, $form_state) {
-
-  $configEntity = $form_state->getFormObject()->entity;
-  //ensure the worth field is showing all possible currencies ()
-  $exchange = $configEntity->exchange ?
-    entity_load('mcapi_exchange', $configEntity->exchange) :
-    NULL;
-
-  if ($exchange) {//for the exchange
-    foreach($exchange->currencies->referencedEntities() as $entity) {
-      $form['fieldapi_presets']['worth']['preset']['#allowed_curr_ids'][] = $entity->id();
-    }
-    $form['partner']['preset']['#description'] = $this->t("Wallet holder must be in, or be, an exchange '!name'.", ['!name' => $exchange->label]),
-  }
-  $form['menu']['#states'] = [
-    'visible' => [
-      ':input[name="exchange"]' => ['value' => ''],
-    ]
-  ];
-
-}
 
 function mcapi_exchanges_form_currency_form_alter(&$form, $form_state) {
   //mdump($form_state->getObject());//how to get the currency entity?

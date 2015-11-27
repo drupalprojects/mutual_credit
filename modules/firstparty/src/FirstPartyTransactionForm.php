@@ -40,7 +40,7 @@ class FirstPartyTransactionForm extends TransactionForm {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity.manager'),
+      $container->get('entity_type.manager'),
       $container->get('user.private_tempstore'),
       $container->get('request_stack')->getCurrentRequest()
     );
@@ -61,24 +61,24 @@ class FirstPartyTransactionForm extends TransactionForm {
   public function form(array $form, FormStateInterface $form_state) {
       
     $form = parent::form($form, $form_state);
-    
     $config = $this->configEntity;
     $form['#incoming'] = $config->get('incoming');
     if ($form['#incoming']) {
+      drupal_set_message('incoming');
       $partner = &$form['payer'];
       $mywallet = &$form['payee']['widget'][0]['target_id'];
     }
     else {
+      drupal_set_message('outgoing');
       $partner = &$form['payee'];
       $mywallet = &$form['payer']['widget'][0]['target_id'];
     }
-
     $my_wallets = Wallet::HeldBy(User::load($this->currentUser()->id()));
 
     //if more than one wallet is allowed we'll put a chooser
     //however disabled widgets don't return a value, so we'll store
     //the value we need in a helper element
-    if (!mcapi_one_wallet_per_user_mode() && count($mywallets) > 1) {
+    if (!mcapi_one_wallet_per_user_mode() && count($my_wallets) > 1) {
       $mywallet['#type'] = $config->mywallet['widget'];
       $mywallet['#options'] = mcapi_entity_label_list('mcapi_wallet', $my_wallets);
       $mywallet_element['#title'] = $this->t('With');
@@ -99,6 +99,7 @@ class FirstPartyTransactionForm extends TransactionForm {
       //in any case remove the current users one wallet from the list of recipients
       unset($partner['widget'][0]['target_id']['#options'][$my_one_wallet]);
     }
+    
     //handle the description
     if (isset($config->fieldapi_presets['description']['placeholder'])) {
       $form['description']['#placeholder'] = $config->fieldapi_presets['description']['placeholder'];

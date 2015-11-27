@@ -7,7 +7,7 @@
 
 namespace Drupal\mcapi_limits\Plugin;
 
-use Drupal\mcapi\CurrencyInterface;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Plugin\ConfigurablePluginInterface;

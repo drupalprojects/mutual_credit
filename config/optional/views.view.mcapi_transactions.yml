@@ -4,9 +4,11 @@ dependencies:
   config:
     - field.storage.mcapi_transaction.worth
     - system.menu.admin
-    - system.menu.main
+    - user.role.authenticated
   module:
     - mcapi
+    - system
+    - user
 id: mcapi_transactions
 label: Transactions
 module: views
@@ -1136,11 +1138,12 @@ display:
     display_options:
       field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
-      path: transactions/admin
+      path: admin/accounting/transactions
       menu:
         type: normal
-        title: Ledger
+        title: Transactions
         description: 'Filter and inspect all transactions'
+        expanded: false
         parent: mcapi.admin
         weight: 10
         context: '0'
@@ -1164,6 +1167,11 @@ display:
       exposed_form_options: null
       display_description: ''
       display_extenders: {  }
+      tab_options:
+        type: normal
+        title: Transactions
+        description: 'List transactions and manage fields'
+        weight: 0
     cache_metadata:
       max-age: 0
       contexts:
@@ -1478,9 +1486,10 @@ display:
       field_langcode_add_to_query: null
       path: transactions
       menu:
-        type: normal
+        type: 'default tab'
         title: Transactions
         description: ''
+        expanded: false
         parent: ''
         weight: 0
         context: '0'
@@ -1976,7 +1985,6 @@ display:
         type: normal
         title: Transactions
         description: ''
-        menu_name: main
         weight: 0
     cache_metadata:
       max-age: 0

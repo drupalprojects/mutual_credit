@@ -8,8 +8,6 @@
 namespace Drupal\mcapi;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-//use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\TransactionSaveEvents;
 use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher ;
 

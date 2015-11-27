@@ -1,11 +1,5 @@
-mcapi_add_exchange_laction:
-  route_name: mcapi.exchange.add
-  title: 'Create exchange'
-  appears_on:
-    - mcapi.admin_exchange_list
-
 mcapi.admin.transaction:
-  route_name: mcapi.transaction_log
+  route_name: mcapi.transaction.add
   title: 'Log Transaction'
   appears_on:
     - mcapi.admin

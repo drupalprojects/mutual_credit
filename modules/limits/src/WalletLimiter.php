@@ -7,8 +7,8 @@
 
 namespace Drupal\mcapi_limits;
 
-use Drupal\mcapi\CurrencyInterface;
-use Drupal\mcapi\WalletInterface;
+use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\mcapi\Exchange;
 
 class WalletLimiter {//couldn't be bothered to make an interface for this

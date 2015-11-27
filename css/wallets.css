@@ -1,21 +1,21 @@
 div.all-wallets{
-	display:inline-block;
-	margin:2px;
-	background-color: rgb(250, 250, 250);
-	padding:5px;
+  display:inline-block;
+  margin:2px;
+  background-color: rgb(250, 250, 250);
+  padding:5px;
 }
 div.wallet-summary{
   margin:2px;
   padding:5px;
-	background-color: rgb(238, 238, 238);
+  background-color: rgb(238, 238, 238);
   display:inline-block;
 }
-div.balance-bars div.givengotten, 
+div.balance-bar, 
 div.wallet-histories div.history-chart{
   float:left;
 }
-div.balance-bars, div.wallet-histories, div.wallet-summaries, table.display-wallet{
-	clear:both;
+div.balance-bars, div.wallet-histories, div.wallet-summaries, table.display-wallet, div.stats{
+  clear:both;
 }
 
 table.display-wallet td, 

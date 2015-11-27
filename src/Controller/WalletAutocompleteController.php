@@ -63,16 +63,20 @@ class WalletAutocompleteController extends ControllerBase{
     if (is_numeric($string)) {
       $conditions['wid'] = [$string];
     }
+    elseif(is_numeric($string)) {
+      $conditions['wid'] = $string;
+    }
     //deal with the case where a wid has been entered with a hash
-    elseif (substr($string, 0, 1) == '#' && is_numeric($num = substr($string, 1))) {
-      $conditions['wid'] = $num;
+    elseif (preg_match('/#([0-9]+)/', $string, $matches)) {
+      $conditions['wid'] = $matches[1];
     }
     else {
       $conditions['fragment'] = $string;
     }
-    $walletStorage = $this->entityManager()->getStorage('mcapi_wallet');
+    $walletStorage = $this->entityTypeManager()->getStorage('mcapi_wallet');
     //return only the wallets which are both permitted and meet the filter criteria
     $results = $walletStorage->filter($conditions);
+    
     if ($this->role) {
       $walletperm = $this->role == 'payer'
           ? Wallet::OP_PAYOUT

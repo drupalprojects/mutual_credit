@@ -8,7 +8,7 @@
 namespace Drupal\mcapi_signatures\Plugin\TransactionRelative;
 
 use Drupal\mcapi\Plugin\TransactionRelativeInterface;
-use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Plugin\PluginBase;
@@ -42,7 +42,8 @@ class PendingSignatory extends PluginBase implements TransactionRelativeInterfac
    * {@inheritdoc}
    */
   public function getUsers(TransactionInterface $transaction) {
-    return db_select('mcapi_signatures', 's')->fields('s', ['uid'])
+    //@todo inject the database connection
+    return \Drupal::database()->select('mcapi_signatures', 's')->fields('s', ['uid'])
       ->condition('serial', $transaction->serial->value)
       ->condition('signed', 0)
       ->execute()->fetchCol();

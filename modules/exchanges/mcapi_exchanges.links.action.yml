@@ -1,0 +1,5 @@
+mcapi_add_exchange_action:
+  route_name: mcapi.exchange.add
+  title: 'Create exchange'
+  appears_on:
+    - mcapi.admin_exchange_list

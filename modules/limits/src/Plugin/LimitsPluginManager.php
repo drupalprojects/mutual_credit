@@ -10,7 +10,7 @@ use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Language\LanguageManager;
 use Drupal\Core\Plugin\DefaultPluginManager;
 use Drupal\Core\Extension\ModuleHandlerInterface;
-use Drupal\mcapi\CurrencyInterface;
+use Drupal\mcapi\Entity\CurrencyInterface;
 
 class LimitsPluginManager extends DefaultPluginManager {
 

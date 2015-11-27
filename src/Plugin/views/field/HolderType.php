@@ -24,7 +24,7 @@ class HolderType extends Standard {
   private $labels;
 
   function __construct() {
-    $defs = \Drupal::EntityManager()->getDefinitions();
+    $defs = \Drupal::entityTypeManager()->getDefinitions();
     foreach ($defs as $id => $def) {
       $this->labels[$id] = $def->getLabel();
     }

@@ -64,7 +64,7 @@ function mcapi_drush_command() {
 //truncate transactions
 function drush_mcapi_wipeslate() {
   
-  $storage = \Drupal::entityManager()
+  $storage = \Drupal::entityTypeManager()
     ->getStorage('mcapi_transaction')
     ->delete($storage->loadMultiple());
   

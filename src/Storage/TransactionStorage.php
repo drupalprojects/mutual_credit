@@ -29,29 +29,8 @@ class TransactionStorage extends TransactionIndexStorage {
    *
    */
   public function save(EntityInterface $transaction) {
-    //much of this is borrowed from parent::save
-    $id = $transaction->id();
-
-    // Track the original ID.
-    if ($transaction->getOriginalId() !== NULL) {
-      $id = $transaction->getOriginalId();
-    }
-
-    // Track if this entity is new.
-    $is_new = $transaction->isNew();
-    // Track if this entity exists already.
-    $id_exists = $this->has($id, $transaction);
-
-    // A new entity should not already exist.
-    if ($id_exists && $is_new) {
-      throw new EntityStorageException(SafeMarkup::format('@type entity with ID @id already exists.', array('@type' => $this->entityTypeId, '@id' => $id)));
-    }
-    // Load the original entity, if any.
-    if ($id_exists && !isset($transaction->original)) {
-      $transaction->original = $this->loadUnchanged($id);
-    }
-
     $this->doPreSave($transaction);
+    $is_new = $transaction->isNew();
     //determine the serial number
     if ($is_new) {
       $last = $this->database->query(
@@ -207,5 +186,6 @@ class TransactionStorage extends TransactionIndexStorage {
       }
     }
   }
+  
 
 }

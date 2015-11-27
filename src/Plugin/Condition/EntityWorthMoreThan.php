@@ -9,10 +9,8 @@
 
 namespace Drupal\mcapi\Plugin\Condition;
 
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Condition\ConditionPluginBase;
 use Drupal\Core\Form\FormStateInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a 'Worth field is more than' condition.

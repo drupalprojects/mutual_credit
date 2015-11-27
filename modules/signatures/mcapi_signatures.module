@@ -47,6 +47,7 @@ function mcapi_signatures_mcapi_transaction_presave($transaction) {
     foreach ($user_ids as $uid) {
       $transaction->signatures[$uid] = 0;
     }
+drupal_set_message('Creating signatures for '.implode(', ', $user_ids));
     //sign for the current user
     Signatures::sign($transaction, \Drupal::currentUser());
     //we can't save the signatures until we have the serial number
@@ -67,7 +68,7 @@ function mcapi_signatures_mcapi_transaction_load($entities) {
   //we load these regardless of settings, just in case settings have changed
   //leaving some transactions invisibly pending.
   //no matter everything will be cached
-  $signatures = db_select('mcapi_signatures', 's')
+  $signatures = \Drupal::database()->select('mcapi_signatures', 's')
     ->fields('s', ['serial', 'uid', 'signed'])
     ->condition('serial', array_keys($xids), 'IN')
     ->execute()->fetchAll();
@@ -94,7 +95,7 @@ function mcapi_signatures_mcapi_transaction_delete($transaction) {
 function mcapi_signatures_mcapi_transaction_insert($transaction) {
   //we're only interested in parent transactions which have signatures
   if (isset($transaction->signatures) && !$transaction->parent->value) {
-    $q = db_insert('mcapi_signatures')
+    $q = \Drupal::database()->insert('mcapi_signatures')
       ->fields(['serial', 'uid', 'signed']);
 
     foreach ($transaction->signatures as $uid => $signed_unixtime) {
@@ -104,16 +105,21 @@ function mcapi_signatures_mcapi_transaction_insert($transaction) {
   }
 }
 
+function mcapi_signatures_mcapi_type_insert($type) {
+  module_load_install('mcapi_signatures');
+  mcapi_signatures_configure_type($type->id());
+}
+
 /**
  * implements hook_ENTITY_update().
  * rewrites the signatures after the transaction is updated
  */
 function mcapi_signatures_mcapi_transaction_update($transaction) {
-  if (!isset($transaction->signatures)) return;
-  if (empty($transaction->parent)) return;
-die('merging');
+  if (!isset($transaction->signatures) || empty($transaction->parent)) {
+    return;
+  }
   foreach ($transaction->signatures as $uid => $signed) {
-    $q = db_merge('mcapi_signatures')
+    $q = \Drupal::database()->merge('mcapi_signatures')
       ->keys([
         'serial' => $transaction->serial->value,
         'uid' => $uid
@@ -203,7 +209,7 @@ function mcapi_signatures_user_view(array &$build, $account, $display) {
 
 function mcapi_signall($form, $form_state, $account) {
   $serials = Signatures::transactions_needing_sig_of_user($account);
-  $form['preview'][] = \Drupal::entityManager()
+  $form['preview'][] = \Drupal::entityTypeManager()
     ->getViewBuilder('mcapi_transaction')
     ->viewMultiple(Transaction::loadBySerials($serials), 'sentence');
 
@@ -232,7 +238,7 @@ function mcapi_signall_submit($form, $form_state) {
 
 function transactions_needing_sig_of_user($uid) {
   //assumes data integrity that all transactions referenced are in pending state
-  return db_select("mcapi_signatures", 's')
+  return \Drupal::database()->select("mcapi_signatures", 's')
     ->fields('s', array('serial'))
     ->condition('uid', $uid)
     ->condition('signed', '')

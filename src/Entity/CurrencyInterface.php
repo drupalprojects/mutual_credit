@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\CurrencyInterface.
+ * Contains \Drupal\mcapi\Entity\CurrencyInterface.
  */
 
-namespace Drupal\mcapi;
+namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Session\AccountInterface;

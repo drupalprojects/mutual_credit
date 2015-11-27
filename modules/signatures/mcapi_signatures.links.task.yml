@@ -1,6 +1,8 @@
-mcapi.admin.signatures.link:
+mcapi.admin.signatures.tab:
   title: Signatures
   description: Determine which transactions need approval and by whom
   route_name: mcapi.admin.signatures
-  parent: mcapi.admin
+  base_route: mcapi.admin.workflow
   weight: 5
+
+  

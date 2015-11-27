@@ -9,7 +9,7 @@
 
 namespace Drupal\mcapi\Entity;
 
-use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\Entity\TransactionInterface;
 
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\Entity\Wallet;
@@ -21,7 +21,6 @@ use Drupal\Core\Entity\EntityChangedInterface;
 use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Entity\EntityConstraintViolationList;
 
 /**
  * Defines the Transaction entity.
@@ -38,7 +37,7 @@ use Drupal\Core\Entity\EntityConstraintViolationList;
  *     "list_builder" = "\Drupal\mcapi\ListBuilder\TransactionListBuilder",
  *     "access" = "Drupal\mcapi\Access\TransactionAccessControlHandler",
  *     "form" = {
- *       "operation" = "Drupal\mcapi\Form\TransitionForm",
+ *       "operation" = "Drupal\mcapi\Form\OperationForm",
  *       "12many" = "Drupal\mcapi\Form\One2Many",
  *       "many21" = "Drupal\mcapi\Form\Many2One",
  *       "admin" = "Drupal\mcapi\Form\TransactionForm",
@@ -56,7 +55,7 @@ use Drupal\Core\Entity\EntityConstraintViolationList;
  *     "uuid" = "uuid",
  *     "name" = "description"
  *   },
- *   field_ui_base_route = "mcapi.admin.transactions",
+ *   field_ui_base_route = "view.mcapi_transactions.admin",
  *   translatable = FALSE,
  *   links = {
  *     "canonical" = "/transaction/{mcapi_transaction}",
@@ -89,7 +88,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
     $transactions = [];
     if ($serials) {
       //not sure which is faster, this or coding it using $this->filter()
-      $results = \Drupal::entityManager()
+      $results = \Drupal::entityTypeManager()
         ->getStorage('mcapi_transaction')
         ->loadByProperties(['serial' => (array)$serials]);
       //put all the transaction children under the parents
@@ -106,11 +105,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
         $transactions[$transaction->serial->value] = $transaction;
       }
     }
-
     if (is_array($serials)) {
       return $transactions;
     }
-    else return reset($transactions);
+    return reset($transactions);
   }
 
   /**
@@ -259,7 +257,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
 
     $fields['payer'] = BaseFieldDefinition::create('wallet')
       ->setLabel(t('Payer'))
-      ->setDescription(t('The wallet which was debited'))
+      ->setDescription(t('The giving wallet'))
       ->setSetting('target_type', 'mcapi_wallet')
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
@@ -269,7 +267,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
 
     $fields['payee'] = BaseFieldDefinition::create('wallet')
       ->setLabel(t('Payee'))
-      ->setDescription(t('The wallet which was credited'))
+      ->setDescription(t('The reveiving wallet'))
       ->setSetting('target_type', 'mcapi_wallet')
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
@@ -361,20 +359,5 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
     foreach ($wallets as $wallet) {
       $wallet->invalidateTagsOnSave($update);
     }
-  }
-
-  /**
-   * {@inheritdoc}
-   * @todo write the undo function
-   */
-  function undo() {
-    throw new \Exception('Transaction undo not implemented yet.');
-    foreach ($this->flatten() as $subtransaction) {
-      //get the currencies from $transaction->worth
-      //foreach currency get the delete mode.
-      //delete, or reverse each worth value, or change the state of the transaction
-      //if there are no worth values left and parent += 0, then delete the transaction entity itself      
-    }
-    //for the parent, if there are no children and no currencies, then delete the transaction
   }
 }

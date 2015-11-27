@@ -8,7 +8,6 @@
 
 namespace Drupal\mcapi\Entity;
 
-use Drupal\mcapi\CurrencyInterface;
 use Drupal\user\Entity\User;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\user\UserInterface;
@@ -154,7 +153,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     $serials = [];
     if ($this->id()) {
       $conditions += array('curr_id' => $this->id());
-      $serials = $this->entityManager()
+      $serials = $this->entityTypeManager()
         ->getStorage('mcapi_transaction')
         ->filter($conditions);
       if ($serial) {
@@ -168,7 +167,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * {@inheritdoc}
    */
   public function volume(array $conditions = []) {
-    return \Drupal::entityManager()
+    return \Drupal::entityTypeManager()
       ->getStorage('mcapi_transaction')
       ->volume($this->id(), $conditions);
   }

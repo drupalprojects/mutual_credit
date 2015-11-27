@@ -21,7 +21,7 @@ class FirstWallet extends ArgumentPluginBase {
   public function query($group_by = FALSE) {
     $this->ensureMyTable();
 
-    $wallet_ids = \Drupal::entityManager()->getStorage('mcapi_wallet')->filter(['holder' => User::load($this->argument)]);
+    $wallet_ids = \Drupal::entityTypeManager()->getStorage('mcapi_wallet')->filter(['holder' => User::load($this->argument)]);
     $this->value = array_splice($wallet_ids, 0, 1);
 
     $placeholder = $this->placeholder();

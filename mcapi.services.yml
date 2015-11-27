@@ -10,7 +10,7 @@ services:
 
   mcapi.route.subscriber:
     class: Drupal\mcapi\Routing\RouteSubscriber
-    arguments: [@entity.manager, @config.factory]
+    arguments: [@entity_type.manager, @config.factory]
     tags:
      - { name: event_subscriber }
      

@@ -20,11 +20,11 @@ class TransactionForm extends ContentEntityForm {
 
   /**
    * 
-   * @param Drupal\Core\Entity\EntityManagerInterface $entity_manager
+   * @param Drupal\Core\Entity\EntityTypeManagerInterface $entity_manager
    * @param \Drupal\user\PrivateTempStore $tempstore
    */
-  public function __construct($entity_manager, $tempstore) {
-    parent::__construct($entity_manager);
+  public function __construct($entity_type_manager, $tempstore) {
+    parent::__construct($entity_type_manager);
     $this->tempStore = $tempstore;
   }
 
@@ -33,7 +33,7 @@ class TransactionForm extends ContentEntityForm {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity.manager'),
+      $container->get('entity_type.manager'),
       $container->get('user.private_tempstore')
     );
   }

@@ -1,7 +1,7 @@
 <?php
 
-use Drupal\mcapi\CurrencyInterface;
-use Drupal\mcapi\WalletInterface;
+use Drupal\mcapi\Entity\CurrencyInterface;
+use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Exchange;

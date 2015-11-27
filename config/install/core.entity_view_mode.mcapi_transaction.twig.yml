@@ -3,3 +3,8 @@ label: Twig template
 status: '0'
 cache: '1'
 targetEntityType: mcapi_transaction
+langcode: en
+dependencies:
+  module:
+    - mcapi
+

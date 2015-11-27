@@ -60,7 +60,7 @@ function mcapi_exchanges_views_query_alter(ViewExecutable $view, QueryPluginBase
     $wallet_operations = db_or();
     //or if we are logged in
     if ($uid = \Drupal::CurrentUser()->id()) {
-      $wallet_operations->condition($details_field, Wallet::ACCESS_AUTH);
+      $wallet_operations->condition($details_field, Wallet::ACCESS_MEMBERS);
       //or if the current user is in the same exchange
       $wallet_operations->condition(
         db_and()

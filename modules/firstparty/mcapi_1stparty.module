@@ -27,7 +27,7 @@ function mcapi_1stparty_entity_type_alter(array &$entity_types) {
   //foreach (FirstPartyFormDesign::loadMultiple() as $id => $configEntity) {
   //So this is a direct db query
   $template = 'mcapi_1stparty.editform.';
-  $ids = db_select('config', 'c')
+  $ids = \Drupal::database()->select('config', 'c')
     ->fields('c', ['name'])
     ->condition('name', $template.'%', 'LIKE')
     ->execute()->fetchCol();

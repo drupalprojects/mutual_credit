@@ -1,9 +1,9 @@
-id: mcapi_wallet.summary
-status: '0'
-label: Summary
-cache: '1'
-targetEntityType: mcapi_wallet
+id: mcapi_wallet.mini
 langcode: en
+status: '0'
+label: Mini
+targetEntityType: mcapi_wallet
+cache: '1'
 dependencies:
   module:
     - mcapi

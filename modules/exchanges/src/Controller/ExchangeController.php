@@ -49,7 +49,7 @@ class ExchangeController extends ControllerBase {
    */
   public function buildPage(ExchangeInterface $mcapi_exchange) {
     return array(
-      'exchanges' => $this->entityManager()
+      'exchanges' => $this->entityTypeManager()
         ->getViewBuilder('mcapi_exchange')
         ->view($mcapi_exchange)
     );

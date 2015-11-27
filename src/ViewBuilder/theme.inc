@@ -7,7 +7,7 @@ const GCHART_HISTORY_WIDTH = 300;
  * @file
  * View and theme preprocessor functions
  */
-use Drupal\mcapi\TransactionInterface;
+use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\State;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
@@ -104,8 +104,8 @@ function template_preprocess_wallet_stats(&$vars) {
 function template_preprocess_mcapi_wallet(&$vars) {
   $wallet = $vars['element']['#mcapi_wallet'];
   $vars['label'] = $wallet->label();
-  $vars['canonical'] = 'wallet/'.$wallet->id();
-  //$vars['canonical'] = $wallet->toUrl()->toString();//@todo
+  $vars['canonical'] = $wallet->toUrl('canonical')->toString();
+  $vars['view_mode'] = $vars['element']['#view_mode'];
 }
 
 /**
@@ -122,7 +122,7 @@ function template_preprocess_mcapi_wallet_component(&$vars) {
  *
  */
 function ___template_preprocess_mcapi_wallets(&$vars) {
-  $viewbuilder =\Drupal::entityManager()->getViewBuilder('mcapi_wallet');
+  $viewbuilder =\Drupal::entityTypeManager()->getViewBuilder('mcapi_wallet');
   //convert each wallet into a render array
   foreach ($vars['wallets'] as $key => $wallet) {
     $vars['wallets'][$key] = $viewbuilder->view($wallet, $vars['view_mode']);
@@ -151,13 +151,11 @@ function ___template_preprocess_mcapi_wallets(&$vars) {
   }
 }
 
-
 /**
  * theme preprocessor for balances
  */
 function template_preprocess_wallet_balances(&$vars) {
   $unused = \Drupal::config('mcapi.settings')->get('render_unused');
-  $unused = 1;//TEMP!!
   $wallet = $vars['element']['#wallet'];
   foreach ($wallet->getSummaries() as $curr_id => $data) {
     if ($unused || $data['trades']) {
@@ -276,7 +274,7 @@ function template_preprocess_mcapi_currency(&$vars) {
   $vars['name'] = $currency->name;
   $vars['owner'] = entity_load('user', $currency->uid)->link();
   $vars['color'] = $currency->color;
-  $storage = \Drupal::entityManager()->getStorage('mcapi_transaction');
+  $storage = \Drupal::entityTypeManager()->getStorage('mcapi_transaction');
   $vars['transactions'] = $storage->count($currency->id);
   $vars['volume'] = $storage->volume($currency->id);
   $vars['wallets'] = count($storage->wallets($currency->id));

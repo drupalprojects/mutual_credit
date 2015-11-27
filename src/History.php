@@ -76,7 +76,7 @@ class History {
    *   balances, keyed by by unixtimes
    */
   function get($wallet_id, $currency_id) {
-    return \Drupal::entityManager()
+    return \Drupal::entityTypeManager()
       ->getStorage('mcapi_transaction')
       ->timesBalances($wallet_id, $currency_id);
   }

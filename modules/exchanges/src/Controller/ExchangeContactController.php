@@ -31,7 +31,7 @@ class ExchangeContactController extends ContactController {
       $this->contactFloodControl();
     }
     //@todo hope the contact module evolves a bit, or build our own contact form
-    $message = $this->entityManager()->getStorage('contact_message')->create(array(
+    $message = $this->entityTypeManager()->getStorage('contact_message')->create(array(
       'category' => 'exchange',
     ));
     drupal_set_message("Contact form isn't working yet");

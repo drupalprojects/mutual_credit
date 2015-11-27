@@ -82,7 +82,7 @@ class Settings extends ConfigFormBase {
       $type->save();
     }
     parent::submitForm($form, $form_state);
-    $form_state->setRedirect('mcapi.admin.transactions');
+    $form_state->setRedirect('mcapi.admin.workflow');
   }
 
   public function getEditableConfigNames() {}

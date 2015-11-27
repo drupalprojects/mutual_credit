@@ -11,12 +11,7 @@
 namespace Drupal\mcapi_exchanges;
 
 use Drupal\user\Entity\User;
-use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\Core\Cache\CacheBackendInterface;
-use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\mcapi_exchanges\Entity\Exchange;
-use Drupal\mcapi\Entity\Currency;
-use Drupal\mcapi\Entity\Wallet;
 
 
 class Exchanges {
@@ -92,7 +87,7 @@ class Exchanges {
   //walletable bundles are any bundles with the exchange field on them
   public static function walletableBundles() {
     debug('Walletable bundles override may not be needed');
-    $field_defs = \Drupal::entityManager()
+    $field_defs = \Drupal::entityTypeManager()
       ->getStorage('field_config')
       ->loadbyProperties(array('field_name' => EXCHANGE_OG_REF));
     foreach ($field_defs as $field) {

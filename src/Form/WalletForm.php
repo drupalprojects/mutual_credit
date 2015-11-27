@@ -11,7 +11,6 @@ namespace Drupal\mcapi\Form;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\user\Entity\User;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Component\Utility\Tags;
 use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Entity\Wallet;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -22,11 +21,7 @@ class WalletForm extends ContentEntityForm {
 
   public function __construct($config_factory) {
     $this->walletConfig = $config_factory->get('mcapi.settings');
-
     $this->permissions = Exchange::walletPermissions();
-    if ($wallet->entity_type !== 'user') {
-      unset($this->permissions[Wallet::ACCESS_OWNER]);
-    }
     $this->ops = Exchange::walletOps();
   }
 
@@ -123,31 +118,37 @@ class WalletForm extends ContentEntityForm {
   /**
    * {@inheritdoc}
    */
-  //It is empty right now but probably it will do all the below
   function save(array $form, FormStateInterface $form_state) {
     $wallet = $this->entity;
 
     $values = $form_state->getValues();
     foreach (Exchange::walletOps() as $op_name => $label) {
-      $wallet->{$op_name}->value = $values[$op_name];
-      $user_refs = [];
+      $wallet->access[$op_name] = [];
       if ($values[$op_name] == Wallet::ACCESS_OWNER) {
+        $values[$op_name] = Wallet::ACCESS_USERS;
         $wallet->access[$op_name] = [$wallet->getHolder()->id()];
       }
-      elseif ($values[$op_name] = Wallet::ACCESS_USERS) {
-        $wallet->access[$op_name] = [];
+      $wallet->{$op_name}->value = $values[$op_name];
+      
+      if ($wallet->{$op_name}->value == Wallet::ACCESS_USERS) {
         foreach ($values[$op_name.'_users'] as $val) {
           $wallet->access[$op_name][] = $val['target_id'];
         }
       }
     }
+
     //check for the change of holdership
-    if ($values['entity_type'] && $values['entity_id']) {
-      $wallet->set('entity_type', $values['entity_type']);
-      $wallet->set('pid', $values['entity_id']);
-      entity_load($values['entity_type'], $values['entity_id']);
+    $key = $values['entity_type'] . '_entity_id';
+    if ($values[$key]) {
+      //invalidate cache tags on the current parent.
+      //@see Wallet::invalidateTagsOnSave to invalidate tags on the new parent.
+      Cache::invalidateTags([$this->entity_type->value . ':' . $this->pid->value]);
+      
+      $wallet->set('entity_type', $values['entity_type'])
+        ->set('pid', $values[$key]);
+      //@todo need to clear the walletaccess cache for both users
       drupal_set_message(
-        t('Wallet has been transferred to !name', ['!name' => $wallet->label()])
+        t('Wallet has been transferred to !name', ['!name' => $wallet->getOwner()->label()])
       );
     }
     $wallet->save();
@@ -157,7 +158,7 @@ class WalletForm extends ContentEntityForm {
     );
   }
 
-  private function accessElement(&$form, $op_name, $description) {
+  private function accessElement(&$form, $op_name) {
     $saved = $this->entity->access[$op_name];
     static $weight = 0;
     $system_default = array_filter($this->walletConfig->get($op_name));
@@ -182,6 +183,9 @@ class WalletForm extends ContentEntityForm {
         '#default_value' => is_array($saved) ? User::loadMultiple($saved) : [],
         '#states' => [
           'visible' => [
+            ':input[name="' . $op_name . '"]' => ['value' => Wallet::ACCESS_USERS]
+          ],
+          'required' => [
             ':input[name="' . $op_name . '"]' => ['value' => Wallet::ACCESS_USERS]
           ]
         ],

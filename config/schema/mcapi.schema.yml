@@ -65,6 +65,15 @@ mcapi.settings:
     access_personalised:
       type: boolean
       label: 'Personalised wallet access'
+    wallet_tab:
+      type: boolean
+      label: Wallet tab
+    wallet_inex_tab:
+      type: boolean
+      label: Income & expenditure tab
+    wallet_log_tab:
+      type: boolean
+      label: Transaction log tab
     autoadd:
       type: boolean
       label: 'Auto-create a wallet for every new user'
@@ -72,15 +81,9 @@ mcapi.settings:
       type: boolean
       label: 'Show unused currency stats in wallet view.'
     add_link_location:
-      type: mapping
+      type: sequence
       label: 'Location of the link to create new wallets under an entity'
-      mapping: 
-        local_action:
-          label: "Local action on the owner's display page"
-          type: boolean
-        summaries:
-          label: 'In the wallet summaries block'
-          type: boolean
+      sequence: { }
     details:
       type: map
       label: 'View transaction log'

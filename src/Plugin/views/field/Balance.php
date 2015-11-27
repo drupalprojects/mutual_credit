@@ -66,7 +66,7 @@ class Balance extends Worth {
     }
     $vals = [];
     foreach ($worth_field->currencies() as $curr_id) {
-      $raw = \Drupal::entityManager()->getStorage('mcapi_transaction')->runningBalance(
+      $raw = \Drupal::entityTypeManager()->getStorage('mcapi_transaction')->runningBalance(
         $values->wallet_id,
         $curr_id,
         $values->xid,

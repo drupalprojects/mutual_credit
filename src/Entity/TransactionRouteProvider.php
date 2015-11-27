@@ -11,7 +11,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Symfony\Component\Routing\Route;
 
 /**
- * Provides routes for the user entity.
+ * Provides routes for the transaction entity.
  */
 class TransactionRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider {
 
@@ -32,15 +32,15 @@ class TransactionRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRo
       ->get('entity.mcapi_transaction.edit_form')
       ->setOptions($options);
 
-    $route = (new Route('/transaction/log'))
+    $route = (new Route('/transaction/add'))
       ->setDefaults([
         '_entity_form' => 'mcapi_transaction.admin',
         '_title' => 'Log transaction',
       ])
-      ->setRequirement('_custom_access', 'Drupal\mcapi\Access\TransactionAccessControlHandler::enoughWallets')
+      ->setRequirement('_entity_create_access', 'mcapi_transaction')
       ->setRequirement('_permission', 'manage mcapi')
       ->setOption('_admin_route', TRUE);
-    $route_collection->add('mcapi.transaction_log', $route);
+    $route_collection->add('mcapi.transaction.add', $route);
 
     $route = (new Route('/transaction/{mcapi_transaction}/{operation}'))
       ->setDefaults([

@@ -36,7 +36,7 @@ class TransactionListBuilder extends EntityListBuilder {
    */
   public function getOperations(EntityInterface $entity) {
     module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');
-    $operations = \Drupal::entityManager()
+    $operations = \Drupal::entityTypeManager()
       ->getviewBuilder('mcapi_transaction')
       ->buildActionlinks($entity, TRUE);
     $operations += $this->moduleHandler()->invokeAll('entity_operation', array($entity));

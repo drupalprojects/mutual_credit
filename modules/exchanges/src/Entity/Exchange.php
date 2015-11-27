@@ -102,10 +102,10 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       'entity_type' => 'mcapi_exchange',
       'pid' => $this->id(),
       'name' => '_intertrading',
-      Wallet::OP_DETAILS => Wallet::ACCESS_AUTH,
-      Wallet::OP_SUMMARY => Wallet::ACCESS_AUTH,
-      Wallet::OP_PAYIN => Wallet::ACCESS_AUTH,
-      Wallet::OP_PAYOUT => Wallet::ACCESS_AUTH
+      Wallet::OP_DETAILS => Wallet::ACCESS_MEMBERS,
+      Wallet::OP_SUMMARY => Wallet::ACCESS_MEMBERS,
+      Wallet::OP_PAYIN => Wallet::ACCESS_MEMBERS,
+      Wallet::OP_PAYOUT => Wallet::ACCESS_MEMBERS
     );
     $wallet = Wallet::create($props);
     $wallet->save();
@@ -179,7 +179,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    */
   function intertrading_wallet() {
     $props = array('name' => '_intertrading', 'pid' => $this->id());
-    $wallets = $this->EntityManager()
+    $wallets = $this->entityTypeManager()
       ->getStorage('mcapi_wallet')
       ->loadByProperties($props);
     return reset($wallets);
@@ -245,7 +245,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       ->execute()->fetchCol();
 
     if ($xids && !$children) {
-      $filtered = $this->entityManager()
+      $filtered = $this->entityTypeManager()
         ->getStorage('mcapi_transaction')
         ->filter(array('xid' => $xids));
       $xids = array_unique($filtered);
@@ -267,7 +267,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     }
     //if the exchange has wallets, even orphaned wallets, it can't be deleted.
     $conditions = array('exchanges' => array($this->id()));
-    $wallet_ids = $this->EntityManager()->getStorage('mcapi_wallet')->filter($conditions);
+    $wallet_ids = $this->entityTypeManager()->getStorage('mcapi_wallet')->filter($conditions);
     if (count($wallet_ids) > 1){
       $this->reason = t('The exchange still owns wallets: @nums', array('@nums' => implode(', ', $wallet_ids)));
       return FALSE;

@@ -28,7 +28,7 @@ class CurrentUserWallets extends ArgumentDefaultPluginBase {
    */
   public function getArgument() {
     $account = User::load(\Drupal::currentUser()->id());
-    $ids = \Drupal::entityManager()
+    $ids = \Drupal::entityTypeManager()
       ->getStorage('mcapi_wallet')
       ->filter(['holder' => $account]);
     return implode('+', $ids);

@@ -632,7 +632,14 @@ display:
       display_extenders: {  }
       group_by: false
       use_ajax: true
-  embedded_in_route_mcapi_dot_wallet_log:
+    cache_metadata:
+      max-age: 0
+      contexts:
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+      tags: {  }
+  embed:
     display_plugin: embed
     id: embedded_in_route_mcapi_dot_wallet_log
     display_title: Embed
@@ -641,20 +648,35 @@ display:
       field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
       display_extenders: {  }
-  page_1:
+    cache_metadata:
+      max-age: 0
+      contexts:
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+      tags: {  }
+  page:
     display_plugin: page
-    id: page_1
+    id: page
     display_title: Page
     position: 2
     display_options:
       display_extenders: {  }
-      path: user/%/wallet
+      path: wallet/%mcapi_wallet/log
       menu:
         type: tab
-        title: Wallet
-        description: ''
-        parent: user.page
-        weight: 5
-        context: '1'
-        menu_name: account
-      enabled: false
+        title: Transactions
+        description: 'Transactions in this wallet'
+        expanded: false
+        parent: ''
+        weight: 3
+        context: '0'
+        menu_name: main
+    cache_metadata:
+      max-age: 0
+      contexts:
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+      tags: {  }
+

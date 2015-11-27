@@ -26,7 +26,7 @@ div.watermark{
 }
 div.stamp{
   margin: auto 2em;
-  position: absolute;
+  position: relative;
   color: red;
   font-family: arial, helvetica;
   font-size: 50pt;

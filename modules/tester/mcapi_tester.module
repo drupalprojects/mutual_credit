@@ -57,7 +57,7 @@ function mcapi_tester_make_transactions($num, $exchange = NULL, &$sandbox) {
     } 
   }
   else {
-    $wallets = \Drupal::EntityManager()->getStorage('mcapi_wallet')->loadByProperties(['entity_type' => 'user']);
+    $wallets = \Drupal::entityTypeManager()->getStorage('mcapi_wallet')->loadByProperties(['entity_type' => 'user']);
     //quick way to select non-intertrading wallets
     $wids = array_keys($wallets);
     if (count($wids) < 2) {
@@ -88,6 +88,17 @@ function mcapi_tester_make_transactions($num, $exchange = NULL, &$sandbox) {
     );
     $transaction = Transaction::create($props)->save();
   }
+  
+  foreach (\Drupal\mcapi\Entity\Transaction::loadMultiple() as $transaction) {
+    if ($transaction->id() % 10  == 0) {
+      continue;
+    }
+    foreach ($transaction->signatures as $uid => $signed) {
+      \Drupal\mcapi_signatures\Signatures::sign($this->transaction, User::load($uid));
+    }
+  }
+  
+  
   //change the created time of the transactions, coz they mustn't be all in the same second
   //one per day
   db_query('UPDATE {mcapi_transaction} SET created = created-(serial*3600*12)');

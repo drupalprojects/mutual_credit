@@ -9,6 +9,7 @@
 namespace Drupal\mcapi\Plugin\Action;
 
 use Drupal\Core\Form\FormStateInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Changes the transaction state to what it was before it was erased.
@@ -21,7 +22,27 @@ use Drupal\Core\Form\FormStateInterface;
  * )
  */
 class Unerase extends \Drupal\mcapi\Plugin\TransactionActionBase {
-
+    
+  private $keyValue;
+  
+  function __construct($configuration, $plugin_id, $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_manager, $key_value) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_manager);
+    $this->keyValue = $key_value;
+  }
+  
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration, 
+      $plugin_id,
+      $plugin_definition,
+      $container->get('entity.form_builder'),
+      $container->get('module_handler'),
+      $container->get('mcapi.transaction_relative_manager')->activePlugins(),
+      $container->get('entity_type.manager'),
+      $container->get('keyvalue.database')
+    );
+  }
+  
   /**
    * {@inheritdoc}
   */
@@ -38,9 +59,9 @@ class Unerase extends \Drupal\mcapi\Plugin\TransactionActionBase {
    * {@inheritdoc}
   */
   public function execute($object = NULL) {
-    $store = \Drupal::service('keyvalue.database')->get('mcapi_erased');
+    $store = $this->keyValue->get('mcapi_erased');
     $object->set('state', $store->get($object->serial->value, 'done'));
-    $store->delete($this->transaction->serial->value);
+    $store->delete($object->serial->value);
   }
 
 }

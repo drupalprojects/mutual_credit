@@ -18,6 +18,7 @@ use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\Entity\Transaction;
 
 
 abstract class TransactionIndexStorage extends SqlContentEntityStorage implements TransactionStorageInterface {
@@ -431,4 +432,17 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     return $serials;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function loadUnchanged($id) {
+    $this->resetCache(array($id));
+    $serial = $this->database
+      ->select('mcapi_transactions_index', 'i')
+      ->fields('i', ['serial'])->condition('xid', $id)
+      ->execute()
+      ->fetchField();
+    $transactions = Transaction::loadBySerials([$serial]);
+    return reset($transactions);
+  }
 }

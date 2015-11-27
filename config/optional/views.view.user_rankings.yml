@@ -3,7 +3,7 @@ status: true
 dependencies:
   module:
     - block
-    - mcapi
+    - mcapipppppppppppppppppppppppppppp
 id: user_rankings
 label: 'User rankings'
 module: views

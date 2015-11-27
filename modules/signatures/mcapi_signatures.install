@@ -1,19 +1,32 @@
 <?php
 
 Use \Drupal\Core\Url;
+use \Drupal\mcapi\Entity\Type;
 
+
+/**
+ * implements hook_install().
+ */
 function mcapi_signatures_install() {
   module_set_weight('mcapi_signatures', 2);
-  
+  mcapi_signatures_configure_type('default');
+  $settings = \Drupal::configFactory()->getEditable('mcapi.settings');
+  $rels = $settings->get('active_relatives');
+  $rels['signatory'] = 'signatory';
+  $rels['pending_signatory'] = 'pending_signatory';
+  $settings->set('active_relatives', $rels)->save();
 }
 
+/**
+ * implements hook_modules_installed().
+ */
 function mcapi_signatures_modules_installed($modules) {
   if (in_array('mcapi_signatures', $modules) && !in_array('mcapi', $modules)) {
     drupal_set_message(t(
-      "Workflow settings should be reviewed to take account of transaction signing. !link",
-      ['!link' => \Drupal::l(
+      "Workflow settings should be reviewed to take account of transaction signing. @link",
+      ['@link' => \Drupal::l(
         'admin/accounting/workflow',
-        Url::fromRoute('mcapi.admin.transactions')
+        Url::fromRoute('mcapi.admin.workflow')
       )]
     ));
   }
@@ -21,12 +34,13 @@ function mcapi_signatures_modules_installed($modules) {
 
 /*
  * implements hook_uninstall().
+ * 
  * @todo ideally we would prevent this module from uninstalling if ANY transactions
  * were in pending state. Ideally any module providing a transaction state in use
  * would not be uninstallable.
  */
 function mcapi_signatures_uninstall() {
-  $p = db_select('mcapi_transaction', 't')
+  $p = \Drupal::database()->select('mcapi_transaction', 't')
     ->fields('t')
     ->condition('state', 'pending')
     ->countQuery()
@@ -35,11 +49,11 @@ function mcapi_signatures_uninstall() {
   if ($p) {
     drupal_set_message("This uninstall shouldn't have been possible if any transactions are pending");
   }
-  db_update('mcapi_transaction')
+  \Drupal::database()->update('mcapi_transaction')
     ->fields(['state' => 'done'])
     ->condition('state', 'pending')
     ->execute();//this isn't actually tested
-  \Drupal::entityManager()->getStorage('mcapi_transaction')
+  \Drupal::entityTypeManager()->getStorage('mcapi_transaction')
     ->indexRebuild();
   drupal_set_message("All pending transactions have been set to 'done'");
 }
@@ -96,17 +110,25 @@ variable_set('mcapi_sign_notify_template', $mcapi_sign_notify_template);
  */
 function signature_integrity_check($modify = FALSE) {
   //set all pending transactions to completed
-  db_update('mcapi_transaction')
+  \Drupal::database()->update('mcapi_transaction')
     ->fields(['state' => 1])
     ->condition('state', TRANSACTION_STATE_PENDING)->execute();
   //any transactions with pending signatures should be set back to pending state
-  $pending_serials = db_select('mcapi_signatures', 's')
+  $pending_serials = \Drupal::database()->select('mcapi_signatures', 's')
     ->fields('s', ['serial'])
     ->condition('pending', 1)
     ->execute()->fetchCol();
   if (empty($pending_serials)) return;
-  db_update('mcapi_transaction')
+  \Drupal::database()->update('mcapi_transaction')
     ->fields(['state' => TRANSACTION_STATE_PENDING])
     ->condition('serial', $pending_serials)
     ->execute();
+}
+
+function mcapi_signatures_configure_type($type_name) {
+  Type::load($type_name)->setThirdPartySetting(
+    'mcapi_signatures', 
+    'signatures', 
+    ['payer' => 'payer', 'payee' => 'payee']
+  )->save();
 }

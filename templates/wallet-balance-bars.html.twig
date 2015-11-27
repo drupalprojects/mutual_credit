@@ -31,9 +31,8 @@ function {{ chart.functionname }}() {
     ['', {{ chart.incoming }}, {{ chart.outgoing }}]
   ]);
   var options = {
-    title:"{{ chart.label }}",
-    width: 150,
-    height: 150 ,
+    width: 200,
+    height: 200 ,
     enableInteractivity: false,
     vAxis: {viewWindowMode: 'explicit'},
     vAxis: {viewWindow: {min: 0, max: {{ chart.max  }}}},
@@ -51,6 +50,9 @@ function {{ chart.functionname }}() {
 </script>
 <div class = "balance-bars">
   {% for chart in currencies %}
-  <div class = "givengotten" id = "{{ chart.id }}" style = "width:{{ 150 }}px;"></div>
+  <div class = "balance-bar">
+    <div>{{ chart.label }}</div>
+    <div class = "givengotten" id = "{{ chart.id }}"></div>
+  </div>
   {% endfor %}
 </div>

@@ -41,6 +41,7 @@ class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface
    * {@inheritdoc}
    */
   public function getDerivativeDefinitions($base_plugin_definition) {
+    
     //add wallet links can go in three locations
     if ($this->settings->get('add_link_location') != 'summaries') {
       foreach($this->settings->get('entity_types') as $entity_type_bundle => $max) {
