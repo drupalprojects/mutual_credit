@@ -86,23 +86,22 @@ function mcapi_tester_make_transactions($num, $exchange = NULL, &$sandbox) {
         'curr_id' => 'hhrs'
       )
     );
-    $transaction = Transaction::create($props)->save();
-  }
-  
-  foreach (\Drupal\mcapi\Entity\Transaction::loadMultiple() as $transaction) {
-    if ($transaction->id() % 10  == 0) {
-      continue;
-    }
+    $transaction = \Drupal\mcapi\Entity\Transaction::create($props);
+    $transaction->save();
+    //presave creates the signatures, so we have to save before signing
     foreach ($transaction->signatures as $uid => $signed) {
-      \Drupal\mcapi_signatures\Signatures::sign($this->transaction, User::load($uid));
+      if (rand(0, 9) > 0) {
+        \Drupal\mcapi_signatures\Signatures::sign(
+          $transaction,
+          \Drupal\user\Entity\User::load($uid)
+        );
+      }
     }
+    //change the created time of the transactions, coz they mustn't be all in the same second
+    $transaction->created->value = $transaction->created->value - ($transaction->serial->value*3600*12);
+    $transaction->save();
   }
-  
-  
-  //change the created time of the transactions, coz they mustn't be all in the same second
-  //one per day
-  db_query('UPDATE {mcapi_transaction} SET created = created-(serial*3600*12)');
-  db_query('UPDATE {mcapi_transactions_index} SET created = created-(serial*3600*12)');
+  //ensure all the wallets were created before all the transactions
   $days = $num/2;
   db_query(
     'UPDATE {mcapi_wallet} SET created  = :created', 

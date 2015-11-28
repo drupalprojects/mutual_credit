@@ -26,54 +26,55 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   /**
    * {@inheritdoc}
    * save 2 rows per worth into the index tables
-   * @note $entity cannot have children - this must be called inside foreach($transaction->flatten)
+   * @note $entity cannot have children - this must be passed a transaction from a flatten()ed array
+   * @note this MUST be overridden
    */
-  public function doPostSave(EntityInterface $entity, $update = FALSE) {
+  public function doSave($id, EntityInterface $entity) {
+    $return = parent::doSave($id, $entity);
     
     //alternatively how about a db_merge? would be quicker
-    if ($update) {
+    if (!$entity->isNew()) {
       $this->database->delete('mcapi_transactions_index')
         ->condition('serial', $entity->serial->value)
         ->execute();
     }
 
-    foreach ($entity->flatten() as $transaction) {
-      $record = $this->mapToStorageRecord($transaction);
-      $common = [
-        'xid' => $transaction->id(),
-        'serial' => $record->serial,
-        'state' => $record->state,
-        'type' => $record->type,
-        'created' => $record->created,
-        'changed' => $record->changed,
-        'child' => intval((bool)$record->parent),
-      ];
+    $record = $this->mapToStorageRecord($entity);
+    $common = [
+      'xid' => $record->xid,
+      'serial' => $record->serial,
+      'state' => $record->state,
+      'type' => $record->type,
+      'created' => $record->created,
+      'changed' => $record->changed,
+      'child' => intval((bool)$record->parent),
+    ];
 
-      $fields = ['xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'changed', 'child'];
-      $query = $this->database->insert('mcapi_transactions_index')->fields($fields);
+    $fields = ['xid', 'serial', 'wallet_id', 'partner_id', 'state', 'curr_id', 'volume', 'incoming', 'outgoing', 'diff', 'type', 'created', 'changed', 'child'];
+    $query = $this->database->insert('mcapi_transactions_index')->fields($fields);
 
-      foreach ($transaction->worth->getValue() as $worth) {
-        $query->values($common + [
-          'wallet_id' => $record->payer,
-          'partner_id' => $record->payee,
-          'incoming' => 0,
-          'outgoing' => $worth['value'],
-          'diff' => -$worth['value'],
-          'curr_id' => $worth['curr_id'],
-          'volume' => $worth['value']
-        ]);
-        $query->values($common + [
-          'wallet_id' => $record->payee,
-          'partner_id' => $record->payer,
-          'incoming' => $worth['value'],
-          'outgoing' => 0,
-          'diff' => $worth['value'],
-          'curr_id' => $worth['curr_id'],
-          'volume' => $worth['value']
-        ]);
-      }
-      $query->execute();
+    foreach ($entity->worth->getValue() as $worth) {
+      $query->values($common + [
+        'wallet_id' => $record->payer,
+        'partner_id' => $record->payee,
+        'incoming' => 0,
+        'outgoing' => $worth['value'],
+        'diff' => -$worth['value'],
+        'curr_id' => $worth['curr_id'],
+        'volume' => $worth['value']
+      ]);
+      $query->values($common + [
+        'wallet_id' => $record->payee,
+        'partner_id' => $record->payer,
+        'incoming' => $worth['value'],
+        'outgoing' => 0,
+        'diff' => $worth['value'],
+        'curr_id' => $worth['curr_id'],
+        'volume' => $worth['value']
+      ]);
     }
+    $query->execute();
+    return $return;
   }
   
   /**

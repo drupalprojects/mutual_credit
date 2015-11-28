@@ -25,11 +25,14 @@ class Unerase extends \Drupal\mcapi\Plugin\TransactionActionBase {
     
   private $keyValue;
   
-  function __construct($configuration, $plugin_id, $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_manager, $key_value) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_manager);
+  function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_type_manager, $entity_display_respository, $key_value) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_type_manager, $entity_display_respository);
     $this->keyValue = $key_value;
   }
   
+  /**
+   * {@inheritdoc}
+   */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
     return new static(
       $configuration, 
@@ -39,6 +42,7 @@ class Unerase extends \Drupal\mcapi\Plugin\TransactionActionBase {
       $container->get('module_handler'),
       $container->get('mcapi.transaction_relative_manager')->activePlugins(),
       $container->get('entity_type.manager'),
+      $container->get('entity_display.repository'),
       $container->get('keyvalue.database')
     );
   }

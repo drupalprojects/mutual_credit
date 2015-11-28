@@ -20,7 +20,7 @@ class TransactionForm extends ContentEntityForm {
 
   /**
    * 
-   * @param Drupal\Core\Entity\EntityTypeManagerInterface $entity_manager
+   * @param Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    * @param \Drupal\user\PrivateTempStore $tempstore
    */
   public function __construct($entity_type_manager, $tempstore) {
@@ -30,10 +30,11 @@ class TransactionForm extends ContentEntityForm {
 
   /**
    * {@inheritdoc}
+   * @todo update to entity_type.manager
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity_type.manager'),
+      $container->get('entity.manager'),
       $container->get('user.private_tempstore')
     );
   }
@@ -103,7 +104,7 @@ class TransactionForm extends ContentEntityForm {
     //now we divert to the transition confirm form
     $form_state->setRedirect(
       'mcapi.transaction.operation',
-      ['mcapi_transaction' => 0, 'operation' => 'create']);
+      ['mcapi_transaction' => 0, 'operation' => 'save']);
   }
 
   /**

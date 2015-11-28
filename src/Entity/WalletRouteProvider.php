@@ -24,7 +24,7 @@ class WalletRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRoutePr
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_manager
    *   The entity manager.
    */
-  public function  __construct(EntityManagerInterface $entity_type_manager, $config, $entity_manager) {
+  public function  __construct(EntityTypeManagerInterface $entity_type_manager, $config, $entity_manager) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityManager = $entity_manager;
     $this->config = $config;

@@ -26,9 +26,6 @@ wallet_inex_tab: 1
 wallet_log_tab: 1
 autoadd: 1
 render_unused: 1
-add_link_location: 
-  local_action: local_action
-  summaries: summaries
 details:
   o: 'o'
   m: 'm'

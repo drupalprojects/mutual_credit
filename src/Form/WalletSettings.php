@@ -43,17 +43,6 @@ class WalletSettings extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->configFactory()->get('mcapi.settings');
 
-    $form['add_link_location'] = [
-      '#title' => $this->t("Location of 'new wallet' link"),
-      '#type' => 'checkboxes',
-      '#options' => [
-        'local_action' => $this->t("Local action on the holder's display page"),
-        'summaries' => $this->t('In the wallet summaries block'),
-      ],
-      '#default_value' => $config->get('add_link_location'),
-      '#required' => TRUE,
-      '#weight' => 1,
-    ];
     //A wallet can be attached to any entity with an entity reference field pointing towards the exchange entity
     //OR to an exchange entity itself
     $link = \Drupal::l(
@@ -212,7 +201,6 @@ class WalletSettings extends ConfigFormBase {
     $vals = $form_state->getValues('values');
     $this->configFactory->getEditable('mcapi.settings')
       ->set('entity_types', $vals['entity_types'])
-      ->set('add_link_location', $vals['add_link_location'])
       ->set('wallet_tab', $vals['wallet_tab'])
       ->set('wallet_inex_tab', $vals['wallet_inex_tab'])
       ->set('wallet_log_tab', $vals['wallet_log_tab'])

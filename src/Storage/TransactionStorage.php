@@ -22,76 +22,76 @@ class TransactionStorage extends TransactionIndexStorage {
   /**
    * {@inheritdoc}
    * 
-   * because the transaction entity is keyed by serial number not xid,
+   * Because the transaction entity is keyed by serial number not xid,
    * and because it contains child entities,
    * We need to overwrite the whole save function
-   * Note therefore that preSave and postSave take the whole transaction cluster
+   * and by the time we call the parent, we pass it individual transaction 
+   * entities having called $transaction->flatten
    *
    */
   public function save(EntityInterface $transaction) {
-    $this->doPreSave($transaction);
-    $is_new = $transaction->isNew();
     //determine the serial number
-    if ($is_new) {
+    if ($transaction->isNew()) {
       $last = $this->database->query(
         "SELECT MAX(serial) FROM {mcapi_transaction}"
       )->fetchField();
-      $transaction->serial->value = $this->database->nextId($last);
+      $serial = $this->database->nextId($last);
+    }
+    else {
+      $serial = $transaction->serial->value;
     }
 
     $parent = 0;
     //note that flatten() clones the transactions
     foreach ($transaction->flatten(FALSE) as $entity) {
-      $entity->serial->value = $transaction->serial->value;
-      $record = $this->mapToStorageRecord($entity);
-      $record->changed = REQUEST_TIME;
-
-      if ($is_new) {
-        $return = SAVED_NEW;
-        $record->created = REQUEST_TIME;
-        //the first transaction is the parent,
-        //and the subsequent transactions must have its xid as their parent
-        $record->parent = (int)$parent;
-        
-        // Ensure the entity is still seen as new after assigning it an id while storing its data.
-        if (!$entity->isNew()) {
-          echo 'enforcing newness of entity!';
-          $entity->enforceIsNew();
-        }
-        $entity->xid->value = $this->database
-          ->insert('mcapi_transaction', ['return' => Database::RETURN_INSERT_ID])
-          ->fields((array) $record)
-          ->execute();
-        if (!$parent) {
-          //the first entity running through here is always the parent, thus has a parent xid of 0
-          $parent = $entity->xid->value;//saved for next in the flattened array
-        }
-        // The entity is no longer new.
-        $entity->enforceIsNew(FALSE);//because we were working on a clone
-        // Reset general caches, but keep caches specific to certain entities.
-        $cache_ids = [];
+      $entity->serial->value = $serial;
+      //entity parent is 0 for the first one and then the xid of the first one for all subsequent ones
+      $entity->parent->value = $parent;
+      $return = parent::save($entity);
+      if ($parent == 0) {
+        $parent = $entity->id();
       }
-      else {
-        $return = SAVED_UPDATED;
-        $this->database
-          ->update('mcapi_transaction')
-          ->fields((array) $record)
-          ->condition('xid', $record->xid)
-          ->execute();
-        $this->resetCache([$entity->id()]);
-      }
-      $this->doSaveFieldItems($entity);
     }
-    
+    $transaction->serial->value = $serial;
     // Allow code to run after saving.
-    $this->doPostSave($transaction, !$is_new);
     $transaction->setOriginalId($transaction->id());
     unset($transaction->original);
-    $this->clearCache([$transaction]);
+    return $return;
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function doSave($id, EntityInterface $entity) {
+    $record = $this->mapToStorageRecord($entity);
+    $record->changed = REQUEST_TIME;
+
+    if (!$id) {//save new
+      $record->created = REQUEST_TIME;
+
+      // Ensure the entity is still seen as new after assigning it an id while storing its data.
+      $entity->enforceIsNew();
+      $entity->xid->value = $this->database
+        ->insert('mcapi_transaction', ['return' => Database::RETURN_INSERT_ID])
+        ->fields((array) $record)
+        ->execute();
+    }
+    else {//save updated
+      $this->database
+        ->update('mcapi_transaction')
+        ->fields((array) $record)
+        ->condition('xid', $record->xid)
+        ->execute();
+    }
+    $return = parent::doSave($entity->xid->value, $entity);
+      // The entity is no longer new.
+    $entity->enforceIsNew(FALSE);//because we were working on a clone
     return $return;
   }
 
-
+  /**
+   * {@inheritdoc}
+   */
   public function clearCache($transactions = []) {
     $ids = [];
     foreach ($transactions AS $transaction) {

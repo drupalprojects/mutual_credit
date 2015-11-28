@@ -10,14 +10,29 @@ namespace Drupal\mcapi_1stparty\Form;
 
 use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\mcapi\Entity\Wallet;
-use Drupal\mcapi\Entity\Transaction;
-use Drupal\Core\Render\Element;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class FirstPartyFormDesigner extends EntityForm {
+  
+  private $entityFieldManager;
+  
+  function __construct($entity_field_manager) {
+    $this->entityFieldManager = $entity_field_manager;
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('entity_field.manager')
+    );
+  }
+
 
   function getFormId() {
     return 'first_party_editform';
@@ -191,7 +206,7 @@ class FirstPartyFormDesigner extends EntityForm {
         Url::fromRoute('entity.entity_form_display.mcapi_transaction.default')
       );
 
-    $definitions = \Drupal::entityTypeManager()
+    $definitions = $this->entityFieldManager
       ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
     $display = \Drupal\Core\Entity\Entity\EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.default');
 
@@ -267,8 +282,8 @@ class FirstPartyFormDesigner extends EntityForm {
     $form['#suffix'] = $this->t(
       "N.B The confirmation page is configured separately, at !link",
       ['!link' => $this->l(
-        'admin/accounting/workflow/create',
-        Url::fromRoute('entity.action.edit_form', ['action' => 'transaction_create'])
+        'admin/accounting/workflow/save',
+        Url::fromRoute('entity.action.edit_form', ['action' => 'transaction_save'])
       )]
     );
     return $form;

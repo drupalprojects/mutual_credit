@@ -4,7 +4,7 @@ dependencies:
   module:
     - mcapi_signatures
 id: transaction_signoff
-label: 'Sign off a transaction'
+label: 'Sign off transaction'
 type: mcapi_transaction
 plugin: mcapi_transaction.signoff_action
 configuration:

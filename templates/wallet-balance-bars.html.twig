@@ -48,11 +48,9 @@ function {{ chart.functionname }}() {
 }
 {% endfor %}
 </script>
-<div class = "balance-bars">
-  {% for chart in currencies %}
-  <div class = "balance-bar">
-    <div>{{ chart.label }}</div>
-    <div class = "givengotten" id = "{{ chart.id }}"></div>
-  </div>
-  {% endfor %}
+{% for chart in currencies %}
+<div class = "balance-bar">
+  <div>{{ chart.label }}</div>
+  <div class = "givengotten" id = "{{ chart.id }}"></div>
 </div>
+{% endfor %}

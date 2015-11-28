@@ -23,17 +23,18 @@ class TransactionViewBuilder extends EntityViewBuilder {
   private $settings;
 
   public function __construct($entity_type, $entity_manager, $language_manager, $config_factory) {
-    $this->settings = $config_factory->get('mcapi.transition.view');
+    $this->settings = $config_factory->get('mcapi.settings');
     parent::__construct($entity_type, $entity_manager, $language_manager);
   }
   
   /**
    * {@inheritdoc}
+   * @todo update with entity_type.manager
    */
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
     return new static(
       $entity_type,
-      $container->get('entity_type.manager'),
+      $container->get('entity.manager'),
       $container->get('language_manager'),
       $container->get('config.factory')
     );
@@ -59,13 +60,11 @@ class TransactionViewBuilder extends EntityViewBuilder {
   protected function getBuildDefaults(EntityInterface $entity, $view_mode) {
     //if the view_mode is 'full' that means nothing was specified, which is the norm.
     //so we turn to the 'view' transition where the view mode is a configuration.
-    if ($view_mode == 'full') {
-      $view_mode = $this->settings->get('format');
-    }
     $build = parent::getBuildDefaults($entity, $view_mode);
     $build['#theme_wrappers'][] = $build['#theme'];
     unset($build['#theme']);
     switch($view_mode) {
+      case 'full':
       case 'certificate':
         $build['#theme'] = 'certificate';
         if ($transaction->state->target_id == 'erased') {
@@ -81,12 +80,16 @@ class TransactionViewBuilder extends EntityViewBuilder {
         );
         break;
       default:
+        die('where do we get twig settings from?');
+      /*
         module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');
         $build['transaction'] = [
           '#type' => 'inline_template',
           '#template' => _filter_autop($this->settings->get('twig')),
           '#context' => get_transaction_vars($entity)
         ];
+       * 
+       */
     }
     $build += [
       '#attributes' => [

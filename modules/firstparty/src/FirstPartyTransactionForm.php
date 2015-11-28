@@ -37,10 +37,11 @@ class FirstPartyTransactionForm extends TransactionForm {
 
   /**
    * {@inheritdoc}
+   * @todo update with entity_type.manager
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity_type.manager'),
+      $container->get('entity.manager'),
       $container->get('user.private_tempstore'),
       $container->get('request_stack')->getCurrentRequest()
     );
@@ -64,12 +65,10 @@ class FirstPartyTransactionForm extends TransactionForm {
     $config = $this->configEntity;
     $form['#incoming'] = $config->get('incoming');
     if ($form['#incoming']) {
-      drupal_set_message('incoming');
       $partner = &$form['payer'];
       $mywallet = &$form['payee']['widget'][0]['target_id'];
     }
     else {
-      drupal_set_message('outgoing');
       $partner = &$form['payee'];
       $mywallet = &$form['payer']['widget'][0]['target_id'];
     }

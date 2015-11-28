@@ -13,7 +13,6 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\mcapi\Entity\WalletInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -121,9 +120,13 @@ class WalletViewBuilder extends EntityViewBuilder {
           '#type' => 'link',
           '#title' => $this->t('Visit wallet'),
           '#url' => Url::fromRoute('entity.mcapi_wallet.canonical', ['mcapi_wallet' => $wallet->id()]),
+          '#attributes' => ['class' => 'visit-wallet-link'],
           '#weight' => $info['weight']
         ];
       }
     }
+    $build['#prefix'] = '<div class="wallets">';
+    $build['#suffix'] = '</div>';
+//    $build['#attributes']['class'][] = 'wallets';
   }
 }

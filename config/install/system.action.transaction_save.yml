@@ -3,13 +3,13 @@ status: true
 dependencies:
   module:
     - mcapi
-id: transaction_create
-label: Create transaction
+id: transaction_save
+label: Save (new) transaction
 type: mcapi_transaction
-plugin: mcapi_transaction.create_action
+plugin: mcapi_transaction.save_action
 configuration:
-  title: 'Create'
-  tooltip: 'Confirm new transaction'
+  title: 'Save'
+  tooltip: 'Save new transaction to the ledger'
   states: { }
   page_title: 'Are you sure?'
   format: certificate
@@ -17,7 +17,7 @@ configuration:
   display: 0
   button: Confirm
   cancel_link: Back
-  message: 'Transaction was created.'
+  message: 'Transaction was saved.'
   weight: 0
   access: { }
 

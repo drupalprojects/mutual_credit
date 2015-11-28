@@ -1,10 +1,10 @@
-div.all-wallets{
-  display:inline-block;
+div.wallets{
   margin:2px;
   background-color: rgb(250, 250, 250);
   padding:5px;
+  display: inline-block;
 }
-div.wallet-summary{
+div.wallet{
   margin:2px;
   padding:5px;
   background-color: rgb(238, 238, 238);
@@ -14,8 +14,11 @@ div.balance-bar,
 div.wallet-histories div.history-chart{
   float:left;
 }
-div.balance-bars, div.wallet-histories, div.wallet-summaries, table.display-wallet, div.stats{
+div.balance-bars, div.wallet-histories, div.wallet-summaries, table.display-wallet, div.stats, a.visit-wallet-link{
   clear:both;
+}
+a.visit-wallet-link{
+  display:block;
 }
 
 table.display-wallet td, 

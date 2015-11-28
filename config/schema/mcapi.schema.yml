@@ -80,9 +80,6 @@ mcapi.settings:
     render_unused:
       type: boolean
       label: 'Show unused currency stats in wallet view.'
-    add_link_location:
-      type: sequence
-      label: 'Location of the link to create new wallets under an entity'
       sequence: { }
     details:
       type: map

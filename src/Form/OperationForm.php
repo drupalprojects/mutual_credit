@@ -21,7 +21,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
   private $config;
   private $eventDispatcher;
   private $destination;
-  private $entityTypeManager;
+  protected $entityTypeManager;//see parent
 
   /**
    * 
@@ -73,7 +73,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
    * How do we go back
    */
   public function getCancelUrl() {
-    if ($this->plugin->getPluginId() == 'mcapi_transaction.create_action') {//the transaction hasn't been created yet
+    if ($this->plugin->getPluginId() == 'mcapi_transaction.save_action') {//the transaction hasn't been created yet
       //we really want to go back the populated transaction form using the back button in the browser
       //failing that we want to go back to whatever form it was, fresh
       //failing that we go to the user page user.page

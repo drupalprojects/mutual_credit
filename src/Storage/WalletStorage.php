@@ -19,13 +19,12 @@ class WalletStorage extends SqlContentEntityStorage {
    * add the access setting to each wallet
    */
   function mapFromStorageRecords(array $records, $load_from_revision = false) {
-    \Drupal::logger('mcapi')->debug(key($records));
     $entities = parent::mapFromStorageRecords($records);
     //populate the access property with uids when there is a reference in the access table
     $q = $this->database->select('mcapi_wallets_access', 'a')
       ->fields('a', array('wid', 'operation', 'uid'))
       ->condition('wid', array_keys($records), 'IN');
-    
+    $changes = [];
     foreach ($q->execute()->fetchAll() as $row) {
       $changes[$row->wid][$row->operation][] = $row->uid;
     }
@@ -62,7 +61,6 @@ class WalletStorage extends SqlContentEntityStorage {
     $this->database
       ->delete('mcapi_wallets_access')
       ->condition('wid', $wallet->id())
-      ->condition('operation', $op)
       ->execute();
     if (empty($uids)) {
       $uids[] = \Drupal::currentUser()->id();
@@ -241,7 +239,6 @@ class WalletStorage extends SqlContentEntityStorage {
     if ($like) {
       $query->condition($namelike);
     }
-    echo $query;
     if ($limit) {
       //passing $limit = NULL gets converted to limit = 0, which is bad
       //however it is safe to say that if there is no limit there is no offset, right?

@@ -105,7 +105,9 @@ function template_preprocess_mcapi_wallet(&$vars) {
   $wallet = $vars['element']['#mcapi_wallet'];
   $vars['label'] = $wallet->label();
   $vars['canonical'] = $wallet->toUrl('canonical')->toString();
-  $vars['view_mode'] = $vars['element']['#view_mode'];
+  $vars['attributes'] = [
+    'class' => "wallet ".$vars['element']['#view_mode']
+  ];
 }
 
 /**
@@ -117,37 +119,13 @@ function template_preprocess_mcapi_wallet_component(&$vars) {
 
 /**
  * Theme preprocessor for all of an entity's wallets
- *
- * @todo I think this is deprecated, but we still need add_wallet link somehow
- *
+ 
  */
-function ___template_preprocess_mcapi_wallets(&$vars) {
+function template_preprocess_mcapi_wallets(&$vars) {
   $viewbuilder =\Drupal::entityTypeManager()->getViewBuilder('mcapi_wallet');
   //convert each wallet into a render array
   foreach ($vars['wallets'] as $key => $wallet) {
     $vars['wallets'][$key] = $viewbuilder->view($wallet, $vars['view_mode']);
-  }
-  if (Drupal::config('mcapi.settings')->get('add_link_location')['summaries']) {
-    //show the add new wallet link
-    $route_name = 'mcapi.wallet.add.'.$vars['holder']->getEntityTypeId();
-    $params = ['user' => $vars['holder']->id()];
-    //how do we do this utilising the cached value?
-    $access = \Drupal::service('access_manager')
-      ->checkNamedRoute($route_name, $params, \Drupal::currentUser());
-    if ($access) {
-      $vars['add_wallet_link'] = [
-        '#type' => 'link',
-        '#title' => t('Add wallet'),
-        '#url' => Url::fromRoute($route_name, $params),
-        '#weight' => 2,
-        '#options' => [
-          'attributes' => new Attribute([
-            'class' => ['add-wallet-link']
-          ])
-        ]
-      ];
-      \Drupal::service('renderer')->render($vars['add_wallet_link']);//@todo is this auto-rendered later?
-    }
   }
 }
 

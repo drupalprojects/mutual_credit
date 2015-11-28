@@ -4,7 +4,7 @@ dependencies:
   module:
     - mcapi
 id: transaction_sign
-label: 'Sign a transaction'
+label: 'Sign transaction'
 type: mcapi_transaction
 plugin: mcapi_transaction.sign_action
 configuration:

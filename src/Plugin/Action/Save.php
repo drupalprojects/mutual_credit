@@ -2,7 +2,7 @@
 
 /**
  * @file
- *  Contains Drupal\mcapi\Plugin\Action\Create
+ *  Contains Drupal\mcapi\Plugin\Action\Save
  *
  */
 
@@ -16,14 +16,16 @@ use Drupal\Core\Access\AccessResult;
  * Confirmation form for creating a transaction
  *
  * @Action(
- *   id = "mcapi_transaction.create_action",
- *   label = @Translation("Confirm a new transaction"),
+ *   id = "mcapi_transaction.save_action",
+ *   label = @Translation("Save a transaction to disk"),
  *   type = "mcapi_transaction"
  * )
  */
-class Create extends \Drupal\mcapi\Plugin\TransactionActionBase {
+class Save extends \Drupal\mcapi\Plugin\TransactionActionBase {
 
-    
+  /**
+   * {@inheritdoc}
+   */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
     if ($object->id()) {
       $result = FALSE;

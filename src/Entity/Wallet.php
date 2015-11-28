@@ -162,7 +162,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     foreach (array_keys(Exchange::walletOps()) as $op) {
       $setting = $settings->get($op);
       foreach (['a', 'm', 'g', 'o', 'u'] as $p) {//@todo use the constants
-        if ($setting[$p]) {
+        if (!empty($setting[$p])) {
           $val = $p;
           if ($p === 'o') {
             $val = \Drupal::currentUser()->id();
@@ -172,7 +172,9 @@ class Wallet extends ContentEntityBase implements WalletInterface {
         }
       }
     }
-    if (empty($wallet->name->value)) $wallet->name->value == '';
+    //if (empty($this->name->value)) {
+      //$this->name->value == '';
+    //}
   }
 
   /**

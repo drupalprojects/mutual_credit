@@ -47,12 +47,12 @@ function mcapi_signatures_mcapi_transaction_presave($transaction) {
     foreach ($user_ids as $uid) {
       $transaction->signatures[$uid] = 0;
     }
-drupal_set_message('Creating signatures for '.implode(', ', $user_ids));
     //sign for the current user
     Signatures::sign($transaction, \Drupal::currentUser());
     //we can't save the signatures until we have the serial number
   }
 }
+
 
 /**
  * implements hook_ENTITY_TYPE_load
@@ -198,11 +198,16 @@ function mcapi_signatures_entity_extra_field_info() {
  */
 function mcapi_signatures_user_view(array &$build, $account, $display) {
   if ($display->getComponent('mcapi_signatures')) {
-    $build['mcapi_signatures'][] = views_embed_view(
-      'mcapi_pending_signatures',
-      'other_sig_needed',
-      $account->id()
-    );
+    $build['mcapi_signatures'] = [
+      'title' => [
+        '#markup' => t('Pending transactions')
+      ],
+      'content' => views_embed_view(
+        'mcapi_pending_signatures',
+        'my_pending',
+        $account->id()
+      )
+    ];
   }
 }
 

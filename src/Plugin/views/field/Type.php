@@ -31,7 +31,7 @@ class Type extends FieldPluginBase {
 
   function render(ResultRow $values) {
     $raw = $this->getValue($values);
-    return '<span class = "'.$raw.'">'.$this->types[$raw].'</span>';
+    return ['#markup' => '<span class = "'.$raw.'">'.$this->types[$raw].'</span>'];
   }
 
 }

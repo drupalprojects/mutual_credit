@@ -30,28 +30,37 @@ class FormList extends ControllerBase {
           $row['route'], 
           (array) $row['route_parameters']
         );
-        foreach ($links as $id => $link) {
-          $menu_links[] = $this->l(
-            t('Edit link'), 
-            Url::fromRoute('menu_ui.link_edit', ['menu_link_plugin' => $id])
-          );
-        }
-        if (empty($menu_links)) {
-          $menu_links[] = $this->l(
-            $this->t('Add link'), 
-            Url::fromRoute('entity.menu.add_link_form', ['menu' => 'tools'])
-          );
+        
+        if (\Drupal::moduleHandler()->moduleExists('menu_ui')) {
+          foreach ($links as $id => $link) {
+            $menu_links[] = $this->l(
+              t('Edit link'), 
+              Url::fromRoute('menu_ui.link_edit', ['menu_link_plugin' => $id])
+            );
+          }
+          if (empty($menu_links)) {
+            $menu_links[] = $this->l(
+              $this->t('Add link'), 
+              Url::fromRoute('entity.menu.add_link_form', ['menu' => 'tools'])
+            );
+          }
         }
       }
       $rows[$rowname] = [
         'title' => $row['title'],
         //@todo getInternalPath is deprecated but I can't see the proper way to do it.
         'path' => $this->l($url->getInternalPath(), $url),
-        'operations' => ['data' => [
-          '#type' => 'operations',
-          '#links' => $row['operations']
-        ]],
-        'menu_links' => implode(' ', $menu_links)
+        'operations' => [
+          'data' => [
+            '#type' => 'operations',
+            '#links' => $row['operations']
+          ]
+        ],
+        'menu_links' => [
+          'data' => [
+            '#markup' => implode(' ', $menu_links)
+          ]
+        ]
       ];
     }
     

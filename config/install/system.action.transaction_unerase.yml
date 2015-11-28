@@ -4,7 +4,7 @@ dependencies:
   module:
     - mcapi
 id: transaction_unerase
-label: 'Erase a transaction'
+label: 'Unerase transaction'
 type: mcapi_transaction
 plugin: mcapi_transaction.unerase_action
 configuration:

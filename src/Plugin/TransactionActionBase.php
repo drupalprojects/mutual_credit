@@ -60,8 +60,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
    * {@inheritdoc}
    */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
-    $result = $this->accessOp($object, $account) && 
-      $this->accessState($object, $account);
+    $result = $this->accessOp($object, $account) && $this->accessState($object, $account);
     
     if (!$return_as_object) {
       return $result;
@@ -170,6 +169,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
       '#required' => TRUE,
       '#weight' => 6
     ];
+    mdump($this);
     foreach ($this->entityDisplayRespository->getViewModes('mcapi_transaction') as $id => $def) {
       $elements['sure']['format']['#options'][$id] = $def['label'];
     }
