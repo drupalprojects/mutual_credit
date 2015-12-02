@@ -209,7 +209,7 @@ class WalletForm extends ContentEntityForm {
   private function getUsernames($uids) {
     $names = [];
     foreach (User::loadMultiple($uids) as $account) {
-      $names[] = $account->getUsername();
+      $names[] = $account->getDisplayName();
     }
     return implode(', ', $names);
   }

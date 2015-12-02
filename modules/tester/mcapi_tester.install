@@ -98,6 +98,7 @@ return;
  }
   drupal_flush_all_caches();
  */
+
 function mcapi_tester_uninstall() {
   //in case drush is running
   \Drupal::CurrentUser()->setAccount(User::load(1));

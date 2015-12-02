@@ -17,15 +17,14 @@ function mcapi_1stparty_help($route_name) {
   }
 }
 
+
 /**
- * implements hook_entity_type_alter().
- *
- * adds one form controller to the transaction entity for every designed form
+ * Implements hook_entity_type_build().
  */
-function mcapi_1stparty_entity_type_alter(array &$entity_types) {
+function mcapi_1stparty_entity_type_build(array &$entity_types) {
   //there's a recursive problem doing loadMultiple configEntities during entity_type_alter
   //foreach (FirstPartyFormDesign::loadMultiple() as $id => $configEntity) {
-  //So this is a direct db query
+    //So this is a direct db query
   $template = 'mcapi_1stparty.editform.';
   $ids = \Drupal::database()->select('config', 'c')
     ->fields('c', ['name'])
@@ -37,6 +36,15 @@ function mcapi_1stparty_entity_type_alter(array &$entity_types) {
         substr($id, strlen($template)),
         'Drupal\mcapi_1stparty\FirstPartyTransactionForm'
       );
+  }
+}
+
+/*
+ * implements hook_form_field_config_edit_form_alter().
+ */
+function mcapi_1stparty_form_field_config_edit_form_alter(&$form, &$form_state) {
+  if ($form['#entity']->getEntityTypeId() == 'mcapi_transaction') {
+    drupal_set_message(t("Most of the time, these values won't be seen on transaction forms"));
   }
 }
 
@@ -108,12 +116,11 @@ function mcapi_1stparty_menu_links_discovered_alter(&$links) {
  * @todo make this work with the date_popup widget, but in what module
  */
 function mcapi_1stparty_entity_base_field_info_alter(&$fields, EntityTypeInterface $entity_type) {
-  $dateTime = \Drupal::moduleHandler()->moduleExists('datetime');
   if ($entity_type->id() == 'mcapi_transaction') {
     $fields['created']->setDisplayOptions(
       'form',
       [
-        'type' => $dateTime ? 'datetime_timestamp' : 'datetime_timestamp',
+        'type' => \Drupal::moduleHandler()->moduleExists('datetime') ? 'datetime_timestamp' : 'datetime_timestamp',
         'weight' => 10
       ]
     );

@@ -184,8 +184,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       'creator' => \Drupal::currentUser()->id(),//uid of 0 means drush must have created it
       'parent' => 0,
     ];
-
-    $values['state'] = Type::load($values['type'])->start_state;
+    $type = Type::load($values['type']);
+    if (!$type) {
+      throw new \Exception(t('Cannot create transaction of unknown type: @type', ['@type' => $values['type']]));
+    }
+    $values['state'] = $type->start_state;
   }
 
   /**

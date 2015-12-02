@@ -1,9 +1,11 @@
+uuid: e14852a8-8247-4fcb-a800-0db966b95ec2
 langcode: en
 status: true
 dependencies:
   config:
     - field.storage.mcapi_transaction.worth
     - system.menu.admin
+    - system.menu.main
     - user.role.authenticated
   module:
     - mcapi
@@ -1487,7 +1489,7 @@ display:
       field_langcode_add_to_query: null
       path: transactions
       menu:
-        type: 'default tab'
+        type: normal
         title: Transactions
         description: ''
         expanded: false

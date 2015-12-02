@@ -52,6 +52,7 @@ class TransactionStorage extends TransactionIndexStorage {
         $parent = $entity->id();
       }
     }
+    
     $transaction->serial->value = $serial;
     // Allow code to run after saving.
     $transaction->setOriginalId($transaction->id());
@@ -65,27 +66,10 @@ class TransactionStorage extends TransactionIndexStorage {
   public function doSave($id, EntityInterface $entity) {
     $record = $this->mapToStorageRecord($entity);
     $record->changed = REQUEST_TIME;
-
-    if (!$id) {//save new
-      $record->created = REQUEST_TIME;
-
-      // Ensure the entity is still seen as new after assigning it an id while storing its data.
-      $entity->enforceIsNew();
-      $entity->xid->value = $this->database
-        ->insert('mcapi_transaction', ['return' => Database::RETURN_INSERT_ID])
-        ->fields((array) $record)
-        ->execute();
-    }
-    else {//save updated
-      $this->database
-        ->update('mcapi_transaction')
-        ->fields((array) $record)
-        ->condition('xid', $record->xid)
-        ->execute();
-    }
     $return = parent::doSave($entity->xid->value, $entity);
-      // The entity is no longer new.
+    // The entity is no longer new.
     $entity->enforceIsNew(FALSE);//because we were working on a clone
+    
     return $return;
   }
 

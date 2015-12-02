@@ -79,24 +79,23 @@ class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
 
   /**
    * {@inheritdoc}
-   * 
    */
   public function blockForm($form, FormStateInterface $form_state) {
     $form = parent::blockForm($form, $form_state);
     $form['user_source'] = [
-      '#title' => t('User'),
+      '#title' => $this->t('User'),
       '#type' => 'radios',
-      '#options' => array(
-        SELF::MCAPIBLOCK_MODE_CONTEXT => t('Show as part of profile being viewed'),
-        SELF::MCAPIBLOCK_MODE_CURRENTUSER => t('Show for logged in user')
-      ),
+      '#options' => [
+        SELF::MCAPIBLOCK_MODE_CONTEXT => $this->t('Show as part of profile being viewed'),
+        SELF::MCAPIBLOCK_MODE_CURRENTUSER => $this->t('Show for logged in user')
+      ],
       '#default_value' => $this->configuration['user_source']
     ];
     return $form;
   }
 
   /**
-   * Overrides \Drupal\block\BlockBase::blockSubmit().
+   * {@inheritdoc}
    */
   public function blockSubmit($form, FormStateInterface $form_state) {
     parent::blockSubmit($form, $form_state);
@@ -106,6 +105,9 @@ class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function build() {
     $wids = $this->entityTypeManager
       ->getStorage('mcapi_wallet')

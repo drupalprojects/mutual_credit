@@ -13,7 +13,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Plugin\ConfigurablePluginInterface;
 
 /**
- * Base class for Transitions for default methods.
+ * Base class for Limits plugins.
  */
 abstract class McapiLimitsBase implements McapiLimitsInterface {
 

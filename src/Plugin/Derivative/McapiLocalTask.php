@@ -2,20 +2,21 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Plugin\Derivative\WalletLocalTask.
+ * Contains \Drupal\mcapi\Plugin\Derivative\McapiLocalTask.
  */
 
 namespace Drupal\mcapi\Plugin\Derivative;
 
 use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
-use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Component\Plugin\Derivative\DeriverBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Provides local task definitions to create a wallet tab for all entities of types configured.
  */
-class WalletLocalTask extends DeriverBase implements ContainerDeriverInterface {
+class McapiLocalTask extends DeriverBase implements ContainerDeriverInterface {
+  
   use StringTranslationTrait;
 
   var $settings;
@@ -24,8 +25,9 @@ class WalletLocalTask extends DeriverBase implements ContainerDeriverInterface {
   /**
    * {@inheritDoc}
    */
-  public function __construct($settings) {
+  public function __construct($settings, $string_translation) {
     $this->settings = $settings;
+    $this->stringTranslation = $string_translation;
   }
 
   /**
@@ -33,7 +35,8 @@ class WalletLocalTask extends DeriverBase implements ContainerDeriverInterface {
    */
   public static function create(ContainerInterface $container, $base_plugin_id) {
     return new static(
-      $container->get('config.factory')->get('mcapi.settings')
+      $container->get('config.factory')->get('mcapi.settings'),
+      $container->get('string_translation')
     );
   }
 
@@ -41,9 +44,7 @@ class WalletLocalTask extends DeriverBase implements ContainerDeriverInterface {
    * {@inheritdoc}
    */
   public function getDerivativeDefinitions($base_plugin_definition) {
-    if (!$this->config->get('entity_tab')) {
-      return;
-    }
+    $this->derivatives = [];
     foreach($this->settings->get('entity_types') as $entity_type_bundle => $max) {
       if (!$max) {
         continue;
@@ -64,4 +65,5 @@ class WalletLocalTask extends DeriverBase implements ContainerDeriverInterface {
     }
     return $this->derivatives;
   }
+  
 }

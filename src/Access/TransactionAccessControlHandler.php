@@ -12,7 +12,6 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessResult;
 use Drupal\mcapi\Entity\Wallet;
-use Drupal\system\Entity\Action;
 
 /**
  * Defines an access controller option for the mcapi_transaction entity.
@@ -26,6 +25,9 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
    * {@inheritdoc}
    */
   public function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = NULL) {
+    if ($account->isAnonymous()) {
+      return AccessResult::forbidden()->cachePerUser();
+    }
     return $this->enoughWallets($account);
   }
   

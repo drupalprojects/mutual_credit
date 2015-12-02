@@ -260,7 +260,7 @@ function template_preprocess_mcapi_signatures(&$vars) {
     $vars['signatures'][$uid] = array(
       'account' => $account,
       'class' => 'signature '. (empty($signed) ? 'pending' : 'signed'),
-      'name' =>  $account->getUsername(),
+      'name' =>  $account->getDisplayName(),
     );
   }
 }

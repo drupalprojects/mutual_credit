@@ -184,7 +184,7 @@ class ExchangeWizard extends ExchangeForm {
       if ($values['manager_new']['notify']) {
         //see RegisterForm::Save()
         if (_user_mail_notify('register_admin_created', $this->manager)) {
-          drupal_set_message($this->t('A welcome message with further instructions has been e-mailed to the new user <a href="@url">%name</a>.', array('@url' => $account->url(), '%name' => $account->getUsername())));
+          drupal_set_message($this->t('A welcome message with further instructions has been e-mailed to the new user <a href="@url">%name</a>.', array('@url' => $account->url(), '%name' => $account->getAccountName())));
         }
       }
     }

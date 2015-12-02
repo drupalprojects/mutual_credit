@@ -9,7 +9,7 @@ namespace Drupal\mcapi\Plugin\Field\FieldType;
 
 use Drupal\Core\Field\FieldItemBase;
 use Drupal\Core\TypedData\DataDefinition;
-use Drupal\field\FieldInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\TypedData\DataReferenceDefinition;
@@ -91,8 +91,19 @@ class WorthItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public function isEmpty() {
-    if ($this->currency->zero) return FALSE;
+    if ($this->currency->zero) {
+      return FALSE;
+    }
     return $this->get('value') == 0;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public static function generateSampleValue(FieldDefinitionInterface $field_definition) {
+    return [
+      'value' => $field_definition->currency->sampleValue(),
+      'curr_id' => $field_definition->currency->id
+    ];
+  }
 }

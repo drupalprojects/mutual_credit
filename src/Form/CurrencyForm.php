@@ -188,7 +188,7 @@ class CurrencyForm extends EntityForm {
   }
 
   /**
-   * Overrides Drupal\Core\Entity\EntityForm::save().
+   * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
     $currency = $this->entity;
@@ -202,6 +202,11 @@ class CurrencyForm extends EntityForm {
     else {
       drupal_set_message(t('Currency %label has been added.', ['%label' => $currency->label()]));
     }
+    
+    $required = !\Drupal::entityTypeManager()->getStorage('mcapi_currency')->getQuery('zero', '1')->count();
+      \Drupal\field\Entity\FieldConfig::load('mcapi_transaction.mcapi_transaction.worth')
+        ->set('required', $required)
+        ->save();
 
     $form_state->setRedirect('entity.mcapi_currency.collection');
   }

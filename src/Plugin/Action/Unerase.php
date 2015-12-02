@@ -2,7 +2,7 @@
 
 /**
  * @file
- *  Contains Drupal\mcapi\Plugin\Transitions\Unerase
+ *  Contains Drupal\mcapi\Plugin\Action\Unerase
  *
  */
 

@@ -3,14 +3,12 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\Field\FieldType\WorthFieldItemList.
+ * @todo make an interface for this?
  */
 
 namespace Drupal\mcapi\Plugin\Field\FieldType;
 
 use Drupal\Core\Field\FieldItemList;
-use Drupal\Core\TypedData\DataDefinitionInterface;
-use Drupal\Core\TypedData\TypedDataInterface;
-use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Represents a configurable entity worth field.
@@ -92,7 +90,29 @@ class WorthFieldItemList extends FieldItemList {
   public function __toString() {
     return render($this->view());
   }
-
-
+  
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function generateSampleItems($count = 1) {
+    //we ignore the given $count, add one or maybe 2 currencies
+    //use 1 or maybe two of the active currencies
+    $currencies = \Drupal::entityTypeManager()->getStorage('mcapi_currency')->loadByProperties(['status' => TRUE]);
+    
+    $field_definition = $this->getFieldDefinition();
+    $field_type_class = \Drupal::service('plugin.manager.field.field_type')->getPluginClass($field_definition->getType());
+    $temp = $currencies;
+    shuffle($temp);
+    $currency = array_pop($temp);
+    $field_definition->currency = $currency;
+    $values[] = $field_type_class::generateSampleValue($field_definition);
+    if (rand(0, 4) == 0) {
+      if ($field_definition->currency = array_pop($temp)) {
+        $values[] = $field_type_class::generateSampleValue($field_definition);
+      }
+    }
+    $this->setValue($values);
+  }
 
 }

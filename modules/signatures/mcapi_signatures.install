@@ -21,6 +21,9 @@ function mcapi_signatures_install() {
  * implements hook_modules_installed().
  */
 function mcapi_signatures_modules_installed($modules) {
+  //this isn't working in installation profiles because I think the router isn't updated
+  //Symfony\Component\Routing\Exception\RouteNotFoundException: Route "mcapi.admin.workflow" does not exist. in Drupal\Core\Routing\RouteProvider->getRouteByName()
+  return;
   if (in_array('mcapi_signatures', $modules) && !in_array('mcapi', $modules)) {
     drupal_set_message(t(
       "Workflow settings should be reviewed to take account of transaction signing. @link",

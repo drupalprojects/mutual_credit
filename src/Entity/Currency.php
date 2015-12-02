@@ -312,4 +312,15 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       Currency::TYPE_COMMODITY => t('Backed by a commodity', [], ['context' => 'currency-type']),
     ];
   }
+  
+  /**
+   * generate a random value which reflects the currency's relationship to its parts
+   * do this by choosing a nice number like 3.6  and unformatting it
+   */
+  public function sampleValue() {
+    $parts[1] = rand(2, 10);
+    $count = strlen($this->format[3]);
+    $parts[3]  = rand(0, $this->format[3]);
+    return $this->unformat($parts);
+  }
 }

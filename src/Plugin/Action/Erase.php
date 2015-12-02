@@ -2,13 +2,7 @@
 
 /**
  * @file
- *  Contains Drupal\mcapi\Plugin\Transitions\Erase
- * 
- * @todo this plugin could have an option to erase either by changing the 
- * transaction state OR by adding a reversal transaction to the cluster. It must
- * be either/or because the two mechanisms cannot happen to different currencies 
- * in the same transaction
- *
+ *  Contains Drupal\mcapi\Plugin\Action\Erase
  */
 
 namespace Drupal\mcapi\Plugin\Action;

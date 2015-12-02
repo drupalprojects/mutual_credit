@@ -59,10 +59,13 @@ mcapi.admin.workflow.edit_tab:
   base_route: mcapi.admin.workflow
   weight: 1
   
-
 mcapi.admin.transactions.default_tab:
   title: Ledger
   route_name: view.mcapi_transactions.admin
   base_route: view.mcapi_transactions.admin
   weight: 0
   
+  
+mcapi.tasks:
+  class: \Drupal\Core\Menu\LocalTaskDefault
+  deriver: \Drupal\mcapi\Plugin\Derivative\McapiLocalTask

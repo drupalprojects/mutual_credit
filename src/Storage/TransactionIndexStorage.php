@@ -22,7 +22,7 @@ use Drupal\mcapi\Entity\Transaction;
 
 
 abstract class TransactionIndexStorage extends SqlContentEntityStorage implements TransactionStorageInterface {
-
+  
   /**
    * {@inheritdoc}
    * save 2 rows per worth into the index tables
@@ -31,7 +31,6 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    */
   public function doSave($id, EntityInterface $entity) {
     $return = parent::doSave($id, $entity);
-    
     //alternatively how about a db_merge? would be quicker
     if (!$entity->isNew()) {
       $this->database->delete('mcapi_transactions_index')
@@ -176,7 +175,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    */
   public function indexDrop(array $serials) {
     $this->database->delete('mcapi_transactions_index')
-      ->condition('serial[]', $serials)
+      ->condition('serial', $serials, 'IN')
       ->execute();
   }
 

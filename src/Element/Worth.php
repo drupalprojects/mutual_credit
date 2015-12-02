@@ -10,7 +10,6 @@ namespace Drupal\mcapi\Element;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
 use Drupal\Core\Render\Element;
-use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Currency as CurrencyEntity;
 use Drupal\mcapi\Exchange;
 use Drupal\Core\Template\Attribute;
@@ -105,7 +104,6 @@ class Worth extends FormElement {
     foreach ($element['#default_value'] as $delta => $item) {
       //i want a div around each currency widget
       extract($item);//creates $curr_id and $value
-
       $currency = CurrencyEntity::load($curr_id);
       if ($element['#config'] && !is_numeric($value)) {
         $parts = [];

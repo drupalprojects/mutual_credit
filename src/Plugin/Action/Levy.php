@@ -10,11 +10,8 @@
 
 namespace Drupal\mcapi\Plugin\Action;
 
-use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Element\Worth;
 use Drupal\rules\Core\RulesActionBase;
-use Drupal\Core\Action\ConfigurableActionBase;
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
