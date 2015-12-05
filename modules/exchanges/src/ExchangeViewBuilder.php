@@ -39,7 +39,7 @@ class ExchangeViewBuilder extends EntityViewBuilder {
       'admin' => array(
         '#prefix' => '<br />',
         //@todo what's the best way to show this username linked?
-        '#markup' => t('Administrator: !name', array('!name' => $entity->get('uid')->entity->getAccountName()))
+        '#markup' => t('Administrator: %name', array('%name' => $entity->get('uid')->entity->getAccountName()))
       )
     );
     //@todo how do we allow any display or extra_field of the wallet to be viewed as a field in the exchange?

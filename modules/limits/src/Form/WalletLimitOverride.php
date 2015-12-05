@@ -60,10 +60,10 @@ class WalletLimitOverride extends FormBase {
       $defaults = $limiter->defaults($currency);
       $limits = array_filter($defaults);
       if (array_key_exists('min', $limits)) {
-        $desc[] = t('Min: !worth', array('!worth' => $currency->format($limits['min'])));
+        $desc[] = t('Min: !worth', array('%worth' => $currency->format($limits['min'])));
       }
       if (array_key_exists('max', $limits)) {
-        $desc[] = t('Max: !worth', array('!worth' => $currency->format($limits['max'])));
+        $desc[] = t('Max: !worth', array('%worth' => $currency->format($limits['max'])));
       }
       if ($config['override']) {
         //for now the per-wallet override allows admin to declare absolute min and max per user.
@@ -72,7 +72,7 @@ class WalletLimitOverride extends FormBase {
         $form[$curr_id] = array(
           '#title' => t('Values for this wallet'),
           '#description' => $desc ?
-            t('Default values !values', array('!values' => implode(', ', $desc))) :
+            t('Default values !values', array('%values' => implode(', ', $desc))) :
             t('No default limits are set'),
           '#type' => 'minmax',
           '#curr_id' => $curr_id,

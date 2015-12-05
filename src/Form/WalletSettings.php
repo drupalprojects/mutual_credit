@@ -53,7 +53,7 @@ class WalletSettings extends ConfigFormBase {
       '#title' => $this->t('Max number of wallets'),
       '#description' => $this->t(
         "Wallets can be owned by any entity type which implements !interface and has an entity_references field to 'exchange' entities.",
-        ['!interface' => $link]
+        ['%interface' => $link]
       ),
       '#type' => 'fieldset',
       '#weight' => 2,

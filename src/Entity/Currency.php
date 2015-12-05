@@ -319,8 +319,14 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    */
   public function sampleValue() {
     $parts[1] = rand(2, 10);
-    $count = strlen($this->format[3]);
-    $parts[3]  = rand(0, $this->format[3]);
+    if (isset($this->format[3])) {//could be of the format 59/4
+      $calc = explode('/', $this->format[3]);
+      $num = $calc[0] + 1;
+      if (isset($calc[1])) {
+        $parts[3] = rand(0, intval($calc[1]))* $num/$calc[1];
+      }
+      else $parts[3]  = rand(0, $num);
+    }
     return $this->unformat($parts);
   }
 }

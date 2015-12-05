@@ -52,10 +52,10 @@ class WalletAddForm extends ContentEntityForm {
    */
   public function title() {
     return
-      $this->t("New wallet for @entity_type '!title'",
+      $this->t("New wallet for @entity_type '%title'",
       array(
        '@entity_type' => $this->holder->getEntityType()->getLabel(),
-       '!title' => $this->holder->label()
+       '%title' => $this->holder->label()
       )
     );
   }
@@ -133,7 +133,7 @@ class WalletAddForm extends ContentEntityForm {
     if ($query->execute()->fetchField()) {
       $form_state->setErrorByName(
         'name',
-        t("The wallet name '!name' is already used.", array('!name' => $values['name']))
+        t("The wallet name '%name' is already used.", array('%name' => $values['name']))
       );
     }
   }

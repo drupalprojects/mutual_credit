@@ -82,12 +82,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
         ->getQuery()
         ->condition('entity_type', 'user')
         ->execute();
-      $this->since = \Drupal::database()
-        ->select('mcapi_wallet', 'w')
-        ->fields('w', ['created'])
-        ->orderBy('created', 'DESC')
-        ->range(0, 1)
-        ->execute()->fetchField();
+
     }
     shuffle($wallet_ids);
     return (count($wallet_ids) < 2) ? 
@@ -113,8 +108,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       '#min' => 0,
     ); 
     $form['type'] = array(
-      '#type' => 'number',
-      '#title' => $this->t('How many transactions would you like to generate?'),
+      '#title' => $this->t('What type of transactions'),
+      '#type' => 'select',
       '#options' => mcapi_entity_label_list('mcapi_type'),
       '#default_value' => $this->getSetting('type'),
       '#required' => TRUE,
@@ -134,7 +129,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * {@inheritdoc}
    */
   protected function generateElements(array $values) {
-    if ($values['num'] <= 25) {
+    if ($values['num'] <= 100) {
       $this->generateContent($values);
     }
     else {
@@ -146,7 +141,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * Method responsible for creating a small number of transactions
    * 
    * @param type $values
-   *   kill, num, since
+   *   kill, num
    * @throws \Exception
    */
   private function generateContent($values) {
@@ -170,14 +165,13 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       $q->condition('g.gid', $exchange->id());
       $q->condition('g.entity_type', 'mcapi_wallet');
       $wids = $q->execute()->fetchCol();
-      if (count($wids) < 2) {
-       throw new \Exception('Not enough wallets to trade: in exchange '.$exchange);
-      } 
        * 
        */
+    } 
+    else {
+      $wids = $this->prepareWallets();
     }
     for ($i = 1; $i <= $values['num']; $i++) {
-      $wids = $this->prepareWallets();
       $this->develGenerateTransactionAdd($results, reset($wids), end($wids));
     }
     if (function_exists('drush_log') && $i % drush_get_option('feedback', 1000) == 0) {
@@ -185,6 +179,19 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     }
 
     $this->setMessage($this->formatPlural($values['num'], '1 transaction created.', 'Finished creating @count transactions'));
+  }
+  
+  private function getSince() {
+    static $since;
+    if (!$since) {
+      $since = \Drupal::database()
+        ->select('mcapi_wallet', 'w')
+        ->fields('w', ['created'])
+        ->orderBy('created', 'DESC')
+        ->range(0, 1)
+        ->execute()->fetchField();
+    }
+    return $since;
   }
 
   /**
@@ -197,6 +204,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       $operations[] = array('devel_generate_operation', array($this, 'batchContentKill', $values));
     }
 
+    
     // Add the operations to create the transactions.
     for ($num = 0; $num < $values['num']; $num ++) {
       $operations[] = array('devel_generate_operation', array($this, 'batchContentAddTransaction', $values));
@@ -280,7 +288,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       }
     }
     //change the created time of the transactions, coz they mustn't be all in the same second
-    $transaction->created->value = rand($this->since, REQUEST_TIME);
+    $transaction->created->value = rand($this->getSince(), REQUEST_TIME);
     $transaction->save();
   }
 

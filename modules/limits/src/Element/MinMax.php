@@ -41,7 +41,7 @@ class MinMax extends FormElement {
   public static function process_minmax($element) {
     $currency = Currency::load($element['#curr_id']);
     $element += [
-      '#title' => t('!currencyname allowed balances', ['!currencyname' => $currency->label()]),
+      '#title' => t('%currencyname allowed balances', ['%currencyname' => $currency->label()]),
       '#description' => array_key_exists('#description', $element) ? $element['#description'] : '',
       '#description_display' => 'before',
       '#type' => 'fieldset',

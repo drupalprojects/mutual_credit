@@ -556,7 +556,7 @@ function mcapi_exchanges_form_first_party_editform_alter(&$form, FormStateInterf
     foreach($exchange->currencies->referencedEntities() as $entity) {
       $form['fieldapi_presets']['worth']['preset']['#allowed_curr_ids'][] = $entity->id();
     }
-    $form['partner']['preset']['#description'] = $this->t("Wallet holder must be in, or be, an exchange '!name'.", ['!name' => $exchange->label]);
+    $form['partner']['preset']['#description'] = $this->t("Wallet holder must be in, or be, an exchange '%name'.", ['%name' => $exchange->label]);
   }
   $form['menu']['#states'] = [
     'visible' => [
@@ -700,7 +700,7 @@ function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $
  */
 function mcapi_exchanges_form_wallet_limits_form_alter(&$form, $form_state) {
   if (!Exchanges::in($form_state->getFormObject()->wallet->getHolder())) {
-    drupal_set_message(t("!name is not currently in any active exchange", array('!name' => $owner->label())));
+    drupal_set_message(t("%name is not currently in any active exchange", array('%name' => $owner->label())));
   }
 }
 

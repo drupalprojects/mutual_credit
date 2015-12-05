@@ -29,8 +29,8 @@ function mcapi_exchanges_install() {
   //according to the default settings this will have autocreated a wallet for the exchange !
   $props = array(
     'name' => t(
-      'First !sitename exchange',
-      ['!sitename' => \Drupal::config('system.site')->get('name')]
+      'First %sitename exchange',
+      ['%sitename' => \Drupal::config('system.site')->get('name')]
     ),
     'uid' => 1,
     'mail' => \Drupal::config('system.site')->get('mail'),
@@ -38,7 +38,7 @@ function mcapi_exchanges_install() {
   );
   $ex = Exchange::create($props);
   $ex->save();
-  drupal_set_message(t('First exchange created: !name', array('!name' => $ex->link())));
+  drupal_set_message(t('First exchange created: %name', array('%name' => $ex->link())));
   
   //NB this could cause memory problems might be better to hard-insert
   //now put all the existing users in the first exchange

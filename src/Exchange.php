@@ -13,7 +13,7 @@
 namespace Drupal\mcapi;
 
 use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\Core\Cache\CacheBackendInterface;
+use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\WalletInterface;
@@ -98,7 +98,7 @@ class Exchange {
       return Exchanges::newHolder($previous_holder);
     }
     else {
-      return ['user', 1];
+      return User::load(1);
     }
   }
 

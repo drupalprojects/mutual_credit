@@ -129,10 +129,10 @@ class WalletLimiter {//couldn't be bothered to make an interface for this
       $currency = mcapi_currency_load($curr_id);
       $row = [];
       if (!is_null($limits['min'])) {
-        $row[] = t('Min !quant', ['!quant' => $currency->format($limits['min'])]);
+        $row[] = t('Min !quant', ['%quant' => $currency->format($limits['min'])]);
       }
       if (!is_null($limits['max'])) {
-        $row[] = t('Max !quant', ['!quant' => $currency->format($limits['max'])]);
+        $row[] = t('Max !quant', ['%quant' => $currency->format($limits['max'])]);
       }
       if ($row) $output[] = $row;
     }

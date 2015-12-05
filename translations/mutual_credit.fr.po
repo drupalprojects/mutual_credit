@@ -676,8 +676,8 @@ msgid "User @name cannot use @currency"
 msgstr "Le membre @name ne peut pas utiliser @currency"
 
 #: mcapi.inc:539 mcapi.module:1313
-msgid "!name field is required."
-msgstr "Le champ !name est exigé."
+msgid "%name field is required."
+msgstr "Le champ %name est exigé."
 
 #: mcapi.inc:806 views/mcapi_index_views.views.inc:180
 msgid "Currency"
@@ -3244,8 +3244,8 @@ msgid "Given / Gotten"
 msgstr "Donné/Reçu"
 
 #: mcapi.admin.inc:281
-msgid "Edit currency '!name'"
-msgstr "Modifier l'unité d'échange '!name'"
+msgid "Edit currency '%name'"
+msgstr "Modifier l'unité d'échange '%name'"
 
 #: mcapi.admin.inc:295
 msgid "Acknowledgement currencies are issued whenever work of value is done; they can be used as a medium of exchange, there is guarantee of redemption."

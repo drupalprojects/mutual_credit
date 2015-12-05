@@ -46,7 +46,7 @@ class EntityWorthMoreThan extends ConditionPluginBase {
   public function summary() {
     return $this->t(
       'Entity is worth at least !value',
-      ['!value' => $this->worth->format()]
+      ['%value' => $this->worth->format()]
     );
   }
 

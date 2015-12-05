@@ -73,7 +73,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    */
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
     $values += array(
-      //'name' => t("!name's exchange", array('!name' => $account->label())),
+      //'name' => t("%name's exchange", array('%name' => $account->label())),
       'uid' => \Drupal::currentUser()->id() ? : 1,//drush is user 0
       'status' => TRUE,
       'open' => TRUE,

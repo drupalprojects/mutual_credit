@@ -30,7 +30,7 @@ function __mcapi_tester_mcapi_exchange_view(&$build, $entity, $mode, $language) 
     }
     $build['people']['helpers'] = array(
       '#prefix' => '<br />',
-      '#markup' => t('Helpers: !names', array('!names' => implode(', ', $helpernames)))
+      '#markup' => t('Helpers: %names', array('%names' => implode(', ', $helpernames)))
     );
   }
 }

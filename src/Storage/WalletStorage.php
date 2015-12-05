@@ -43,6 +43,7 @@ class WalletStorage extends SqlContentEntityStorage {
    */
   function doSave($wid, EntityInterface $wallet) {
     $this->reIndex(array($wallet->id() => $wallet));
+    $ops = [];
     foreach (Exchange::walletOps() as $op_name => $label) {
       if (is_numeric(substr($wallet->{$op_name}->value, 0, 1))) {
         $ops[$op_name] = explode(',', $wallet->{$op_name}->value);
@@ -58,6 +59,7 @@ class WalletStorage extends SqlContentEntityStorage {
   }
   
   private function saveUserAccess($wallet, $ops) {
+    if(empty($ops)) return;
     $this->database
       ->delete('mcapi_wallets_access')
       ->condition('wid', $wallet->id())
@@ -115,7 +117,7 @@ class WalletStorage extends SqlContentEntityStorage {
   private function dropIndex(array $wallets) {
     if ($wids = array_keys($wallets)) {
       $this->database->delete('mcapi_wallets_access')
-        ->condition('wid[]', $wids)
+        ->condition('wid', $wids, 'IN')
         ->execute();
     }
   }

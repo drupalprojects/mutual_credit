@@ -148,7 +148,7 @@ class WalletForm extends ContentEntityForm {
         ->set('pid', $values[$key]);
       //@todo need to clear the walletaccess cache for both users
       drupal_set_message(
-        t('Wallet has been transferred to !name', ['!name' => $wallet->getOwner()->label()])
+        t('Wallet has been transferred to %name', ['%name' => $wallet->getOwner()->label()])
       );
     }
     $wallet->save();

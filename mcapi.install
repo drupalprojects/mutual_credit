@@ -20,7 +20,7 @@ function mcapi_install() {
   //in accordance with the default wallet settings
   //-put every user in the default exchange
   $users = User::loadMultiple();
-  foreach ($users as $account) {drupal_set_message($account->id());
+  foreach ($users as $account) {
     if ($account->id() == 0) {
       continue;
     }

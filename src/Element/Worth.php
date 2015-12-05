@@ -291,7 +291,7 @@ class Worth extends FormElement {
             //@todo check that worth error handling works
             $form_state->setError(
               $element[$worth['curr_id']],
-              t('Negative amounts not allowed: !val', array('!val' => $currency->format($worth['value'])))
+              t('Negative amounts not allowed: !val', array('%val' => $currency->format($worth['value'])))
             );
           }
         }

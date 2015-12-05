@@ -34,7 +34,7 @@ function mcapi_requirements($phase) {
       $result['severity'] = REQUIREMENT_ERROR;
       $result['description'] = t(
         'Index table does not add up. Try rebuilding it at !link',
-        ['!link' => \Drupal::l('admin/accounting/misc', Url::fromRoute('mcapi.admin_misc'))]
+        ['%link' => \Drupal::l('admin/accounting/misc', Url::fromRoute('mcapi.admin_misc'))]
       );
     }
     return array($result);
@@ -69,11 +69,11 @@ function mcapi_help($route_name) {
         t('To configure the certificate, override certificate.html.twig in your theme'),
         t(
           'To configure the sentence, see the Accounting settings: !link.',
-          ['!link' => \Drupal::l($settings_url->toString(), $settings_url)]
+          ['%link' => \Drupal::l($settings_url->toString(), $settings_url)]
         ),
         t(
           'Custom Twig can be used for display on the action settings pages: !link.',
-          ['!link' => \Drupal::l($action_url->toString(), $action_url)]
+          ['%link' => \Drupal::l($action_url->toString(), $action_url)]
         ),
       ];
       return implode(' ', $message);
@@ -290,10 +290,6 @@ function mcapi_form_field_config_edit_form_alter(&$form, &$form_state) {
     //@see Drupal\mcapi\Form\CurrencyForm::save
     unset($form['required']);
   }
-}
-
-function mcapi_form_alter($form, $form_state, $form_id) {
-  drupal_set_message($form_id);
 }
 
 /**

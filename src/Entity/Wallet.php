@@ -185,7 +185,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     if (strlen($this->name->value) > 64) {
       $this->name->value = substr($this->name->value, 0, 64);
       drupal_set_message(t(
-          'Wallet name was truncated to 64 characters: !name', array('!name' => $this->name->value))
+          'Wallet name was truncated to 64 characters: @name', array('@name' => $this->name->value))
         , 'warning');
     }
   }
@@ -324,7 +324,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       $criteria = ['involving' => $wallet->id()];
       if (\Drupal::entityTypeManager()->getStorage('mcapi_transaction')->filter($criteria)) {
         $new_name = t(
-          "Formerly !name's wallet: !label", ['!name' => $wallet->label(), '!label' => $wallet->label(NULL, FALSE)]
+          "Formerly @name's wallet: @label", ['@name' => $wallet->label(), '@label' => $wallet->label(NULL, FALSE)]
         );
         $wallet->set('name', $new_name)
           ->set('entity_type', $new_holder_entity->getEntityTypeId())
@@ -333,16 +333,18 @@ class Wallet extends ContentEntityBase implements WalletInterface {
         //@note this implies the number of wallets an exchange can own to be unlimited.
         //or more likely that this max isn't checked during orphaning
         drupal_set_message(t(
-          "!name's wallets are now owned by @entity_type !entity_label", [
-          '!name' => $wallet->label(),
-          '!exchange' => \Drupal::l($new_holder_entity->label(), $exchange->url())
+          "@name's wallets are now owned by @entity_type @entity_label", [
+          '@name' => $wallet->label(),
+          '@entity_type' => $new_holder_entity->getEntityType()->getLabel(),
+            //todo I tried toLink but it doesn't render from here
+          '@entity_label' => $new_holder_entity->label()
             ]
         ));
         \Drupal::logger('mcapi')->notice(
           'Wallet @wid was orphaned to @entitytype @id', [
           '@wid' => $wallet->id(),
           '@entitytype' => $new_holder_entity->getEntityTypeId(),
-          '@id' => $new_holder_entity->id()->id()
+          '@id' => $new_holder_entity->id()
           ]
         );
       }

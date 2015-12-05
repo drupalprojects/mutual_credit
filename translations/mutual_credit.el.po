@@ -220,7 +220,7 @@ msgid "Use the tokens to define how the transaction will read when displayed in 
 msgstr ""
 
 #: mcapi.admin.inc:280
-msgid "Edit currency '!name'"
+msgid "Edit currency '%name'"
 msgstr "Επεξεργασία νομίσματος 'lname'"
 
 #: mcapi.admin.inc:280 mcapi.module:731
@@ -795,8 +795,8 @@ msgid "@division is not a permitted division of currency @name"
 msgstr ""
 
 #: mcapi.inc:535 mcapi.module:1317
-msgid "!name field is required."
-msgstr "Το πεδίο !name είναι απαραίτητο."
+msgid "%name field is required."
+msgstr "Το πεδίο %name είναι απαραίτητο."
 
 #: mcapi.inc:615 mcapi.module:1395 extras/accountant_ui/accountant_ui.views_default.inc:295
 msgid "Quantity"

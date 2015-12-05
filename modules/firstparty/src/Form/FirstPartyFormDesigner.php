@@ -148,7 +148,7 @@ class FirstPartyFormDesigner extends EntityForm {
       '#description' => '('.$this->t(
         "You may need to enable fields at !link",
         [
-          '!link' => $this->l(
+          '%link' => $this->l(
             $this->t('Manage form display'),
             Url::fromRoute(
               'entity.entity_form_display.mcapi_transaction.form_mode',
@@ -281,7 +281,7 @@ class FirstPartyFormDesigner extends EntityForm {
 
     $form['#suffix'] = $this->t(
       "N.B The confirmation page is configured separately, at !link",
-      ['!link' => $this->l(
+      ['%link' => $this->l(
         'admin/accounting/workflow/save',
         Url::fromRoute('entity.action.edit_form', ['action' => 'transaction_save'])
       )]

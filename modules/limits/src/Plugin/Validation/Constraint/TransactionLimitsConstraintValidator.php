@@ -96,13 +96,13 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator {
         $max = $this->limiter->max($curr_id);
         $min = $this->limiter->min($curr_id);
         $this->replacements = [
-          '!wallet' => $wallet->label()
+          '%wallet' => $wallet->label()
         ];
 
         //@todo ideally we would ensure that we showed only the last violation message for each wallet
         //maybe by each violation being indexed with a wallet id
         if ($diff > 0 && $projected > 0 && is_numeric($max) && $projected > $max) {
-          $this->replacements['!limit'] = $currency->format($max);
+          $this->replacements['%limit'] = $currency->format($max);
           $this->replacements['excess'] = $currency->format($projected - $max);
           $this->context
             ->buildViolation($constraint->overLimit, $this->replacements)
@@ -110,7 +110,7 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator {
             ->addViolation();
         }
         if ($diff < 0 && $projected < 0 && is_numeric($min) && $projected < $min) {
-          $this->replacements['!limit'] = $currency->format($min);
+          $this->replacements['%limit'] = $currency->format($min);
           $this->replacements['excess'] = $currency->format(-$projected + $min);
           $this->context
             ->buildViolation($constraint->underLimit, $this->replacements)
