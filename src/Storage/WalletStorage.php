@@ -155,33 +155,40 @@ class WalletStorage extends SqlContentEntityStorage {
 
   /**
    * {@inheritdoc}
+   * @note ideally we should use entityquery for this but can't until we know how to join tables
+   * @see https://www.drupal.org/node/2424791
    */
   function filter(array $conditions, $offset = 0, $limit = NULL) {
+    //$query = $this->getQuery();
     $query = \Drupal::database()->select('mcapi_wallet', 'w')->fields('w', array('wid'));
     $namelike = db_or();
     $like = FALSE;
 
-    if (array_key_exists('wids', $conditions)) {
+    if (isset($conditions['wids'])) {
       $query->condition('w.wid', $conditions['wids']);
     }
-    if (array_key_exists('wid', $conditions)) {
+    if (isset($conditions['wid'])) {
       $query->condition('w.wid', $conditions['wid']);
     }
-
-    if (array_key_exists('orphaned', $conditions)) {
+    if (isset($conditions['orphaned'])) {
       $query->condition('w.orphaned', $conditions['orphaned']);
     }
-    if (array_key_exists('intertrading', $conditions)) {
-      $operator = $conditions['intertrading'] ? '=' : '<>';
-      $query->condition('w.name', '_intertrading', $operator);
+    if (isset($conditions['intertrading'])) {
+      if ($conditions['intertrading'] == 'only') {
+        $query->condition('w.name', INTERTRADING_WALLET_NAME, '=');
+      }
+      elseif ($conditions['intertrading'] == 'include') {}
+      else {
+        $query->condition('w.name', INTERTRADING_WALLET_NAME, '<>');
+      }
     }
 
-    if (array_key_exists('holder', $conditions)) {
+    if (isset($conditions['holder'])) {
       $query->condition('entity_type', $conditions['holder']->getEntityTypeId())
-      ->condition('pid', $conditions['holder']->id());
+        ->condition('pid', $conditions['holder']->id());
     }
 
-    if (array_key_exists('entity_types', $conditions)) {
+    if (isset($conditions['entity_types'])) {
       $query->condition('w.entity_type', $conditions['entity_types']);
     }
 
@@ -251,4 +258,3 @@ class WalletStorage extends SqlContentEntityStorage {
   }
 
 }
-

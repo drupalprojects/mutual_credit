@@ -25,26 +25,11 @@ class FormList extends ControllerBase {
       $actions = $menu_links = [];
       //$row['menu_links'] = ['data' => []];
       if ($row['route']) {
-        $url = Url::fromRoute($row['route'], (array) $row['route_parameters']);
+        $url = Url::fromRoute($row['route'], (array)$row['route_parameters']);
         $links = \Drupal::service('plugin.manager.menu.link')->loadLinksByRoute(
           $row['route'], 
           (array) $row['route_parameters']
         );
-        
-        if (\Drupal::moduleHandler()->moduleExists('menu_ui')) {
-          foreach ($links as $id => $link) {
-            $menu_links[] = $this->l(
-              t('Edit link'), 
-              Url::fromRoute('menu_ui.link_edit', ['menu_link_plugin' => $id])
-            );
-          }
-          if (empty($menu_links)) {
-            $menu_links[] = $this->l(
-              $this->t('Add link'), 
-              Url::fromRoute('entity.menu.add_link_form', ['menu' => 'tools'])
-            );
-          }
-        }
       }
       $rows[$rowname] = [
         'title' => $row['title'],
@@ -56,29 +41,17 @@ class FormList extends ControllerBase {
             '#links' => $row['operations']
           ]
         ],
-        'menu_links' => [
-          'data' => [
-            '#markup' => implode(' ', $menu_links)
-          ]
-        ]
       ];
     }
-    
-    $build['table'] = array(
-      '#title' => 'hello',
-      '#caption' => $this->t('Some of these forms may not have menu links'),
+    $build['table'] = [
       '#type' => 'table',
       '#header' => [
         'title' => $this->t('Title'),
         'path' => $this->t('Path to form'),
         'operations' => $this->t('Form operations'),
-        'menu_links' => [
-          'title' => 'Excluding tasks and actions',
-          'data' => $this->t('Menu links to forms')
-        ]
       ],
       '#rows' => $rows
-    );
+    ];
     return $build;
   }  
 }

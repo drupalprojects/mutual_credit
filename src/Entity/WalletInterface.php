@@ -23,15 +23,14 @@ interface WalletInterface extends ContentEntityInterface {
 
   /**
    * return the parent entity if there is one, otherwise return the wallet itself
+   * 
    * @return ContentEntityInterface
    *   The one entity to which this wallet belongs
    */
   function getHolder();
 
   /**
-   * return the parent entity if there is one, otherwise return the wallet itself
-   * @return ContentEntityInterface
-   *   The one entity to which this wallet belongs
+   * change the holder of the current wallet
    */
   function setHolder(EntityOwnerInterface $entity);
 
@@ -102,12 +101,18 @@ interface WalletInterface extends ContentEntityInterface {
   /**
    * get the ids of the wallets owned by the given entity
    *
-   * @param ContentEntityInterface $entity
+   * @param WalletInterface $entity
    *
    * @return array
    *   wallet ids belonging to the passed entity
    */
-  static function heldBy(ContentEntityInterface $entity);
+  static function heldBy(WalletInterface $entity);
 
+  /**
+   * determine if the wallet is an intertrading wallet
+   * 
+   * @return boolean
+   */
+  function isIntertrading();
 
 }

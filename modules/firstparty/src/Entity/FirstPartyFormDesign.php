@@ -91,7 +91,7 @@ class FirstPartyFormDesign extends ConfigEntityBase {
         'twig' => 'Partner: [mcapiform:secondperson]
 Direction: [mcapiform:direction]
 [mcapiform:worth]',
-        'button' => $this->t('Preview'),
+        'button' => t('Preview'),
         'preview' => '',
       ],
     ];

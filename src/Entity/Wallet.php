@@ -8,11 +8,9 @@
 namespace Drupal\mcapi\Entity;
 
 use Drupal\mcapi\Exchange;
-use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Cache\Cache;
@@ -22,6 +20,8 @@ use Drupal\Core\Field\BaseFieldDefinition;
  * Defines the wallet entity.
  * The metaphor is not perfect because this wallet can hold a negaive balance.
  * A more accurate term, 'account', has another meaning in Drupal
+ * 
+ * This Entity knows all about the special intertrading wallets though none are installed by default
  *
  * @note Wallet 'holders' could be any content entity, but the wallet owner is
  * always a user, typically the owner of the holder entity
@@ -85,6 +85,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   private $stats = [];
   private $access = [];
 
+  
   /**
    * {@inheritDoc}
    */
@@ -122,10 +123,15 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   /**
    * {@inheritdoc}
    */
-  public static function heldBy(ContentEntityInterface $entity) {
-    return \Drupal::entityTypeManager()
+  public static function heldBy(WalletInterface $entity) {
+    $ids = \Drupal::entityTypeManager()
       ->getStorage('mcapi_wallet')
-      ->filter(['holder' => $entity]);
+      ->getQuery()
+      ->condition('entity_type', $entity->getEntityTypeId())
+      ->condition('pid', $entity->id())
+      ->execute();
+    //there can only be one holder
+    return reset($ids);
   }
 
 
@@ -140,12 +146,15 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
-    if (!array_key_exists('pid', $values) && array_key_exists('entity_type', $values)) {
-      throw new Exception("new wallets must have an entity_type and a parent entity_id (pid)");
+    if (!isset($values['pid']) || !isset($values['entity_type'])) {
+      throw new \Exception('New wallets must have an entity_type and a parent entity_id (pid)');
+    }
+    if (!\Drupal::EntityTypeManager()->getStorage($values['entity_type'])->load($values['pid'])) {
+      throw new \Exception('Unknown @type entity @id for new wallet');
     }
     $values += [
       'name' => '', 
-      'orphaned' => 0, 
+      'orphaned' => FALSE, 
       'created' => REQUEST_TIME
     ];
   }
@@ -153,7 +162,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   /**
    * {@inheritdoc}
    */
-  public function postCreate(\Drupal\Core\Entity\EntityStorageInterface $storage) {
+  public function postCreate(EntityStorageInterface $storage) {
     //put the default values for the access here
     //@todo inject settings
     $settings = \Drupal::config('mcapi.settings');
@@ -262,14 +271,14 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       //ensure there is a value for all available currencies.
       foreach (Exchange::currenciesAvailable($this) as $curr_id => $currency) {
         if (!array_key_exists($curr_id, $this->stats)) {
-          $this->stats[$curr_id] = array(
+          $this->stats[$curr_id] = [
             'balance' => 0,
             'trades' => 0,
             'volume' => 0,
             'gross_in' => 0,
             'gross_out' => 0,
             'partners' => 0
-          );
+          ];
         }
       }
     }
@@ -290,7 +299,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * {@inheritdoc}
    */
   public function getStat($curr_id, $stat) {
-    $stats = getStats($curr_id);
+    $stats = $this->getStats($curr_id);
     if (array_key_exists($curr_id, $stats)) {
       return $stats[$curr_id];
     }
@@ -316,13 +325,14 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * {@inheritDoc}
    */
   public static function orphan(ContentEntityInterface $holder) {
+    $entityTypeManager = \Drupal::entityTypeManager();
     $new_holder_entity = Exchange::findNewHolder($holder);
-    $wallet_ids = \Drupal::entityTypeManager()
+    $wallet_ids = $entityTypeManager
       ->getStorage('mcapi_wallet')
       ->filter(['holder' => $holder]);
     foreach (Self::loadMultiple($wallet_ids) as $wallet) {
       $criteria = ['involving' => $wallet->id()];
-      if (\Drupal::entityTypeManager()->getStorage('mcapi_transaction')->filter($criteria)) {
+      if ($entityTypeManager->getStorage('mcapi_transaction')->filter($criteria)) {
         $new_name = t(
           "Formerly @name's wallet: @label", ['@name' => $wallet->label(), '@label' => $wallet->label(NULL, FALSE)]
         );
@@ -367,4 +377,11 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     Cache::invalidateTags($tags);
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function isIntertrading() {
+    return $this->name->value == INTERTRADING_WALLET_NAME;
+  }
+  
 }

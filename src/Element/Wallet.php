@@ -49,7 +49,7 @@ class Wallet extends EntityAutocomplete {
               // Try to get a match from the input string
               $form_state->setError(
                 $element,
-                $this->t('Unable to identify wallet: @string', ['@string' => $string])
+                t('Unable to identify wallet: @string', ['@string' => $string])
               );
             }
             else {
@@ -71,7 +71,7 @@ class Wallet extends EntityAutocomplete {
               foreach ($invalid_ids as $invalid_id) {
                 $form_state->setError(
                   $element, 
-                  $this->t("The wallet '%id' does not exist.", ['%id' => $invalid_id])
+                  t("The wallet '%id' does not exist.", ['%id' => $invalid_id])
                 );
               }
             }

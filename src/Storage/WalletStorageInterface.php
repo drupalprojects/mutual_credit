@@ -34,20 +34,16 @@ interface WalletStorageInterface extends EntityStorageInterface {
    *   string fragment, part of the name of the wallet or parent entity
    *   wids, wallet->id()s to restrict the results to
    *   holder, a ContentEntity implementing EntityOwnerInterface
-   *   intertrading, a boolean indicating whether to include or exclude _intertrading wallets
+   *   intertrading, string only|include anything else will filter out intertrading wallets
    *
    * @param $boolean $offset
    *
    * @param $boolean $limit
    *
-   * @param boolean $intertrading
-   *   TRUE if the '_intertrading' wallets should be included.
-   *
    * @return array
    *   The wallet ids
    */
   function filter(array $conditions, $offset = 0, $limit = NULL);
-
 
   /**
    *

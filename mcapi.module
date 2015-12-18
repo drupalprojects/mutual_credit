@@ -16,6 +16,7 @@ use Drupal\mcapi\Exchange;
 //@todo its not really appropriate to use constants for plugin names?
 const TRANSACTION_STATE_FINISHED = 'done';
 const TRANSACTION_STATE_ERASED = 'erased';
+const INTERTRADING_WALLET_NAME = '_intertrading';//only used by dependencies
 
 /**
  * implements hook_requirements().
@@ -172,7 +173,6 @@ function mcapi_uasort_weight($a, $b) {
 function mcapi_element_info_alter(&$items) {
   $items['toolbar']['#attached']['library'][] = 'mcapi/mcapi.toolbar';
 }
-
 
 /**
  * implements hook_entity_insert()

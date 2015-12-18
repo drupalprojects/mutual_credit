@@ -17,6 +17,7 @@ class SettingsForm extends ConfigFormBase {
 
   private $moduleHandler;
   private $transactionRelativeManager;
+  private $entityTypeManager;
 
   /**
    * {@inheritdoc}
@@ -25,17 +26,19 @@ class SettingsForm extends ConfigFormBase {
     return 'mcapi_misc_options_form';
   }
 
-  public function __construct(ConfigFactoryInterface $configFactory, $module_handler, $transaction_relative_manager) {
+  public function __construct(ConfigFactoryInterface $configFactory, $module_handler, $transaction_relative_manager, $entity_type_manager) {
     $this->setConfigFactory($configFactory);
     $this->moduleHandler = $module_handler;
     $this->transactionRelativeManager = $transaction_relative_manager;
+    $this->entityTypeManager = $entity_type_manager;
   }
 
   static public function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
       $container->get('module_handler'),
-      $container->get('mcapi.transaction_relative_manager')
+      $container->get('mcapi.transaction_relative_manager'),
+      $container->get('entity_type.manager')
     );
   }
 
@@ -43,7 +46,7 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->configFactory->get('mcapi.settings');
+    $config = $this->config('mcapi.settings');
     foreach (Exchange::transactionTokens(TRUE) as $token) {
       $tokens[] = "[mcapi:$token]";
     }
@@ -144,7 +147,7 @@ class SettingsForm extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
-    $config = $this->configFactory->getEditable('mcapi.settings');
+    $config = $this->config('mcapi.settings');
 
     $config
       ->set('sentence_template', $values['sentence_template'])
@@ -166,7 +169,7 @@ class SettingsForm extends ConfigFormBase {
 
   static function rebuild_mcapi_index(array &$form, FormStateInterface $form_state) {
     //not sure where to put this function
-    \Drupal::entityTypeManager()->getStorage('mcapi_transaction')->indexRebuild();
+    $this->entityTypeManager->getStorage('mcapi_transaction')->indexRebuild();
     drupal_set_message("Index table is rebuilt");
     $form_state->setRedirect('system.status');
   }

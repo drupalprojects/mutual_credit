@@ -93,7 +93,7 @@ class TransactionForm extends ContentEntityForm {
    * 
    * @note does NOT call parent.
    */
-  final public function submitForm(array &$form, FormStateInterface $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     parent::submitForm($form, $form_state);//set $this->entity
     $this->tempStore
       ->get('TransactionForm')

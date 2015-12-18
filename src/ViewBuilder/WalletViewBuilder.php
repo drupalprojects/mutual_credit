@@ -70,24 +70,21 @@ class WalletViewBuilder extends EntityViewBuilder {
     return $build;
   }
 
-
   /**
-   * entity_label_callback().
-   * default callback for wallet
+   * default Wallet entity_label_callback
+   * 
    * put the Holder entity's name with the wallet name in brackets if there is one
    */
   public static function defaultLabel($wallet) {
-    $output = $wallet->getHolder()->label();//what happens if the wallet is orphaned?
-
     $name = $wallet->name->value;
-
-    if ($name == '_intertrade') {
-      $output .= ' '.t('Import/Export');
+    if ($name == INTERTRADING_WALLET_NAME) {
+      return t('Import/Export');
     }
-    elseif ($name) {
-      $output .= ' ('.$name.')';
+    $holdername = $wallet->getHolder()->label();
+    if ($name) {
+      return  $holdername .' ('.$name.')';
     }
-    return $output;
+    else return $holdername;
   }
   
    /** 

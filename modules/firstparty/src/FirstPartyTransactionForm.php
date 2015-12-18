@@ -127,7 +127,6 @@ class FirstPartyTransactionForm extends TransactionForm {
     return $form;
   }
 
-
   /**
    * Returns an array of supported actions for the current entity form.
    */
@@ -159,12 +158,15 @@ class FirstPartyTransactionForm extends TransactionForm {
     return $actions;
   }
  
+  /**
+   * {@inheritdoc}
+   */
   public function getFormId() {
     return 'first_party_transaction_form';
   }
 
   /**
-   * Symfony routing callback
+   * {@inheritdoc}
    */
   public function title() {
     return $this->configEntity->title;
