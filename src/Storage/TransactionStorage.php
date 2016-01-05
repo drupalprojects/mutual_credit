@@ -30,6 +30,7 @@ class TransactionStorage extends TransactionIndexStorage {
    *
    */
   public function save(EntityInterface $transaction) {
+    
     //determine the serial number
     if ($transaction->isNew()) {
       $last = $this->database->query(
@@ -40,7 +41,6 @@ class TransactionStorage extends TransactionIndexStorage {
     else {
       $serial = $transaction->serial->value;
     }
-
     $parent = 0;
     //note that flatten() clones the transactions
     foreach ($transaction->flatten(FALSE) as $entity) {
@@ -87,89 +87,5 @@ class TransactionStorage extends TransactionIndexStorage {
     }
     $this->resetCache($ids);
   }
-
-  /**
-   * for development use only!
-   */
-  public function wipeslate($curr_id = NULL) {
-    $serials = parent::wipeslate($curr_id);
-    $this->delete($serials, TRUE);
-    //reset the entity table
-    $this->database->truncate('mcapi_transaction')->execute();
-    $this->clearCache();
-  }
-
-  /**
-   * {@inheritdoc}
-   *
-   * @note the parent function is very similar but works on the index table and doesn't know payer and payee conditions.
-   */
-  public function filter(array $conditions = [], $offset = 0, $limit = 0) {
-    $query = $this->database->select('mcapi_transaction', 'x')
-      ->fields('x', array('xid', 'serial'))
-      ->orderby('created', 'DESC');
-    $this->parseConditions($query, $conditions);
-    if ($limit) {
-      //assume that nobody would ask for unlimited offset results
-      $query->range($offset, $limit);
-    }
-    return $query->execute()->fetchAllKeyed();
-  }
-
-  /**
-   * utility function to convert $conditions to modifications on the mcapi_transaction table
-   */
-  private function parseConditions($query, $conditions) {
-    //take account for the worth table.
-    if (array_key_exists('value', $conditions) || array_key_exists('curr_id', $conditions)) {
-      $query->join('mcapi_transaction__worth', 'w', 'x.xid = w.entity_id');
-    }
-    
-    $conditions += ['state' => Self::countedStates()];
-    foreach($conditions as $field => $value) {
-      if (!$value) continue;
-      switch($field) {
-      	case 'xid':
-      	case 'state':
-      	case 'serial':
-      	case 'payer':
-      	case 'payee':
-      	case 'creator':
-      	case 'state':
-      	case 'type':
-            $query->condition($field.'[]', (array)$value);
-      	  break;
-      	case 'involving':
-      	  $value = (array)$value;
-      	  $cond_group = count($value) == 1 ? db_or() : db_and();
-      	  $query->condition($cond_group
-    	      ->condition('payer[]', $value)
-    	      ->condition('payee[]', $value)
-      	  );
-          break;
-      	case 'curr_id':
-          $query->condition('w.worth_curr_id[]', (array)$value);
-          break;
-      	case 'since':
-          $query->condition('created', $value, '>');
-          break;
-      	case 'until':
-          $query->condition('created', $value, '<');
-          break;
-      	case 'value':
-          $query->condition('w.worth_value', $value);
-          break;
-        case 'min':
-          $query->condition('w.worth_value', $value, '>=');
-          break;
-        case 'max':
-          $query->condition('w.worth_value', $value, '<=');
-          break;
-      	default:
-          drupal_set_message('filtering on unknown field: '.$field);
-      }
-    }
-  }
-  
 
 }

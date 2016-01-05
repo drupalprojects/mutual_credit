@@ -1,0 +1,33 @@
+{#
+/**
+ * @file
+ * Default theme implementation to display a some currency stats for an exchange.
+ *
+
+each stat has 
+ - name
+ - owner
+ - color
+ - transactions
+ - volume
+ - scope
+ - wallets
+
+#}
+
+<table>
+  {% for stat in stats %}
+  <tr>
+    <th>{{ 'Currency name'|t }}</th>
+    <th>{{ 'Trades'|t }}</th>
+    <th>{{ 'Volume'|t }}</th>
+    <th>{{ 'Scope'|t }}</th>
+  </tr>
+  <tr>
+    <td>{{ stat.name }}</td>
+    <td>{{ stat.transactions }}</td>
+    <td>{{ stat.volume }}</td>
+    <td>{% if stat.scope > 1 %}{{ 'Shared'|t }}{% else %}{{ 'Local'|t }}{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>

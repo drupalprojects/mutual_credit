@@ -7,19 +7,17 @@
 
 namespace Drupal\mcapi_signatures;
 
-use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Type;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Template\Attribute;
+use Drupal\mcapi\Mcapi;
 
 class Signatures {
 
   static function addSignature($transaction) {
     $relatives = Type::load($transaction->type->target_id)
       ->getThirdPartySetting('mcapi_signatures', 'signatures');
-    $user_ids = \Drupal::service('mcapi.transaction_relative_manager')
+    $user_ids = Mcapi::transactionRelatives()
       ->getUsers($transaction, $relatives);
     foreach ($user_ids as $uid) {
       $transaction->signatures[$uid] = 0;

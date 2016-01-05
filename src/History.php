@@ -34,6 +34,7 @@ class History {
       $histories = $cache->data;
     }
     else {
+      $histories = [];
       foreach ($currencies as $id => $currency) {
         $points = Self::get($wallet, $currency->id());
         $point_count = count($points);
@@ -60,7 +61,7 @@ class History {
         $cache_id,
         $histories,
         Cache::PERMANENT,
-        ['mcapi_wallet:'.$wallet_id]
+        ['mcapi_wallet:'.$wallet->id()]
       );
     }
     return $histories;
@@ -75,7 +76,7 @@ class History {
    * @return array
    *   balances, keyed by by unixtimes
    */
-  function get($wallet_id, $currency_id) {
+  static function get($wallet_id, $currency_id) {
     return \Drupal::entityTypeManager()
       ->getStorage('mcapi_transaction')
       ->timesBalances($wallet_id, $currency_id);

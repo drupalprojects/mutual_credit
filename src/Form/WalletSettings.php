@@ -6,7 +6,7 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Url;
-use Drupal\mcapi\Exchange;
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Wallet;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -18,6 +18,7 @@ class WalletSettings extends ConfigFormBase {
     $this->setConfigFactory($configFactory);
     $this->entityTypeManager = $entityTypeManager;
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
+    
   }
   /**
    * {@inheritdoc}
@@ -41,6 +42,16 @@ class WalletSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+    //display a warning message 
+    $display = \Drupal\Core\Entity\Entity\EntityFormDisplay::load('mcapi_wallet.mcapi_wallet.default');
+    if (!$display or !$display->getComponent('payees') or !$display->getComponent('payers')) {
+      drupal_set_message($this->t('Field payers and payees needs to be visible in the wallet form display.'), 'warning');
+      if (!\Drupal::moduleHandler()->moduleExists('field_ui')) {
+        //todo improve this message
+        drupal_set_message($this->t('Enable the Field UI module edit the form display.'), 'warning');
+      }
+    }
+    
     $config = $this->configFactory()->get('mcapi.settings');
 
     //A wallet can be attached to any entity with an entity reference field pointing towards the exchange entity
@@ -71,38 +82,18 @@ class WalletSettings extends ConfigFormBase {
           ? $entity_type->getLabel() .': '
           : '';
         foreach ($bundles as $bundle_name => $bundle_info) {
+          $val = $config->get("entity_types.$entity_type_id:$bundle_name");
           $form['entity_types']["$entity_type_id:$bundle_name"] = [
             '#title' => $entity_label.$bundle_info['label'],
             '#type' => 'number',
-            '#min' => 0,
-            '#default_value' => $config->get("entity_types.$entity_type_id:$bundle_name"),
+            '#min' => $val,
+            '#default_value' => $val,
             '#size' => 2,
             '#max_length' => 2
           ];
         }
       }
     }
-    $form['wallet_tab'] = [
-      '#title' => $this->t('Show wallets tab on canonical entity page'),
-      '#description' => $this->t("Tab would show 'summary' view of each wallet owned by the entity. Otherwise show links to wallets canonical pages using the entity's display fields"),
-      '#type' => 'checkbox',
-      '#default_value' => $config->get('wallet_tab'),
-      '#weight' => 3,
-    ];
-    $form['wallet_inex_tab'] = [
-      '#title' => $this->t('Show income & expenditure tab on wallet page'),
-      '#description' => $this->t("Alternatively include it in a wallet view mode"),
-      '#type' => 'checkbox',
-      '#default_value' => $config->get('wallet_inex_tab'),
-      '#weight' => 3,
-    ];
-    $form['wallet_log_tab'] = [
-      '#title' => $this->t('Show transaction log tab on wallet page'),
-      '#description' => $this->t("Alternatively include it in a wallet view mode"),
-      '#type' => 'checkbox',
-      '#default_value' => $config->get('wallet_log_tab'),
-      '#weight' => 3,
-    ];
     $form['autoadd'] = [
       '#title' => $this->t('Auto-create'),
       '#description' => $this->t('A wallet will be auto-created for when entities of each wallet-holding type above is created.') .' '.t('This is not retroactive'),
@@ -118,41 +109,30 @@ class WalletSettings extends ConfigFormBase {
       '#weight' => 7,
     ];
     
-
-    $permissions = ['o' =>  $this->t('The wallet owner')] + Exchange::walletPermissions();
-
-    $form['wallet_access'] = [
-      '#title' => t('Default access of users to wallets'),
-      '#description' => t('Determine which users can see, pay and charge from wallets by default.') .' '.
-        t("If more than one box is checked, the first one will be the default for new wallets, and the owner of the wallet will be allowed to configure on their wallet 'edit tab'."),
-      '#type' => 'details',
+    $form['payways'] = [
+      '#title' => $this->t('Default payment direction'),
+      '#description' => 'Setting given to new wallets',
+      '#type' => 'radios',
+      '#options' => Mcapi::payWays(),
+      '#default_value' => $config->get('payways'),
       '#weight' => 9
     ];
-    /* FYI
-    Exchange::walletOps() == [
-      [details] => View transaction log
-      [summary] => View summary
-      [payin] => Pay into this wallet
-      [payout] => Pay out of this wallet
-    ]*/
-    $w = 0;
-    foreach (Exchange::walletOps() as $key => $blurb) {
-      $form['wallet_access'][$key] = [
-        '#title' => $blurb[0],
-        '#description' => $blurb[1],
-        '#type' => 'checkboxes',
-        '#options' => $permissions,
-        '#default_value' => $config->get($key),
-        '#weight' => $w++,
-        '#required' => TRUE
-      ];
-    }
-    $form['wallet_access']['details']['o']['#default_value'] = TRUE;
-    $form['wallet_access']['details']['o']['#disabled'] = TRUE;
-    $form['wallet_access']['summary']['o']['#default_value'] = TRUE;
-    $form['wallet_access']['summary']['o']['#disabled'] = TRUE;
-    unset($form['wallet_access']['payin']['#options'][Wallet::ACCESS_ANY]);
-    unset($form['wallet_access']['payout']['#options'][Wallet::ACCESS_ANY]);
+    $form['widget'] = [
+      '#title' => $this->t('Wallet widget settings'),
+      '#type' => 'fieldset',
+      'wallet_widget_max_radios' => [
+        '#title' => $this->t('Radio button threshhold'),
+        '#title' => $this->t('This tiny number of references will give a radio button widget'),
+        '#type' => 'number',
+        '#default_value' => $config->get('wallet_widget_max_radios'),
+      ],
+      'wallet_widget_max_select' => [
+        '#title' => $this->t('Dropdown threshhold'),
+        '#title' => $this->t('More than this number of options will give an autocomplete field'),
+        '#type' => 'number',
+        '#default_value' => $config->get('wallet_widget_max_select'),
+      ]
+    ];
 
     $form['user_interface'] = [
       '#title' => $this->t('User interface'),
@@ -177,49 +157,66 @@ class WalletSettings extends ConfigFormBase {
       ],
       '#weight' => 12
     ];
+    
+    $form['user_interface']['wallet_tab'] = [
+      '#title' => $this->t('Show wallets tab on canonical entity page'),
+      '#description' => $this->t("Tab would show 'summary' view of each wallet owned by the entity. Otherwise show links to wallets canonical pages using the entity's display fields"),
+      '#type' => 'checkbox',
+      '#default_value' => $config->get('wallet_tab'),
+      '#weight' => 3,
+    ];
+    $form['user_interface']['wallet_inex_tab'] = [
+      '#title' => $this->t('Show income & expenditure tab on wallet page'),
+      '#description' => $this->t("Alternatively include it in a wallet view mode"),
+      '#type' => 'checkbox',
+      '#default_value' => $config->get('wallet_inex_tab'),
+      '#weight' => 3,
+    ];
+    $form['user_interface']['wallet_log_tab'] = [
+      '#title' => $this->t('Show transaction log tab on wallet page'),
+      '#description' => $this->t("Alternatively include it in a wallet view mode"),
+      '#type' => 'checkbox',
+      '#default_value' => $config->get('wallet_log_tab'),
+      '#weight' => 3,
+    ];
 
     return parent::buildForm($form, $form_state);
-  }
-
-
-  /**
-   * {@inheritdoc}
-   */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    $values = $form_state->getValues();
-    foreach (array_keys(Exchange::walletOps()) as $op_name => $blurb) {
-      if (array_filter($values[$op_name]) == [Wallet::ACCESS_USERS => Wallet::ACCESS_USERS]) {
-        $form_state->setErrorByName($op_name, t("'Named users' cannot be selected by itself"));
-      }
-    }
   }
 
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $vals = $form_state->getValues('values');
-    $this->configFactory->getEditable('mcapi.settings')
-      ->set('entity_types', $vals['entity_types'])
-      ->set('wallet_tab', $vals['wallet_tab'])
-      ->set('wallet_inex_tab', $vals['wallet_inex_tab'])
-      ->set('wallet_log_tab', $vals['wallet_log_tab'])
-      ->set('autoadd', $vals['autoadd'])
-      ->set('details', array_filter($vals['details']))
-      ->set('summary', array_filter($vals['summary']))
-      ->set('payin', array_filter($vals['payin']))
-      ->set('payout', array_filter($vals['payout']))
-      ->set('threshhold', $vals['threshhold'])
-      ->set('widget', $vals['widget'])
-      ->save();
+    
+    $vars = [
+      'entity_types',
+      'wallet_tab', 
+      'wallet_inex_tab',
+      'wallet_log_tab',
+      'wallet_widget_max_select',
+      'wallet_widget_max_radios',
+      'payways',
+      'autoadd',
+      'threshhold',
+      'widget'
+    ];
+    
+    $config = $this->configFactory->getEditable('mcapi.settings');
+    foreach ($vars as $var) {
+      $config->set($var, $form_state->getValue($var));
+    }
+    $config->save();
 
     parent::submitForm($form, $form_state);
 
-    Cache::invalidateTags(['mcapi_wallet_values', 'mcapi_wallet_view']);
+    Cache::invalidateTags(['mcapi_wallet_values', 'mcapi_wallet_view', 'walletable_bundles']);
 
     $form_state->setRedirect('mcapi.admin');
   }
 
+  /**
+   * {@inheritdoc}
+   */
   protected function getEditableConfigNames() {
     return ['mcapi.settings'];
   }

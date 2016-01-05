@@ -27,7 +27,7 @@ class Worth extends FieldPluginBase {
    */
   protected function defineOptions() {
     $options = parent::defineOptions();
-    $options['format'] = ['default' => Currency::FORMAT_NORMAL];
+    $options['format'] = ['default' => Currency::DISPLAY_NORMAL];
     return $options;
   }
 

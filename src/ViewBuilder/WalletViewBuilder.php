@@ -76,10 +76,10 @@ class WalletViewBuilder extends EntityViewBuilder {
    * put the Holder entity's name with the wallet name in brackets if there is one
    */
   public static function defaultLabel($wallet) {
-    $name = $wallet->name->value;
-    if ($name == INTERTRADING_WALLET_NAME) {
+    if ($wallet->payways == \Drupal\mcapi\Entity\Wallet::PAYWAY_AUTO) {
       return t('Import/Export');
     }
+    $name = $wallet->name->value;
     $holdername = $wallet->getHolder()->label();
     if ($name) {
       return  $holdername .' ('.$name.')';

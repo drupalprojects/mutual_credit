@@ -217,7 +217,7 @@ class CurrencyForm extends EntityForm {
   function validateFormat(&$element, FormStateInterface $form_state) {
     $nums = preg_match_all('/[0-9]+/', $element['#value'], $chars);
     if (!is_array($this->submit_format($element['#value'])) || $nums[0] != 0) {
-      $this->errorHandler()->setErrorByName($element['#name'], $form_state, t('Bad Format'));
+      $form_state->setErrorByName($element['#name'], t('Bad Format'));
     }
   }
 
@@ -233,9 +233,9 @@ class CurrencyForm extends EntityForm {
   function submit_format($string) {
     //a better regular expression would make this function much shorter
     //(everything until the first number) | ([numbers] | [not numbers])+ | (slash number)? | (not numbers) ?
-    preg_match_all('/[0-9\/]+/', $string, $matches);
+    preg_match_all('/[0-9]+/', $string, $matches);
     $numbers = $matches[0];
-    preg_match_all('/[^0-9\/]+/', $string, $matches);
+    preg_match_all('/[^0-9]+/', $string, $matches);
     $chars = $matches[0];
     //Ensure the first value of the result array corresponds to a template string, not a numeric string
     if (is_numeric(substr($string, 0, 1))) {//if the format string started with a number

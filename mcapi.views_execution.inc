@@ -2,6 +2,7 @@
 
 use Drupal\views\ViewExecutable;
 use Drupal\views\Plugin\views\query\QueryPluginBase;
+use Drupal\views\Views;
 
 /**
  * implements hook_views_query_tag_alter().
@@ -10,8 +11,10 @@ use Drupal\views\Plugin\views\query\QueryPluginBase;
  *
  * @param Drupal\views\ViewExecutable $view
  * @param Drupal\views\Plugin\views\query\QueryPluginBase $query
+ * 
+ * @todo completely refactor
  */
-function mcapi_views_query_mcapi_transaction_alter(ViewExecutable $view, QueryPluginBase $query) {
+function __mcapi_views_query_mcapi_transaction_alter(ViewExecutable $view, QueryPluginBase $query) {
   list($base, $wallet_fields) = mcapi_views_query_alter_setup($view);
 
   $query->setWhereGroup('AND', 'both_wallets');
@@ -28,7 +31,7 @@ function mcapi_views_query_mcapi_transaction_alter(ViewExecutable $view, QueryPl
     $wallet_table = 'mcapi_wallet_' . $db_field_name;
     $details_field = $wallet_table . '.details';
     $query->addRelationship(
-      $wallet_table, Drupal\views\Views::pluginManager('join')->createInstance('standard', $wallet_join), $base
+      $wallet_table, Views::pluginManager('join')->createInstance('standard', $wallet_join), $base
     );
 
     $users_join = [
@@ -43,7 +46,9 @@ function mcapi_views_query_mcapi_transaction_alter(ViewExecutable $view, QueryPl
       ]
     ];
     $query->addRelationship(
-      'mcapi_wallet_access_designated', Drupal\views\Views::pluginManager('join')->createInstance('standard', $users_join), $base
+      'mcapi_wallet_access_designated', 
+      \Drupal\views\Views::pluginManager('join')->createInstance('standard', $users_join), 
+      $base
     );
 
     $wallet_operations = db_or();
@@ -51,16 +56,16 @@ function mcapi_views_query_mcapi_transaction_alter(ViewExecutable $view, QueryPl
     //if the wallet allows anyone to see
     $wallet_operations->condition($details_field, Wallet::ACCESS_ANY);
 
-    //or if we are logged in
-    if ($uid = \Drupal::CurrentUser()->id()) {
-      $wallet_operations->condition($details_field, Wallet::ACCESS_MEMBERS);
-      //or if the current user is named
-      $wallet_operations->condition(
-        db_and()
-          ->condition($details_field, Wallet::ACCESS_USERS)
-          ->condition('mcapi_wallet_access_designated.uid', $uid)
-      );
-    }
+    $wallet_operations->condition($details_field, Wallet::ACCESS_MEMBERS);
+    //or if the current user is named
+    $wallet_operations->condition(
+      db_and()
+        ->condition($details_field, Wallet::ACCESS_USERS)
+        ->condition('mcapi_wallet_access_designated.uid', $uid)
+    );
+    
+    //and the wallet owner can do anything
+    
 //    print_r($wallet_operations);
     $query->addWhere('both_wallets', $wallet_operations);
   }

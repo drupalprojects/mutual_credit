@@ -64,7 +64,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    * @return array
    *   the value expressed in parts, e.g. pounds, shillings and pence
    */
-  function formatted_parts($raw_num);
+  function formattedParts($raw_num);
 
 }
 

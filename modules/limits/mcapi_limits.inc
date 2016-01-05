@@ -1,9 +1,6 @@
 <?php
 
-use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\mcapi\Entity\WalletInterface;
-use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Exchange;
 
 /**
@@ -16,12 +13,12 @@ function template_preprocess_mcapi_limits_absolute(&$vars) {
 
   $limits = \Drupal::service('mcapi_limits.wallet_limiter')
     ->setwallet($vars['wallet']);
-  $vars['balanceformatted'] = $currency->format($summary['balance'], Currency::FORMAT_NORMAL);
-  $vars['minformatted'] = $currency->format($limits->min($curr_id), Currency::FORMAT_NORMAL);
-  $vars['maxformatted'] = $currency->format($limits->max($curr_id), Currency::FORMAT_NORMAL);
-  $vars['min'] = $currency->format($limits->min($curr_id), Currency::FORMAT_PLAIN);
-  $vars['max'] = $currency->format($limits->max($curr_id), Currency::FORMAT_PLAIN);
-  $vars['balance'] = $currency->format($summary['balance'], Currency::FORMAT_PLAIN);
+  $vars['balanceformatted'] = $currency->format($summary['balance'], Currency::DISPLAY_NORMAL);
+  $vars['minformatted'] = $currency->format($limits->min($curr_id), Currency::DISPLAY_NORMAL);
+  $vars['maxformatted'] = $currency->format($limits->max($curr_id), Currency::DISPLAY_NORMAL);
+  $vars['min'] = $currency->format($limits->min($curr_id), Currency::DISPLAY_PLAIN);
+  $vars['max'] = $currency->format($limits->max($curr_id), Currency::DISPLAY_PLAIN);
+  $vars['balance'] = $currency->format($summary['balance'], Currency::DISPLAY_PLAIN);
 }
 
 /**
@@ -61,9 +58,9 @@ function template_preprocess_mcapi_limits_balanced(&$vars) {
   
   $limiter = \Drupal::service('mcapi_limits.wallet_limiter')
     ->setwallet($wallet);
-  $vars['balance'] = $currency->format($summary['balance'], Currency::FORMAT_PLAIN);
-  $vars['min'] = $currency->format($limits->min($curr_id), Currency::FORMAT_PLAIN);
-  $vars['max'] = $currency->format($limits->max($curr_id), Currency::FORMAT_PLAIN);
+  $vars['balance'] = $currency->format($summary['balance'], Currency::DISPLAY_PLAIN);
+  $vars['min'] = $currency->format($limits->min($curr_id), Currency::DISPLAY_PLAIN);
+  $vars['max'] = $currency->format($limits->max($curr_id), Currency::DISPLAY_PLAIN);
 }
 
 
@@ -183,8 +180,11 @@ function limits_settings_subform($form, $form_state) {
  *   a renderable array
  */
 function mcapi_view_limits(WalletInterface $wallet, $curr_ids = []) {
-  $renderable = [];
-  $currencies = Exchange::currenciesAvailable($wallet);
+  
+  //@todo how do we attach css in twig or in preprocessing?
+  $renderable['#attached']['library'] = ['mcapi/mcapi.wallets', 'mcapi/mcapi.gchart'];
+  
+  $currencies = $wallet->currenciesAvailable();
   if ($curr_ids) {
     $currencies = array_intersect_key($currencies, array_flip($curr_ids));
   }
@@ -212,10 +212,6 @@ function mcapi_view_limits(WalletInterface $wallet, $curr_ids = []) {
       '#currency' => $currency,
     ];
   }
-  //@todo how do we attach css in twig or in preprocessing?
-  $renderable['#attached']['library']['mcapi/mcapi.wallets'];
-  //@todo how do we attach css in twig or in preprocessing?
-  $renderable['#attached']['library']['mcapi/mcapi.gchart'];
   return $renderable;
 }
 

@@ -103,7 +103,7 @@ class OneOffPayment extends RulesActionBase {//implements ContainerFactoryPlugin
     );
     $form['otherwallet'] = array(
     	'#title' => $this->t('Other wallet'),
-    	'#type' => 'select_wallet',
+    	'#type' => 'wallet_reference_autocomplete',
     	'#default_value' => $this->configuration['otherwallet'],
     	'#weight' => $w++
     );

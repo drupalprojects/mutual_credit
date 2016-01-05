@@ -3,6 +3,7 @@ mcapi.admin.transaction:
   title: 'Log Transaction'
   appears_on:
     - mcapi.admin
+    - view.mcapi_transactions.admin
 
 mcapi.admin.currency.add:
   route_name: mcapi.admin_currency_add

@@ -11,85 +11,99 @@ namespace Drupal\mcapi_exchanges\Form;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Template\Attribute;
-
+use Drupal\Component\Utility\SafeMarkup;
 
 class ExchangeWizard extends ExchangeForm {
-
+  
   /**
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
   public function form(array $form, FormStateInterface $form_state) {
-    //this is a default exchange object
-    //it references user 1 as manager and cc as currency
-    $exchange = $this->entity;
-
-    $form = parent::form($form, $form_state);
-    //to the exchange form we are going to add a few possibilities
-    //allow to choose no user as manager and specfify a new user account below.
-    if (\Drupal::currentUser()->hasPermission('administer users')) {
-      //@todo I'd really like to use \Drupal\user\AccountForm::form() here
-      //but it is abstract class and nonstatic method
-      //and I don't know OOP well enough!
-      $form['uid']['#required'] = FALSE;
-      $form['uid']['#empty_option'] = t('- Create new -');
-      $form['manager_new'] = array(
-        '#title' => t('Create new exchange manager'),
-        '#type' => 'details',
-        '#open' => TRUE,
-        '#tree' => TRUE,
-        '#weight' => $form['uid']['#weight']+1,
-        'username' => array(
-          '#title' => $this->t('Username'),
-          '#type' => 'textfield',
-          '#maxlength' => USERNAME_MAX_LENGTH,
-          '#description' => $this->t('Spaces are allowed; punctuation is not allowed except for periods, hyphens, apostrophes, and underscores.'),
-          '#attributes' => new Attribute(array(
-            'class' => array('username'),
-            'autocorrect' => 'off',
-            'autocapitalize' => 'off',
-            'spellcheck' => 'false',
-          )),
-          '#weight' => 1,
-        ),
-        'pass' => array(
-          '#type' => 'password',
-          '#title' => $this->t('Password'),
-          '#size' => 25,
-          '#weight' => 2,
-          // Do not let web browsers remember this password, since we are
-          // trying to confirm that the person submitting the form actually
-          // knows the current one.
-          '#attributes' => new Attribute(array('autocomplete' => 'off')),
-        ),
-        'mail' => array(
-          '#title' => $this->t('E-mail address'),
-          '#description' => $this->t('A valid e-mail address. All e-mails from the system will be sent to this address. The e-mail address is not made public and will only be used if you wish to receive a new password or wish to receive certain news or notifications by e-mail.'),
-          '#type' => 'email',
-          '#default_value' => '',
-          '#weight' => 3,
-        ),
-        'roles' => array(
-          '#type' => 'checkboxes',
-          '#title' => $this->t('Roles'),
-          '#default_value' => [],
-          '#options' => array_map('check_plain', user_role_names(TRUE)),
-          '#weight' => 4,
-        ),
-        'notify' => array(
-          '#type' => 'checkbox',
-          '#title' => $this->t('Notify user of new account'),
-          '#weight' => 5,
-        ),
-        '#states' => array(
-          'visible' => array(
-            ':input[name="uid"]' => array('value' => '')
-          )
-        )
-      );
-      unset($form['manager_new']['roles']['#options'][DRUPAL_AUTHENTICATED_RID]);
+    if (!$form_state->get('exchange')) {
+      $form['#title'] = t('Create exchange wizard');
+      $form = $this->exchangeForm($form, $form_state);
     }
-
+    elseif(!$form_state->get('manager')) {
+      $form['#title'] = $this->t('Who will manage %exchange?', ['%exchange' => $form_state->get('exchange')->label()]);
+      $form = $this->managerForm($form, $form_state);
+    }
+    elseif(!$form_state->get('currency')) {
+      $form['#title'] = $this->t('What is the new currency of %exchange?', ['%exchange' => $form_state->get('exchange')->label()]);
+      $form = $this->currencyForm($form, $form_state);
+    }
+    return $form;
+  }
+    
+  function exchangeForm($form, $form_state) {
+    $form = parent::form($form, $form_state);
+    
+    $form['uid']['#options'] = [0 => '--'.t('New user').'--'] + $form['uid']['#options'];
+    unset($form['uid']['#default_value']);
+    unset($form['uid']['#required']);
+    
+    $form['new_currency'] = [
+      '#title' => $this->t('Make a new currency'),
+      '#type' => 'checkbox',
+      '#weight' => $form['currencies']['#weight']+1
+    ];
+    $form['currencies']['#title'] = t('Use exising currencies');
+    unset($form['currencies']['widget']['#required']);//@todo temp remove this
+    //existing and new currencies
+    return $form;
+  }
+  
+  function managerForm(&$form, $form_state) {
+    //this is equivalent to the user create form
+    $form['subtitle'] = [
+      '#markup' => t('Create a new user to manage the exchange'),
+      '#weight' => -1
+    ];
+    $form['username'] = [
+      '#title' => $this->t('Username'),
+      '#type' => 'textfield',
+      '#maxlength' => USERNAME_MAX_LENGTH,
+      '#description' => $this->t('Spaces are allowed; punctuation is not allowed except for periods, hyphens, apostrophes, and underscores.'),
+      '#attributes' => [
+        'class' => array('username'),
+        'autocorrect' => 'off',
+        'autocapitalize' => 'off',
+        'spellcheck' => 'false',
+      ],
+      '#required' => TRUE,
+      '#weight' => 1,
+    ];
+    $form['pass'] = [
+      '#type' => 'password',
+      '#title' => $this->t('Password'),
+      '#size' => 25,
+      '#weight' => 2,
+      // Do not let web browsers remember this password, since we are
+      // trying to confirm that the person submitting the form actually
+      // knows the current one.
+      '#attributes' => ['autocomplete' => 'off'],
+      '#required' => TRUE,
+    ];
+    $form['mail'] = [
+      '#title' => $this->t('E-mail address'),
+      '#description' => $this->t('A valid e-mail address. All e-mails from the system will be sent to this address. The e-mail address is not made public and will only be used if you wish to receive a new password or wish to receive certain news or notifications by e-mail.'),
+      '#type' => 'email',
+      '#default_value' => '',
+      '#weight' => 3,
+      '#required' => TRUE,
+    ];
+    $form['notify_new_manager'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Notify user of new account'),
+      '#weight' => 5,
+    ];
+    return $form;
+  }
+  
+  function currencyForm($form, $form_state) {
+    $form['subtitle'] = [
+      '#markup' => t('Create a new currency.'),
+      '#weight' => -1
+    ];
     //and we allow to choose from existing currencies AND create a new one
     //NB currencies are entity_reference field API, hard coded onto the Exchange entity
     $form['currencies']['widget']['#title'] = t('Existing currencies');
@@ -98,79 +112,93 @@ class ExchangeWizard extends ExchangeForm {
     unset($form['currencies']['widget'][0]['target_id']['#required']);
     //and we allow to choose from existing currencies AND create a new one
     //NB currencies are entity_reference field API, hard coded onto the Exchange entity
-    $form['currencies_new'] = array(
-      '#title' => t('New currency...'),
-      '#type' => 'details',
-      '#open' => FALSE,
-      '#weight' => 10,
-      'currency_name' => array(
-        '#title' => t('New currency name'),
-        '#description' => t('Use the plural'),
-        '#type' => 'textfield',
-        '#size' => 40,
-        '#maxlength' => 80,
-      ),
-      'ticks' => array(
-        '#title' => t('Currency value, expressed in @units', array('@units' => \Drupal::config('mcapi.settings')->get('ticks_name'))),
-        '#type' => 'number',
-        '#min' => 0,
-        '#weight' => 6
-      )
-    );
-
+    $form['currency_name'] = [
+      '#title' => t('New currency name'),
+      '#description' => t('Use the plural'),
+      '#type' => 'textfield',
+      '#size' => 40,
+      '#maxlength' => 80,
+    ];
+    $form['id'] = [
+      '#type' => 'machine_name',
+      '#maxlength' => 128,
+      '#machine_name' => [
+        'exists' => '\Drupal\mcapi\Entity\Currency::load',
+        'source' => ['currency_name'],
+      ],
+      '#description' => $this->t('A unique machine-readable name for this Currency. It must only contain lowercase letters, numbers, and underscores.'),
+    ];
     return $form;
   }
 
-  public function validate(array $form, FormStateInterface $form_state) {
-    //check that the new name is unique
-    parent::validate($form, $form_state);
-
-    $values = $form_state->getValues();
-    //validate the new user, if required
-      $user_values = $values['manager_new'];
-    if ($user_values['username']) {
-      if (empty($user_values['pass']) || empty($user_values['mail'])) {
-        $form_state->setErrorByName('username', $this->t('New user must have mail and password'));
-      }
-      //validate the username
-      //would rather have used Accountform::validate()
-      if ($error = user_validate_name($user_values['username'])) {
-        $form_state->setErrorByName('username', $error);
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    
+    if (!$form_state->get('exchange')) {
+      $this->validateExchange($form, $form_state);
+    }
+    elseif(!$form_state->get('manager')) {
+      $this->validateManager($form, $form_state);
+    }
+    elseif(!$form_state->get('currency')) {
+      $this->validateCurrency($form, $form_state);
+    }
+    
+    if (!$form_state->get('exchange') || !$form_state->get('manager') || !$form_state->get('currency')) {
+      $form_state->setRebuild(TRUE);
+    }
+    
+  }
+  
+  function validateExchange($form, FormStateInterface $form_state) {
+    $validated_exchange = parent::validateForm($form, $form_state);
+    if ($uid = $form_state->getValue('uid')) {
+      if ($manager = User::load($uid))  {
+        $form_state->set('manager', TRUE);
       }
       else {
-        if (entity_load_multiple_by_properties('user', array('name' => $user_values['username']))) {
-          $form_state->setErrorByName('manager_new][username', $this->t('The name %name is already taken.', array('%name' => $form_state['values']['username'])));
-        }
+        $form_state->setErrorByName('uid', $this->t('Unknown user cannot manage an exchange.'));
       }
-
-      if (entity_load_multiple_by_properties('user', array('mail' => $user_values['mail']))) {
-        $this->setErrorByName('username', $this->t('The e-mail address %email is already taken.', array('%email' => $user_values['mail'])));
-      }
-      $defaults = array(
-        'name' => $user_values['username'],
-        'mail' => $user_values['mail'],
-        'pass' => $user_values['pass'],
-//@todo we need a role configured to be the exchange manager
-        'roles' => []
-      );
-      $this->manager = User::Create($defaults);
-
-      //@todo how now to validate the user entity? $this->manager->validate() coming after alpha12?
     }
-    else {
-      $this->manager = User::load($values['uid']);
+    if (!$form_state->getValue('new_currency')) {
+      $form_state->set('currency',  TRUE);
     }
-    if (!$this->manager->hasPermission('manage own exchanges') && !$this->manager->hasPermission('manage mcapi')) {
-      $form_state->setErrorByName('uid', $this->t('Exchange manager does not have permission'));
+    if (!$form_state->getErrors()) {
+      $form_state->set('exchange', $validated_exchange);
     }
-    $defaults = array(
-      'name' => $values['currency_name'],
-      'ticks' => $values['ticks']
-    );
-    $this->currency = Currency::create($defaults);
-    //@todo handle violations
-    foreach ($this->currency->validate() as $field => $violation) {
-      $form_state->setErrorByName($field, (string) $violation);
+  }
+  
+  function validateManager($form, FormStateInterface $form_state) {
+    $account = User::create([
+      'name' => $form_state->getValue('username'),
+      'pass' => $form_state->getValue('pass'),
+      'mail' => $form_state->getValue('mail'),
+      'status' => TRUE,
+      'roles' => []
+    ]);
+    $form_state->set('notifyMananger', $form_state->getValue('notify_new_manager'));
+    
+    $violations = $account->validate()
+      ->filterByFieldAccess($this->currentUser())
+      ->filterByFields(array_diff(array_keys($account->getFieldDefinitions()), $this->getEditedFieldNames($form_state)));
+    $this->flagViolations($violations, $form, $form_state);
+    //@todo might need to implement getEditedFieldNames and flagfieldViolations
+    
+    if (!$form_state->getErrors()) {
+      $form_state->set('manager', $account);
+    }
+  }
+  
+  function validateCurrency($form, FormStateInterface $form_state) {
+    //can't think of any validation to do here
+    $currency = Currency::create([
+      'id'  => $form_state->getValue('id'),
+      'name' => SafeMarkup::checkPlain($form_state->getValue('id')),
+    ]);
+    
+    //@todo what if the currency name isn't unique/
+    
+    if (!$form_state->getErrors()) {
+      $form_state->set('currency', $currency);
     }
   }
 
@@ -178,35 +206,38 @@ class ExchangeWizard extends ExchangeForm {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    $values = $form_state->getValues();
-    if (isset($this->manager)) {
-      $this->manager->save();
-      if ($values['manager_new']['notify']) {
+    
+    $this->entity = $form_state->get('exchange');//which was already validated
+    $currency = $form_state->get('currency');
+    $manager = $form_state->get('manager');
+    
+    if (is_object($manager)) {
+      $manager->save();
+      if ($form_state->get('notifyMananger')) {
         //see RegisterForm::Save()
-        if (_user_mail_notify('register_admin_created', $this->manager)) {
-          drupal_set_message($this->t('A welcome message with further instructions has been e-mailed to the new user <a href="@url">%name</a>.', array('@url' => $account->url(), '%name' => $account->getAccountName())));
+        if (_user_mail_notify('register_admin_created', $manager)) {
+          drupal_set_message(
+            $this->t(
+              'A welcome message with further instructions has been e-mailed to the new user <a href="@url">%name</a>.', 
+              ['@url' => $account->url(), '%name' => $manager->getAccountName()]
+            )
+          );
         }
       }
-    }
-    foreach ($values['currencies'] as $item) {
-      if ($item['target_id']) {
-        $curr_ids[] = $currency;
-      }
-    }
-    if (isset($this->currency)) {
-      $this->currency->save();
-      $curr_ids[] = $this->currency->id();
+      $this->entity->uid->setValue($manager);
     }
 
-    $this->entity->get('currencies')->setValue($curr_ids);
-    $this->entity->get('uid')->setValue($this->manager);
-    $this->entity->save();
-
+    if (is_object($currency)) {
+      $currency->save();
+      //add this new currency to any other selected currencies
+      //there's no quicker way I think
+      $currencies = $this->entity->currencies->referencedEntities();
+      $currencies[] = $currency;
+      $this->entity->currencies->setValue($currencies);
+    }
+    
     $status = parent::save($form, $form_state);//this will also redirect
-    //now we know the exchange ID we can put the manager user in this new exchange
-    $this->manager->get('exchanges')->setValue(array($this->entity->id()));
-    $this->manager->save();
-
+    $form_state->setRedirect('mcapi.admin_exchange_list');
   }
 
 }

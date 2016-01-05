@@ -1,0 +1,6 @@
+services:
+  mcapi_exchanges.route.subscriber:
+    class: Drupal\mcapi_exchanges\Routing\RouteSubscriber
+    arguments: [@config.factory]
+    tags:
+     - { name: event_subscriber }

@@ -16,6 +16,7 @@ use Drupal\Core\Template\Attribute;
 use Drupal\system\Entity\Action;
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\Entity\State;
+use Drupal\mcapi\Mcapi;
 
 /**
  * Displays the workflow page in the management menu admin/accounting/workflow
@@ -99,7 +100,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
         'style' => 'width:100%'
       ],
     ];
-    foreach (mcapi_load_transaction_actions() as $action_id => $action) {
+    foreach (Mcapi::transactionActionsLoad() as $action_id => $action) {
       if ($action->getPlugin() instanceOf \Drupal\mcapi\Plugin\TransactionActionBase) {
         $form['plugins'][$action_id] = $this->buildRow($action);
       }

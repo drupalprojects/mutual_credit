@@ -3,6 +3,8 @@
 
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Mcapi;
 
 
 /*
@@ -119,7 +121,7 @@ function mcapi_command_get_uid($string) {
   $wid = $query->execute()->fetchField();
 
   $curr_id = $config->get('commands_currcode');
-  $currency = mcapi_currency_load($curr_id);
+  $currency = Currency::load($curr_id);
   if (!$wid) {
     throw new Exception(t('Unknown wallet: @string', array('@string' => $string)));
   }
@@ -157,7 +159,7 @@ function mcapi_command_sms_incoming($op, $number, $message) {
     $curr_id = \Drupal::config('mcapi.command')->get('commands_currcode ');
 
     $stats = $wallet->getStats($curr_id);
-    $currency = mcapi_currency_load($curr_id);
+    $currency = Currency::load($curr_id);
 
     $response = t(
       "Transaction created. Your new balance is @num",
@@ -166,7 +168,7 @@ function mcapi_command_sms_incoming($op, $number, $message) {
     );
   }
   else {
-    $states = mcapi_entity_label_list('mcapi_state');
+    $states = Mcapi::entityLabelList('mcapi_state');
     $response = t(
       "Transaction created into state '@state'",
       array('@state' => $states[$transaction->state]),

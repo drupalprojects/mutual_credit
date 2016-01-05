@@ -6,6 +6,8 @@
  */
 
 namespace Drupal\mcapi\Element;
+
+use Drupal\mcapi\Mcapi;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\Radios;
 use Drupal\Core\Render\Element\Checkboxes;
@@ -42,7 +44,7 @@ class Types extends Radios {
    *   the processed $element
    */
   static function processTypes($element, $form_state) {
-    $element['#options'] = mcapi_entity_label_list('mcapi_type');
+    $element['#options'] = Mcapi::entityLabelList('mcapi_type');
     if ($element['#multiple']) {
       $element['#theme_wrappers'] = ['checkboxes'];
      // $element['theme_wrappers'] = array('checkboxes');

@@ -1,3 +1,4 @@
+uuid: 7c56b87e-0018-4a45-8000-0f1a844423f6
 langcode: en
 status: true
 dependencies:
@@ -91,7 +92,7 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          label: ''
+          label: 'Wallet name'
           exclude: false
           alter:
             alter_text: false
@@ -132,10 +133,148 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
+          link_to_entity: 1
           link: 1
           entity_type: mcapi_wallet
           plugin_id: mcapi_wallet_label
-      filters: {  }
+        holder:
+          id: holder
+          table: mcapi_wallet
+          field: holder
+          relationship: none
+          group_type: group
+          admin_label: ''
+          label: 'Holding entity'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          entity_type: mcapi_wallet
+          plugin_id: mcapi_wallet_holder
+        nothing:
+          id: nothing
+          table: views
+          field: nothing
+          relationship: none
+          group_type: group
+          admin_label: ''
+          label: ''
+          exclude: false
+          alter:
+            alter_text: true
+            text: 'Need to add the wallet balance and turnover...'
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: false
+          plugin_id: custom
+      filters:
+        name:
+          id: name
+          table: mcapi_wallet
+          field: name
+          relationship: none
+          group_type: group
+          admin_label: ''
+          operator: '!='
+          value: _intertrading
+          group: 1
+          exposed: false
+          expose:
+            operator_id: ''
+            label: ''
+            description: ''
+            use_operator: false
+            operator: ''
+            identifier: ''
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          entity_type: mcapi_wallet
+          entity_field: name
+          plugin_id: string
       sorts: {  }
       title: Wallets
       header: {  }
@@ -186,6 +325,13 @@ display:
       field_langcode_add_to_query: null
       display_extenders: {  }
       display_comment: 'Its all about the Contextual filter default'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+      tags: {  }
   block_1:
     display_plugin: block
     id: block_1
@@ -243,6 +389,13 @@ display:
       defaults:
         arguments: false
       display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+      tags: {  }
   embed_full_wallet:
     display_plugin: embed
     id: embed_full_wallet
@@ -306,6 +459,13 @@ display:
           plugin_id: standard
           provider: views
       display_description: ''
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+      tags: {  }
   owned_wallets:
     display_plugin: block
     id: owned_wallets
@@ -361,3 +521,62 @@ display:
       defaults:
         arguments: false
       display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+      tags: {  }
+  page_1:
+    display_plugin: page
+    id: page_1
+    display_title: 'Wallets page'
+    position: 4
+    display_options:
+      display_extenders: {  }
+      display_description: ''
+      style:
+        type: table
+        options:
+          grouping: {  }
+          row_class: ''
+          default_row_class: true
+          override: true
+          sticky: false
+          caption: ''
+          summary: ''
+          description: ''
+          columns:
+            label: label
+          info:
+            label:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          default: '-1'
+          empty_table: false
+      defaults:
+        style: false
+        row: false
+        arguments: false
+      row:
+        type: fields
+        options:
+          default_field_elements: false
+          inline: {  }
+          separator: ''
+          hide_empty: false
+        provider: views
+      path: wallets
+      arguments: {  }
+    cache_metadata:
+      max-age: 0
+      contexts:
+        - 'languages:language_interface'
+        - url.query_args
+      tags: {  }
+

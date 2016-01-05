@@ -8,6 +8,7 @@
 
 namespace Drupal\mcapi\Form;
 
+use Drupal\mcapi\Mcapi;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
@@ -29,7 +30,7 @@ class TransactionEditForm extends ContentEntityForm {
 
     $form['type'] = [
       '#title' => t('Transaction type'),
-      '#options' => mcapi_entity_label_list('mcapi_type'),
+      '#options' => Mcapi::entityLabelList('mcapi_type'),
       '#type' => 'mcapi_types',
       '#default_value' => $transaction->get('type')->target_id,
       '#required' => TRUE,

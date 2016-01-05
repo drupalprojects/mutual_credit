@@ -26,13 +26,13 @@ class TransactionViewsData extends EntityViewsData {
     $data['mcapi_transaction']['state']['field']['id'] = 'mcapi_state';
     $data['mcapi_transaction']['state']['filter'] = [
       'id' => 'in_operator',
-      'options callback' => 'mcapi_entity_label_list',
+      'options callback' => '\Drupal\mcapi\Mcapi::entityLabelList',
       'options arguments' => ['mcapi_state']
     ];
     $data['mcapi_transaction']['type']['field']['id'] = 'mcapi_type';
     $data['mcapi_transaction']['type']['filter'] = [
       'id' => 'in_operator',
-      'options callback' => 'mcapi_entity_label_list',
+      'options callback' => '\Drupal\mcapi\Mcapi::entityLabelList',
       'options arguments' => ['mcapi_type']
     ];
 
@@ -80,7 +80,7 @@ class TransactionViewsData extends EntityViewsData {
       'title' => 'Payer',
       'id' => 'standard'
     ];
-    $data['mcapi_transaction']['payer']['help'] = $this->t('The wallet which was credited');
+    $data['mcapi_transaction']['payee']['help'] = $this->t('The wallet which was credited');
     $data['mcapi_transaction']['payee']['relationship'] = [
       'base' => 'mcapi_wallet',
       'base field' => 'wid',
@@ -88,6 +88,7 @@ class TransactionViewsData extends EntityViewsData {
       'title' => 'Payee',
       'id' => 'standard'
     ];
+    debug($data['mcapi_transaction']['payer']);
     /*
     $data['mcapi_transaction']['transaction_bulk_form'] = [
       'title' => t('Bulk update'),
@@ -198,7 +199,7 @@ class TransactionViewsData extends EntityViewsData {
       ],
       'filter' => [
         'id' => 'in_operator',
-        'options callback' => 'mcapi_entity_label_list',
+        'options callback' => '\Drupal\mcapi\Mcapi::entityLabelList',
         'options arguments' => ['mcapi_state']
       ],
       'sort' => [
@@ -214,7 +215,7 @@ class TransactionViewsData extends EntityViewsData {
       ],
       'filter' => [
         'id' => 'in_operator',
-        'options callback' => 'mcapi_entity_label_list',
+        'options callback' => '\Drupal\mcapi\Mcapi::entityLabelList',
         'options arguments' => ['mcapi_type']
       ],
       'sort' => [
@@ -319,7 +320,7 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'in_operator',
         //a less blunt callback could be imagined
         //or even a custom handler which would have access to the view
-        'options callback' => 'mcapi_entity_label_list',
+        'options callback' => '\Drupal\mcapi\Mcapi::entityLabelList',
         'options arguments' => ['mcapi_currency']
       ],
       'argument' => [

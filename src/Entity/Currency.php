@@ -59,9 +59,9 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   const TYPE_COMMODITY = 1;
   const TYPE_EXCHANGE = 0;
   
-  const FORMAT_NATIVE = 1;//the raw integer value held in the database e.g.5400
-  const FORMAT_NORMAL = 2;//the text value for display eg 1hr 30 mins
-  const FORMAT_PLAIN = 3;//formatted to appear as a number but without e.g 1.30
+  const DISPLAY_NATIVE = 1;//the raw integer value held in the database e.g.5400
+  const DISPLAY_NORMAL = 2;//the text value for display eg 1hr 30 mins
+  const DISPLAY_PLAIN = 3;//formatted to appear as a number but without e.g 1.30
     
   public $id;
 
@@ -112,6 +112,14 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * @var integer
    */
   public $weight;
+  
+  /**
+   * the value of the currency as a multiple of the ticks_name
+   * NB this is used for all internal accounting
+   *
+   * @var integer
+   */
+  public $ticks;
 
   /*
    * the $format is an intricately formatted expression which tells the system
@@ -141,7 +149,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       'format' => ['$', 0, '.', '99'],
       'zero' => FALSE,
       'color' => '000',
-      'deletion' => SELF::UNDO_ERASE,
       'weight' => 0,
     );
   }
@@ -150,15 +157,14 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * {@inheritdoc}
    */
   public function transactions(array $conditions = [], $serial = FALSE) {
-    $serials = [];
-    if ($this->id()) {
-      $conditions += array('curr_id' => $this->id());
-      $serials = $this->entityTypeManager()
-        ->getStorage('mcapi_transaction')
-        ->filter($conditions);
-      if ($serial) {
-        $serials = array_unique($serials);
-      }
+    $serials = $this->entityTypeManager()
+      ->getStorage('mcapi_transaction')
+      ->getQuery()
+      ->condition('worth.curr_id', $this->id())
+      ->condition('state', TRANSACTION_STATE_ERASED, '<>')
+      ->execute();
+    if ($serial) {
+      $serials = array_unique($serials);
     }
     return count($serials);
   }
@@ -205,23 +211,22 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * {@inheritdoc}
    */
-  function format($raw_num, $format = SELF::FORMAT_NORMAL) {
+  function format($raw_num, $display = SELF::DISPLAY_NORMAL) {
     //ensure its not a string
     $raw_num += 0;
-    if (!is_integer($raw_num))mtrace();
     $raw_num = (int)$raw_num;
-    if ($format == SELF::FORMAT_NATIVE) {
+    if ($display == SELF::DISPLAY_NATIVE) {
       return $raw_num;
     }
     //if there is a minus sign this needs to go before everything
     $minus_sign = $raw_num < 0 ? '-' : '';
-    $parts = $this->formatted_parts(abs($raw_num));
+    $parts = $this->formattedParts(abs($raw_num));
     //now replace the parts back into the number format
     $output = $this->format;
     foreach ($parts as $key => $num) {
       $output[$key] = $num;
     }
-    if ($format == SELF::FORMAT_PLAIN) {
+    if ($display == SELF::DISPLAY_PLAIN) {
       //convert 1hr 23mins to 1.23
       //replace likely separators with decimal point dots
       //hopefully that's all of them
@@ -237,7 +242,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * {@inheritdoc}
    */
-  public function formatted_parts($raw_num) {
+  public function formattedParts($raw_num) {
     $first = TRUE;
     foreach (array_reverse($this->format_nums, TRUE) as $key => $subunits) {//e.g 59
       //remove the divisor of the subunits, which is only for widgets
@@ -296,9 +301,9 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   
   static function formats() {
     return [
-      Currency::FORMAT_NORMAL => t('Normal'),
-      Currency::FORMAT_NATIVE => t('Native integer'),
-      Currency::FORMAT_PLAIN => t('Force decimal (Rarely needed)')
+      Currency::DISPLAY_NORMAL => t('Normal'),
+      Currency::DISPLAY_NATIVE => t('Native integer'),
+      Currency::DISPLAY_PLAIN => t('Force decimal (Rarely needed)')
     ];
   }
   
@@ -325,7 +330,9 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       if (isset($calc[1])) {
         $parts[3] = rand(0, intval($calc[1]))* $num/$calc[1];
       }
-      else $parts[3]  = rand(0, $num);
+      else {
+        $parts[3] = rand(0, $num);
+      }
     }
     return $this->unformat($parts);
   }

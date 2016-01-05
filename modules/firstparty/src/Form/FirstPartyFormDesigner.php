@@ -8,6 +8,7 @@
 
 namespace Drupal\mcapi_1stparty\Form;
 
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\EntityForm;
@@ -146,7 +147,7 @@ class FirstPartyFormDesigner extends EntityForm {
     $form['steps'] = [
       '#title' => $this->t('Field settings'),
       '#description' => '('.$this->t(
-        "You may need to enable fields at !link",
+        "You may need to enable fields at %link",
         [
           '%link' => $this->l(
             $this->t('Manage form display'),
@@ -192,7 +193,7 @@ class FirstPartyFormDesigner extends EntityForm {
     ];
     $form['partner']['preset'] = [
       '#title' => $this->t('Preset'),
-      '#type' => 'select_wallet',
+      '#type' => 'wallet_reference_autocomplete',
       '#role' => 'null',
       '#default_value' => $configEntity->partner['preset'] ? Wallet::load($configEntity->partner['preset']) : NULL,
       '#multiple' => FALSE,
@@ -280,7 +281,7 @@ class FirstPartyFormDesigner extends EntityForm {
     ];
 
     $form['#suffix'] = $this->t(
-      "N.B The confirmation page is configured separately, at !link",
+      "N.B The confirmation page is configured separately, at %link",
       ['%link' => $this->l(
         'admin/accounting/workflow/save',
         Url::fromRoute('entity.action.edit_form', ['action' => 'transaction_save'])
@@ -296,7 +297,7 @@ class FirstPartyFormDesigner extends EntityForm {
     $max = $this->config('mcapi.settings')->get('entity_types')['user:user'];
     $text = $form_state->getValue('experience')['twig'];
     $mywallet = !is_bool(strpos($txt, "{{ mywallet }}"));
-    if (mcapi_one_wallet_per_user_mode() && $mywallet){
+    if (Mcapi::maxWalletsOfBundle('user', 'user') == 1 && $mywallet){
       $message = $this->t(
         '@token token should be removed from template',
         ['@token' => '{{ mywallet }}']

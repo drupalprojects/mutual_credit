@@ -8,9 +8,9 @@
 
 namespace Drupal\mcapi\Plugin\Action;
 
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessResult;
+use Drupal\mcapi\Mcapi;
 
 /**
  * Confirmation form for creating a transaction
@@ -31,7 +31,7 @@ class Save extends \Drupal\mcapi\Plugin\TransactionActionBase {
       $result = FALSE;
     }
     else {
-      $result = $this->entityTypeManager->getAccessControlHandler('mcapi_transaction')->enoughWallets($account);
+      $result = Mcapi::enoughWallets($account->id());
     }
     if ($return_as_object) {
       return $result ? AccessResult::allowed() : AccessResult::forbidden();

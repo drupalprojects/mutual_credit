@@ -33,6 +33,7 @@ class WalletStorageSchema extends SqlContentEntityStorageSchema {
         ],
       ]
     ];
+    /*
     $schema['mcapi_wallets_access'] = [
       'description' => "Access settings for wallet's operations",
       'fields' => [
@@ -57,6 +58,8 @@ class WalletStorageSchema extends SqlContentEntityStorageSchema {
         'walletOpUser' => ['wid', 'operation', 'uid'],
       ],
     ];
+     * 
+     */
 
     return $schema;
   }

@@ -1,15 +1,5 @@
-#exchanges
-
-mcapi.exchange.intertrading:
-  path: '/admin/accounting/exchanges'
-  defaults:
-    _controller: \Drupal\mcapi_exchanges\Form\Config::Form
-    _title_callback: Configure Exchanges
-  requirements:
-    _permission: 'configure mcapi'
-    
 mcapi.admin_exchange_list:
-  path: '/admin/accounting/exchanges'
+  path: '/admin/structure/exchanges'
   defaults:
     _entity_list: 'mcapi_exchange'
     _title: Exchanges
@@ -17,16 +7,6 @@ mcapi.admin_exchange_list:
     _permission: 'manage mcapi'
   options:
     _admin_route: TRUE
-
-mcapi.exchange.view:
-  path: '/exchange/{mcapi_exchange}'
-  defaults:
-    _controller: '\Drupal\mcapi_exchanges\Controller\ExchangeController::page'
-    _title_callback: '\Drupal\mcapi_exchanges\Controller\ExchangeController::pageTitle'
-  requirements:
-  #this MUST be public if joining is to be allowed.
-    _access: 'TRUE'
-#    _entity_access: 'mcapi_exchange.view'
 
 mcapi.exchange.add:
   path: '/exchange/add'
@@ -37,15 +17,15 @@ mcapi.exchange.add:
     _entity_create_access: mcapi_exchange
   options:
     _admin_route: TRUE
-
-mcapi.exchange.edit:
-  path: '/exchange/{mcapi_exchange}/edit'
+    
+entity.mcapi_exchange.join:
+  path: '/exchange/{mcapi_exchange}/join'
   defaults:
-    _entity_form: 'mcapi_exchange.edit'
-    _title: 'Edit exchange'
+    _entity_form: 'user.join'
+    _title: 'Join exchange'
   requirements:
-    _entity_access: 'mcapi_exchange.update'
-
+    _access_user_register: 'TRUE'
+    
 mcapi.exchange.masspay:
   path: '/exchange/{mcapi_exchange}/masspay'
   defaults:
@@ -53,16 +33,9 @@ mcapi.exchange.masspay:
     _title: 'Mass payment'
   requirements:
     _entity_access: 'mcapi_exchange.manage'
+    
 
-mcapi.contact.exchange:
-  path: '/exchange/{mcapi_exchange}/contact'
-  defaults:
-    _title: 'Contact'
-    _controller: '\Drupal\mcapi_exchanges\Controller\ExchangeContactController::page'
-  requirements:
-    _access: 'TRUE'
-
-mcapi.exchange.enable_confirm:
+entity.mcapi_exchange.enable_confirm:
   path: '/exchange/{mcapi_exchange}/enable'
   defaults:
     _entity_form: 'mcapi_exchange.enable'
@@ -71,7 +44,7 @@ mcapi.exchange.enable_confirm:
   options:
     _admin_route: TRUE
 
-mcapi.exchange.disable_confirm:
+entity.mcapi_exchange.disable_confirm:
   path: '/exchange/{mcapi_exchange}/disable'
   defaults:
     _entity_form: 'mcapi_exchange.disable'
@@ -80,7 +53,7 @@ mcapi.exchange.disable_confirm:
   options:
     _admin_route: TRUE
 
-mcapi.exchange.delete_confirm:
+entity.mcapi_exchange.delete_confirm:
   path: '/exchange/{mcapi_exchange}/delete'
   defaults:
     _entity_form: 'mcapi_exchange.delete'
@@ -89,17 +62,20 @@ mcapi.exchange.delete_confirm:
   options:
     _admin_route: TRUE
 
+#@todo how is this being used?
 mcapi.exchange.intertrading:
   path: '/exchange/{mcapi_exchange}/balance'
   defaults:
-    _controller: \Drupal\mcapi_exchanges\Controller\ExchangeController::intertrading_wallet
+    _controller: \Drupal\mcapi_exchanges\Controller\ExchangeController::intertradingWallet
     _title_callback: \Drupal\mcapi_exchanges\Controller\ExchangeController::pageTitle
   requirements:
     _entity_access: 'mcapi_exchange.view'
-    
-mcapi.wallets.autocomplete.exchanges:
-  path: '/mcapi/walletcomplete/{exchanges}'
+
+#@todo how is this being used?
+mcapi.exchanges.dashboard:
+  path: '/admin/accounting/dashboard'
   defaults:
-    _controller: 'Drupal\mcapi_exchanges\Controller\ExchangesWalletAutocompleteController::autocomplete'
+    _controller: 'Drupal\mcapi_exchanges\Controller\DashboardController::page'
+    _title: 'Dashboard'
   requirements:
-    _permission: 'access content'
+    _permission: 'access administration pages'

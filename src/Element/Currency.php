@@ -7,6 +7,7 @@
 
 namespace Drupal\mcapi\Element;
 
+use Drupal\user\Entity\User;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
 use Drupal\Core\Render\Element\Checkboxes;
@@ -45,15 +46,15 @@ class Currency extends FormElement {
     if (empty($element['#options']) && !empty($element['#curr_ids'])) {
       //shows the intersection of all currencies and currencies provided
       $element['#options'] = array_intersect_key(
-        mcapi_entity_label_list('mcapi_currency', $element['#curr_ids']),
+        Mcapi::entityLabelList('mcapi_currency', $element['#curr_ids']),
         entity_load_multiple_by_properties('mcapi_currency', $conditions)
       );
     }
     elseif (empty($element['#options'])) {
-      $element['#options'] = mcapi_entity_label_list('mcapi_currency', $conditions);
+      $element['#options'] = Mcapi::entityLabelList('mcapi_currency', $conditions);
     }
     elseif ($element['#options'] == 'all') {
-      $element['#options'] = mcapi_entity_label_list('mcapi_currency');
+      $element['#options'] = Mcapi::entityLabelList('mcapi_currency');
     }
 
     if (count($element['#options']) == 1) {

@@ -7,6 +7,7 @@
 
 namespace Drupal\mcapi\Entity;
 
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\user\EntityOwnerInterface;
 
@@ -16,15 +17,9 @@ use Drupal\user\EntityOwnerInterface;
 interface WalletInterface extends ContentEntityInterface {
 
   /**
-   * get the user who is responsible for this wallet, that means either the
-   * user-holder, or the owner of the holder. This deliberately echos the EntityOwnerInterface
-   */
-  function getOwner();
-
-  /**
    * return the parent entity if there is one, otherwise return the wallet itself
    * 
-   * @return ContentEntityInterface
+   * @return EntityOwnerInterface
    *   The one entity to which this wallet belongs
    */
   function getHolder();
@@ -99,20 +94,35 @@ interface WalletInterface extends ContentEntityInterface {
   static function orphan(ContentEntityInterface $holder);
 
   /**
-   * get the ids of the wallets owned by the given entity
-   *
-   * @param WalletInterface $entity
-   *
-   * @return array
-   *   wallet ids belonging to the passed entity
-   */
-  static function heldBy(WalletInterface $entity);
-
-  /**
    * determine if the wallet is an intertrading wallet
    * 
    * @return boolean
    */
   function isIntertrading();
+  
+  /**
+   * 
+   * @return CurrencyInterface[]
+   *   keyed by currency id
+   * 
+   */
+  public function currenciesAvailable();
+  
+  /**
+   * Returns the entity owner's user entity.
+   *
+   * @return \Drupal\user\UserInterface
+   *   The owner user entity.
+   */
+  public function getOwner();
 
+
+  /**
+   * Returns the entity owner's user ID.
+   *
+   * @return int|null
+   *   The owner user ID, or NULL in case the user ID field has not been set on
+   *   the entity.
+   */
+  public function getOwnerId();
 }

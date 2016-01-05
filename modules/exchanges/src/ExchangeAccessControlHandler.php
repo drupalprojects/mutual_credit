@@ -10,10 +10,9 @@ namespace Drupal\mcapi_exchanges;
 use Drupal\Core\Entity\EntityAccessControlHandler;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Language\Language;
 use Drupal\Core\Access\AccessResult;
-use Drupal\mcapi\Exchanges;
 use Drupal\user\Entity\User;
+use Drupal\mcapi_exchanges\Entity\Exchange;
 
 
 /**
@@ -29,7 +28,7 @@ class ExchangeAccessControlHandler extends EntityAccessControlHandler  {
     $manager = $exchange->getOwnerId() == $account->id();
     if ($op == 'delete' && !$exchange->deletable($exchange)) {//can't delete undeletable exchanges
       $result = AccessResult::forbidden();
-      $result->cacheUntilEntityChanges($exchange);
+      $result;
     }
     elseif ($account->hasPermission('manage mcapi') || $manager) {//site admins can do anything
       $result = AccessResult::allowed();
@@ -38,18 +37,18 @@ class ExchangeAccessControlHandler extends EntityAccessControlHandler  {
     elseif ($op == 'view') {
       $visib = $exchange->get('visibility')->value;
       if (
-        $visib == 'public' ||
-        ($visib == 'restricted' && $account->id()) ||
-        ($visib == 'private' && $exchange->isMember(User::load($account->id())))
+        $visib == Exchange::VISIBILITY_TRANSPARENT ||
+        ($visib == Exchange::VISIBILITY_RESTRICTED && $account->id()) ||
+        ($visib == Exchange::VISIBILITY_PRIVATE && $exchange->hasMember(User::load($account->id())))
         ) {
         $result = AccessResult::allowed();
       }
       else {
-        $result =  AccessResult::forbidden();
+        $result = AccessResult::forbidden();
       }
       $result->cachePerUser();
     }
-    return $result;
+    return $result->cacheUntilEntityChanges($exchange);
   }
 
 }

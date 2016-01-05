@@ -7,6 +7,7 @@
 
 namespace Drupal\mcapi\Plugin\views\field;
 
+use Drupal\mcapi\Mcapi;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ResultRow;
@@ -26,7 +27,7 @@ class Type extends FieldPluginBase {
 
   function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
     parent::init($view, $display, $options);//is this needed?
-    $this->types = mcapi_entity_label_list('mcapi_type');
+    $this->types = Mcapi::entityLabelList('mcapi_type');
   }
 
   function render(ResultRow $values) {

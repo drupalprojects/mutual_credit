@@ -1,4 +1,7 @@
-mcapi.exchanges:
-  ticks_name:
-    type: String
-    label: Base unit
+mcapi_exchanges.settings:
+  type: config_object
+  label: 'Other configuration'
+  mapping:
+    force_group:
+      type: boolean
+      label: Every user is a member of one and only one groups

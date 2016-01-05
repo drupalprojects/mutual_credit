@@ -1,5 +1,5 @@
 mcapi.settings:
-  type: mapping
+  type: config_object
   label: 'Other configuration'
   mapping:
     sentence_template:
@@ -41,23 +41,10 @@ mcapi.settings:
       label: Send diagnostics to user 1 by mail
     active_relatives: 
       type: sequence
-      name: Transaction relatives
-    wallet_access:
-      type: mapping
-      label: Default wallet access setting
-      mapping: 
-        wallet_default_viewers:
-          type: string
-          label: 'Visible to'
-        wallet_default_payees:
-          type: string
-          label: 'Default payees'
-        wallet_default_payers:
-          type: string
-          label: 'Default payers'
-    display_format:
-      type: boolean
-      label: 'Display format'
+      label: Transaction relatives
+    payways: 
+      type: string
+      label: Payment direction
     entity_types:
       type: sequence
       label: Max number of wallets
@@ -74,6 +61,12 @@ mcapi.settings:
     wallet_log_tab:
       type: boolean
       label: Transaction log tab
+    wallet_widget_max_select:
+      type: integer
+      label: Dropdown threshhold
+    wallet_widget_max_radios:
+      type: integer
+      label: Radio button threshhold
     autoadd:
       type: boolean
       label: 'Auto-create a wallet for every new user'
@@ -81,24 +74,15 @@ mcapi.settings:
       type: boolean
       label: 'Show unused currency stats in wallet view.'
       sequence: { }
-    details:
-      type: map
-      label: 'View transaction log'
-    summary:
-      type: map
-      label: 'View summary'
-    payin:
-      type: map
-      label: 'Pay into this wallet'
-    payout:
-      type: map
-      label: 'Pay out of this wallet'
     threshhold:
       type: integer
       label: 'If there are more wallets to choose from than this number, the autocomplete widget will be used.'
     widget:
       type: string
       label: 'The preferred widget to select from a small number of wallets.'
+    ticks_name:
+      type: String
+      label: Base accounting unit
 
 mcapi.currency.*:
   type: config_entity

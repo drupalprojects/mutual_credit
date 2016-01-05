@@ -44,13 +44,17 @@ mcapi.admin_wallets:
     _title: 'Wallet Settings'
   requirements:
     _permission: 'configure mcapi'
-
-mcapi.wallets.autocomplete:
-  path: '/mcapi/walletcomplete/{role}'
+    
+mcapi.transaction.add:
+  path: /transaction/add
   defaults:
-    _controller: 'Drupal\mcapi\Controller\WalletAutocompleteController::autocomplete'
+    _entity_form: mcapi_transaction.admin
+    _title: 'Log transaction'
   requirements:
-    _permission: 'access user profiles'
+    _permission: 'manage mcapi'
+    _entity_create_access: mcapi_transaction
+  options:
+    _admin_route: TRUE
 
 mcapi.admin.transaction_form.list:
   path: '/admin/accounting/forms'
@@ -76,3 +80,4 @@ mcapi.masspay.many21:
     _title: 'Many wallets pay one'
   requirements:
     _permission: 'manage mcapi'
+

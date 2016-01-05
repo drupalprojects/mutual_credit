@@ -19,22 +19,14 @@ active_relatives:
   payer: payee
 entity_types:
   'user:user': 1
-display_format: '!o'
+payways: I
 access_personalised: 0
 wallet_tab: 1
 wallet_inex_tab: 1
 wallet_log_tab: 1
+wallet_widget_max_select: 15
+wallet_widget_max_radios: 3
 autoadd: 1
 render_unused: 1
-details:
-  o: 'o'
-  m: 'm'
-summary:
-  o: 'o'
-  m: 'm'
-payin:
-  m: 'm'
-payout:
-  o: 'o'
 threshhold: 5
 widget: select

@@ -20,11 +20,9 @@ class WalletViewsData extends EntityViewsData {
 
 
     //unwanted fields
-    unset($data['mcapi_wallet']['pid']);
+    unset($data['mcapi_wallet']['holder_entity_id']);
     unset($data['mcapi_wallet']['payin']);
     unset($data['mcapi_wallet']['payout']);
-    unset($data['mcapi_wallet']['details']);
-    unset($data['mcapi_wallet']['summary']);
     unset($data['mcapi_wallet']['operations']);
     
     //@todo surely the entity label should have been added already?
@@ -35,7 +33,7 @@ class WalletViewsData extends EntityViewsData {
       'field' => [
         //@todo waiting for entity_label to abandon the 'entity type field' in its definition
         'id' => 'wallet_label',
-        'entity type field' => 'entity_type',
+        'entity type field' => 'holder_entity_type',
       ],
     ];
 
@@ -53,8 +51,8 @@ class WalletViewsData extends EntityViewsData {
         'id' => 'mcapi_wallet_user',
       ]
     ];
-    $data['mcapi_wallet']['entity_type']['field']['id'] = 'mcapi_holder_type';
-    $data['mcapi_wallet']['entity_type']['field']['help'] = $this->t("The wallet holder's translated EntityType name");
+    $data['mcapi_wallet']['holder_entity_type']['field']['id'] = 'mcapi_holder_type';
+    $data['mcapi_wallet']['holder_entity_type']['field']['help'] = $this->t("The wallet holder's translated EntityType name");
 
     return $data;
   }

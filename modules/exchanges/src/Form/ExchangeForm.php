@@ -8,9 +8,10 @@
 
 namespace Drupal\mcapi_exchanges\Form;
 
-use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\user\Entity\User;
+use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Entity\EntityConstraintViolationListInterface;
 
 class ExchangeForm extends ContentEntityForm {
 
@@ -19,7 +20,6 @@ class ExchangeForm extends ContentEntityForm {
    */
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
-
     $exchange = $this->entity;
 
     $form['id'] = array(
@@ -30,10 +30,20 @@ class ExchangeForm extends ContentEntityForm {
     $form['name'] = array(
       '#type' => 'textfield',
       '#title' => t('Full name'),
+      '#description' => t('Must be unique'),
       '#default_value' => $exchange->get('name')->value,
       '#required' => TRUE,
       '#weight' => 0
     );
+    $form['code'] = [
+      '#type' => 'machine_name',
+      '#maxlength' => 128,
+      '#machine_name' => [
+        'exists' => '\Drupal\mcapi_exchanges\Exchanges::exchangeLoadByCode',
+        'source' => ['name'],
+      ],
+      '#description' => $this->t('A unique machine-readable name for this currency. It must only contain lowercase letters, numbers, and underscores.'),
+    ];
     //@todo how to decide who to select exchange managers from?
     //really it could be any user IN that exchange, although the exchange has no members right now....
     foreach (User::loadMultiple() as $account) {
@@ -74,37 +84,35 @@ class ExchangeForm extends ContentEntityForm {
       '#default_value' => $exchange->open->value,
       '#weight' => 9
     );
-
+    
+    
     return $form;
   }
+
+  protected function getEditedFieldNames(FormStateInterface $form_state) {
+    return array_merge(
+      ['name', 'uid', 'mail', 'visibility', 'open'], 
+      parent::getEditedFieldNames($form_state)
+    );
+  }
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array $form, FormStateInterface $form_state) {
-    $values = $form_state->getValues();
-    $samename = entity_load_multiple_by_properties('mcapi_exchange', array('name' => $values['name']));
-    $values = $form_state->getValues();
-    foreach ($samename as $exchange) {
-      if ($exchange->id() != $values['id']) {
-        $form_state->setErrorByName('name', t('Another exchange already has that name'));
-      }
+  protected function flagViolations(EntityConstraintViolationListInterface $violations, array $form, FormStateInterface $form_state) {
+    // Manually flag violations of fields not handled by the form display. This
+    // is necessary as entity form displays only flag violations for fields
+    // contained in the display.
+    $field_names = [
+      'name',
+      'uid',
+      'mail',
+      'visibility',
+      'open',
+    ];
+    foreach ($violations->getByFields($field_names) as $violation) {
+      list($field_name) = explode('.', $violation->getPropertyPath(), 2);
+      $form_state->setErrorByName($field_name, $violation->getMessage());
     }
+    parent::flagViolations($violations, $form, $form_state);
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function save(array $form, FormStateInterface $form_state) {
-    $status = $this->entity->save();
-    if ($status == SAVED_UPDATED) {
-      drupal_set_message(t('Currency %label has been updated.', array('%label' => $currency->label())));
-    }
-    else {
-      drupal_set_message(t('Currency %label has been added.', array('%label' => $currency->label())));
-    }
-    $form_state->setRedirect('mcapi.exchange.view', array('mcapi_exchange' => $this->entity->id()));
-    return $status;
-  }
-
 }
-

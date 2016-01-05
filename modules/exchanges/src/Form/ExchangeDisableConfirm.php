@@ -40,7 +40,7 @@ class ExchangeDisableConfirm extends ContentEntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submit(array $form, FormStateInterface $form_state) {
+  public function submitForm(array &$form, \Drupal\Core\Form\FormStateInterface $form_state) {
     $this->entity->set('status', FALSE);
     $this->entity->save();
 

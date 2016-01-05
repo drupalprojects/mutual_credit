@@ -7,6 +7,7 @@
 
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Mcapi;
 
 /**
  * Implements hook_install().
@@ -25,18 +26,11 @@ function mcapi_install() {
       continue;
     }
     //give every existing user a wallet
-    $w = Wallet::create([
-      'entity_type' => 'user', 
-      'pid' => $account->id(), 
-      'name' => ''
-    ]);
-    $name = $account->label();
-    if ($name == 'placeholder-for-uid-1') {
-      $name = 'User 1';
-    }
-    $w->set('name', t("@name's default wallet", ['@name' => $name]));
-    $w->save();
-    drupal_set_message('Saved user 1 wallet: '.$w->id());
+     Wallet::create([
+      'holder_entity_type' => 'user', 
+      'holder_entity_id' => $account->id(), 
+      'name' => 'Default'
+    ])->save();
   }
 
   $zero_icon_uri = '/'. drupal_get_path('module', 'mcapi') . '/templates/present.png';
@@ -50,7 +44,7 @@ function mcapi_modules_installed() {
   //ensure all new transactionRelatives are enabled by default
   $conf = \Drupal::configFactory()->getEditable('mcapi.settings');
   $active = $conf->get('active_relatives');
-  foreach (\Drupal::service('mcapi.transaction_relative_manager')->getDefinitions() as $id => $definition) {
+  foreach (Mcapi::transactionRelatives()->getDefinitions() as $id => $definition) {
     if (!array_key_exists($id, $active)) {
       $active[$id] = $id;
     }
@@ -65,6 +59,8 @@ function mcapi_modules_installed() {
 
 $worth = \Drupal\field\Entity\FieldStorageConfig::load('mcapi_transaction.worth');
 if ($worth)$worth->delete();
+$mem = \Drupal\field\Entity\FieldStorageConfig::load('mcapi_exchange.og_exchange_ref');
+if ($worth)mem->delete();
 field_purge_batch(10000);//rows at a time
 
 db_drop_table('mcapi_transaction');
@@ -77,6 +73,8 @@ db_drop_table('mcapi_wallet_exchanges_index');
 db_drop_table('mcapi_transaction__worth');
 db_drop_table('mcapi_exchange__currencies');
 db_drop_table('mcapi_signatures');
+db_drop_table('mcapi_wallet__payers');
+db_drop_table('mcapi_wallet__payees');
 db_delete('config')->condition('name', '%mcapi%', 'LIKE')->execute();
 db_delete('config')->condition('name', 'system.action.transaction%', 'LIKE')->execute();
 db_delete('config')->condition('name', [
@@ -95,6 +93,7 @@ Drupal::configFactory()->getEditable('core.extension')
 ->clear("module.mcapi_1stparty")
 ->clear("module.mcapi_limits")
 ->clear("module.mcapi_signatures")
+->clear("module.mcapi_exchanges")
 ->save();
 drupal_flush_all_caches();
  *

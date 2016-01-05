@@ -5,8 +5,9 @@ namespace Drupal\mcapi\Plugin\Block;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Exchange;
+use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Currency;
 
 define('MCAPIBLOCK_USER_MODE_CURRENT', 1);
 define('MCAPIBLOCK_USER_MODE_PROFILE', 0);
@@ -56,7 +57,7 @@ class McapiBlockBase extends BlockBase {
       '#title_display' => 'before',
       '#type' => 'mcapi_currency_select',
       '#default_value' => $this->configuration['curr_ids'],
-      '#options' => mcapi_entity_label_list('mcapi_currency', array('status' => TRUE)),
+      '#options' => Mcapi::entityLabelList('mcapi_currency', array('status' => TRUE)),
       '#multiple' => TRUE
     ];
     $form['user_source'] = [
@@ -95,7 +96,7 @@ class McapiBlockBase extends BlockBase {
     }
     else{
       foreach ($currencies as $curr_id) {
-        $this->currencies[$curr_id] = mcapi_currency_load($curr_id);
+        $this->currencies[$curr_id] = Currency::load($curr_id);
       }
     }
   }

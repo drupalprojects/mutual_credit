@@ -1,414 +1,139 @@
 <?php
 
-use Drupal\mcapi\Entity\Currency;
-use Drupal\mcapi\Entity\Wallet;
-use Drupal\mcapi\Exchanges;
-use Drupal\mcapi\Entity\Transaction;
-use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\mcapi\Entity\WalletInterface;
-use Drupal\mcapi_exchanges\Entity\Exchange;
-use Drupal\Core\Template\Attribute;
+/*
+ * 
+ * @todo see deprecated og functions if they can be used 
+ * _og_group($group_type, $gid, $values = array(), $save_created = TRUE)
+ *   subscribe an entity to a group
+ * _og_ungroup()
+ * _og_get_entity_groups($entity_type = 'user', $entity = NULL, $states = array(OgMembershipInterface::STATE_ACTIVE), $field_name = NULL)
+ *   Get the groups an entity is associated with.
+ * Og::getEntityGroups(EntityInterface $entity, array $states = [OgMembershipInterface::STATE_ACTIVE], $field_name = NULL)
+ *   Get the group IDs of all the groups a user is an approved member of
+ * Og::isMember(EntityInterface $group, EntityInterface $entity, $states = [OgMembershipInterface::STATE_ACTIVE])
+ *   Return whether a group content belongs to a group
+ */
+
+use Drupal\mcapi\Exchange;
+use Drupal\mcapi_exchanges\Exchanges;
+use Drupal\user\Entity\User;
 use Drupal\Core\Form\FormStateInterface;
 
+/**
+ * name of the references to og_membership for the group-type mcapi_exchange
+ * as opposed to the og normal name for it, DEFAULT_FIELD
+ */
+const EXCHANGE_OG_FIELD = 'og_exchange_ref';
 
-const EXCHANGE_OG_REF = 'mcapi_exchange_og_ref';
-const WALLET_ACCESS_EXCHANGE = 'e';//this extends the series of constants in the wallet entity
 
 /**
  * implements hook_entity_info_alter().
  * add new handlers for the Exchange entity
+ * @param Drupal\Core\Entity\EntityTypeInterface[] $entity_types
  */
 function mcapi_exchanges_entity_type_alter(array &$entity_types) {
   $path = 'Drupal\mcapi_exchanges\Overrides\\';
-  if (array_key_exists('firstparty_editform', $entity_types)) {
-    $entity_types['firstparty_editform']
-      ->setListbuilderClass($path.'FirstPartyEditFormListBuilderExchanges');
-    $entity_types['firstparty_editform']
-      ->setAccessClass($path.'ExchangesFirstPartyEditFormAccessControlHandler');
-    //what is this?
-    $entity_types['firstparty_editform']
-      ->setAccessClass($path.'ExchangesTransactionFormAccessCheck');
+  $entity_types['mcapi_currency']->setListbuilderClass($path.'CurrencyListBuilderExchanges');
+  $entity_types['mcapi_wallet']->setAccessClass($path.'ExchangesWalletAccessControlHandler');
+  if (isset($entity_types['firstparty_editform'])) {
+    //$entity_types['firstparty_editform']->setListbuilderClass($path.'FirstPartyEditFormListBuilderExchanges');
   }
-  $entity_types['mcapi_currency']
-    ->setListbuilderClass($path.'CurrencyListBuilderExchanges');
-  $entity_types['mcapi_wallet']
-    ->setAccessClass($path.'ExchangesWalletAccessControlHandler');
+  if (\Drupal::config('mcapi_exchanges.settings')->get('segregate_exchanges')) {
+    $entity_types['user']->setFormClass('join', 'Drupal\mcapi_exchanges\Form\Join');
   }
+  if (\Drupal::moduleHandler()->moduleExists('contact')) {
+    $entity_types['mcapi_exchange']->setFormClass('contact', 'Drupal\mcapi_exchanges\Form\Contact');
+    $entity_types['mcapi_exchange']->setLinkTemplate('contact-form', '/exchange/{mcapi_exchange}/contact');
+  }
+}
 
 /**
- * implements hook_ENTITY_TYPE_load().
- * add the 'exchange arguments to the transactions view
- * @param type $entities
- * @todo see if this works in mcapi"_exchanges.views.inc
+ * implements hook_menu_links_discovered_alter().
+ * remove the masspay route because this module replaces it
+ * @param array[] $definitions
  */
-function mcapi_exchanges_view_load(&$entities) {
+function mcapi_exchanges_menu_links_discovered_alter(&$items) {
+  unset($items['mcapi.exchange.masspay']);
+}
 
-return;
-
-  if (array_key_exists('mcapi_transactions', $entities)) {
-    $display = $entities['mcapi_transactions']->getDisplay('default');
-
-    $display['display_options']['arguments']['exchange'] = array (
-      'id' => 'exchange',
-      'table' => 'mcapi_transaction',
-      'field' => 'exchange',
-      'relationship' => 'none',
-      'group_type' => 'group',
-      'admin_label' => '',
-      'dependencies' => array(
-        'module' => array(
-          0 => 'mcapi',
-          1 => 'views',
-        ),
-      ),/*
-      'default_action' => 'ignore',
-      'exception' => array(
-        'value' => 'all',
-        'title_enable' => false,
-        'title' => 'All',
-      ),
-      'title_enable' => false,
-      'title' => '',
-      'default_argument_type' => 'fixed',
-      'default_argument_options' => array(
-        'argument' => '1',
-      ),
-      'default_argument_skip_url' => false,
-      'summary_options' => array(
-        'base_path' => '',
-        'count' => true,
-        'items_per_page' => 25,
-        'override' => false,
-      ),
-      'summary' => array(
-        'sort_order' => 'asc',
-        'number_of_records' => 0,
-        'format' => 'default_summary',
-      ),*/
-      'specify_validation' => true,
-      'validate' => array(
-        'type' => 'entity:mcapi_exchange',
-        'fail' => 'access denied',
-      ),
-      'validate_options' => array(
-        'access' => '1',
-        'operation' => 'view',
-        'multiple' => '1',
-        'bundles' => NULL,
-      ),
-      'break_phrase' => false,
-      'not' => 0,
-      'plugin_id' => 'transaction_exchange',
-      'provider' => 'mcapi',
-    );
-    $display = $entities['mcapi_transactions']->addDisplay('default', $display);
-    debug($display);
-//    debug($entities['mcapi_transactions']->getDisplay('default')['display_options']['arguments']['exchange']);
+function mcapi_exchanges_local_tasks_alter(&$items) {
+  if (\Drupal::moduleHandler()->moduleExists('contact')) {
+    $items['mcapi.exchange.contact.tab'] = [
+      'route_name' => 'entity.mcapi_exchange.contact',
+      'title' => 'Contact',
+      'base_route' => 'entity.mcapi_exchange.canonical',
+      'weight' => 5,
+    ];
   }
 }
 
-function mcapi_exchanges_menu_links_discovered_alter(&$definitions) {
-  unset($definitions['mcapi.exchange.masspay']);
-}
 
 /**
  * implements hook_entity_extra_field_info().
  */
 function mcapi_exchanges_entity_extra_field_info() {
-  $extra['mcapi_exchange']['mcapi_exchange']['display']['transactions'] = array(
-    'label' => t('Intertrading'),
-    'description' => t('Link to the wallets special intertrading wallet'),
-    'weight' => 2,
-  );
-  $extra['mcapi_exchange']['mcapi_exchange']['display']['wallets'] = array(
-    'label' => t('Wallets'),//this could be configured to show the display mode
-    'weight' => 11
-  );
-  $extra['mcapi_exchange']['mcapi_exchange']['display']['people'] = array(
-    'label' => t('People'),
-    'description' => t('People involved in the exchange'),
-    'weight' => 1,
-  );
+  $extra['mcapi_exchange']['mcapi_exchange']['display'] = [
+    'wallets' => [
+      'label' => t('Wallets'),//this could be configured to show the display mode
+      'weight' => 11
+    ],
+    'members_link' => [
+      'label' => t('Link to members'),
+      'description' => t('People involved in the exchange'),
+      'weight' => 1,
+    ],
+    'transactions_link' => [
+      'label' => t('link to transactions'),
+      'description' => t('Transactions governed by the exchange'),
+      'weight' => 1,
+    ],
+    'trade_stats' => [
+      'label' => t('Trading stats'),
+      'description' => t('A short table of trading stats per currency'),
+      'weight' => 1,
+    ]
+  ];
   return $extra;
 }
 
 /**
- * implements hook_form_FORM_ID_alter()
- * add a submit callback to the wallet settings
- */
-function mcapi_exchanges_form_mcapi_wallet_settings_form_alter(&$form, &$form_state) {
-  debug(array_keys($form['creation']['entity_types']), 'filter the entity_types for only those entities with an EXCHANGE_OG_REF field');
-  $form['creation']['#description'] = ' '. t('Only bundles which are in exchanges are shown here.');
-  $form_state->loadInclude('install', 'mcapi_exchanges');
-  $form['actions']['submit']['#submit'][] = 'mcapi_exchanges_check_og_fields';
-}
-
-/**
- * implements hook_entity_insert();
- * Ensure an entity's wallets are in the same exchange(s) as the entity
- */
-function mcapi_exchanges_entity_insert($entity) {
-  put_held_wallets_in_exchanges($entity);
-}
-/**
- * implements hook_entity_update();
- * Ensure an entity's wallets are in the same exchange(s) as the entity
- */
-function mcapi_exchanges_entity_update($entity) {
-  put_held_wallets_in_exchanges($entity);
-}
-
-/*
- * ensure that the wallets of every wallet-owning entity are in the same exchanges as their holder
- */
-function put_held_wallets_in_exchanges($entity) {
-  $count = 0;
-  if (walletable($entity)) {
-    if ($wids = Wallet::heldBy($entity)) {
-      $belongsToExchanges = $entity->getEntityTypeId() == 'mcapi_exchange' ?
-        [$entity] :
-        $entity->get(EXCHANGE_OG_REF)->referencedEntities();
-
-      foreach (Wallet::loadMultiple($wids) as $wallet) {
-        //each wallet is in exactly the same exchanges as the parent.
-        $wallet->set(EXCHANGE_OG_REF, $belongsToExchanges);
-        $wallet->save();
-        $count++;
-      }
-      //@todo check this after the OG api is written and implemented, and used above
-      //foreach ($belongsToExchanges as $exchange)debug($wids, 'check these wallets are in exchanges: '.$exchange->id());
-    }
-  }
-  drupal_set_message(
-    "Put $count wallets belonging to ".$entity->bundle() .' '.$entity->id(). ' into exchanges: '.
-      implode(', ', array_keys((array)$belongsToExchanges))
-  );
-}
-
-function mcapi_exchanges_element_info_alter($info) {
-  $info['select_wallet']['#process'][] = 'mcapi_exchanges_process_wallet';//might want to move this to another file or class
-  $info['select_wallet']['#exchanges'] = [];
-
-}
-
-function mcapi_exchanges_process_wallet(&$element, FormStateInterface &$form_state) {
-  $exchanges = $element['#exchanges'] ? : array_keys(Exchanges::in());
-  $element['#autocomplete_route_parameters'] = array('exchanges' => implode(',', $exchanges));
-  return $element;
-}
-
-
-/**
- * implements hook_mcapi_exchange_view()
+ * implements hook_mcapi_exchange_view().
  * adds extra_fields to the exchange
  */
-function mcapi_exchanges_mcapi_exchange_view(&$build, $entity, $mode, $language) {
-  $count = db_select("user__exchanges", 'e')->fields('e', array('entity_id'))
-  ->condition('exchanges_target_id', $entity->id())
-  ->countQuery()->execute()->fetchField();
-  $build['members_link'] = array(
-    '#type' => 'item',
-    '#title' => t('@count members', array('@count'=> $count)),
-    'link' => array(
+function mcapi_exchanges_mcapi_exchange_view(&$build, $entity, $display) {
+  if ($info = $display->getComponent('members_link')) {
+    $build['members_link'] = [
       '#type' => 'link',
-      '#title' => t('Show members'),
-      '#href' => 'exchange/'.$entity->id().'/members',
+      '#title' => t('Show @count members', ['@count'=> count($entity->memberIds('user'))]),
+      '#url' => \Drupal\Core\Url::fromUri('base://exchange/' . $entity->id() . '/members', []),
       //maybe instead put a view with the last five members here
-      '#options' => array(
-        'attributes' => new Attribute(array('title' => "This view doesn't exist yet"))
-      )
-    )
-  );
-}
-
-
-/**
- * get the exchanges a transaction and its children are in.
- * Children may be in a different exchange to their parents
- *
- * @param Drupal\mcapi\Entity\Transaction $transaction
- *   A single transaction entity, (with no children)
- *
- * @todo check that we actually have a good use for this function. SHould it return ids or entities?
- *
- * @return integer[]
- *   the first value will be the parent transaction exchange ID
- */
-function mcapi_transaction_get_exchanges(Transaction $transaction) {
-  foreach ($transaction->flatten() as $t) {
-    //generally we only need one, so take the first
-    $exchanges[] = $t->exchange->target_id;
+      '#options' => [
+        'attributes' => ['title' => "This view doesn't exist yet @todotim"]
+      ],
+      '#weight' => $info['weight']
+    ];
   }
-  return exchanges;
-}
-
-/**
- * implements hook_mcapi_transaction_alter().
- * if the wallets are in different exchanges, and other context allows
- * split the transaction into 2
- */
-function mcapi_exchanges_mcapi_transaction_alter(TransactionInterface $transaction) {
-  $common_exchanges = array_intersect_key(
-    Exchanges::walletExchanges($transaction->payer->entity),
-    Exchanges::walletExchanges($transaction->payee->entity)
-  );
-  if ($common_exchanges) {
-    mcapi_exchange_join($exchange->id(), array($transaction));
-    //$transaction->set('exchange', reset($common_exchanges)->id());
-    return;
+  if ($info = $display->getComponent('transactions_link')) {
+    $build['transactions_link'] = [
+      '#type' => 'link',
+      '#title' => t('Show @count transactions', ['@count' => count($entity->memberIds('mcapi_transaction'))]),
+      '#url' => Drupal\Core\Url::fromUri('base://exchange/' . $entity->id() . '/transactions', []),
+      //@todo maybe instead put a view with the last five members here
+      '#options' => [
+        'attributes' => ['title' => "This view doesn't exist yet @todotim"]
+      ],
+      '#weight' => $info['weight']
+    ];
   }
-  $transaction_curr_ids = $transaction->worth->currencies();
-  $my_exchange_ids = Exchanges::in();
-
-if (!is_array($my_exchange_ids)){
-  print_r($my_exchange_ids);die('mcapi_exchanges_mcapi_transaction_alter');
-}
-  $payer_exchanges = Exchanges::walletExchanges($transaction->payer->entity, TRUE);
-  $common = Exchange::loadMultiple(array_intersect($payer_exchanges, $my_exchange_ids));
-  foreach ($common as $exchange) {
-    if (has_currencies($exchange, $transaction_curr_ids))  {
-      mcapi_exchange_join($exchange->id(), array($transaction));
-      $source = 'payer';
-      $dest = 'payee';
-      break;
-    }
+  if ($info = $display->getComponent('trade_stats')) {
+    //todo consider doing this with views and new view fields
+    $build['trade_stats'] = [
+      '#theme' => 'exchange_trade_stats',
+      '#weight' => $info['weight'],
+      '#exchange' => $entity,
+      '#currencies' => $entity->currencies->referencedEntities()
+    ];
   }
-  $source = 0;
-  if (empty($set))  {
-    $exchange_ids = array_intersect(Exchanges::walletExchanges($transaction->payee->entity, TRUE), $my_exchange_ids);
-    foreach (Exchange::loadMultiple($exchange_ids) as $exchange) {
-      if (has_currencies($exchange, $transaction_curr_ids))  {
-        mcapi_exchange_join($exchange->id(), array($transaction));
-        $source = 'payee';
-        $dest = 'payer';
-        break;
-      }
-    }
-  }
-  $violations = [];
-  if (!$source) {
-    //@todo, a more appropriate failure here
-    throw new \Exception('Neither party can access all the currencies in the transaction: '.implode(', ', $transaction_curr_ids));
-  }
-
-  //We have to check if a transaction is even possible.
-  //this means there is at least one currency in the transaction not common to both wallets' exchanges
-
-  //That means we create a transaction between each wallet and its exchange's _intertrading wallet
-  //In effect the current transaction is altered and a child added
-
-  //Whichever wallet which can use all the currencies in the transaction is the 'source' wallet.
-  //In an intertrading split the source wallet takes the existing transactions
-  //The dest wallet takes the new (child) transaction and the converted currency values.
-
-  //we might want to abstract this into a plugin or something to allow
-  //different mechanisms for taking a commission.
-
-
-  //We need to identify a dest exchange whose intertrading wallet can be used
-  //which of the $dest_wallet's parent's exchanges is most suitable, if any?
-  //it must contain all the worth's currencies bar one.
-
-  foreach (Exchanges::walletExchanges($transaction->{$dest}->entity) as $dest_exchange) {
-    $dest_exchange_currencies = Exchanges::currencies(array($dest_exchange->id()));
-    $diff = array_diff_key(array_flip($transaction_curr_ids), $dest_exchange_currencies);
-    //diff is the currencies in worth which are not in the dest exchange
-    //if there is no diff, we shouldn't be intertrading but doing a straight transaction
-    $source_currency_id = key($diff);//do this now to ensure there is a value for the error
-    if (!$diff) {
-    //@todo, a more appropriate failure here
-      throw new \Exception('Intertrading calculation is running when worth currencies are all matched');
-    }
-    if (count($diff) > 1) {
-      continue;//we won't attempt to convert more than one currency in a transaction
-    }
-    $source_ticks = Currency::load($source_currency_id)->ticks;
-    if (!$source_ticks) {//the one diff currency in this exchange is not intertradable
-      continue;
-    }
-    //when we have found a suitable exchange, stop looping because we need the variables above
-    $found = TRUE;
-    break;
-  }
-  if (!isset($found)) {
-    return array(
-      $source_currency_id,
-      //this string is identical to another
-      t('There is no way to intertrade this currency between these wallets')
-    );
-  }
-  //so now we have our dest $exchange, a list of $exchange_currencies in it
-  //get the first tradable currency in the exchange which isn't one of the other worth values.
-  foreach ($dest_exchange_currencies as $curr) {
-    if ($curr->ticks) {
-      $dest_currency = $curr;
-      break;
-    }
-  }
-  if (!isset($dest_currency)) {
-    $transaction->violations[$source_currency_id] = t('The destination exchange has no tradable currency.');
-    return;
-  }
-
-
-  $new_transaction = clone($transaction);//since it hasn't been saved there is no xid or serial number yet
-  $new_transaction->uuid->setValue(\Drupal::service('uuid')->generate());
-  $transaction->set($dest, $transaction->exchange->entity->intertrading_wallet()->id());
-  $new_transaction->set($source, $dest_exchange->intertrading_wallet()->id());
-  $new_transaction->worth->setValue(
-    array(
-      array(
-        'curr_id' => $dest_currency->id(),
-        'value' => floor($dest_currency->ticks / $source_ticks * $transaction->worth->val($source_currency_id))
-      )
-    )
-  );
-  $transaction->children[] = $new_transaction;
-}
-
-/**
- * put an entity in an exchange
- * utility function
- * @param integer $exid
- * @param ContentEntityInterface[] $entities
- * @return boolean
- *   TRUE if successful
- * @todo remove the old exchanges before or during this function
- */
-function mcapi_exchange_join($exid, $entities) {
-  //if something joins an exchange, then so do its wallets
-  foreach ($entities as $entity) {
-    $entity->set(EXCHANGE_OG_REF, $exid);
-    $entity->save();
-  }
-}
-
-/**
- * determine if all the passed currency ids are in the exchange
- * @param unknown $exchange
- * @param unknown $currency_ids
- */
-function has_currencies($exchange, $currency_ids) {
-  foreach($exchange->currencies->referencedEntities() as $currency) {
-    $ids[] = $currency->id;
-  }
-  return array_intersect($currency_ids, $ids) == $currency_ids;
-}
-
-
-/**
- * Provide the new worthItemList array for an intertrading child transaction
- * @param TransactionInterface $transaction
- *
- * @param WalletInterface $dest_wallet
- *   The wallet in the remote exchange
- * @return array
- *   violation, keyed by fieldname
- */
-function intertrading_new_worths(TransactionInterface $transaction, WalletInterface $dest_wallet) {
-  $transaction_curr_ids = $transaction->get('worth')->curr_ids();
-
-  return [];//no problems
 }
 
 /**
@@ -430,64 +155,19 @@ echo $transaction->payer->entity->name();
 }
 
 /**
- * Implements hook_mail_alter().
- * divert exchange contact mails to the right exchange
- */
-function mcapi_exchanges_mail_alter(&$message) {
-  print_r($message);die('mcapi_exchanges_mail_alter');
-  //if the recipient is mcapi_exchange@drupal then swop it for the owner of the current exchange
-  //either that or don't use the contact module to contact exchanges
-}
-
-/**
- * implements hook_ENTITY_TYPE_load().
- */
-function mcapi_exchanges_contact_category_load($entities) {
-  foreach ($entities as $category) {
-    if ($category->id == 'exchange') {
-      //this might work except for caching and we don't know what exchange we are trying to contact!
-      $category->recipients[] = 'mcapi_exchange@drupal';
-    }
-  }
-}
-
-
-/**
- * Implements hook_form_alter();
- *
- * Add a submit callback to ContentEntityForms for contentTypes which reference exchanges
- * to check for entities joining and leaving exchanges
- * Form_alter is rather a blunt instrument but it is the best available.
- * Would be better to use hook_entity_presave or postsave but the old values aren't available there
- *
- * //@todo rewrite this once we have OG working.
- */
-function mcapi_exchanges_form_alter(&$form, FormStateInterface $form_state, $form_id) {
-  if (array_key_exists('controller', $form_state) && $form_state->get('controller') instanceof \Drupal\Core\Entity\ContentEntityForm) {
-    $entity = $form_state->get('controller')->getEntity();
-    if (walletable($entity)) {
-      array_unshift($form['actions']['submit']['#submit'], 'mcapi_exchanges_changed_submit');
-    }
-  }
-  debug($form_id, 'looking for the designed transaction form_id');//see below
-  //is it one name for ALL designed forms, all transaction forms, or each form?
-
-}
-
-/**
  * restrict the wallet fields to the current users' exchanges' wallets
+ * @todo this should be done with the entity reference callback
  */
 function blah(&$form, &$form_state) {
-
     $form['partner'] = array(
-      '#exchanges' => array_keys(Exchanges::in()),
+      '#exchanges' => array_keys(Exchanges::memberOf()),
       '#default_value' => $config->partner['preset']
     ) + $form['partner'];
     //
 }
 
 /**
- * implements hook_form_alter().
+ * implements hook_form_FORM_ID_alter().
  * adds the exchange option to the designed form
  * @todo work out the function name and alter the config schema for this extra variable
  */
@@ -501,7 +181,7 @@ debug($maxes);
   if ($config->getThirdPartySetting('mcapi_exchanges', 'exchange')) {
     debug($form['payer']);
   }
-  if (strpos($config->experience['twig'], '{{ intertrade }}') && Exchanges::in(NULL, TRUE, TRUE)) {
+  if (strpos($config->experience['twig'], '{{ intertrade }}') && Exchanges::memberOf(NULL, TRUE, TRUE)) {
     //this checkbox flips between partner_choosers
     $form['intertrade'] = array(
       '#title' => t('Intertrade'),
@@ -564,9 +244,6 @@ function mcapi_exchanges_form_first_party_editform_alter(&$form, FormStateInterf
     ]
   ];
 
-  
-  
-  
   //since this is an entity form, we need to get the $config from the $entity.
   $config = $form_state->getBuildInfo()['callback_object']->getEntity();
   $account = User::load(\Drupal::currentuser()->id());
@@ -599,99 +276,6 @@ function mcapi_exchanges_first_party_editform_submit(&$form, &$form_state) {
   $form_state->getFormObject()->getEntity()->save();
 }
 
-/**
- * field api default value callback
- * when creating a new exchange, populate the currencies field according to the currentuser's access.
- * N.B. in FieldItemList::setValue
- *
- * @param ContentEntityInterface $entity,
- *   the exchange
- *
- * @param array $field_definition,
- *
- * @param string $langcode
- *
- * @return uuid[]
- *   uuids whose keys I haven't understood yet
- *
- * @todo check if this is the best approach usability wise
- */
-function mcapi_default_currency_id(EntityInterface $exchange, $field_definition) {
-  $output = [];
-  //default currencies are the currencies of the exchanges of which the current user is a member
-  $exchange_ids = Exchanges::in(NULL, TRUE);
-  foreach (Exchanges::currencies($exchange_ids) as $currency) {
-    $output[]['target_uuid'] = $currency->uuid;
-  }
-  return $output;
-}
-
-/**
- * field api default value callback
- * when creating a new user, populate the exchanges field
- * with the currentuser's values.
- * N.B. in FieldItemList::setValue
- *
- * @param ContentEntityInterface $entity,
- *
- * @param array $field_definition,
- *
- * @return array
- *   The uuids of the exchanges of which the passed Entity is a member
- *
- * //@todo an array of uuids whose keys I haven't understood yet
- */
-function mcapi_default_exchange_id(ContentEntityInterface $entity, $field_definition) {
-  if ($entity->getEntityTypeId == 'user' && $entity->id() == 0)drupal_set_message('putting user 0 in default exchange. Prevent this!');
-  $output = [];
-  $exchanges = Exchange::loadMultiple(Exchanges::in(NULL, TRUE));
-  foreach ($exchanges as $exchange) {
-
-    $output[]['target_uuid'] = $exchange->uuid->value;
-  }
-  return $output;
-}
-
-
-/**admin/modules
- * Get all the wallet ids in given exchanges.
- * this can also be done with Wallet::filter() but is quicker.
- * maybe not worth it if this is only used once, in any case the index table is needed for views.
- * Each wallet holder should have a required entity reference field pointing to exchanges.
- *
- * @param array $exchange_ids
- *
- * @param array $intertrading
- *   TRUE if _intertrading wallets are included
- *
- * @return integer[]
- *   the non-orphaned wallet ids from the given exchanges
- *
- * @todo refactor this for OG
- */
-function get_mcapi_wallets_in_exchanges(array $exchange_ids) {
-  $query = db_select('og_membership', 'g')
-    ->fields('g', array('etid'))
-    ->condition('g.group_type', 'mcapi_exchange')
-    ->condition('g.entity_type', 'mcapi_wallet');
-  if ($exchange_ids) {
-    $query->condition('g.gid', $exchange_ids);
-  }
-  if (!$intertrading) {
-    $query->join('mcapi_wallet', 'w', 'w.wid = g.etid');
-    $query->condition('w.name', '_intertrading', '<>');
-  }
-  return $query->execute()->fetchCol();
-}
-
-/**
- * implements hook_field_widget_WIDGET_ID_form_alter
- */
-function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $context) {
-  //element may already contain #allowed_curr_ids
-  $exchange_ids = Exchanges::in(NULL, TRUE);
-  $element['#allowed_curr_ids'] = array_keys(Exchanges::currencies($exchange_ids));
-}
 
 /**
  * implement hook_form_FORM_ID_alter
@@ -699,15 +283,12 @@ function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $
  * put a warning on the wallet limits form
  */
 function mcapi_exchanges_form_wallet_limits_form_alter(&$form, $form_state) {
-  if (!Exchanges::in($form_state->getFormObject()->wallet->getHolder())) {
-    drupal_set_message(t("%name is not currently in any active exchange", array('%name' => $owner->label())));
+  $wallet = $form_state->getFormObject()->wallet;
+  if (!Exchanges::memberOf($wallet->getHolder())) {
+    drupal_set_message(t("Wallet %name is not currently in any exchange so can't be used", ['%name' => $wallet->label()]));
   }
 }
 
-function mcapi_exchanges_preprocess_mcapi_currency(&$vars) {
-  //@todo check this theme hook is firing
-  $vars['exchanges'] = $currency->created;
-}
 
 function mcapi_exchanges_form_transaction_transition_edit_form(&$form, &$form_state) {
   //payer and payee wallets MUST be limited to the same exchange as the transaction
@@ -719,9 +300,12 @@ function mcapi_exchanges_form_transaction_transition_edit_form(&$form, &$form_st
   }
 }
 
-
-function mcapi_exchanges_form_currency_form_alter(&$form, $form_state) {
-  //mdump($form_state->getObject());//how to get the currency entity?
+/**
+ * implements hook_FORM_FORM_ID_alter();
+ * Add the ticks property to the currency form
+ */
+function mcapi_exchanges_form_mcapi_currency_form_alter(&$form, $form_state) {
+  $currency = $form_state->getFormObject()->getEntity();
 
   $unit_name = \Drupal::config('mcapi.settings')->get('ticks_name');//this assumes one base currency
   $form['ticks'] = [
@@ -735,4 +319,146 @@ function mcapi_exchanges_form_currency_form_alter(&$form, $form_state) {
     '#default_value' => $currency->ticks,
     '#weight' => 6
   ];
+}
+/**
+ * implements hook_form_FORM_ID_alter()
+ * add a submit callback to the wallet settings
+ */
+function mcapi_exchanges_form_mcapi_wallet_settings_form_alter(&$form, $form_state) {
+  $form_state->loadInclude('mcapi_exchanges', 'install');
+  $form['#submit'][] = 'mcapi_exchanges_check_og_fields';
+}
+
+function mcapi_exchanges_theme() {
+  return [
+    'exchange_trade_stats' => [
+      'template' => 'exchange_trade_stats',
+      'variables' => [
+        'exchange' => NULL,
+        'currencies' => []
+      ]
+    ]
+  ];
+}
+
+function template_preprocess_exchange_trade_stats(&$vars) {
+  $exchange = $vars['exchange'];
+  \Drupal::moduleHandler()->loadInclude('mcapi', 'inc', 'templates/theme');
+  foreach ($vars['currencies'] as $currency) {
+    $currvars = ['currency' => ['#mcapi_currency' => $currency]];
+    template_preprocess_mcapi_currency($currvars);
+    unset($currvars['currency']);
+    $vars['stats'][$currency->id] = $currvars;
+    $vars['stats'][$currency->id]['scope'] = count(Exchanges::getExchangesUsing($currency->id()));
+  }
+  //we could also have a breakdown of transactions by category
+  //could mention whether it is exclusive to the given exchange (local) or used by others (shared)
+  //number of different traders
+  //volume by month
+}
+
+function mcapi_exchange_mail($key, &$message, $params) {
+  //$key always equals 'contact' from Drupal\mcapi_exchanges\Form\Contact
+  return [
+    'subject' => t(
+      'Message from @site_name', 
+      ['@site_name' => \Drupal::config('system.site')->get('site.name')]
+    ),
+    'body' => [
+      t(
+        '@sender (@mail) wrote to you.', 
+        ['@sender' => $params['sender']->name, '@mail' => $params['sender']->mail]
+      ),
+      Drupal\Core\Mail\MailFormatHelper::htmlToText($params['message'])
+    ]
+  ];
+}
+
+function mcapi_exchange_mail_alter($message) {
+  switch ($message['key']) {
+    case 'register_pending_approval':
+      //divert the email to the exchange administrator account
+      print_R(array_keys($message));
+      print_R(array_keys($message['params']));
+      die();
+  }
+}
+
+/**
+ * implements hook_form_FORM_ID_alter().
+ * adds the segregate_exchanges setting checkbox to the user admin settings form
+ */
+function mcapi_exchanges_form_user_admin_settings_alter(&$form, $form_state) {
+  $form['registration_cancellation']['segregate_exchanges'] = [
+    '#title' => t('Every user is a member of one and only one exchange'),
+    '#description' => t('Delegates user/register page to groups'),
+    '#type' => 'checkbox',
+    '#default_value' => \Drupal::config('mcapi_exchanges.settings')->get('segregate_exchanges'),
+  ];
+  $form['#submit'][] = 'mcapi_exchanges_segregate_exchanges_submit';
+}
+
+/**
+ * form submit callback which saves segregate_exchanges setting
+ * 
+ * @todo this could be moved to a .inc file
+ */
+function mcapi_exchanges_segregate_exchanges_submit($form, $form_state) {
+  $val = $form_state->getValue('segregate_exchanges');
+  \Drupal::configFactory()
+    ->getEditable('mcapi_exchanges.settings')
+    ->set('segregate_exchanges', $val)
+    ->save();
+  
+  Drupal\field\Entity\FieldStorageConfig::load('user.'.EXCHANGE_OG_FIELD)
+    ->setCardinality($val ? 1 : Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED)
+    ->save();
+  //and rebuild the menu in case it has changed
+  mdump(\Drupal::menuTree());
+}
+
+/**
+ * implements hook_field_widget_wallet_reference_autocomplete_form_alter()
+ * change the wallet selector to be group sensitive
+ */
+function mcapi_exchanges_field_widget_wallet_reference_autocomplete_form_alter(&$element, $form_state, $context) {
+  if ($context['widget']->getThirdPartySetting('mcapi_exchanges', 'og_limit')) {
+    //$element['#type'] = 'wallet_reference_autocomplete_og';
+    //$element['#selection_handler'] = 'blah';
+    
+  }
+}
+
+/**
+ * implements hook_query_TAG_alter for tag entity_query_mcapi_wallet
+ * @param \Drupal\Core\Entity\Query\QueryInterface $query
+ * or 
+ * @param \Drupal\Core\Database\Driver\mysql\Select is actually passed
+ */
+function mcapi_exchanges_query_entity_query_mcapi_wallet_alter( $query) {
+  return;
+  mtrace(); //what the fuck hook is this?
+  $exchanges = User::load(\Drupal::currentUser()->id())->get(EXCHANGE_OG_FIELD)->referencedEntities();
+  $ids = array_keys($exchanges);
+  debug($ids);
+  //except of course the wallet itself isn't in the exchanges
+  //$query->condition(EXCHANGE_OG_FIELD, $ids);
+}
+
+/**
+ * implements hook_ENTITY_TYPE_insert for mcapi_wallet().
+ * Ensure the wallet is in the same Exchange as its holder
+ * @todo update this when og field is loading into the entity
+ */
+function mcapi_exchanges_mcapi_wallet_presave($wallet) {
+  //TEMP because og field isn't working yet.
+  drupal_set_message($wallet->holder_entity_type->value." ". $wallet->holder_entity_id->value);
+  $memof = \Drupal::database()->select('og_membership', 'm')
+      ->fields('m', ['group_entity_id'])
+      ->condition('member_entity_type', $wallet->holder_entity_type->value)
+      ->condition('member_entity_id', $wallet->holder_entity_id->value)
+      ->execute()->fetchField();
+  
+  $wallet->set(EXCHANGE_OG_FIELD, $memof);
+  drupal_set_message("putting wallet ".$wallet->id()." in holder's exchange $memof.");
 }

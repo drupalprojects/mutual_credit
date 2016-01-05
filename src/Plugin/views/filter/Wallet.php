@@ -30,8 +30,9 @@ class Wallet extends InOperator {
   protected function valueForm(&$form, FormStateInterface $form_state) {
     $form['value'] = [
       '#title' => $this->t('Wallet names....'),
-      '#type' => 'select_wallet',
-      '#default_value' => $this->value ? Wallet::loadMultiple($this->value) : NULL
+      '#type' => 'wallet_entity_auto',
+      '#default_value' => $this->value ? Wallet::loadMultiple($this->value) : NULL,
+      '#placeholder' => $this->options['placeholder']
     ];
 
     $user_input = $form_state->getUserInput();
@@ -43,13 +44,13 @@ class Wallet extends InOperator {
 
   protected function valueValidate($form, FormStateInterface $form_state) {
     $uids = [];
-    if ($values = $form_state->getValue(array('options', 'value'))) {
+    if ($values = $form_state->getValue(['options', 'value'])) {
       foreach ($values as $value) {
         $uids[] = $value['target_id'];
       }
       sort($uids);
     }
-    $form_state->setValue(array('options', 'value'), $uids);
+    $form_state->setValue(['options', 'value'], $uids);
   }
 
   public function acceptExposedInput($input) {
@@ -99,15 +100,30 @@ class Wallet extends InOperator {
     // prevent array filter from removing our anonymous user.
   }
 
+  public function buildExposeForm(&$form, FormStateInterface $form_state) {
+    parent::buildExposeForm($form, $form_state);
+    $form['placeholder'] = [
+      '#title' => $this->t('Placeholder text'),
+      '#type' => 'textfield',
+      '#default_value' => $this->options['placeholder'],
+      '#weight' => -20
+    ];
+  }
+  
+  protected function defineOptions() {
+    $options = parent::defineOptions();
+    $options['placeholder']['default'] = t('Wallet name...');
+    return $options;
+  }
 
-  // Override to do nothing.
+  // Value options are built into the wallet element
   public function getValueOptions() { }
 
   public function adminSummary() {
     // set up $this->valueOptions for the parent summary
     $this->valueOptions = [];
     if ($this->value) {
-      $result = entity_load_multiple_by_properties('wallet', array('wid' => $this->value));
+      $result = entity_load_multiple_by_properties('wallet', ['wid' => $this->value]);
       foreach ($result as $wallet) {
         $this->valueOptions[$wallet->id()] = $wallet->label();
       }

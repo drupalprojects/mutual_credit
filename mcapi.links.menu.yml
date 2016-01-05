@@ -54,3 +54,4 @@ mcapi.mass:
 #  route_name: view.mcapi_transactions.accountant
 #  parent: mcapi.admin.transactions
 #  weight: 4
+

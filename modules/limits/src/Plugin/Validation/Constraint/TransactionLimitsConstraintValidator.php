@@ -15,6 +15,7 @@
 namespace Drupal\mcapi_limits\Plugin\Validation\Constraint;
 
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Entity\Currency;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Constraint;
 
@@ -49,7 +50,7 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator {
       $wallet = Wallet::load($wid);
       foreach ($percurrency as $curr_id => $diffs) {
         //check to see if any of the skips apply.
-        $currency = mcapi_currency_load($curr_id);
+        $currency = Currency::load($curr_id);
         $plugin = $this->limitManager->createInstanceCurrency($currency);
         if ($plugin->id === 'none') {
           continue;

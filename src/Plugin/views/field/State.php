@@ -7,6 +7,7 @@
 
 namespace Drupal\mcapi\Plugin\views\field;
 
+use Drupal\mcapi\Mcapi;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ResultRow;
@@ -26,7 +27,7 @@ class State extends FieldPluginBase {
 
   function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
     parent::init($view, $display, $options);//is this needed?
-    $this->states = mcapi_entity_label_list('mcapi_state');
+    $this->states = Mcapi::entityLabelList('mcapi_state');
   }
 
   function render(ResultRow $values) {

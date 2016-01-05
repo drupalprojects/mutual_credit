@@ -1,0 +1,21 @@
+uuid: cfa87f0b-61bd-4007-8036-5455733f66da
+langcode: en
+status: true
+dependencies:
+  module:
+    - mcapi
+    - mcapi_exchanges
+id: mcapi_wallet.og_exchange_ref
+field_name: og_exchange_ref
+entity_type: mcapi_wallet
+type: og_membership_reference
+settings:
+  target_type: mcapi_exchange
+module: mcapi_exchanges
+locked: true
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false
+

@@ -28,12 +28,12 @@ class FirstPartyRoutes {
       $route = new Route($editform->path);
       $route->setDefaults([
         '_entity_form' => 'mcapi_transaction.'.$id,
-//        '_controller' => '\Drupal\mcapi_1stparty\Controller\FirstPartyForm::loadForm',
         '_title_callback' => '\Drupal\mcapi_1stparty\FirstPartyTransactionForm::title'
       ]);
       $route->setRequirements([
-        '_custom_access' => '\Drupal\mcapi_1stparty\TransactionFormAccessCheck::access',
-        '_permission' => 'design 1stparty forms'
+        '_user_is_logged_in' => 'TRUE',
+        '_entity_create_access' => 'mcapi_transaction',
+        '_custom_access' => '\Drupal\mcapi_1stparty\TransactionFormAccessCheck::access'
       ]);
       $route->setOptions([
         'parameters' => [

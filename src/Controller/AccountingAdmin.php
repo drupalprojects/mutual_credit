@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Controller;
 
 use Drupal\system\Controller\SystemController;
 use Drupal\Core\Url;
+use Drupal\mcapi\Mcapi;
 
 /**
  * Returns responses for Wallet routes.
@@ -19,12 +20,9 @@ class AccountingAdmin extends SystemController {
    * {@inheritdoc}
    */
   function systemAdminMenuBlockPage() {
-    $create_access = $this->entityTypeManager()
-      ->getAccessControlHandler('mcapi_transaction')
-      ->enoughWallets($this->currentUser());
-    if ($create_access->isForbidden()) {
+    if (!Mcapi::enoughWallets($this->currentUser()->id())) {
       $message[] = $this->t("There aren't enough wallets for you to create a transaction.");
-      if (mcapi_one_wallet_per_user_mode()) {
+      if (Mcapi::maxWalletsOfBundle('user', 'user') == 1) {
         $message[] = $this->l(
           $this->t("Allow more wallets or more entities to own wallets."),
           Url::fromRoute('mcapi.admin_wallets')

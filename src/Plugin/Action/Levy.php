@@ -129,7 +129,7 @@ class Levy extends RulesActionBase {//implements ContainerFactoryPluginInterface
         ),
         'otheruser' => array(
           '#title' => t('Other account'),
-          '#type' => 'select_wallet',
+          '#type' => 'wallet_reference_autocomplete',
           //@todo
           '#default_value' => $this->configuration['otherwallet'],
           '#weight' => 1,

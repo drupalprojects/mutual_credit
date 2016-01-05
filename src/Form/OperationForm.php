@@ -6,6 +6,7 @@
  */
 namespace Drupal\mcapi\Form;
 
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\McapiEvents;
 use Drupal\mcapi\TransactionSaveEvents;
 use Drupal\Core\Entity\ContentEntityConfirmFormBase;
@@ -31,7 +32,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
    */
   function __construct($entity_type_manager, $route_match, $request_stack, $event_dispatcher) {
     $this->entityTypeManager = $entity_type_manager;
-    $this->action = mcapi_transaction_action_load($route_match->getparameter('operation'));
+    $this->action = Mcapi::transactionActionLoad($route_match->getparameter('operation'));
     $this->plugin = $this->action->getPlugin();
     $this->config = $this->plugin->getConfiguration();
     $this->eventDispatcher = $event_dispatcher;

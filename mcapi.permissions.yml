@@ -2,12 +2,21 @@
   title: 'Create own wallets'
   description: 'Users can create wallets up to the maximum number per user'
   'restrict access': TRUE
+  
 'configure mcapi':
   title: 'Configure community accounting'
   description: 'Design and setup the accounting system'
   'restrict access': TRUE
+  
 'manage mcapi':
   title: 'Manage community accounting'
   description: 'Suitable for accountants'
   'restrict access': TRUE
 
+'view all wallets':
+  title: 'View all wallets'
+  description: 'Wallet pages show balances and aggregated transaction data'
+  
+'view all transactions':
+  title: 'View all transactions'
+  description: 'Otherwise use can only view transactions they were involved in'

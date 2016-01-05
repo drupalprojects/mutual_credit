@@ -7,6 +7,7 @@
 
 namespace Drupal\mcapi\ViewBuilder;
 
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\Core\Entity\EntityInterface;
@@ -29,7 +30,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
   
   /**
    * {@inheritdoc}
-   * @todo update with entity_type.manager
+   * @todo update with entity_type.manager when core interface changes
    */
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
     return new static(
@@ -67,7 +68,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
       case 'full':
       case 'certificate':
         $build['#theme'] = 'certificate';
-        if ($transaction->state->target_id == 'erased') {
+        if ($entity->state->target_id == 'erased') {
           $build['stamp']['#markup'] = $entity->state->entity->label;//this is translated
         }
         break;
@@ -118,20 +119,23 @@ class TransactionViewBuilder extends EntityViewBuilder {
     foreach ($entities as $id => $transaction) {
       if (!$transaction->noLinks) {
         $view_link = \Drupal::routeMatch()->getRouteName() != 'entity.mcapi_transaction.canonical';
-        foreach ($this->buildActionlinks($transaction, $view_link) as $op) {
-          $items[] = [
-            '#type' => 'link',
-            '#title' => $op['title'],
-            '#url' => $op['url']
+        $links = $this->buildActionlinks($transaction, $view_link);
+        if ($links) {
+          foreach ($links as $op) {
+            $items[] = [
+              '#type' => 'link',
+              '#title' => $op['title'],
+              '#url' => $op['url']
+            ];
+          }
+          $build[$id]['links'] = [
+            //'#title' => t('Operations...'),
+            '#theme' => 'item_list',
+            '#list_type' => 'ul',
+            '#items' => $items,
+            '#attributes' => ['class' => ['transaction-operations']]
           ];
         }
-        $build[$id]['links'] = [
-          //'#title' => t('Operations...'),
-          '#theme' => 'item_list',
-          '#list_type' => 'ul',
-          '#items' => $items,
-          '#attributes' => ['class' => ['transaction-operations']]
-        ];
       }
     }
   }
@@ -158,7 +162,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
       ];
     }
     
-    foreach (mcapi_load_transaction_actions() as $action_name => $action) {
+    foreach (Mcapi::transactionActionsLoad() as $action_name => $action) {
       $plugin = $action->getPlugin();
       if ($plugin->access($transaction)) {
         $route_params = ['mcapi_transaction' => $transaction->serial->value];

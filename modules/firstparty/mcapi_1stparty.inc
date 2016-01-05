@@ -56,7 +56,8 @@ function theme_first_party_transaction_form($vars) {
     }
     //if it is in the template, render the token
     elseif (strpos($vars['twig_template'], '{ '.$fieldname.' }}')) {
-      $tokens[$fieldname] = mcapi_render_stripped($form[$fieldname]);
+      mcapi_strip_wrappers_recursive($form[$fieldname]);
+      $tokens[$fieldname] = $renderer->render($form[$fieldname]);
     }
     elseif($form[$fieldname]['#type'] == 'hidden' || $form[$fieldname]['#type'] == 'token') {
       $hidden .= $renderer->render($form[$fieldname]);
@@ -85,29 +86,15 @@ function theme_first_party_transaction_form($vars) {
   return $renderer->render($renderable);
 }
 
-/**
- * callback to render form elements without their theme_wrappers
- * simply stripping the theme_wrappers is cleaner but prevents the #states from working.
- *
- * @param array $element
- *
- * @return string
- *   HTML
- */
-function mcapi_render_stripped($element) {
-  if (isset($element['widget'])) {
-    $element = $element['widget'];
-  }
-  if (isset($element['#type']) && !in_array($element['#type'], ['checkbox', 'checkboxes', 'radios'])) {
-    mcapi_strip_wrappers_recursive($element);
-  }
-  return \Drupal::service('renderer')->render($element);
-}
+
 /*
  * helper function
  */
 function mcapi_strip_wrappers_recursive(&$element) {
-  //unset($element['#theme_wrappers']);
+  if (isset($element['#type']) && in_array($element['#type'], ['checkbox', 'checkboxes', 'radios'])) {
+    return;
+  }
+  unset($element['#theme_wrappers']);
   foreach (Element::Children($element) as $delta) {
     mcapi_strip_wrappers_recursive($element[$delta]);
   }

@@ -7,6 +7,7 @@
 
 namespace Drupal\mcapi\Plugin\Search;
 
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\Core\Database\Connection;
@@ -20,8 +21,8 @@ use Drupal\Core\Render\RendererInterface;
 use Drupal\Search\SearchQuery;
 use Drupal\search\Plugin\SearchIndexingInterface;
 use Drupal\search\Plugin\ConfigurableSearchPluginBase;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Component\Utility\SafeMarkup;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Executes a keyword search for transactions against the {mcapi_transaction}
@@ -153,14 +154,14 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
       '#title' => t('Only of the type(s)'),
       '#prefix' => '<div class="criterion">',
       '#suffix' => '</div>',
-      '#options' => mcapi_entity_label_list('mcapi_type'),
+      '#options' => Mcapi::entityLabelList('mcapi_type'),
     ];
     $form['advanced']['types-fieldset']['state'] = [
       '#type' => 'checkboxes',
       '#title' => t('Only in the state(s)'),
       '#prefix' => '<div class="criterion">',
       '#suffix' => '</div>',
-      '#options' => mcapi_entity_label_list('mcapi_state'),
+      '#options' => Mcapi::entityLabelList('mcapi_state'),
     ];
   }
 

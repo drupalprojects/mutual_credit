@@ -6,6 +6,7 @@
  */
 
 namespace Drupal\mcapi\Controller;
+use Drupal\mcapi\Mcapi;
 
 /**
  * Defines a class to build a listing of action entities.
@@ -19,7 +20,7 @@ class ActionListOverride extends \Drupal\action\ActionListBuilder {
   
   function __construct(EntityTypeInterface $entity_type, EntityStorageInterface $storage) {
     parent::__construct($entity_type, $storage);
-    $this->transactionActions = mcapi_load_transaction_actions();
+    $this->transactionActions = Mcapi::transactionActionsLoad();
   }
     
   /**

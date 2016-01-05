@@ -1,0 +1,218 @@
+<?php
+
+const CLEARING_CENTRAL_URL = 'http://cxn.org.za';
+const CLEARING_CENTRAL_IP = '69.61.35.151';
+const TRANSACTION_STATE_HANGING = 'hanging';
+const CEN_SUCCESS = 1;//response code
+
+use Drupal\mcapi\Entity\TransactionInterface;
+use Drupal\mcapi\Entity\Wallet;
+
+/**
+ * implements hook_form_wallet_form_alter().
+ * Add the intertrading settings to designated wallets
+ */
+function mcapi_cc_form_wallet_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  $wallet = $form_state->getFormObject()->getEntity();
+  if (!$wallet->isIntertrading()) {
+    return;
+  }
+  $used = FALSE;
+  foreach ($wallet->getSummaries() as $summary) {
+    if ($summary['trades']) {
+      $used = TRUE;
+      break;
+    }
+  }
+  $settings = \Drupal::keyValue('clearingcentral')->get($wallet->id());
+  
+  $form['clearingcentral'] = [
+    '#title' => t('Clearing Central service'),
+    '#type' => 'details',
+    '#open' => !$used,
+    'curr_id' => [
+      '#title' => t('Currency used for intertrading'),
+      '#type' => 'mcapi_currency_select',
+      '#multiple' => FALSE,
+      '#disabled' => $used,
+      '#default_value' => $settings['curr_id']
+    ],
+    'login' => [
+      '#type' => 'textfield',
+      '#title' => t('Exchange ID'),
+      '#description' => t(
+        'Network Identifier in the Community Exchange Network. For example: cen0123. You can check your account at %link.',
+        ['%link' => \Drupal::l(t('Clearing Central'), \Drupal\Core\Url::fromUri(CLEARING_CENTRAL_URL))]
+      ),
+      '#size' => 15,
+      '#maxlength' => 7,
+      '#disabled' => $used,
+      '#default_value' => $settings['login'],
+      '#weight' => 2
+    ],
+    'pass' => [
+      '#title' => t('Password'),
+      '#type' => 'textfield',
+      '#description' => t('Password of the Community Exchange Network account for this exchange. Leave blank to keep the stored password.'),
+      '#size' => 15,
+      '#disabled' => $used,
+      '#default_value' => $settings['pass'],
+      '#weight' => 3
+    ]
+  ];
+  if (!$used) {
+    $form['actions']['submit']['#submit'][] = 'mcapi_cc_save_wallet_settings';
+  }
+}
+
+function mcapi_cc_save_wallet_settings($form, $form_state) {
+  $settings = [
+    'curr_id' => $form_state->getValue('curr_id'),
+    'login' => $form_state->getValue('login'),
+    'pass' => $form_state->getValue('pass')
+  ];
+  \Drupal::keyValue('clearingcentral')
+    ->set($form_state->getFormObject()->getEntity()->id(), $settings);
+}
+
+/**
+ * Implements hook_entity_type_build().
+ */
+function mcapi_cc_entity_type_build(array &$entity_types) {
+  $entity_types['mcapi_transaction']
+    ->setFormClass('remotepay', 'Drupal\mcapi_cc\RemotePayForm');
+}
+
+
+/**
+ * implements mcapi hook_mcapi_form_list().
+ */
+function mcapi_cc_mcapi_form_list() {
+  $forms['remotepay'] = [
+    'title' => t('Pay a remote account'),
+    'route' => 'mcapi.remotepay',
+  ];
+  return $forms;
+}
+
+/**
+ * implements hook_ENTITY_insert().
+ * Saves the CC metadata and sends the transaction to clearing central
+ */
+function mcapi_cc_mcapi_transaction_insert($transaction)  {
+  if ($transaction->type->target_id == 'remote') {
+    //the transaction was created here, locally
+    if ($transaction->state->target_id == TRANSACTION_STATE_HANGING) {
+      //transaction is created locally
+      $CcTransaction = mcapi_cc_convert_outwards($transaction);
+
+      $client = \Drupal::httpClient([
+        'base_url' => CLEARING_CENTRAL_URL
+      ]);
+      try {
+        $data = $client->post('/txinput.php', $CcTransaction)->getBody();
+        drupal_set_message($data);//is this an array?
+        if ($data['response'] != SUCCESS) {
+          throw new Exception (clearingcentral_lookup_response($data['response']));
+        }
+      }
+      catch (GuzzleHttp\Exception\RequestException $e) {
+        drupal_set_message('No response from Clearing Central');
+      }
+    }
+    //write the transaction's remote fields
+    \Drupal::database()->insert('mcapi_cc')->fields([
+      'xid' => $transaction->id(),
+      'serial' => $transaction->serial->value,
+      'txid' => $transaction->uuid->value,
+      'remote_exchange_id' => $transaction->remote_exchange_id,
+      'remote_user_id' => $transaction->remote_user_id,
+      'remote_user_name' => $transaction->remote_user_name
+    ])->execute();
+  }
+}
+
+/**
+ * Convert an internal transaction entity to a Clearing central transaction array
+ * @param TransactionInterface $transaction
+ * @return array
+ */
+function mcapi_cc_convert_outwards(TransactionInterface $transaction) {
+  $CcTransaction = [
+    'txid' => $transaction->uuid->value,
+    'description' => $transaction->description->value,
+    'amount' => $transaction->worth->value, //@todo we'll need to convert this
+  ];
+  if ($transaction->payer->entity->payways->value == Wallet::PAYWAY_AUTO) {
+    $CcTransaction += [
+      'seller_nid' => $transaction->payer->entity->login,
+      'seller_id' => $transaction->payee->target_id,
+      'buyer_nid' => $transaction->remote_exchange_id,//this is the remote id
+      'buyer_id' => $transaction->remote_user_id,//this is the remote id
+    ];
+  }
+  elseif ($transaction->payer->entity->payways->value == Wallet::PAYWAY_AUTO) {
+    $CcTransaction += [
+      'buyer_nid' => $transaction->payer->entity->login,
+      'buyer_id' => $transaction->payee->target_id,
+      'seller_nid' => $transaction->remote_exchange_id,//this is the remote id
+      'seller_id' => $transaction->remote_user_id,//this is the remote id
+    ];
+  }
+  return $CcTransaction;
+}
+
+/**
+ * implements hook_ENTITY_load();
+ */
+function mcapi_cc_mcapi_transaction_load($transactions) {
+  foreach ($transactions as $xid => $transaction) {
+    if ($transaction->type->target_id != 'remote') {
+      return;
+    }
+    $extra = \Drupal::database()
+        ->select('mcapi_cc', 't')
+        ->fields('t', ['remote_exchange_id', 'remote_user_id', 'remote_user_name'])
+        ->condition('xid', $transaction->id())
+        ->execute()->fetchAssoc();
+    if (!$extra) echo $transaction->id();
+    foreach ($extra as $fieldname => $value) {
+      $transaction->{$fieldname} = $value;
+    }
+  }
+}
+
+/**
+ * 
+ * @param type $code
+ * @return string
+ */
+function clearingcentral_lookup_response($code) {
+  $codes = [
+    0 => t('Unknown error in Clearing Central'),
+    CEN_SUCCESS => 'success',
+    2 => t('Buyer does not exist (unknown account number)'),
+    3 => t('Exchange not registered on CC'),
+    4 => t('Transaction denied ("no funds", over limit, account locked, exchange over deficit limit etc.)'),
+    5 => t('faulty data'),
+    6 => t('Repeat transaction and so rejected by CC (same TXID submitted)'),
+    7 => t('URL error'),
+    8 => t('Conversion rate not set'),
+    9 => t('Server error (e.g. cannot access db)'),
+    10 => t('Password is wrong in settings'),
+    11 => t('IP of incoming server not in CC DB'),
+    12 => t('No TXID provided (update/delete only)'),
+    13 => t('TXID does not exist (update/delete only)'),
+    14 => t('Unable to connect to remote server'),
+    15 => t('Failed to connect to host or proxy')
+  ];
+  return $codes[$code];
+}
+
+
+/**
+ * implements hook_ENTITY_view().
+ */
+function mcapi_cc_mcapi_transaction_view($build) {
+  $remote_exchange =  \Drupal::keyValue('exchangeNames')->get($build['#mcapi_transaction']->remote_exchange_id);
+}

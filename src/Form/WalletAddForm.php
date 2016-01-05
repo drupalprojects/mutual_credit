@@ -53,10 +53,10 @@ class WalletAddForm extends ContentEntityForm {
   public function title() {
     return
       $this->t("New wallet for @entity_type '%title'",
-      array(
+      [
        '@entity_type' => $this->holder->getEntityType()->getLabel(),
        '%title' => $this->holder->label()
-      )
+      ]
     );
   }
 
@@ -64,54 +64,34 @@ class WalletAddForm extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $form['wid'] = array(
+    
+    $form['wid'] = [
       '#type' => 'value',
       '#value' => NULL,
-    );
-    $form['name'] = array(
+    ];
+    $form['holder_entity_type'] = [
+      '#type' => 'value',
+      '#value' => $this->holder->getEntityTypeId()
+    ];
+    $form['holder_entity_id'] = [
+      '#type' => 'value',
+      '#value' => $this->holder->id()
+    ];
+    $form['name'] = [
       '#type' => 'textfield',
       '#title' => t('Name or purpose of wallet'),
       '#default_value' => '',
-    );
-    $form['entity_type'] = array(
-      '#type' => 'value',
-      '#value' => $this->holder->getEntityTypeId()
-    );
-    $form['pid'] = array(
-      '#type' => 'value',
-      '#value' => $this->holder->id()
-    );
-/*
- * @todo should we do wallet permission on the walletAddForm?
-    foreach ($this->pluginManager->getDefinitions() as $def) {
-      $plugins[$def['id']] = $def['label'];
+      '#required' => '',
+    ];
+    
+    if (maxWalletsOfBundle($this->holder->getEntityTypeId(), $this->holder->bundle())==1) {
+      $form['name']['#access'] = FALSE;
     }
-
-    $form['access'] = array(
-      '#title' => t('Acccess settings'),
-      '#type' => 'details',
-      '#collapsible' => TRUE,
-      'viewers' => array(
-    	  '#title' => t('Who can view?'),
-        '#type' => 'select',
-        '#options' => $plugins
-      ),
-      'payees' => array(
-    	  '#title' => t('Who can request from this wallet?'),
-        '#type' => 'select',
-        '#options' => $plugins
-      ),
-      'payers' => array(
-    	  '#title' => t('Who can contribute to this wallet?'),
-        '#type' => 'select',
-        '#options' => $plugins
-      )
-    );
-    */
-    $form['submit'] = array(
+    
+    $form['submit'] = [
     	'#type' => 'submit',
       '#value' => t('Create')
-    );
+    ];
     return $form;
   }
 
@@ -123,17 +103,17 @@ class WalletAddForm extends ContentEntityForm {
     //if there was a wallet storage controller this unique checking would happen there.
     $values = $form_state->getValues();
     $query = $this->database->select('mcapi_wallet', 'w')
-    ->fields('w', array('wid'))
+    ->fields('w', ['wid'])
     ->condition('name', $values['name']);
 
     if (!\Drupal::config('mcapi.settings')->get('unique_names')) {
-      $query->condition('pid', $values['pid']);
-      $query->condition('entity_type', $values['entity_type']);
+      $query->condition('holder_entity_id', $values['holder_entity_id']);
+      $query->condition('holder_entity_type', $values['holder_entity_type']);
     }
     if ($query->execute()->fetchField()) {
       $form_state->setErrorByName(
         'name',
-        t("The wallet name '%name' is already used.", array('%name' => $values['name']))
+        t("The wallet name '%name' is already used.", ['%name' => $values['name']])
       );
     }
   }
@@ -142,11 +122,10 @@ class WalletAddForm extends ContentEntityForm {
    * {@inheritdoc}
    */
   function submitForm(array &$form, FormStateInterface $form_state) {
-    $form_state->cleanValues();
-    $wallet = Wallet::create($form_state->getValues());
-    $wallet->save();
-    $form_state->setRedirectUrl($wallet->getHolder()->urlInfo());
+    parent::submitForm($form, $form_state);
+    $form_state->setRedirectUrl($wallet->urlInfo('edit-form'));
+    drupal_set_message('Wallet ');
   }
-
+  
+  
 }
-

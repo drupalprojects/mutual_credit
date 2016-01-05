@@ -11,7 +11,7 @@ use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
 
 
 /**
- * Defines the 'wallet' entity field type, which is only separate from
+ * Defines the 'wallet' entity field type, which differs from
  * entity_reference because it has a separate widget and autocomplete class
  *
  * @FieldType(
@@ -26,4 +26,29 @@ use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
  */
 class WalletItem extends EntityReferenceItem {
 
+  
+  /**
+   * {@inheritdoc}
+   */
+  public static function defaultStorageSettings() {
+    //these are overridden in BaseFieldDefinition
+    return array(
+      'target_type' => 'mcapi_wallet',
+    ) + parent::defaultStorageSettings();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function defaultFieldSettings() {
+    //these are overridden in BaseFieldDefinition
+    return array(
+      'handler' => 'default:wallet',
+      'handler_settings' => [
+        'op' => '*** REPLACE THIS ***'
+      ],
+    ) + parent::defaultFieldSettings();
+  }
+  
+  
 }

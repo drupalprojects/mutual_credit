@@ -1,0 +1,12 @@
+id: remote
+label: Remote
+description: Requires signatures by default
+start_state: hanging
+provider: mcapi
+view:
+  authenticated: authenticated
+edit: { }
+dependencies:
+  module:
+    - mcapi_cc
+third_party_settings: { }

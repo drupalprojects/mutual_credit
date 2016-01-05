@@ -10,14 +10,21 @@
 
 namespace Drupal\mcapi_exchanges;
 
+use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Exchange;
+use Drupal\og\Og;
+use Drupal\og\OgMembershipInterface;
 use Drupal\user\Entity\User;
-use Drupal\mcapi_exchanges\Entity\Exchange;
+use Drupal\user\EntityOwnerInterface;
+use Drupal\Core\Session\AccountInterface;
+
+use Drupal\Core\Entity\ContentEntityInterface;
 
 
-class Exchanges {
+class Exchanges extends Exchange {
 
   /**
-   * return a list of exchanges of which the passed entity is a member
+   * return exchanges of which the passed entity is a member
    * If an exchange is passed, it returns itself
    *
    * @param OwnerEntityInterface $entity
@@ -25,86 +32,38 @@ class Exchanges {
    *
    * @return integer[]
    *   Exchange entity ids
-   *
-   * @deprecated
-   * @todo replace all uses of this with _og_get_entity_groups($entity_type = 'user', $entity = NULL, $states = array(OG_STATE_ACTIVE), $field_name = NULL)
+   * 
+   * @todo check all calls to this are using the needed boolean args
+   * @todo consider usering entityQuery directly
    */
-  static function in(OwnerEntityInterface $entity = NULL, $enabled = TRUE, $open = FALSE) {
+  static function memberOf(ContentEntityInterface $entity = NULL, $enabledOnly = FALSE, $openOnly = FALSE, $visibleOnly = FALSE) {
     if (!is_object($entity)) {
       $entity = User::load(\Drupal::currentUser()->id());
     }
-    if ($entity->getEntityTypeId() == 'user') drupal_set_message('Exchanges::in not suitable for finding out what group a user is in');
-
-//    $groups = og_get_entity_groups($entity_type = 'mcapi_exchange', $entity, array(OG_STATE_ACTIVE), EXCHANGE_OG_REF);
-//    return $groups['mcapi_exchange'];
-
-    $exchanges = [];
-    if (is_null($entity)) {
-      $entity = User::load(\Drupal::currentUser()->id());
-    }
-    if ($entity->getEntityTypeId() == 'mcapi_exchange') {
-      //an exchange references itself only
-      $exchanges[] = $entity->id();
-    }
-    else{
-      if (in_array($entity->getEntityTypeId(), Exchange::walletableBundles())) {
-        foreach($entity->{EXCHANGE_OG_REF}->referencedEntities() as $entity) {
-          //exclude disabled exchangesloadby
-          if (($enabled && !$entity->status->value) || ($open && !$entity->open->value)) {
-            continue;
-          }
-          $exchanges[] = $entity->id();
-        }
+    $in = Og::getEntityGroups($entity, [OgMembershipInterface::STATE_ACTIVE], EXCHANGE_OG_FIELD);
+    drupal_set_message('checking membership of entity '.$entity->label() .'. does this need static?', 'warning');
+    $result = [];
+    if (isset($in['mcapi_exchange'])) {
+      foreach ($in['mcapi_exchange'] as $id => $exchange) {
+        if ($enabledOnly && !$exchange->status->value) continue;
+        if ($openOnly && !$exchange->open->value) continue;
+        if ($visibleOnly && !$exchange->visible->value) continue;
+        $result[$id] = $exchange;
       }
     }
-    return $exchanges;
+    return $result;
   }
-
-
-  /**
-   * Get the exchanges which this wallet can be used in.
-   * If the holder is an exchange return that exchange,
-   * otherwise return the exchanges the holder is in.
-   *
-   * @param \Drupal\mcapi\Entity\WalletInterface $wallet
-   *
-   * @param boolean $open
-   *   exclude closed exchanges
-   *
-   * @return integer[]
-   *   keyed by entity id
-   *
-   * @todo maybe this should return only exchange ids?
-   * @deprecated replace with og_get_entity_groups($entity_type = 'user', $entity = NULL, $states = array(OG_STATE_ACTIVE), $field_name = NULL);
-   */
-  public static function walletExchanges(WalletInterface $wallet, $open = FALSE) {
-    return $wallet->entity_type == 'mcapi_exchange' ?
-      array($wallet->pid => $wallet->getHolder()) ://@todo how do exchanges own wallets if exchanges aren't an entity?
-      Self::in($wallet->getHolder(), TRUE, $open);
-  }
-
-
-  //walletable bundles are any bundles with the exchange field on them
-  public static function walletableBundles() {
-    debug('Walletable bundles override may not be needed');
-    $field_defs = \Drupal::entityTypeManager()
-      ->getStorage('field_config')
-      ->loadbyProperties(array('field_name' => EXCHANGE_OG_REF));
-    foreach ($field_defs as $field) {
-      $types[$field->entity_type][$field->bundle];
-    }
-    return $types;
-  }
-
 
   /*
    * identify a new parent entity for a wallet
    */
-  public static function findNewHolder($previous_holder) {
-    if($exchange_ids = Exchanges::in($previous_holder, FALSE)) {
-      //if the parent entity was in more than one exchange, this will pick a random one to take ownership
-      return Exchange::load(reset($exchanges));
+  public static function findNewHolder(ContentEntityInterface $previous_holder) {
+    if ($previous_holder->getEntityTypeId() == 'mcapi_exchange') {
+      return User::load(1);
     }
+    $exchanges = Exchanges::memberOf($previous_holder, TRUE);
+    //if the parent entity was in more than one exchange, just pick the first
+    return reset($exchanges);
   }
 
   /**
@@ -116,45 +75,28 @@ class Exchanges {
    * @return CurrencyInterface[]
    */
   public static function ownerEntityCurrencies(EntityOwnerInterface $entity = NULL) {
-    $exchange_ids = Exchanges::in($entity, TRUE);
-    return SELF::currencies($exchange_ids, FALSE);
+    return SELF::exchangeCurrencies(SELF::memberOf($entity, TRUE));
   }
-
-  /**
-   * Identify the currencies which can be used by a given wallet
-   *
-   * @param WalletInterface $wallet
-   *
-   * @return CurrencyInterface[]
-   *
-   * @todo refactor this
-   */
-  public static function walletCurrencies(walletInterface $wallet = NULL) {
-    $exchange_ids = Exchanges::in($wallet->getOwner(), TRUE);
-    return SELF::currencies($exchange_ids, FALSE);
-  }
-
 
   /**
    * Get all the currencies in the given exchanges
    *
    * @param array $exchange_ids
-   * @param type $ticks
    *
    * @return CurrencyInterface[]
    */
-  public static function currencies(array $exchange_ids, $ticks = FALSE) {
+  public static function exchangeCurrencies(array $exchanges) {
     $currencies = [];
-    foreach (Exchange::loadmultiple($exchange_ids) as $exchange) {
+    foreach ($exchanges as $exchange) {
       foreach ($exchange->get('currencies')->referencedEntities() as $currency) {
-        if (!$ticks || $currency->ticks) {
-          $currencies[$currency->id()] = $currency;
-        }
+        $currencies[$currency->id()] = $currency;
       }
     }
     uasort($currencies, array('\Drupal\Component\Utility\SortArray', 'sortByWeightProperty'));
     return $currencies;
   }
+  
+
 
   /**
    * get a list of all the currencies currently in a wallet's scope
@@ -166,26 +108,85 @@ class Exchanges {
    *   keyed by currency id
    *
    */
-  public static function currenciesAvailable($wallet) {
-    $exchanges = Exchanges::walletExchanges($wallet);
-    $wallet->currencies_available = [];
-    foreach (Exchanges::currencies($exchanges) as $currency) {
-      $wallet->currencies_available[$currency->id()] = $currency;
+  public static function currenciesAvailableToUser(AccountInterface $account = NULL) {
+    $exchanges = $account->get(EXCHANGE_OG_FIELD)->referencedEntities();
+    if (empty($exchanges) && $account->id() == 1){
+      $exchanges = \Drupal\mcapi_exchanges\Entity\Exchange::loadMultiple();
     }
+    return Self::exchangeCurrencies($exchanges);
   }
-
 
   /**
-   * Check if an entity is the owner of a wallet
-   * @todo this is really a constant, but constants can't store arrays. What @todo?
-   *
+   * Get all the currency ids for one or more exchanges
+   * I don't think there is a way to do reverse lookup entity query.
+   * So this is a bit of a hack, accessesing the entity reference field table directly
+   * @param array $exchange_ids
    * @return array
-   *   THE list of ops because arrays cannot be stored in constants
-   *
-   * @todo this needs to be a plugin, or at least alterable by the exchanges module
+   *   the currency ids
+   * 
+   * @todo might it be better to iterate though the exchange entities and 
+   * $exchange->get('currencies')->referencedEntities()
+   * then make them unique?
+   * @todo put this a static container
    */
-  public static function walletOps() {
-    return [];
+  static function getCurrenciesOfExchanges($exchange_ids) {
+    //we need all the currencies referenced by these exchanges
+    return \Drupal::database()->select('mcapi_exchange__currencies', 'c')
+      ->fields('c', ['currencies_target_id'])
+      ->condition('entity_id', $exchange_ids, 'IN')
+      ->execute()->fetchCol();
   }
+
+  /**
+   * Get all the exchanges using a particular currency
+   * I don't think there is a way to do reverse lookup entity query.
+   * So this is a bit of a hack, accessesing the entity reference field table directly
+   * @param string $curr_id
+   * 
+   * @return array
+   *   the exchange ids
+   * 
+   */
+  static function getExchangesUsing($curr_id) {
+    return \Drupal::database()->select('mcapi_exchange__currencies', 'c')
+      ->fields('c', ['entity_id'])
+      ->condition('currencies_target_id', $curr_id)
+      ->execute()->fetchCol();
+  }
+
+
+  static function exchangeLoadByCode($code) {
+    $exchanges =  \Drupal::entityTypeManager()
+      ->getStorage('mcapi_exchange')
+      ->loadByProperties(['code' => $code]);
+    return reset($exchanges);
+  }
+
+  /**
+   * field api default value callback
+   * Populate the currencies entityref field (on exchange entity) 
+   * using the currencies in exchanges the current user is in
+   *
+   * @param ContentEntityInterface $exchange
+   *   the exchange
+   *
+   * @param array $field_definition
+   *
+   * @return string[]
+   *   currency ids
+   *
+   * @todo this might not make sense usability wise;
+   */
+  static function defaultCurrencyId(ContentEntityInterface $exchange, $field_definition) {
+    $output = [];
+    //default currencies are the currencies of the exchanges of which the current user is a member
+    if ($exchange_is = Exchanges::memberOf(NULL, TRUE)) {
+      foreach (Exchanges::exchangeCurrencies($exchanges) as $currency) {
+        $output[] = $currency->id();
+      }
+    }
+    return $output;
+  }
+
 
 }

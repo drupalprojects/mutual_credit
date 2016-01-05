@@ -22,7 +22,7 @@ fieldapi_presets:
     preset:
       placeholder: blah
 experience:
-  twig: "Description of the exchange:\r\n{{ description }}\r\nin category{{ category }}\r\nwith\r\n{{ partner }}\r\npaying the sum of\r\n{{ worth }}"
+  twig: "Description of the exchange:\r\n{{ description }}\r\nwith\r\n{{ partner }}\r\npaying the sum of\r\n{{ worth }}"
   button: Preview
   preview: page
 langcode: en

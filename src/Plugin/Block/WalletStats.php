@@ -3,12 +3,13 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\Block\WalletStats
- * @todo inject entityTypeManager?
+ * @todo inject entityTypeManager? Find the wallet to use or remove this block!
  */
 
 namespace Drupal\mcapi\Plugin\Block;
 
 use Drupal\mcapi\Plugin\Block\McapiBlockBase;
+use Drupal\mcapi\Mcapi;
 
 /**
  * Displays balances for all the wallets belonging to an entity
@@ -30,11 +31,7 @@ class WalletStats extends McapiBlockBase {
     
     return [
       '#theme' => 'mcapi_wallets',
-      '#wallets' => \Drupal::entityTypeManager()
-        ->getStorage('mcapi_wallet')
-        ->filter(
-          ['holder' => $contentEntity]
-        )
+      '#wallets' => Mcapi::walletsOf($content____entity)
     ];
   }
 }

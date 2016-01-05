@@ -3,21 +3,19 @@
 /**
  * @file
  * Contains \Drupal\mcapi_exchanges\Entity\Exchange.
- * @todo make this work with OG and OG roles
  */
 
 namespace Drupal\mcapi_exchanges\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
-use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
-use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi_exchanges\ExchangeInterface;
+use Drupal\mcapi\Mcapi;
 
 
 /**
@@ -30,16 +28,20 @@ use Drupal\mcapi_exchanges\ExchangeInterface;
  *     "storage" = "Drupal\mcapi_exchanges\ExchangeStorage",
  *     "view_builder" = "Drupal\mcapi_exchanges\ExchangeViewBuilder",
  *     "access" = "Drupal\mcapi_exchanges\ExchangeAccessControlHandler",
- *     "list_builder" = "Drupal\mcapi_exchanges\ExchangeListBuilder"
+ *     "list_builder" = "Drupal\mcapi_exchanges\ExchangeListBuilder",
  *     "form" = {
  *       "add" = "Drupal\mcapi_exchanges\Form\ExchangeWizard",
  *       "edit" = "Drupal\mcapi_exchanges\Form\ExchangeForm",
  *       "delete" = "Drupal\mcapi_exchanges\Form\ExchangeDeleteConfirm",
+ *       "join" = "Drupal\mcapi_exchanges\Form\Join",
  *       "masspay" = "Drupal\mcapi_exchanges\Form\MassPay",
  *       "enable" = "Drupal\mcapi_exchanges\Form\ExchangeEnableConfirm",
  *       "disable" = "Drupal\mcapi_exchanges\Form\ExchangeDisableConfirm",
  *     },
- *     "views_data" = "Drupal\mcapi_exchanges\ExchangeViewsData"
+ *     "views_data" = "Drupal\mcapi_exchanges\ExchangeViewsData",
+ *     "route_provider" = {
+ *       "html" = "\Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider",
+ *     },
  *   },
  *   admin_permission = "configure mcapi",
  *   translatable = FALSE,
@@ -51,13 +53,14 @@ use Drupal\mcapi_exchanges\ExchangeInterface;
  *     "uuid" = "uuid",
  *     "weight" = "weight",
  *     "status" = "status"
- *   }
+ *   },
  *   links = {
  *     "canonical" = "/exchange/{mcapi_exchange}",
  *     "edit-form" = "/exchange/{mcapi_exchange}/edit",
- *     "delete-form" = "/exchange/{mcapi_exchange}/delete",
- *     "enable" = "/exchange/{mcapi_exchange}/enable",
- *     "disable" = "/exchange/{mcapi_exchange}/disable"
+ *     "join-form" = "/exchange/{mcapi_exchange}/join",
+ *     "delete-confirm" = "/exchange/{mcapi_exchange}/delete",
+ *     "enable-confirm" = "/exchange/{mcapi_exchange}/enable",
+ *     "disable-confirm" = "/exchange/{mcapi_exchange}/disable"
  *   }
  * )
  */
@@ -68,17 +71,19 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   const VISIBILITY_RESTRICTED = 1;
   const VISIBILITY_TRANSPARENT = 2;
   
+  const intertradingWallet_NAME = '_intertrading';
+  
   /**
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
-    $values += array(
-      //'name' => t("%name's exchange", array('%name' => $account->label())),
+    $values += [
+      //'name' => t("%name's exchange", ['%name' => $account->label()]),
       'uid' => \Drupal::currentUser()->id() ? : 1,//drush is user 0
       'status' => TRUE,
       'open' => TRUE,
       'visibility' => TRUE,
-    );
+    ];
   }
 
   /**
@@ -97,16 +102,13 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     }
   }
 
-  public function addIntertradingWallet() {
-    $props = array(
-      'entity_type' => 'mcapi_exchange',
-      'pid' => $this->id(),
-      'name' => '_intertrading',
-      Wallet::OP_DETAILS => Wallet::ACCESS_MEMBERS,
-      Wallet::OP_SUMMARY => Wallet::ACCESS_MEMBERS,
-      Wallet::OP_PAYIN => Wallet::ACCESS_MEMBERS,
-      Wallet::OP_PAYOUT => Wallet::ACCESS_MEMBERS
-    );
+  private function addIntertradingWallet() {
+    $props = [
+      'holder_entity_type' => 'mcapi_exchange',
+      'holder_entity_id' => $this->id(),
+      'payways' => Wallet::PAYWAY_AUTO,
+    ];
+    print_r($props);
     $wallet = Wallet::create($props);
     $wallet->save();
   }
@@ -125,16 +127,36 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       ->setLabel(t('UUID'))
       ->setDescription(t('The exchange UUID.'))
       ->setReadOnly(TRUE);
+    
+    $fields['langcode'] = BaseFieldDefinition::create('language')
+      ->setLabel(t('Language code'))
+      ->setDescription(t('Language used.'))
+      ->setTranslatable(TRUE);
 
     $fields['name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Full name'))
       ->setDescription(t('The full name of the exchange.'))
       ->setRequired(TRUE)
-      ->setSettings(array('default_value' => '', 'max_length' => 64))
+      ->setSettings(['default_value' => '', 'max_length' => 64])
       ->setDisplayOptions(
         'view',
-        array('label' => 'hidden', 'type' => 'string', 'weight' => -5)
-      );
+        ['label' => 'hidden', 'type' => 'string', 'weight' => -5]
+      )
+      ->addConstraint('UniqueField');
+    
+    $fields['code'] = BaseFieldDefinition::create('string')
+      ->setLabel(t('Machine name'))
+      ->setSettings(['default_value' => '', 'max_length' => 32])
+      ->setReadOnly(TRUE);
+    
+    $fields['body'] = BaseFieldDefinition::create('string_long')
+      ->setLabel(t('Home page content'))
+      ->setDescription(t('Welcome, about us, how to join etc.'))
+      ->setRequired(TRUE)
+      ->setTranslatable(TRUE)
+      ->setSettings(['default_value' => ''])
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
 
     $fields['uid'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Manager of the exchange'))
@@ -144,12 +166,12 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     $fields['status'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Active'))
       ->setDescription(t('TRUE if the exchange is current and working.'))
-      ->setSettings(array('default_value' => TRUE));
+      ->setSettings(['default_value' => TRUE]);
 
     $fields['open'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Open'))
       ->setDescription(t('TRUE if the exchange can trade with other exchanges'))
-      ->setSettings(array('default_value' => TRUE));
+      ->setSettings(['default_value' => TRUE]);
 
     $fields['visibility'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Visibility'))
@@ -159,17 +181,27 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
 
     $fields['mail'] = BaseFieldDefinition::create('email')
       ->setLabel(t('Email'))
-      ->setDescription(t('The official contact address'));
+      ->setDescription(t('The official contact address'))
+      ->setRequired(TRUE);
+
+    $fields['logo'] = BaseFieldDefinition::create('image')
+      ->setLabel(t('Logo'))
+      ->setDescription(t('A small image'))
+      ->setSettings(['default_value' => TRUE])
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE)
+      ->setSetting('max_resolution', '400x100')
+      ->setSetting('min_resolution', '80x80');
 
     $fields['created'] = BaseFieldDefinition::create('created')
     ->setLabel(t('Created'))
-    ->setDescription(t('The time that the transaction was created.'))
+    ->setDescription(t('The time that the exchange was created.'))
     ->setTranslatable(TRUE)
-    ->setDisplayOptions('view', array(
+    ->setDisplayOptions('view', [
       'label' => 'hidden',
-      'type' => 'timestamp',
-    ))
-    ->setDisplayConfigurable('form', TRUE);;
+      'type' => 'hidden',
+    ])
+    ->setDisplayConfigurable('view', TRUE);
 
     return $fields;
   }
@@ -177,11 +209,10 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   /**
    * {@inheritdoc}
    */
-  function intertrading_wallet() {
-    $props = array('name' => '_intertrading', 'pid' => $this->id());
+  function intertradingWallet() {
     $wallets = $this->entityTypeManager()
       ->getStorage('mcapi_wallet')
-      ->loadByProperties($props);
+      ->loadByProperties(['payways' => Wallet::PAYWAY_AUTO, 'holder_entity_id' => $this->id()]);
     return reset($wallets);
   }
 
@@ -193,11 +224,11 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    *   an array of visibility type names, keyed by integer constants or just one name
    */
   public function visibility_options($constant = NULL) {
-    $options = array(
+    $options = [
       SELF::VISIBILITY_PRIVATE => t('Private except to members'),
       SELF::VISIBILITY_RESTRICTED => t('Restricted to members of this site'),
       SELF::VISIBILITY_TRANSPARENT => t('Transparent to the public')
-    );
+    ];
     if (is_null($constant))return $options;
     return $options[$constant];
   }
@@ -205,6 +236,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
 
   /**
    * {@inheritdoc}
+   * @todo remove uid field and change getOwner to be the first person in the lead og_role
    */
   public function getOwner() {
     return $this->get('uid')->entity;
@@ -232,27 +264,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     $this->set('uid', $account->id());
     return $this;
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function transactions($children = FALSE) {
-    $xids = db_select('og_membership', 'm')
-      ->fields('m', array('etid'))
-      ->condition('entity_type', 'mcapi_transaction')
-      ->condition('group_type', 'mcapi_exchange')
-      ->condition('gid', $this->id())
-      ->execute()->fetchCol();
-
-    if ($xids && !$children) {
-      $filtered = $this->entityTypeManager()
-        ->getStorage('mcapi_transaction')
-        ->filter(array('xid' => $xids));
-      $xids = array_unique($filtered);
-    }
-    return count($xids);
-  }
-
+  
   /**
    * {@inheritdoc}
    */
@@ -261,15 +273,14 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       $this->reason = t('Exchange must be disabled');
       return FALSE;
     }
-    if (count($this->intertrading_wallet()->history())) {
+    if (count($this->intertradingWallet()->history())) {
       $this->reason = t('Exchange intertrading wallet has transactions');
       return FALSE;
     }
     //if the exchange has wallets, even orphaned wallets, it can't be deleted.
-    $conditions = array('exchanges' => array($this->id()));
-    $wallet_ids = $this->entityTypeManager()->getStorage('mcapi_wallet')->filter($conditions);
-    if (count($wallet_ids) > 1){
-      $this->reason = t('The exchange still owns wallets: @nums', array('@nums' => implode(', ', $wallet_ids)));
+    $wallet_ids = Mcapi::walletsOf($this);
+    if (count($wallet_ids)) {
+      $this->reason = t('The exchange still owns wallets: @nums', ['@nums' => implode(', ', $wallet_ids)]);
       return FALSE;
     }
     return TRUE;
@@ -293,16 +304,17 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   }
 
   /**
-   * {@inheritdoc}
+   * reverse lookup to see if a given user is a member of this exchange
+   * @todo rewrite this completely
    */
-  public function ___isMember($exchange, ContententityInterface $entity) {
+  public function hasMember(AccountInterface $entity) {
     if ($this->multiple) {
       return _og_is_member(
         'mcapi_exchange',
         $this->id(),
         $entity->getEntityType(),
         $entity,
-        array(OG_STATE_ACTIVE)
+        [OG_STATE_ACTIVE]
       );
 
       //@todo remove all this
@@ -310,7 +322,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
         $entity = $entity->getOwner();
       }
       $id = $entity->id();
-      $members = $this->{EXCHANGE_OG_REF}->referencedEntities();
+      $members = $this->{EXCHANGE_OG_FIELD}->referencedEntities();
 
       foreach ($members as $account) {
         if ($account->id() == $id) return TRUE;
@@ -323,16 +335,15 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   /**
    * {@inheritdoc}
    */
-  public function users() {
-    return db_select('og_membership', 'm')
-      ->fields('m', array('etid'))
-      ->condition('entity_type', 'user')
-      ->condition('group_type', 'mcapi_exchange')
-      ->condition('gid', $this->id())
-      ->execute()->fetchCol();
+  public function memberIds($entity_type) {
+    return \Drupal::entityQuery('og_membership')
+      ->condition('member_entity_type', $entity_type)
+      ->condition('group_entity_type', 'mcapi_exchange')
+      ->condition('group_entity_id', $this->id())
+      ->execute();
   }
-
-
+  
+  
 }
 
 

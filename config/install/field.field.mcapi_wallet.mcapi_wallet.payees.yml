@@ -1,0 +1,30 @@
+uuid: c70f983f-4041-4239-8e00-f2a8e19fe1aa
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.mcapi_wallet.payees
+  module:
+    - mcapi
+id: mcapi_wallet.mcapi_wallet.payees
+field_name: payees
+entity_type: mcapi_wallet
+bundle: mcapi_wallet
+label: 'Nominated payees'
+description: 'Name the users apart from you, who can make payments in to this wallet'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    include_anonymous: false
+    filter:
+      type: _none
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+field_type: entity_reference
+

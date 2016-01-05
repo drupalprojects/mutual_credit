@@ -19,14 +19,7 @@ interface ExchangeInterface extends ContentEntityInterface, EntityOwnerInterface
    * get the wid of the this exchange's intertrading wallet
    * @return integer
    */
-  function intertrading_wallet();
-
-  /**
-   * get the number of transactions in this exchange, counted by serial number
-   *
-   * @return integer
-   */
-  function transactions();
+  function intertradingWallet();
 
   /**
    * find out whether an exchange can be deleted
@@ -48,10 +41,12 @@ interface ExchangeInterface extends ContentEntityInterface, EntityOwnerInterface
   function deactivatable();
   
   /**
-   * return the user ids of all the members in this exchange
+   * return the ids of all the member entities of this exchange
+   * @param string $entity_type_id
+   *   the type of entity to be counted
    * 
    * @return integer[]
    *   the user ids
    */
-  public function users();
+  public function memberIds($entity_type_id);
 }

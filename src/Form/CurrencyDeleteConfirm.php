@@ -15,20 +15,5 @@ use Drupal\Core\Entity\EntityDeleteForm;
  */
 class CurrencyDeleteConfirm extends EntityDeleteForm {
 
-  /**
-   * {@inheritdoc}
-   */
-  public function getDescription() {
-    return $this->t('ALL transactions in that currency will be deleted!');
-  }
-
-
-  /**
-   * {@inheritdoc}
-   */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
-    parent::submitForm($form, $form_state);
-    \Drupal::entityTypeManager()->getStorage('mcapi_transaction')->wipeslate($this->entity->id());
-  }
 
 }

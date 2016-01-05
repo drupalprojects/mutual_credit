@@ -3,6 +3,7 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\Derivative\McapiLocalTask.
+ * @deprecated ?
  */
 
 namespace Drupal\mcapi\Plugin\Derivative;
@@ -49,6 +50,8 @@ class McapiLocalTask extends DeriverBase implements ContainerDeriverInterface {
       if (!$max) {
         continue;
       }
+      continue;
+      
       list($entity_type_id, $bundle_name) = explode(':', $entity_type_bundle);
       $key = "mcapi.wallet.{$bundle_name}.task";
       //assumes bundle names don't clash!

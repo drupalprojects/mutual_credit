@@ -1,0 +1,7 @@
+mcapi.remotepay:
+  title: Pay a remote account
+  description: Manage all aspects of your community's money system
+  route_name: mcapi.remotepay
+  menu_name: account
+  weight: 5
+

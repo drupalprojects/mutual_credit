@@ -28,19 +28,33 @@ class CurrencyAccessControlHandler extends EntityAccessControlHandler {
       case 'view':
         return AccessResult::allowed()->cachePerPermissions();
       case 'create':
-      case 'delete':
       case 'update':
-        if ($account->hasPermission('configure mcapi')) return AccessResult::allowed()->cachePerPermissions();
+        if ($account->hasPermission('configure mcapi')) {
+          return AccessResult::allowed()->cachePerPermissions();
+        }
         elseif ($entity->id()) {//i.e it is already saved
-          if ($account->id() == $entity->getOwnerId()) return AccessResult::allowed()->cachePerUser();
-          else return AccessResult::forbid()->cachePerUser();
+          if ($account->id() == $entity->getOwnerId()) {
+            $result = AccessResult::allowed()->cachePerUser();
+          }
+          else {
+            $result = AccessResult::forbidden()->cachePerUser();
+          }
         }
         else {
           //who can create new currencies?
           drupal_set_message('Need to sort out Currency create access script');
-          return AccessResult::forbid()->cachePerUser();
+          $result = AccessResult::forbidden()->cachePerUser();
         }
         break;
+      case 'delete':
+        $count = \Drupal::entityTypeManager()
+          ->getStorage('mcapi_transaction')
+          ->getQuery()->condition('worth.curr_id', $entity->id())
+          ->count()
+          ->execute();
+        $result = $count ? 
+          AccessResult::forbidden() :
+          AccessResult::allowed();
     };
     return $result;
   }

@@ -6,13 +6,13 @@ entity_type: mcapi_exchange
 bundle: mcapi_exchange
 label: Currency(s)
 description: 'Which currencies can be used in this exchange?'
-required: 1
+required: 0
 default_value: {  }
-default_value_callback: 'mcapi_default_currency_id'
+default_value_callback: '\Drupal\mcapi_exchanges\Exchanges::defaultCurrencyId'
 settings:
   handler: default
   handler_settings:
-    target_bundles: {  }
+    target_bundles: null
 dependencies:
   config:
     - field.storage.mcapi_exchange.currencies

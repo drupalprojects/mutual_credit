@@ -8,12 +8,11 @@ namespace Drupal\mcapi\ListBuilder;
 
 use Drupal\Core\Config\Entity\DraggableListBuilder;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Render\Element;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\Core\Render\Element;
 
 /**
  * Provides a listing of currencies
- *
  */
 class CurrencyListBuilder extends DraggableListBuilder {
 
@@ -48,19 +47,19 @@ class CurrencyListBuilder extends DraggableListBuilder {
 
     $type = $entity->issuance ? $entity->issuance : Currency::TYPE_ACKNOWLEDGEMENT;
 
-    $count = $entity->transactions(array('curr_id' => $entity->id()));
+    $count = $entity->transactions(['curr_id' => $entity->id()]);
     //this includes deleted transactions
-    $row['transactions'] = array(
+    $row['transactions'] = [
       '#markup' => $count
-    );
+    ];
 
     //this includes deleted transactions
-    $row['volume'] = array(
-      '#markup' => $entity->format($entity->volume(array('state' => NULL)))
-    );
-    $row['issuance'] = array(
+    $row['volume'] = [
+      '#markup' => $entity->format($entity->volume(['state' => NULL]))
+    ];
+    $row['issuance'] = [
       '#markup' => Currency::issuances()[$type],
-    );
+    ];
     //make sure that a currency with transactions in the database can't be deleted.
     if ($count) {
       unset($actions['operations']['data']['#links']['delete']);
@@ -73,44 +72,33 @@ class CurrencyListBuilder extends DraggableListBuilder {
    */
   public function render() {
     $build = parent::render();
-    $children = element::children($build['entities']);
+    $children = Element::children($build['entities']);
     if (count($children) == 1) {
       $id = reset($children);
       unset($build['entities'][$id]['operations']['data']['#links']['delete']);
     }
     return $build;
+    
   }
-
-
+  
   /**
    * {@inheritdoc}
-   *
-   * @todo make the currency filter work when the views filter works
-   * @note that we must choose between currency weights and the paged / filtered list
-   * @see \Drupal\views_ui\ViewListBuilder::render
    */
-  /*
-  public function render() {
-    $this->limit = 2;//set this to 50 after testing
-    $list = parent::render();
-
-    $list['filters'] = [
-      '#type' => 'search',
-      '#title' => $this->t('Filter'),
-      '#title_display' => 'invisible',
-      '#size' => 40,
-      '#placeholder' => $this->t('Filter by currency name or machine name'),
-      '#weight' => -1,
-      '#attributes' => array(
-        'class' => array('views-filter-text'),
-        'data-table' => '.views-listing-table',
-        'autocomplete' => 'off',
-        'title' => $this->t('Enter a part of the view name or description to filter by.'),
-      ),
-    ];
-    return $list;
+  public function load() {
+    //just show the currencies the current user has permission to edit
+    //get the currencies in all exchanges of which current user is manager
+    if ($this->currentUser->hasPermission('manage mcapi')) {
+      $curr_ids = $this->getStorage()->getQuery()
+        ->sort('name')
+        ->execute();
+    }
+    else {
+      $exchange_ids = $this->exchangeStorage->getQuery()
+        ->condition('manager', $currentUser->id())
+        ->execute();
+      $curr_ids = Exchanges::getCurrenciesOfExchanges($exchange_ids);
+    }
+    return $this->storage->loadMultiple($curr_ids);//no sort has been applied
   }
-   *
-   */
 
 }

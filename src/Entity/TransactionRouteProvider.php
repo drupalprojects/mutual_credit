@@ -28,19 +28,10 @@ class TransactionRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRo
     $route_collection
       ->get('entity.mcapi_transaction.canonical')
       ->setOptions($options);
+    
     $route_collection
       ->get('entity.mcapi_transaction.edit_form')
       ->setOptions($options);
-
-    $route = (new Route('/transaction/add'))
-      ->setDefaults([
-        '_entity_form' => 'mcapi_transaction.admin',
-        '_title' => 'Log transaction',
-      ])
-      ->setRequirement('_entity_create_access', 'mcapi_transaction')
-      ->setRequirement('_permission', 'manage mcapi')
-      ->setOption('_admin_route', TRUE);
-    $route_collection->add('mcapi.transaction.add', $route);
 
     $route = (new Route('/transaction/{mcapi_transaction}/{operation}'))
       ->setDefaults([

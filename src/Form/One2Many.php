@@ -9,6 +9,8 @@
 
 namespace Drupal\mcapi\Form;
 
+use Drupal\Core\Form\FormStateInterface;
+
 class One2Many extends MassPayBase {
 
   private $payer;
@@ -18,7 +20,7 @@ class One2Many extends MassPayBase {
     return 'mcapi_12many';
   }
 
-  public function step_1(array &$form, $form_state) {
+  public function step_1(array &$form, FormStateInterface $form_state) {
     parent::step_1($form, $form_state);
     if (empty($form_state->get('confirmed'))) {
       $form['payer']['#title'] = $this->t('The one payer');

@@ -12,7 +12,6 @@ use Drupal\Core\Render\Element\FormElement;
 use Drupal\Core\Render\Element;
 use Drupal\mcapi\Entity\Currency as CurrencyEntity;
 use Drupal\mcapi\Exchange;
-use Drupal\Core\Template\Attribute;
 
 /**
  * Provides a worth field form element.
@@ -53,44 +52,36 @@ class Worth extends FormElement {
    * - currencies available to both wallets
    */
   public static function processDefaults($element, FormStateInterface $form_state, $form) {
-    if ($element['#value']) {
-      $element['#default_value'] = $element['#value'];
+    if (empty($element['#default_value'])) {
+      Self::ensureDefault($element);
     }
     else {
-      if(empty($element['#default_value'])) {
-//@todo need to provide a wallet here
-        $element['#allowed_curr_ids'] = array_keys(Exchange::currenciesAvailable());
-      }
-      $map = Self::curr_map($element['#default_value']);
-      if (!empty($element['#allowed_curr_ids'])) {
-        //restrict the defaults according to the allowed currencies
-        if ($not_allowed = array_diff(array_keys($map), $element['#allowed_curr_ids'])) {
-          //message only shows the FIRST not allowed currency
-          drupal_set_message(
-            t(
-              'Passed default @currency is not one of the allowed currencies',
-              ['@currency' => CurrencyEntity::load(reset($not_allowed))->label()]
-            ),
-            'warning'
-          );
-        }
-      }
-      $blank = $element['#config'] ? '' : 0;
-      //ensure each allowed currency has a default value, which is used for building the widget
-      foreach (array_diff($element['#allowed_curr_ids'], array_keys($map)) as $curr_id) {
-        if (array_search($curr_id, array_keys($map)) === FALSE) {
-          $val = intval($element['#default_value'][$map[$curr_id]]['value']);
-          $element['#default_value'][] = [
-            'curr_id' => $curr_id,
-            'value' => is_null($val) ? $blank : $val
-          ];
-        }
-      }
+      $map = Self::currMap($element['#default_value']);
+      $element['#allowed_curr_ids'] = array_keys($map);
     }
-    if (count($element['#default_value']) > 1) {
-      Self::sort($element['#default_value']);
+    
+    if ($element['#config'])  {
+      foreach ($element['#default_value'] as $delta => &$worth) {
+        if ($worth['value'] === ''){
+          $worth['value'] = '0';
+        }
+      }
     }
     return $element;
+  }
+  
+  public static function ensureDefault(&$element) {
+    if (empty($element['#allowed_curr_ids'])) {
+      $element['#allowed_curr_ids'] = array_keys(Exchange::currenciesAvailableToUser());
+    }
+    if (empty($element['#default_value'])) {
+      foreach ($element['#allowed_curr_ids'] as $curr_id) {
+        $element['#default_value'][] = [
+          'curr_id' => $curr_id,
+          'value' => ''
+        ];
+      }
+    }
   }
 
   /**
@@ -109,14 +100,13 @@ class Worth extends FormElement {
         $parts = [];
       }
       else {
-        $parts = $currency->formatted_parts(abs(intval($value)));
+        $parts = $currency->formattedParts(abs(intval($value)));
       }
       $element[$delta]['curr_id'] = ['#type' => 'hidden', '#value' => $curr_id];
 
       $element[$delta]['#type'] = 'container';
       $element[$delta]['#prefix'] = "<div class = \"$worth_cardinality\">";
       $element[$delta]['#suffix'] = '</div>';
-
       foreach ($currency->format as $i => $component) {
         if ($i % 2) { //an odd number so render a field
           $step = 1;
@@ -157,7 +147,7 @@ class Worth extends FormElement {
               if (array_key_exists('#placeholder', $element)) {
                 //debug($element['#placeholder'], $delta);
                 $placeholder_val = @$element['#placeholder'][$delta];
-                $p_parts = $currency->formatted_parts(abs(intval($placeholder_val)));
+                $p_parts = $currency->formattedParts(abs(intval($placeholder_val)));
                 $element[$delta][$i]['#placeholder'] = $p_parts[$i];
               }
             }
@@ -169,6 +159,7 @@ class Worth extends FormElement {
           unset($options);
         }
         else {//an even number so render it as markup
+          if (is_array($component))$component = reset($component);//@todo very temp!!
           $element[$delta][$i] = array(
             '#weight' => $i,
             '#markup' => $component
@@ -205,6 +196,7 @@ class Worth extends FormElement {
     if (!$element['#required']) {
       $element['#config'] = TRUE;
     }    
+    
     return $element;
   }
 
@@ -215,6 +207,7 @@ class Worth extends FormElement {
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
     $output = [];
     if ($input !== FALSE) {
+      if (!is_array($input))debug($input);
       foreach ($input as $delta => $parts) {
         $curr_id = $parts['curr_id'];
         $quant = CurrencyEntity::load($curr_id)->unformat($parts);
@@ -234,9 +227,11 @@ class Worth extends FormElement {
       }
     }
     else {
+      Self::ensureDefault($element);
       $default = $element['#default_value'];
+      
       //return the given #default_value plus allowed curr ids
-      $map = Self::curr_map($default);
+      $map = Self::currMap($default);
       foreach ($element['#allowed_curr_ids'] as $curr_id) {
         $val = 0;
         if (isset($map[$curr_id])) {
@@ -303,32 +298,11 @@ class Worth extends FormElement {
     $vals = $form_state->getValues();
   }
 
-  /**
-   * Sort the worth options by currency weights
-   * @param array $options
-   * @todo make this sorting more efficient
-   */
-  private static function sort(array &$options) {
-    $new_options = $helper = [];
-    //the currency keys are nested i the options and we need the whole currency object
-    //we're going to extract the currencies keys, load the config entities, sort them
-    //then sort one array by another
-    //first create the helper array
-    foreach ($options as $worth) {
-      $temp_options[$worth['curr_id']] = $worth;//we need the worths keyed by $curr_id
-      $helper[] = $worth['curr_id'];
-    }
-    $helper = CurrencyEntity::LoadMultiple($helper);
-    uasort($helper, 'mcapi_uasort_weight');
-    //now we have sorted array keys
-    //I'm a bit unsure how to sort one array by another but this is quick and dirty
-    foreach (array_keys($helper) as $curr_id) {
-      $new_options[] = $temp_options[$curr_id];
-    }
-    $options = $new_options;
-  }
 
-  private static function curr_map(array $value) {
+  private static function currMap($value) {
+    if (empty($value)) {
+      return array_keys(Exchange::currenciesAvailableToUser());
+    }
     $map = [];
     foreach ($value as $key => $item) {
       $map[$item['curr_id']] = $key;

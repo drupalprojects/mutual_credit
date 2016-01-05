@@ -12,7 +12,6 @@ namespace Drupal\mcapi\Entity;
 use Drupal\mcapi\Entity\TransactionInterface;
 
 use Drupal\mcapi\Entity\Type;
-use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\McapiEvents;
 use Drupal\mcapi\TransactionSaveEvents;
 use Drupal\Core\Entity\ContentEntityBase;
@@ -62,7 +61,8 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *     "edit-form" = "/transaction/{mcapi_transaction}/edit",
  *   },
  *   constraints = {
- *     "TransactionIntegrity" = {}
+ *     "DifferentWallets" = {},
+ *     "CommonCurrency" = {}
  *   }
  * )
  */
@@ -87,7 +87,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
   public static function loadBySerials($serials) {
     $transactions = [];
     if ($serials) {
-      //not sure which is faster, this or coding it using $this->filter()
+      //not sure which is best, this or entityQuery. This is shorter and faster.
       $results = \Drupal::entityTypeManager()
         ->getStorage('mcapi_transaction')
         ->loadByProperties(['serial' => (array)$serials]);
@@ -261,22 +261,24 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
     $fields['payer'] = BaseFieldDefinition::create('wallet')
       ->setLabel(t('Payer'))
       ->setDescription(t('The giving wallet'))
-      ->setSetting('target_type', 'mcapi_wallet')
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
+      ->setCardinality(1)
+      ->setSetting('handler_settings', ['op' => 'payin'])
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE)
-      ->setConstraints(['CanActOn' => ['action' => Wallet::OP_PAYIN]]);
+      ->addConstraint('CanPayin');
 
     $fields['payee'] = BaseFieldDefinition::create('wallet')
       ->setLabel(t('Payee'))
-      ->setDescription(t('The reveiving wallet'))
-      ->setSetting('target_type', 'mcapi_wallet')
+      ->setDescription(t('The receiving wallet'))
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
+      ->setSetting('handler_settings', ['op' => 'payout'])
+      ->setCardinality(1)
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE)
-      ->setConstraints(['CanActOn' => ['action' => Wallet::OP_PAYOUT]]);
+      ->addConstraint('CanPayout');
 
     $fields['creator'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Creator'))

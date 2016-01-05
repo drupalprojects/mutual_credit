@@ -25,3 +25,10 @@ services:
     parent: logger.channel_base
     arguments: ['mcapi']
     
+#replaces Drupal\Core\Entity\Query\Sql\QueryFactory
+  mcapi.query.sql:
+    class: Drupal\mcapi\Entity\QueryFactory
+    arguments: ['@database']
+    tags:
+      - { name: backend_overridable }
+      

@@ -10,7 +10,6 @@ namespace Drupal\mcapi_1stparty\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\Core\Entity\Annotation\EntityType;
 
 /**
  * Defines the firstparty_editform entity.
@@ -19,7 +18,6 @@ use Drupal\Core\Entity\Annotation\EntityType;
  *   id = "firstparty_editform",
  *   label = @Translation("Transaction form design"),
  *   handlers = {
- *     "access" = "Drupal\mcapi_1stparty\FirstPartyEditFormAccessControlHandler",
  *     "form" = {
  *       "add" = "Drupal\mcapi_1stparty\Form\FirstPartyFormDesigner",
  *       "edit" = "Drupal\mcapi_1stparty\Form\FirstPartyFormDesigner",

@@ -3,21 +3,23 @@
 /**
  * @file
  * Definition of Drupal\mcapi\Form\MassPayBase.
- * Create an cluster of transactions, based on a single entity form
+ * Create a cluster of transactions, based on a single entity form
  * N.B. This could be an entity form for Transaction OR Exchange.
  * If the latter, it will be appropriately populated.
+ * 
+ * @todo access for this form depends on having currenciesAvailableToUser as well as permission
  *
  */
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Entity\EntityForm;
-use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Mcapi;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Entity\ContentEntityForm;
 
-class MassPayBase extends EntityForm {
+class MassPayBase extends ContentEntityForm {
 
 
   /**
@@ -50,7 +52,7 @@ class MassPayBase extends EntityForm {
 
   public function step_1(array &$form, FormStateInterface $form_state) {
     if (empty($form_state->get('confirmed'))) {
-      if (mcapi_one_wallet_per_user_mode()) {
+      if (Mcapi::maxWalletsOfBundle('user', 'user')==1) {
         $mode_options = [
           $this->t('The named users'),
       	  $this->t("All users except those named"),
@@ -70,13 +72,19 @@ class MassPayBase extends EntityForm {
       ];
       $form['payer'] = [
         '#title' => $this->t('Payer'),
-        '#type' => 'select_wallet',
-        '#autocomplete_route_parameters' => ['role' => 'payer']
+        '#type' => 'entity_autocomplete',
+        '#target_type' => 'mcapi_wallet',
+        '#selection_handler' => 'default:wallet',
+        '#selection_settings' => ['op' => 'payout']
+        //'#autocomplete_route_parameters' => ['role' => 'payer']
       ];
       $form['payee'] = [
         '#title' => $this->t('Payee'),
-        '#type' => 'select_wallet',
-        '#autocomplete_route_parameters' => ['role' => 'payee']
+        '#type' => 'entity_autocomplete',
+        '#target_type' => 'mcapi_wallet',
+        '#selection_handler' => 'default:wallet',
+        '#selection_settings' => ['op' => 'payout']
+        //'#autocomplete_route_parameters' => ['role' => 'payee']
       ];
       $form['description'] = [
         '#title' => $this->t('Description'),
@@ -198,12 +206,12 @@ class MassPayBase extends EntityForm {
    * @return type
    * @deprecated
    */
-  function form_type_select_wallets_value(&$element, $input, FormStateInterface $form_state) {
+  function form_type_wallet_reference_autocompletes_value(&$element, $input, FormStateInterface $form_state) {
     if (empty($input)) {
       return;
     }
     foreach (explode(', ', $input) as $val) {
-      $values[] = form_type_select_wallet_value($element, $val, $form_state);
+      $values[] = form_type_wallet_reference_autocomplete_value($element, $val, $form_state);
     }
     return $values;
   }

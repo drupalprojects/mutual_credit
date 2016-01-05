@@ -32,38 +32,6 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    */
   function indexDrop(array $serials);
 
-  /**
-   * Filter by any field in the table; returns an array of serials keyed by xid
-   * this is especially needed should views not be available, but is used in any case.
-   *
-   * @param array $conditions
-   *   The possible values for conditions are:
-   * - value, a raw integer in which case a curr_id would be expected as well
-   * - min: a raw integer greater than which the transaction must be
-   * - max: a raw integer les than which the transaction must be
-   * - curr_id the short code for a currency
-   * - xid[]: the unique code from the transaction entity table
-   * - state[]: the string id of the transaction state
-   * - serial[]: the serial number
-   * - payer[]: a wallet id
-   * - payee[]: a wallet id
-   * - creator[]: creator user id
-   * - type[]: string id of the transaction type config entity
-   * - involving[]: a wallet id
-   * - since: a unix time after which transactions were created
-   * - until: a unix time before which transactions were created
-   *   Also note 'including' and 'involving' conditions will filter inclusively and
-   *   exclusively respectively on the wallet ids passed. Actually I think those are the same
-   *   because wallets can ONLY trade with other wallets in the same exchange, unless they have moved
-   *
-   * @param number $offset
-   *
-   * @param number $limit
-   *
-   * @return array
-   *   an array keyed by xid with serial numbers as values
-   */
-  function filter(array $conditions = [], $offset = 0, $limit = 25);
 
   /**
    * Get some gerneral purpose stats by adding up the transactions for a given wallet

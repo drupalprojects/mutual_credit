@@ -47,6 +47,7 @@ class WorthItem extends FieldItemBase {
     $properties['currency'] = DataReferenceDefinition::create('entity')
       ->setLabel(t('Currency'))
       ->setComputed(TRUE)
+      ->setReadOnly(FALSE)
       ->setTargetDefinition(EntityDataDefinition::create('mcapi_currency'));
     return $properties;
   }
@@ -94,7 +95,7 @@ class WorthItem extends FieldItemBase {
     if ($this->currency->zero) {
       return FALSE;
     }
-    return $this->get('value') == 0;
+    return $this->get('value')->getValue() == 0;
   }
 
   /**
@@ -105,5 +106,12 @@ class WorthItem extends FieldItemBase {
       'value' => $field_definition->currency->sampleValue(),
       'curr_id' => $field_definition->currency->id
     ];
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public static function mainPropertyName() {
+    return 'value';
   }
 }

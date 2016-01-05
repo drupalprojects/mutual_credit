@@ -11,18 +11,23 @@ namespace Drupal\mcapi\Form;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\user\Entity\User;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\mcapi\Exchange;
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Wallet;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class WalletForm extends ContentEntityForm {
 
   private $walletConfig;
+  
+  /**
+   *
+   * @var /Drupal/Core/Entity/EntityTypeManager 
+   */
+  ///private $entityTypeManager;
 
-  public function __construct($config_factory) {
+  public function __construct($config_factory, $entity_type_manager) {
     $this->walletConfig = $config_factory->get('mcapi.settings');
-    $this->permissions = Exchange::walletPermissions();
-    $this->ops = Exchange::walletOps();
+    $this->entityTypeManager = $entity_type_manager;
   }
 
   /**
@@ -30,7 +35,8 @@ class WalletForm extends ContentEntityForm {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('config.factory')
+      $container->get('config.factory'),
+      $container->get('entity_type.manager')
     );
   }
 
@@ -39,18 +45,17 @@ class WalletForm extends ContentEntityForm {
   }
 
   /**
-   * Overrides Drupal\Core\Entity\ContentEntityForm::form().
+   * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
 
     $form = parent::form($form, $form_state);
-    $wallet = $this->entity;
 
-    if ($wallet->name->value != '_intertrading') {
+    if (!$this->entity->isAutonamed()) {
       $form['name'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Name or purpose of wallet'),
-        '#default_value' => $wallet->name->value,
+        '#default_value' => $this->entity->name->value,
         '#placeholder' => t('My excellent wallet'),
         '#required' => FALSE,
         '#maxlength' => 48,
@@ -58,58 +63,50 @@ class WalletForm extends ContentEntityForm {
       ];
     }
 
-    $this->accessElement($form, 'details');
-    $this->accessElement($form, 'summary');
-    //anon users cannot pay in or out of wallets
-    unset($this->permissions[Wallet::ACCESS_ANY]);
-    $this->accessElement($form, 'payin');
-    $this->accessElement($form, 'payout');
-
-    if (array_key_exists('access', $form)) {
-      $form['#attached']['library'][] = 'mcapi/mcapi.toolbar';
-      $form['access'] += [
-        '#title' => t('Acccess settings'),
-        '#description' => t('Which users can do the following to this wallet?'),
-        '#type' => 'details',
-        '#open' => TRUE,
-        '#collapsible' => TRUE,
-      ];
+    $walletableBundles = Mcapi::walletableBundles();
+    foreach (array_keys($walletableBundles) as $entity_type_id) {
+      $types[$entity_type_id] = $this->entityTypeManager->getDefinition($entity_type_id)->getLabel();
     }
-
-    $types = ['user' => t('User')];
+    
     $form['transfer'] = [
       '#title' => t('Change holder'),
       '#type' => 'details',
-      'entity_type' => [
+      'holder_entity_type' => [
         '#title' => t('New holder type'),
         '#type' => 'select',
         '#options' => $types,
-        '#default_value' => $this->entity->entity_type->value,
+        '#default_value' => $this->entity->holder_entity_type->value,
         '#required' => FALSE,
         '#access' => $this->currentUser()->haspermission('manage exchange')
       ]
     ];
-
-    //@todo I don't know how to later retrieve the entity from the label for an unknown entity type
-    $autocomplete_routes = [
-      'user' => 'user.autocomplete',
-      //'mcapi_exchange' => 'mcapi.exchange.autocomplete'
-    ];
-    foreach ($types as $type => $label) {
-      $id = $type .'_entity_id';
-      $form['transfer'][$id] = [
+    
+    foreach ($walletableBundles as $entity_type_id => $bundles) {
+      $form['transfer'][$entity_type_id .'_entity_id'] = [
         '#title' => t('Name or unique ID'),
         '#type' => 'entity_autocomplete',
-        '#placeholder' => t('@entityname name...', ['@entityname' => $label]),
+        '#placeholder' => t('@entityname name...', ['@entityname' => $types[$entity_type_id]]),
         '#states' => [
           'visible' => [
-            ':input[name="entity_type"]' => ['value' => $type]
+            ':input[name="holder_entity_type"]' => ['value' => $entity_type_id]
           ]
         ],
         '#autocomplete_route_name' => 'system.entity_autocomplete',
-        '#target_type' => $type,
-        '#selection_handler' => 'default'//might want to change this but what are the options?
+        '#target_type' => $entity_type_id,
+        '#selection_handler' => 'default',//might want to change this but what are the options?
+        '#selection_settings' => [
+          'target_bundles' => $bundles
+        ]
       ];
+    }
+
+    if (in_array($this->entity->payways->value, [Wallet::PAYWAY_ANYONE_IN, Wallet::PAYWAY_ANYONE_BI])) {
+      //that means anyone can pay out, so no need to nominate friends
+      $form['payers']['#access'] = FALSE;
+    }
+    if (in_array($this->entity->payways->value, [Wallet::PAYWAY_ANYONE_OUT, Wallet::PAYWAY_ANYONE_BI])) {
+      //that means anyone can pay in, so no need to nominate friends
+      $form['payees']['#access'] = FALSE;
     }
 
     return $form;
@@ -122,30 +119,18 @@ class WalletForm extends ContentEntityForm {
     $wallet = $this->entity;
 
     $values = $form_state->getValues();
-    foreach (Exchange::walletOps() as $op_name => $label) {
-      $wallet->access[$op_name] = [];
-      if ($values[$op_name] == Wallet::ACCESS_OWNER) {
-        $values[$op_name] = Wallet::ACCESS_USERS;
-        $wallet->access[$op_name] = [$wallet->getHolder()->id()];
-      }
-      $wallet->{$op_name}->value = $values[$op_name];
+    //update the wallet with any change of access
       
-      if ($wallet->{$op_name}->value == Wallet::ACCESS_USERS) {
-        foreach ($values[$op_name.'_users'] as $val) {
-          $wallet->access[$op_name][] = $val['target_id'];
-        }
-      }
-    }
 
     //check for the change of holdership
-    $key = $values['entity_type'] . '_entity_id';
+    $key = $values['holder_entity_type'] . '_entity_id';
     if ($values[$key]) {
       //invalidate cache tags on the current parent.
       //@see Wallet::invalidateTagsOnSave to invalidate tags on the new parent.
-      Cache::invalidateTags([$this->entity_type->value . ':' . $this->pid->value]);
+      Cache::invalidateTags([$wallet->holder_entity_type->value . ':' . $wallet->holder_entity_id->value]);
       
-      $wallet->set('entity_type', $values['entity_type'])
-        ->set('pid', $values[$key]);
+      $wallet->set('holder_entity_type', $values['holder_entity_type'])
+        ->set('holder_entity_id', $values[$key]);
       //@todo need to clear the walletaccess cache for both users
       drupal_set_message(
         t('Wallet has been transferred to %name', ['%name' => $wallet->getOwner()->label()])
@@ -156,48 +141,6 @@ class WalletForm extends ContentEntityForm {
       'entity.mcapi_wallet.canonical',
       ['mcapi_wallet' => $wallet->id()]
     );
-  }
-
-  private function accessElement(&$form, $op_name) {
-    $saved = $this->entity->access[$op_name];
-    static $weight = 0;
-    $system_default = array_filter($this->walletConfig->get($op_name));
-    if (count($system_default) > 1) {
-      $form['access'][$op_name] = [
-        '#title' => $this->ops[$op_name][0],
-        '#description' => $this->ops[$op_name][1],
-        '#type' => 'select',
-        '#options' => array_intersect_key($this->permissions, $system_default),
-        '#default_value' => is_array($saved) ? Wallet::ACCESS_USERS : $saved,
-        '#weight' => $weight++,
-      ];
-
-      $form['access'][$op_name . '_users'] = [
-        '#title' => '...'. $this->t('Specified users'),
-        '#type' => 'entity_autocomplete',
-        //'#autocomplete_route_name' => 'system.entity_autocomplete',
-        //'#autocomplete_route_parameters' => ['selection_settings_key' => ''],
-        '#target_type' => 'user',
-        '#tags' => TRUE,
-        '#placeholder' => $this->t('@entityname name...', ['@entityname' => t('User')]),
-        '#default_value' => is_array($saved) ? User::loadMultiple($saved) : [],
-        '#states' => [
-          'visible' => [
-            ':input[name="' . $op_name . '"]' => ['value' => Wallet::ACCESS_USERS]
-          ],
-          'required' => [
-            ':input[name="' . $op_name . '"]' => ['value' => Wallet::ACCESS_USERS]
-          ]
-        ],
-        '#weight' => $weight++,
-      ];
-    }
-    else {
-      $form[$op_name] = [
-        '#type' => 'value',
-        '#value' => current($system_default)
-      ];
-    }
   }
 
   /**

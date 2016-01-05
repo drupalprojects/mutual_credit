@@ -12,6 +12,7 @@ use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Mcapi;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class TransactionForm extends ContentEntityForm {
@@ -51,7 +52,7 @@ class TransactionForm extends ContentEntityForm {
 
     $form['type'] = [
       '#title' => t('Transaction type'),
-      '#options' => mcapi_entity_label_list('mcapi_type'),
+      '#options' => Mcapi::entityLabelList('mcapi_type'),
       '#type' => 'mcapi_types',
       '#default_value' => $transaction->get('type')->target_id,
       '#required' => TRUE,
@@ -69,13 +70,14 @@ class TransactionForm extends ContentEntityForm {
       '#default_value' => User::load(\Drupal::currentUser()->id()),
       '#weight' => 20
     ];
+
     return $form;
   }
 
   /**
    * {@inheritdoc}
    * @note we are overriding here because this form is neither for saving nor deleting
-   * and because previewing is compulsory. The created entitiy is passed to the
+   * and because previewing is not optional. The created entitiy is passed to the
    * 'create' operation form where it is saved.
    */
   protected function actions(array $form, FormStateInterface $form_state) {

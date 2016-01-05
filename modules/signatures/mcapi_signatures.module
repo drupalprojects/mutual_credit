@@ -3,8 +3,7 @@
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi_signatures\Signatures;
-use Drupal\user\UserInterface;
-use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\mcapi\Mcapi;
 
 define ('TRANSACTION_STATE_PENDING', 'pending');
 
@@ -42,7 +41,7 @@ function mcapi_signatures_mcapi_transaction_presave($transaction) {
   if ($transaction->state->target_id == 'pending' && $transaction->isNew()) {
     $relatives = Type::load($transaction->type->target_id)
       ->getThirdPartySetting('mcapi_signatures', 'signatures');
-    $user_ids = \Drupal::service('mcapi.transaction_relative_manager')
+    $user_ids = Mcapi::transactionRelatives()
       ->getUsers($transaction, $relatives);
     foreach ($user_ids as $uid) {
       $transaction->signatures[$uid] = 0;

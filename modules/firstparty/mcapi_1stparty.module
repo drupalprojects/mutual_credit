@@ -2,7 +2,6 @@
 
 use Drupal\mcapi\Exchange;
 use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
-use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 
 /**
@@ -69,7 +68,7 @@ function mcapi_1stparty_transaction_tokens($natural = FALSE) {
   unset($tokens[array_search('state', $tokens)]);
   unset($tokens[array_search('serial', $tokens)]);
   unset($tokens[array_search('creator', $tokens)]);
-//  unset($tokens[array_search('mcapi_exchange_og_ref', $tokens)]);
+//  unset($tokens[array_search('mcapi_EXCHANGE_OG_FIELD', $tokens)]);
   if (!$natural) {
     unset($tokens[array_search('payer', $tokens)]);
     unset($tokens[array_search('payee', $tokens)]);

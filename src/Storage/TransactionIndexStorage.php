@@ -181,42 +181,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
 
   /**
    * {@inheritdoc}
-   */
-  public function filter(array $conditions = [], $offset = 0, $limit = 0) {
-    if (!empty($conditions['payer']) && !empty($conditions['payee'])) {
-      throw new Exception('TransactionIndexStorage cannot filter by both payer and payee');
-    }
-
-    $query = $this->database->select('mcapi_transactions_index', 'x')
-      ->fields('x', array('xid', 'serial'))
-      ->orderby('created', 'DESC');
-    //in any filter operation we need to need to halve the query because this table
-    //has 2 rows for every transaction
-    $halve = db_and();
-    if (array_key_exists('payer', $conditions)) {
-      $halve->condition('uid1', $conditions['payer'])->condition('income', '0');
-      unset($condition['payer']);
-    }
-    else{
-      if (array_key_exists('payee', $conditions)) {
-        $halve->condition('uid1', $conditions['payee']);
-        unset($condition['payee']);
-      }
-      $halve->condition('expenditure', '0');
-    }
-    $query->condition($halve);//this ensures we only return one row coz there are 2 foreach transaction
-
-    $this->parseIndexConditions($query, $conditions);
-
-    if ($limit) {
-      //assume that nobody would ask for unlimited offset results
-      $query->range($offset, $limit);
-    }
-    return $query->execute()->fetchAllKeyed();
-  }
-
-  /**
-   * {@inheritdoc}
+   * @todo rename this to walletSummary()
    */
   public function summaryData($wallet_id, array $conditions = []) {
     $query = $this->database->select('mcapi_transactions_index', 'i')
@@ -409,33 +374,10 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   }
 
   /**
-   * for development use only!
-   * truncate the transaction index table OR assume that transactions will be deleted individually
-   *
-   * return integer[]
-   *   the serial numbers of all transactions with the given currency
-   */
-  public function wipeslate($curr_id = NULL) {
-    $serials = [];
-    //get the serial numbers
-    $query = $this->database->select("mcapi_transactions_index", 't')
-      ->fields('t', array('serial'));
-
-    if ($curr_id) {
-      $query->condition('curr_id', $curr_id);
-    }
-    $serials = $query->execute()->fetchCol();
-    if (!$curr_id) {//that means delete everything
-      $this->database->truncate('mcapi_transactions_index')->execute();
-    }
-    //otherwise index entries will be deleted transaction by transaction
-    return $serials;
-  }
-
-  /**
    * {@inheritdoc}
+   * @todo this function should be deleted
    */
-  public function loadUnchanged($id) {
+  public function __loadUnchanged($id) {
     $this->resetCache(array($id));
     $serial = $this->database
       ->select('mcapi_transactions_index', 'i')
@@ -445,4 +387,25 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     $transactions = Transaction::loadBySerials([$serial]);
     return reset($transactions);
   }
+  
+  /**
+   * {@inheritdoc}
+   */
+  function getQueryServiceName() {
+    return 'mcapi.query.sql';
+  }
+  
+  /**
+   * {@inheritdoc}
+   * overriding this because entityQuery returns xids and serials
+   */
+  public function loadByProperties(array $values = array()) {
+    // Build a query to fetch the entity IDs.
+    $entity_query = $this->getQuery();
+    $this->buildPropertyQuery($entity_query, $values);
+    $result = $entity_query->execute();
+    
+    return $result ? $this->loadMultiple(array_keys($result)) : array();
+  }
+  
 }

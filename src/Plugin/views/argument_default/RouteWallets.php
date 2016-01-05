@@ -7,8 +7,8 @@
 
 namespace Drupal\mcapi\Plugin\views\argument_default;
 
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Plugin\views\argument_default\ArgumentDefaultPluginBase;
+use Drupal\mcapi\Mcapi;
 
 /**
  * The fixed argument default handler.
@@ -30,8 +30,8 @@ class RouteWallets extends ArgumentDefaultPluginBase {
     //only for ONE given specific entityType
     //so this function needs to decide whether to return an argument
     foreach (\Drupal::service('current_route_match')->getParameters()->all() as $key => $entity) {
-      if (walletable($entity)) {
-        $ids = Wallet::heldBy($entity);
+      if (Mcapi::isWalletable($entity->getEntityTypeId(), $entity->bundle())) {
+        $ids = Mcapi::widsHeldBy($entity);
       }
     }
     //@todo returning nothing means the view doesn't show - maybe throw a 404?

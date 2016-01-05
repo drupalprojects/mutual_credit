@@ -1,10 +1,11 @@
 <?php
 
-use Drupal\user\Entity\User;
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\Entity\State;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\user\Entity\User;
 use Drupal\field\Entity\FieldConfig;
 
 //100 takes 20 seconds on this server. timeout is usually 30
@@ -109,7 +110,7 @@ function import_transactions_form($form, $form_state) {
     '#title' => t('Fallback transaction type'),
     '#description' => t('If no valid transaction type is provided, use this.'),
     '#type' => 'select',
-    '#options' => mcapi_entity_label_list('mcapi_type'),
+    '#options' => Mcapi::entityLabelList('mcapi_type'),
     '#default_value' => array_key_exists('values', $form_state) ? $form_state['values']['transaction_type'] : 'default',
     '#required' => TRUE,
     '#weight' => 1
@@ -118,7 +119,7 @@ function import_transactions_form($form, $form_state) {
     '#title' => t('Fallback transaction state'),
     '#description' => t('If no valid transaction state is provided, use this.'),
     '#type' => 'radios',
-    '#options' => mcapi_entity_label_list('mcapi_state'),
+    '#options' => Mcapi::entityLabelList('mcapi_state'),
     '#default_value' => array_key_exists('values', $form_state) ? $form_state['values']['state'] : 1,
     '#required' => TRUE,
     '#weight' => 1
@@ -347,7 +348,7 @@ function import_balances_form($form, $form_state) {
   $form['transaction_type'] = array(
     '#title' => t('Transaction type for imported transactions'),
     '#type' => 'select',
-    '#options' => mcapi_entity_label_list('mcapi_type'),
+    '#options' => Mcapi::entityLabelList('mcapi_type'),
     '#default_value' => array_key_exists('values', $form_state) ? $form_state['values']['transaction_type'] : 'default',
     '#required' => TRUE
   );

@@ -13,23 +13,21 @@ namespace Drupal\mcapi_1stparty;
 use Symfony\Component\Routing\Route;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityAccessCheck;
-use Drupal\user\Entity\User;
-use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
 
 class TransactionFormAccessCheck extends EntityAccessCheck {
 
   /**
-   * The transaction form is a wrapper around TransactionAccessControlHandler
-   * Designed to be overriden by the mcapi_exchanges module
+   * Implement access control specific to transaction forms
    *
    * @return AccessResultInterface
-   * @todo inject EntityTypeManager
    */
   public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
-    $user = User::load($account->id());
-    return \Drupal::entityTypeManager()->getAccessControlHandler('mcapi_transaction')->enoughWallets($user);
+    //remember this is in addition to TransactionAccessControlHandler::checkCreateAccess()
+    //for some reason neutral is interpreted as forbidden when merged with allowed
+    //so though I wanted this to be neutral coz its not used yet, it is allowed for now
+    return \Drupal\Core\Access\AccessResult::allowed();
   }
+  
 }
 

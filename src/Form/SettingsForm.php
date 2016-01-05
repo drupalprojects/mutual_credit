@@ -7,9 +7,10 @@
  */
 namespace Drupal\mcapi\Form;
 
+use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Exchange;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\mcapi\Exchange;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -88,7 +89,7 @@ class SettingsForm extends ConfigFormBase {
     	'#title' => $this->t('Counted transaction states'),
       '#description' => $this->t("Transactions in these states will comprise the wallet's balance"),
       '#type' => 'checkboxes',
-      '#options' => mcapi_entity_label_list('mcapi_state'),
+      '#options' => Mcapi::entityLabelList('mcapi_state'),
       '#default_value' => $config->get('counted'),
       '#weight' => 14,
       //these values are absolutely fixed
@@ -153,7 +154,6 @@ class SettingsForm extends ConfigFormBase {
       ->set('sentence_template', $values['sentence_template'])
       //careful the mix_mode flag is inverted!!
       ->set('exchange_menu', !$values['exchange_menu'])
-      ->set('ticks_name', $values['ticks_name'])
       ->set('zero_snippet', $values['zero_snippet'])
       ->set('worths_delimiter', $values['worths_delimiter'])
       ->set('mail_errors', $values['mail_errors'])

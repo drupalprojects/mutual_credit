@@ -4,7 +4,7 @@ mcapi.admin_firstparty_editform.add:
     _entity_form: 'firstparty_editform.add'
     _title: 'Create payment form'
   requirements:
-    _entity_create_access: firstparty_editform
+    _permission: 'design 1stparty forms'
   options:
     _admin_route: TRUE
 
@@ -14,8 +14,7 @@ entity.firstparty_editform.edit_form:
     _entity_form: 'firstparty_editform.edit'
     _title: 'Transaction form designer'
   requirements:
-    #this needs to be overridden by the exchanges module so that forms can belong to groups
-    _permission: 'configure mcapi'
+    _permission: 'design 1stparty forms'
   options:
     _admin_route: TRUE
 
@@ -24,7 +23,7 @@ entity.firstparty_editform.delete_form:
   defaults:
     _entity_form: 'firstparty_editform.delete'
   requirements:
-    _permission: 'configure mcapi'
+    _permission: 'design 1stparty forms'
   options:
     _admin_route: TRUE
 
@@ -33,7 +32,7 @@ entity.firstparty_editform.disable:
   defaults:
     _entity_form: 'firstparty_editform.disable'
   requirements:
-    _permission: 'configure mcapi'
+    _permission: 'design 1stparty forms'
   options:
     _admin_route: TRUE
     
@@ -42,7 +41,7 @@ entity.firstparty_editform.enable:
   defaults:
     _entity_form: 'firstparty_editform.enable'
   requirements:
-    _permission: 'configure mcapi'
+    _permission: 'design 1stparty forms'
   options:
     _admin_route: TRUE
 

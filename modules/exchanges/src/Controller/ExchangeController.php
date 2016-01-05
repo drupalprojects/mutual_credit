@@ -62,9 +62,9 @@ class ExchangeController extends ControllerBase {
    * @return array
    *   a renderable array
    */
-  public function intertrading_wallet(ExchangeInterface $mcapi_exchange) {
+  public function intertradingWallet(ExchangeInterface $mcapi_exchange) {
     //@todo show the view of the intertrading wallet.
-    $wallet = $mcapi_exchange->intertrading_wallet();
+    $wallet = $mcapi_exchange->intertradingWallet();
     return views_embed_view('wallet_statement', 'embed_1', $wallet->id());
   }
 }

@@ -109,13 +109,12 @@ class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
    * {@inheritdoc}
    */
   public function build() {
-    $wids = $this->entityTypeManager
-      ->getStorage('mcapi_wallet')
-      ->filter(['holder' => $this->holder_entity]);
-    $wallets = Wallet::loadMultiple($wids);
     return $this->entityTypeManager
       ->getViewBuilder('mcapi_wallet')
-      ->viewMultiple($wallets, 'mini');
+      ->viewMultiple(
+        Mcapi::walletsOf($this->holder_entity, TRUE), 
+        'mini'
+      );
   }
 
 }

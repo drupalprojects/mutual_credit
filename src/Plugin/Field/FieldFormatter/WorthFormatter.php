@@ -50,7 +50,7 @@ class WorthFormatter extends FormatterBase {
    */
   public static function defaultSettings() {
     $settings = parent::defaultSettings();
-    $settings['format'] = Currency::FORMAT_NORMAL;
+    $settings['format'] = Currency::DISPLAY_NORMAL;
     $settings['curr_ids'] = [];
     return $settings;
   }
@@ -84,7 +84,7 @@ class WorthFormatter extends FormatterBase {
       else {
         //apply any special formatting for zero value transactions
         if ($item->currency->zero) {
-          if ($this->getSetting('format') == Currency::FORMAT_NORMAL) {
+          if ($this->getSetting('format') == Currency::DISPLAY_NORMAL) {
             $output[] = \Drupal::config('mcapi.settings')->get('zero_snippet');
           }
           else {

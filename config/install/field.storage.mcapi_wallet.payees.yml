@@ -1,0 +1,21 @@
+uuid: 6f019dce-9eeb-4359-9c00-f034d1fe4487
+langcode: en
+status: true
+dependencies:
+  module:
+    - mcapi
+    - user
+id: mcapi_wallet.payees
+field_name: payees
+entity_type: mcapi_wallet
+type: entity_reference
+settings:
+  target_type: user
+module: core
+locked: true
+cardinality: -1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false
+

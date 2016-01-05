@@ -3,10 +3,12 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\DevelGenerate\TransactionDevelGenerate.
+ * @see https://www.drupal.org/node/2503429 for possible reason why batching doesn't work
  */
 
 namespace Drupal\mcapi\Plugin\DevelGenerate;
 
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
@@ -80,7 +82,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       $wallet_ids = \Drupal::entityTypeManager()
         ->getStorage('mcapi_wallet')
         ->getQuery()
-        ->condition('entity_type', 'user')
+        ->condition('holder_entity_type', 'user')
         ->execute();
 
     }
@@ -110,7 +112,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     $form['type'] = array(
       '#title' => $this->t('What type of transactions'),
       '#type' => 'select',
-      '#options' => mcapi_entity_label_list('mcapi_type'),
+      '#options' => Mcapi::entityLabelList('mcapi_type'),
       '#default_value' => $this->getSetting('type'),
       '#required' => TRUE,
       '#min' => 0,
@@ -148,29 +150,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     if (!empty($values['kill'])) {
       $this->contentKill($values);
     }
-    $exchange_ids = [];
-    if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
-      //might want to divide the wids into exchanges
-      /*
-      $all_exchanges = Exchange::loadMultiple();
-      $exchange_ids = array_keys($all_exchanges);
-      $key = array_rand($all_exchanges);
-      $exchange = $all_exchanges[$key];
-      //get all the wallets in this exchange
-      $q = db_select('og_membership', 'g');
-      $q->join('mcapi_wallet', 'w', 'w.wid = g.etid');
-      $q->fields('g', array('etid'));
-      $q->condition('w.name', '_intertrading', '<>');
-      $q->condition('g.group_type', 'mcapi_exchange');
-      $q->condition('g.gid', $exchange->id());
-      $q->condition('g.entity_type', 'mcapi_wallet');
-      $wids = $q->execute()->fetchCol();
-       * 
-       */
-    } 
-    else {
-      $wids = $this->prepareWallets();
-    }
+    $wids = $this->prepareWallets();
     for ($i = 1; $i <= $values['num']; $i++) {
       $this->develGenerateTransactionAdd($results, reset($wids), end($wids));
     }
@@ -273,6 +253,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     $transaction = \Drupal\mcapi\Entity\Transaction::create($props);
     // Populate all fields with sample values.
     $this->populateFields($transaction);
+    //change the created time of the transactions, coz they mustn't be all in the same second
+    $transaction->created->value = rand($this->getSince(), REQUEST_TIME);
     $transaction->save();
     
     if (isset($transaction->signatures)) {
@@ -286,10 +268,12 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
           );
         }
       }
+      $transaction->save();
     }
-    //change the created time of the transactions, coz they mustn't be all in the same second
-    $transaction->created->value = rand($this->getSince(), REQUEST_TIME);
-    $transaction->save();
+    
+    
+      $transaction->save();//testing only
+    
   }
 
 }

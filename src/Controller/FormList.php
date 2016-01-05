@@ -22,10 +22,12 @@ class FormList extends ControllerBase {
     $items = $this->moduleHandler()->invokeAll('mcapi_form_list');
     //work out the menu links available for each path
     foreach ($items as $rowname => $row) {
+      $row += ['route_parameters' => [], 'operations' => []];
       $actions = $menu_links = [];
       //$row['menu_links'] = ['data' => []];
       if ($row['route']) {
-        $url = Url::fromRoute($row['route'], (array)$row['route_parameters']);
+        $params = 
+        $url = Url::fromRoute($row['route'], $row['route_parameters']);
         $links = \Drupal::service('plugin.manager.menu.link')->loadLinksByRoute(
           $row['route'], 
           (array) $row['route_parameters']

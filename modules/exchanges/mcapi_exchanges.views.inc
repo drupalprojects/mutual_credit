@@ -1,57 +1,21 @@
 <?php
 
-use Drupal\mcapi\Exchanges;
+use Drupal\mcapi\Mcapi;
 
 
 /**
  * implements hook_views_data_alter
  * @todo alter this when exchange is fieldAPI again.
 */
-function mcapi_exchanges_views_data_alter(&$data) {
-  $data['mcapi_transaction']['exchange'] = array(
-    'title' => t('Exchange'),
-    'help' => t('Exchange governing the transaction.'),
-    'field' => array(
-      'id' => 'standard'
-    ),
-    'filter' => array(
-      'id' => 'standard',
-    ),
-    'argument' => array(
-      'id' => 'standard',
-    )
-  );
-  //@todo ensure this field is present.
-  $data['mcapi_transactions_index']['exchange'] = array(
-    'title' => t('Exchange'),
-    'help' => t('Exchange governing the transaction.'),
-    'field' => array(
-      'id' => 'standard'
-    ),
-    'filter' => array(
-      'id' => 'standard',
-    ),
-    'argument' => array(
-      'id' => 'standard',
-    )
-  );
-
-  $data['users']['exchanges'] = array(
-    'title' => t('Exchange'),
-    'help' => t('Filter users by the exchange they are in.'),
-    'argument' => array(
-      'id' => 'user_exchanges',
-    )
-  );
-
+function __mcapi_exchanges_views_data_alter(&$data) {
   //make an argument for every entity that uses the field 'exchanges'
-  foreach (Exchange::walletableBundles() as $entity_type => $bundles) {
-    $argument = &$data[$entity_type .'__'. EXCHANGE_OG_REF][EXCHANGE_OG_REF .'_target_id']['argument'];
+  foreach (Mcapi::walletableBundles() as $entity_type => $bundles) {
+    $argument = &$data[$entity_type .'__'. EXCHANGE_OG_FIELD][EXCHANGE_OG_FIELD .'_target_id']['argument'];
     $argument['help'] = t("Show only entities according to the exchange they are in");
     $argument['id'] = 'standard';//@todo this might need customisig
     $argument['additional fields'] = [];//no idea how these were helping
-    unset($data[$entity_type .'__'. EXCHANGE_OG_REF]['delta']);
-    unset($data[$entity_type .'__'. EXCHANGE_OG_REF][EXCHANGE_OG_REF .'_revision_id']);
+    unset($data[$entity_type .'__'. EXCHANGE_OG_FIELD]['delta']);
+    unset($data[$entity_type .'__'. EXCHANGE_OG_FIELD][EXCHANGE_OG_FIELD .'_revision_id']);
   }
 
 }

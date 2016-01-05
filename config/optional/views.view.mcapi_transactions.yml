@@ -5,7 +5,6 @@ dependencies:
   config:
     - field.storage.mcapi_transaction.worth
     - system.menu.admin
-    - system.menu.main
     - user.role.authenticated
   module:
     - mcapi
@@ -787,106 +786,6 @@ display:
               - views
           plugin_id: string
           provider: views
-        payee:
-          id: payee
-          table: mcapi_transaction
-          field: payee
-          relationship: none
-          group_type: group
-          admin_label: ''
-          operator: in
-          value: {  }
-          group: 1
-          exposed: true
-          expose:
-            operator_id: ''
-            label: 'Payee wallet #id'
-            description: ''
-            use_operator: false
-            operator: payee_op
-            identifier: payee
-            required: false
-            remember: false
-            multiple: false
-            remember_roles:
-              authenticated: authenticated
-              anonymous: '0'
-              member: '0'
-              helper: '0'
-              ladmin: '0'
-              manager: '0'
-              admin: '0'
-            reduce: false
-          is_grouped: false
-          group_info:
-            label: ''
-            description: ''
-            identifier: ''
-            optional: true
-            widget: select
-            multiple: false
-            remember: false
-            default_group: All
-            default_group_multiple: {  }
-            group_items: {  }
-          dependencies:
-            module:
-              - user
-              - views
-              - views
-              - views
-              - views
-          plugin_id: user_name
-          provider: user
-        payer:
-          id: payer
-          table: mcapi_transaction
-          field: payer
-          relationship: none
-          group_type: group
-          admin_label: ''
-          operator: in
-          value: {  }
-          group: 1
-          exposed: true
-          expose:
-            operator_id: ''
-            label: 'Payer wallet #id'
-            description: ''
-            use_operator: false
-            operator: payer_op
-            identifier: payer
-            required: false
-            remember: false
-            multiple: false
-            remember_roles:
-              authenticated: authenticated
-              anonymous: '0'
-              member: '0'
-              helper: '0'
-              ladmin: '0'
-              manager: '0'
-              admin: '0'
-            reduce: false
-          is_grouped: false
-          group_info:
-            label: ''
-            description: ''
-            identifier: ''
-            optional: true
-            widget: select
-            multiple: false
-            remember: false
-            default_group: All
-            default_group_multiple: {  }
-            group_items: {  }
-          dependencies:
-            module:
-              - views
-              - views
-              - views
-          plugin_id: user_name
-          provider: user
         creator:
           id: creator
           table: mcapi_transaction
@@ -934,6 +833,87 @@ display:
               - user
           plugin_id: user_name
           provider: user
+        payer_1:
+          id: payer_1
+          table: mcapi_transaction
+          field: payer
+          relationship: none
+          group_type: group
+          admin_label: ''
+          operator: in
+          value: {  }
+          group: 1
+          exposed: true
+          expose:
+            operator_id: payer_1_op
+            label: Payer
+            description: 'this is a description'
+            use_operator: false
+            operator: payer_1_op
+            identifier: payer_1
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+            reduce: 0
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          entity_type: mcapi_transaction
+          entity_field: payer
+          plugin_id: wallet_name
+        payee:
+          id: payee
+          table: mcapi_transaction
+          field: payee
+          relationship: none
+          group_type: group
+          admin_label: ''
+          operator: in
+          value: {  }
+          group: 1
+          exposed: true
+          expose:
+            operator_id: payee_op
+            label: Payee
+            description: 'this is a description'
+            use_operator: false
+            operator: payee_op
+            identifier: payee
+            required: false
+            remember: false
+            multiple: true
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+            reduce: 0
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          placeholder: 'Wallet name...'
+          entity_type: mcapi_transaction
+          entity_field: payee
+          plugin_id: wallet_name
         state:
           id: state
           table: mcapi_transaction
@@ -1488,15 +1468,7 @@ display:
       field_langcode: '***LANGUAGE_language_interface***'
       field_langcode_add_to_query: null
       path: transactions
-      menu:
-        type: normal
-        title: Transactions
-        description: ''
-        expanded: false
-        parent: ''
-        weight: 0
-        context: '0'
-        menu_name: main
+      menu: {  }
       access:
         type: role
         options:

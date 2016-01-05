@@ -22,10 +22,10 @@ class ExchangeListBuilder extends EntityListBuilder {
   public function buildHeader() {
     $header = array(
       'name' => t('Name'),
-      'access' => t('Access'),
+      'active' => t('Active'),
+      'open' => t('Privacy'),
       'members' => t('Members'),
       'transactions' => t('Transactions'),
-      'admin' => t('Administrator')
     );
     return $header + parent::buildHeader();
   }
@@ -39,15 +39,10 @@ class ExchangeListBuilder extends EntityListBuilder {
       'title' => array($entity->label()),
       'data' => array(
         'title' => $entity->link(),
-        'access' => $entity->get('status')->value ? t('Open') : t('Closed'),
-        'members' => count($entity->users()),
-        'transactions' => $entity->transactions(),
-        'administrator' => array(
-           'data' => array(
-            '#theme' => 'username',
-             '#account' => $entity->get('uid')->entity
-          )
-        )
+        'active' => $entity->get('status')->value ? t('Active') : t('Deactivated'),
+        'open' => $entity->get('open')->value ? t('Open') : t('Private'),
+        'members' => count($entity->memberIds('user')),
+        'transactions' => count($entity->memberIds('mcapi_transaction'))
       )
     );
     $row['data'] += parent::buildRow($entity);
@@ -65,18 +60,23 @@ class ExchangeListBuilder extends EntityListBuilder {
     }
 
     if ($entity->deactivatable()) {
-      $operations['disable'] = array(
+      $operations['disable'] = [
         'title' => t('Deactivate'),
         'weight' => 40,
-        //'href' => $url . '/disable'
-      ) + $entity->urlInfo('disable')->toArray();
+        'url' => $entity->urlInfo('disable-confirm')
+      ];
     }
     elseif (!$entity->get('status')->value) {
-      $operations['enable'] = array(
+      $operations['enable'] = [
         'title' => t('Activate'),
         'weight' => -10,
-        //'href' => $url . '/enable'
-      ) + $entity->urlInfo('enable')->toArray();
+        'url' => $entity->urlInfo('enable-confirm')
+      ];
+      $operations['delete'] = [
+        'title' => t('Delete'),
+        'weight' => -10,
+        'url' => $entity->urlInfo('delete-confirm')
+      ];
     }
     return $operations;
   }
@@ -107,20 +107,16 @@ class ExchangeListBuilder extends EntityListBuilder {
     $entities = $this->load();
     $list['table'] = array(
       '#type' => 'table',
-      '#attributes' => new Attribute(
-        array('class' => array('exchanges-listing-table'))
-      ),
+      '#attributes' => ['class' => ['exchanges-listing-table']],
       '#header' => $this->buildHeader(),
       '#rows' => [],
     );
+    //order the rows putting enabled exchanges first
     foreach (array('enabled', 'disabled') as $status) {
       foreach ($entities[$status] as $entity) {
         $list['table']['#rows'][$entity->id()] = $this->buildRow($entity);
       }
     }
-    //@todo look in common.inc drupal_process_attached() to see how to add arbitrary bits of css
-    debug('need to add arbitrary css');
-//    _drupal_add_css('table.exchanges-listing-table tr.disabled{color:#999;}', array('type' => 'inline'));
     return $list;
   }
 }

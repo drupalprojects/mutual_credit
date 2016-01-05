@@ -1,5 +1,11 @@
-mcapi_add_exchange_action:
+mcapi_exchange.create.action:
   route_name: mcapi.exchange.add
   title: 'Create exchange'
   appears_on:
     - mcapi.admin_exchange_list
+
+mcapi_exchange.join.action:
+  route_name: entity.mcapi_exchange.join
+  title: 'Join'
+  appears_on:
+    - entity.mcapi_exchange.canonical

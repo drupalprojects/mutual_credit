@@ -10,6 +10,7 @@ namespace Drupal\mcapi_limits;
 use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\mcapi\Exchange;
+use Drupal\mcapi\Currency;
 
 class WalletLimiter {//couldn't be bothered to make an interface for this
 
@@ -50,7 +51,7 @@ class WalletLimiter {//couldn't be bothered to make an interface for this
     }
     $limits = [];
     //get the default limits
-    $needed_currencies = Exchange::currenciesAvailable($this->wallet);
+    $needed_currencies = $this->wallet->currenciesAvailable();
     foreach ($needed_currencies as $curr_id => $currency) {
       $limits[$curr_id] = $this->defaults($currency);
     }
@@ -126,13 +127,13 @@ class WalletLimiter {//couldn't be bothered to make an interface for this
     drupal_set_message('use the theme system to visualise wallets');
 
     foreach ($this->limits as $curr_id => $limits) {
-      $currency = mcapi_currency_load($curr_id);
+      $currency = Currency::load($curr_id);
       $row = [];
       if (!is_null($limits['min'])) {
-        $row[] = t('Min !quant', ['%quant' => $currency->format($limits['min'])]);
+        $row[] = t('Min %quant', ['%quant' => $currency->format($limits['min'])]);
       }
       if (!is_null($limits['max'])) {
-        $row[] = t('Max !quant', ['%quant' => $currency->format($limits['max'])]);
+        $row[] = t('Max %quant', ['%quant' => $currency->format($limits['max'])]);
       }
       if ($row) $output[] = $row;
     }
@@ -167,7 +168,7 @@ class WalletLimiter {//couldn't be bothered to make an interface for this
    */
   private function load() {
     $result = [];
-    foreach (Exchange::currenciesAvailable($this->wallet) as $currency) {
+    foreach ($this->wallet->currenciesAvailable() as $currency) {
       $config = $currency->getThirdPartySettings('mcapi_limits');
       if (!empty($config['override'])) {
         $overridable_curr_ids[] = $currency->id();
