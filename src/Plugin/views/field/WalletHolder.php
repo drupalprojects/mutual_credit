@@ -22,6 +22,27 @@ use Drupal\views\ResultRow;
 class WalletHolder extends Standard {
 
 
+  
+  protected function defineOptions() {
+    $options = parent::defineOptions();
+
+    $options['owner'] = array('default' => '');
+  }
+  
+  /**
+   * Default options form that provides the label widget that all fields
+   * should have.
+   */
+  public function buildOptionsForm(&$form, FormStateInterface $form_state) {
+    parent::buildOptionsForm($form, $form_state);
+    $form['owner']  = [
+      '#title' => $this->t('User the wallet owner'),
+      '#description' => $this->t('The owner is always a user, who may own the holding entity'),
+      '#type' => 'checkbox',
+      '#default_value' => $this->options['owner']
+    ];
+  }
+  
   /**
    * {@inheritdoc}
    */
@@ -33,7 +54,10 @@ class WalletHolder extends Standard {
    * {@inheritdoc}
    */
   function render(ResultRow $values) {
-    return $this->getEntity($values)->getHolder()->link();
+    $holder = $this->getEntity($values)->getHolder();
+    return $this->options['owner'] ? 
+      $holder->getOwner()->link() : 
+      $holder->getLink();
 
   }
 

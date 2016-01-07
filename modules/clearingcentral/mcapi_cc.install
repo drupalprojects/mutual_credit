@@ -17,8 +17,7 @@ function mcapi_cc_install() {
   if (!$exists) {
     \Drupal\mcapi\Entity\Wallet::create([
       'payways' => Wallet::PAYWAY_AUTO,
-      'holder_entity_type' => 'user',
-      'holder_entity_id' => 1,
+      'holder_entity_type' => \Drupal\user\Entity\User::load(1),
       'payin' => 'o',//this means 
       'payout' => 'o'
     ])->save();

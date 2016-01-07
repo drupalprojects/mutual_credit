@@ -70,14 +70,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
 
   use EntityChangedTrait;
 
-  private $mailPluginManager;
-
   private $moduleHandler;
 
   //this is called from ContentEntityStorage::mapFromStorageRecords() so without create function
   public function __construct(array $values, $entity_type, $bundle = FALSE, $translations = array()) {
     parent::__construct($values, $entity_type, $bundle, $translations);
-    $this->mailPluginManager = \Drupal::service('plugin.manager.mail');
     $this->moduleHandler = \Drupal::moduleHandler();//only used in transaction prevalidate alter hook
   }
 

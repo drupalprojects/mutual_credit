@@ -48,7 +48,7 @@ function mcapi_exchanges_install() {
       continue;
     }
     //@todo there may be a way of doing this in og
-    $account->set(EXCHANGE_OG_FIELD, $exchange->id());
+    $account->set(EXCHANGE_OG_FIELD, $exchange);
     $account->save();
   }
 
@@ -60,11 +60,6 @@ function mcapi_exchanges_install() {
     ),
     'warning'
   );
-  return;
-  //@todo put all existing wallets in exchanges by resaving them
-  foreach (\Drupal\mcapi\Entity\Wallet::loadMultiple() as $wallet) {
-    $wallet->save();
-  }
 }
 
 /**
@@ -135,7 +130,6 @@ function mcapi_exchanges_create_group_ref($entity_type, $bundle) {
   $field = \Drupal\og\Og::createField(OgGroupAudienceHelper::DEFAULT_FIELD, $entity_type, $bundle, $settings);
   
   drupal_set_message("Created field for $entity_type entity, bundle $bundle membership of exchanges.");
-
 }
 
 
@@ -153,6 +147,8 @@ db_drop_table('og_membership');
 db_drop_table('og_role');
 db_drop_table('og_role_permission');
 db_drop_table('og_users_roles');
+db_drop_table('mcapi_exchange');
+db_drop_table('mcapi_exchange__currencies');
 $settings = \Drupal::ConfigFactory()->getEditable('mcapi.settings');
 $types = $settings->get('entity_types');
 unset($types['mcapi_exchange:mcapi_exchange']);

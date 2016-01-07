@@ -17,17 +17,21 @@ use Drupal\user\EntityOwnerInterface;
 interface WalletInterface extends ContentEntityInterface {
 
   /**
-   * return the parent entity if there is one, otherwise return the wallet itself
+   * return the holding entity entity
    * 
-   * @return EntityOwnerInterface
+   * @return ContentEntityInterface
    *   The one entity to which this wallet belongs
    */
   function getHolder();
 
   /**
-   * change the holder of the current wallet
+   * set the holder entity 
+   * @param
+   * 
+   * @return WalletInterface
+   *   The one entity to which this wallet belongs
    */
-  function setHolder(EntityOwnerInterface $entity);
+  function setHolder(ContentEntityInterface $entity);
 
   /**
    * get a list of the currencies held in the wallet

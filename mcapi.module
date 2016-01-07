@@ -119,7 +119,7 @@ function mcapi_entity_presave($entity) {
   if ($entity instanceOf ContentEntityInterface && Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())==1) {
     //get the entity's one wallet, and rename it.
     if ($wids = Mcapi::widsHeldBy($entity)) {
-      $wallet = Wallet::load(reset($wids))->save();
+      $wallet = Wallet::load(reset($wids))->setHolder($entity)->save();
     }
   }
 }
@@ -136,9 +136,9 @@ function mcapi_entity_insert($entity) {
     //NB autoadd applies to ALL entity types or to none
     if (Mcapi::maxWalletsOfBundle($type, $entity->bundle())) {
       //no need to check what the max is, since this is the first wallet created for this entity
+      if ($type == 'user')print_r($entity->toArray());
       Wallet::create([
-        'holder_entity_type' => $type,
-        'holder_entity_id' => $entity->id(),
+        'holder' => $entity,
         'name' => t('Default'),
       ])->save();
       \Drupal::logger('mcapi')->notice(

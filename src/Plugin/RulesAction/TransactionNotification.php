@@ -8,11 +8,12 @@
 namespace Drupal\mcapi\Plugin\Action;
 
 
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\rules\Core\RulesActionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Pays or charges an entity a fixed amount IF the specified currency is available.
@@ -21,26 +22,38 @@ use Drupal\Core\Session\AccountInterface;
  *   id = "one_off_payment",
  *   label = @Translation("Transaction Notification"),
  *   context = {
- *     "transaction" = @ContextDefinition("string",
- *       label = @Translation("Transaction"),
- *       description = @Translation("The transaction triggering the notification")
+ *     "recipient" = @ContextDefinition("string",
+ *       label = @Translation("Recipient"),
+ *       description = @Translation("Tokens should be available")
  *     ),
  *     "subject" = @ContextDefinition("string",
  *       label = @Translation("Description"),
  *       description = @Translation("What the payment is for")
  *     ),
- *     "body" = @ContextDefinition("string",
+ *     "message" = @ContextDefinition("string",
  *       label = @Translation("Type"),
  *       description = @Translation("The transaction type, or workflow path")
  *     ),
- *     "recipients" = @ContextDefinition("string",
- *       label = @Translation("Recipient"),
- *       description = @Translation("Tokens should be available")
+ *     "reply" = @ContextDefinition("email",
+ *       label = @Translation("Reply to"),
+ *       description = @Translation("The mail's reply-to address. Leave it empty to use the site-wide configured address."),
+ *       default_value = NULL,
+ *       required = FALSE,
+ *     ),
+ *     "language" = @ContextDefinition("language",
+ *       label = @Translation("Language"),
+ *       description = @Translation("If specified, the language used for getting the mail message and subject."),
+ *       default_value = NULL,
+ *       required = FALSE,
  *     ),
  *     "ccs" = @ContextDefinition("string",
  *       label = @Translation("CCs"),
  *       description = @Translation("Tokens should be available")
  *     )
+ *     "transaction" = @ContextDefinition("string",
+ *       label = @Translation("Transaction"),
+ *       description = @Translation("The transaction triggering the notification")
+ *     ),
  *   }
  * )
  */
@@ -49,6 +62,12 @@ class TransactionNotification extends RulesActionBase {//implements ContainerFac
   function __construct(array $configuration, $plugin_id, $plugin_definition, MailManagerInterface $mailManager) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->mailManager = $mailManager;
+  }
+  
+  function create($container) {
+    $vars = parent::create($container);
+    $vars[] = $container->get('mail.manager');
+    return $vars;
   }
   
   /**
@@ -63,25 +82,21 @@ class TransactionNotification extends RulesActionBase {//implements ContainerFac
     
   }
   
-  function create($container) {
-    $vars = parent::create($container);
-    $vars[] = $container->get('mail.manager');
-    return $vars;
-  }
-  
-  /**
-   * {@inheritdoc}
-   * 
-   * @todo
-   */
-  public function execute($wallet = NULL) {
-    $transaction = $this->getContextValue('transaction');
-    $subject = $this->getContextValue('subject');
-    $body = $this->getContextValue('body');
-    $recipients = $this->getContextValue('recipients');
-    $ccs = $this->getContextValue('ccs');
-    //replace the tokens 
-    //send the mail
+  protected function doExecute($recipient, $subject, $message, $reply = NULL, LanguageInterface $language = NULL, $ccs, $transaction) {
+    
+    $langcode = isset($language) ? $language->getId() : LanguageInterface::LANGCODE_SITE_DEFAULT;
+    $params = [
+      'subject' => $subject,
+      'message' => $message,
+    ];
+    // Set a unique key for this mail.
+    $key = 'rules_action_mail_' . $this->getPluginId();
+
+    $recipients = implode(', ', $to);
+    $message = $this->mailManager->mail('rules', $key, $recipients, $langcode, $params, $reply);
+    if ($message['result']) {
+      $this->logger->notice('Successfully sent email to %recipient', ['%recipient' => $recipients]);
+    }
   }
 
   /**

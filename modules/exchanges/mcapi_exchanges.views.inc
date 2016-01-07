@@ -7,15 +7,37 @@ use Drupal\mcapi\Mcapi;
  * implements hook_views_data_alter
  * @todo alter this when exchange is fieldAPI again.
 */
-function __mcapi_exchanges_views_data_alter(&$data) {
-  //make an argument for every entity that uses the field 'exchanges'
-  foreach (Mcapi::walletableBundles() as $entity_type => $bundles) {
-    $argument = &$data[$entity_type .'__'. EXCHANGE_OG_FIELD][EXCHANGE_OG_FIELD .'_target_id']['argument'];
-    $argument['help'] = t("Show only entities according to the exchange they are in");
-    $argument['id'] = 'standard';//@todo this might need customisig
-    $argument['additional fields'] = [];//no idea how these were helping
-    unset($data[$entity_type .'__'. EXCHANGE_OG_FIELD]['delta']);
-    unset($data[$entity_type .'__'. EXCHANGE_OG_FIELD][EXCHANGE_OG_FIELD .'_revision_id']);
+function mcapi_exchanges_views_data_alter(&$data) {
+  foreach (Mcapi::walletableBundles() as $entity_type_id => $bundles) {
+    $entity_type = \Drupal::entityTypeManager()->getDefinition($entity_type_id);
+    $table = $entity_type->getDataTable() ? : $entity_type->getBaseTable();
+    $key = $entity_type->getKey('id');
+    foreach (array_keys($bundles) as $bundle) {
+      $data[$table]['first_wallet'] = array(
+        'relationship' => array(
+          'title' => t('Wallet'),
+          'label'  => t('Wallet'),
+          'help' => t('Shows ONLY the first wallet held by each @type', ['@type' => $entity_type->getLabel()]),
+          'id' => 'standard',
+          'relationship field' => $key,
+          'outer field' => "{$table}.{$key}",
+          'argument table' => $table,
+          'argument field' => $key,
+          'base' => 'mcapi_wallet',
+          'field' => 'holder_entity_id',
+          'base field' => 'holder_entity_id',
+          'relationship' => "{$table}:{$key}",
+          'extra' => [
+             [
+               'field' => 'holder_entity_type',
+               'value' => $entity_type_id,
+             ]
+          ]
+        ),
+      );
+      break;//don't repeat for multiple bundles on the same entityType
+    }
   }
-
+  
 }
+

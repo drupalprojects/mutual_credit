@@ -104,11 +104,9 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
 
   private function addIntertradingWallet() {
     $props = [
-      'holder_entity_type' => 'mcapi_exchange',
-      'holder_entity_id' => $this->id(),
+      'holder' => $this,
       'payways' => Wallet::PAYWAY_AUTO,
     ];
-    print_r($props);
     $wallet = Wallet::create($props);
     $wallet->save();
   }

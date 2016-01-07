@@ -431,34 +431,45 @@ function mcapi_exchanges_field_widget_wallet_reference_autocomplete_form_alter(&
 
 /**
  * implements hook_query_TAG_alter for tag entity_query_mcapi_wallet
- * @param \Drupal\Core\Entity\Query\QueryInterface $query
- * or 
- * @param \Drupal\Core\Database\Driver\mysql\Select is actually passed
+ * @todo do this in a different way that links to parent entity tables so we don't need the wallet field any more
  */
-function mcapi_exchanges_query_entity_query_mcapi_wallet_alter( $query) {
-  return;
-  mtrace(); //what the fuck hook is this?
+function mcapi_exchanges_query_entity_query_mcapi_wallet_alter(\Drupal\Core\Database\Driver\mysql\Select $query) {
   $exchanges = User::load(\Drupal::currentUser()->id())->get(EXCHANGE_OG_FIELD)->referencedEntities();
-  $ids = array_keys($exchanges);
-  debug($ids);
-  //except of course the wallet itself isn't in the exchanges
-  //$query->condition(EXCHANGE_OG_FIELD, $ids);
+  if ($ids = array_keys($exchanges)) {
+    dsm('wallets have been filtered for exchanges '.implode(', ', $ids));
+    $query->condition(EXCHANGE_OG_FIELD, $ids);
+  }
 }
 
 /**
  * implements hook_ENTITY_TYPE_insert for mcapi_wallet().
  * Ensure the wallet is in the same Exchange as its holder
  * @todo update this when og field is loading into the entity
+ * @note this assumes that every holder is in an exchange
  */
 function mcapi_exchanges_mcapi_wallet_presave($wallet) {
-  //TEMP because og field isn't working yet.
-  drupal_set_message($wallet->holder_entity_type->value." ". $wallet->holder_entity_id->value);
-  $memof = \Drupal::database()->select('og_membership', 'm')
-      ->fields('m', ['group_entity_id'])
-      ->condition('member_entity_type', $wallet->holder_entity_type->value)
-      ->condition('member_entity_id', $wallet->holder_entity_id->value)
-      ->execute()->fetchField();
+  echo 'getting holder';
+  $holder = $wallet->getHolder();
   
-  $wallet->set(EXCHANGE_OG_FIELD, $memof);
-  drupal_set_message("putting wallet ".$wallet->id()." in holder's exchange $memof.");
+  if ($holder->getEntityTypeId() == 'mcapi_exchange') {
+    $memof = $holder->id();
+  }
+  elseif($items = $holder->get(EXCHANGE_OG_FIELD)) {
+    $memof = $items->target_id;
+    //$memof = $holder->get(EXCHANGE_OG_FIELD)->referencedEntities();
+    
+  }
+  else {
+    drupal_set_message('This should never happen', 'error');
+    //$memof = \Drupal::database()->select('og_membership', 'm')
+    //  ->fields('m', ['group_entity_id'])
+    //  ->condition('member_entity_type', $wallet->holder_entity_type->value)
+    //  ->condition('member_entity_id', $wallet->holder_entity_id->value)
+    //  ->execute()->fetchField();
+    //$memof = $holder->get(EXCHANGE_OG_FIELD)->referencedEntities();
+  }
+  if (empty($memof)) {
+    drupal_set_message('Wallet holder is NOT in an exchange: ',$wallet->holder_entity_type->value .' '.$wallet->holder_entity_id->value, 'error');
+  }
+  $wallet->{EXCHANGE_OG_FIELD}->target_id = $memof;
 }

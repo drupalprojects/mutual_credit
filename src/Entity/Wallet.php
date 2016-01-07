@@ -104,29 +104,28 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     }
     return $this->holder;
   }
-
+  
   /**
    * {@inheritdoc}
    */
-  public function setHolder(EntityOwnerInterface $entity) {
-    $this->holder_entity_id = $entity->id();
-    $this->holder_entity_type = $entity->getEntityTypeId();
+  public function setHolder(ContentEntityInterface $entity) {
+    $this->holder = $entity;
+    $this->holder_entity_id->value = $entity->id();
+    $this->holder_entity_type->value = $entity->getEntityTypeId();
+    return $this;
   }
+
 
   /**
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
-    if (!isset($values['holder_entity_id']) || !isset($values['holder_entity_type'])) {
+    if (!isset($values['holder'])) {
       //this is an error or a temp entityType @see _field_create_entity_from_ids
       return;
     }
-    $holder = \Drupal::entityTypeManager()->getStorage($values['holder_entity_type'])->load($values['holder_entity_id']);
-    if (!$holder) {
-      throw new \Exception(
-        t('Unknown @type entity @id for new wallet.', ['@type' => $values['holder_entity_type'], '@id' => $values['holder_entity_id']])
-      );
-    }
+    $values['holder_entity_type'] = $values['holder']->getEntityTypeId();
+    $values['holder_entity_id'] = $values['holder']->id();
     
     //now set the default permissions
     if (!isset($values['payways'])) {
@@ -138,6 +137,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * {@inheritdoc}
    */
   function presave(EntityStorageInterface $storage) {
+    //autoname the wallet if it is its holders only wallet
     if ($this->isAutonamed()) {
       if ($this->payways->value == Self::PAYWAY_AUTO) {
         $this->name->value = $this->getHolder()->label() .' '. t('Import/Export');
@@ -402,6 +402,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       //because all wallet holder, whatever entity type, implement OwnerInterface
       $holder->getOwner();
   }
+  
   
   
 }

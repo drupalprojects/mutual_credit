@@ -18,17 +18,11 @@ class WalletViewsData extends EntityViewsData {
     $data = parent::getViewsData();
     $data['mcapi_wallet']['wid']['field']['id'] = 'mcapi_entity';
 
-
-    //unwanted fields
-    unset($data['mcapi_wallet']['holder_entity_id']);
-    unset($data['mcapi_wallet']['payin']);
-    unset($data['mcapi_wallet']['payout']);
-    unset($data['mcapi_wallet']['operations']);
-    
+    $data['mcapi_wallet']['name']['help'] = $this->t("When the holder can hold one wallet only, the wallet's name is inherit from its holder");
     //@todo surely the entity label should have been added already?
     $data['mcapi_wallet']['label'] = [
       'title' => t('Label'),
-      'help' => t('The label of the wallet'),
+      'help' => t('The label of the wallet, usually the same as the name'),
       'real field' => 'wid',
       'field' => [
         //@todo waiting for entity_label to abandon the 'entity type field' in its definition
@@ -38,22 +32,16 @@ class WalletViewsData extends EntityViewsData {
     ];
 
     $data['mcapi_wallet']['holder'] = [
-      'title' => t('Holding entity'),
+      'title' => t('Link to holding entity'),
       'help' => t('Could be any entity implementing OwnerInterface'),
       'field' => [
         'id' => 'mcapi_wallet_holder',
       ],
     ];
-    $data['mcapi_wallet']['owner'] = [
-      'title' => t('Owner user'),
-      'help' => t('The user who is ultimately responsible for the wallet'),
-      'field' => [
-        'id' => 'mcapi_wallet_user',
-      ]
-    ];
     $data['mcapi_wallet']['holder_entity_type']['field']['id'] = 'mcapi_holder_type';
     $data['mcapi_wallet']['holder_entity_type']['field']['help'] = $this->t("The wallet holder's translated EntityType name");
-
+    
+    
     return $data;
   }
 }

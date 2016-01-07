@@ -15,7 +15,7 @@ use Drupal\views\ResultRow;
  *
  * @ingroup views_field_handlers
  *
- * @ViewsField("running_balance")
+ * @ViewsField("transaction_running_balance")
  */
 class Balance extends Worth {
 
