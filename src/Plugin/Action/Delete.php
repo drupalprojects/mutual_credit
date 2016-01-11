@@ -43,7 +43,6 @@ class Delete extends \Drupal\mcapi\Plugin\TransactionActionBase {
     if ($this->configuration['message']) {
       drupal_set_message($this->configuration['message']);
     }
-    //@todo how to redirect?
   }
-  
+
 }

@@ -75,22 +75,27 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       $container->get('date.formatter')
     );
   }
-  
+
+  /**
+   * find some suitable wallets
+   * @staticvar type $wallet_ids
+   * @return integer[] or FALSE
+   *   wallet ids, shuffled
+   */
   public function prepareWallets() {
     static $wallet_ids;
     if (!isset($wallet_ids)) {
       $wallet_ids = \Drupal::entityTypeManager()
-        ->getStorage('mcapi_wallet')
-        ->getQuery()
+        ->getStorage('mcapi_wallet')->getQuery()
         ->condition('holder_entity_type', 'user')
         ->execute();
 
     }
     shuffle($wallet_ids);
-    return (count($wallet_ids) < 2) ? 
+    return (count($wallet_ids) < 2) ?
       FALSE :
       $wallet_ids;
-      
+
   }
 
   /**
@@ -108,7 +113,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       '#default_value' => $this->getSetting('num'),
       '#required' => TRUE,
       '#min' => 0,
-    ); 
+    );
     $form['type'] = array(
       '#title' => $this->t('What type of transactions'),
       '#type' => 'select',
@@ -141,7 +146,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
 
   /**
    * Method responsible for creating a small number of transactions
-   * 
+   *
    * @param type $values
    *   kill, num
    * @throws \Exception
@@ -160,7 +165,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
 
     $this->setMessage($this->formatPlural($values['num'], '1 transaction created.', 'Finished creating @count transactions'));
   }
-  
+
   private function getSince() {
     static $since;
     if (!$since) {
@@ -184,7 +189,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       $operations[] = array('devel_generate_operation', array($this, 'batchContentKill', $values));
     }
 
-    
+
     // Add the operations to create the transactions.
     for ($num = 0; $num < $values['num']; $num ++) {
       $operations[] = array('devel_generate_operation', array($this, 'batchContentAddTransaction', $values));
@@ -256,7 +261,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     //change the created time of the transactions, coz they mustn't be all in the same second
     $transaction->created->value = rand($this->getSince(), REQUEST_TIME);
     $transaction->save();
-    
+
     if (isset($transaction->signatures)) {
       //signatures already exist because they were created in the presave phase
       foreach ($transaction->signatures as $uid => $signed) {
@@ -270,10 +275,10 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       }
       $transaction->save();
     }
-    
-    
+
+
       $transaction->save();//testing only
-    
+
   }
 
 }

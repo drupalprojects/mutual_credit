@@ -9,12 +9,10 @@
 
 namespace Drupal\mcapi_1stparty;
 
-use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Form\TransactionForm;
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\user\Entity\User;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
@@ -54,33 +52,22 @@ class FirstPartyTransactionForm extends TransactionForm {
       $this->entity->{$key} = $value;
     }
   }
-  
+
   /**
    * Get the original transaction form and alter it according to
    * the 1stparty form settings saved in $this->configEntity.
    */
   public function form(array $form, FormStateInterface $form_state) {
-      
+
     $form = parent::form($form, $form_state);
     $config = $this->configEntity;
     $form['#incoming'] = $config->get('incoming');//@todo do we still need this in the $form? should at least be in $form_state
-    
+
     //handle the description
     if (isset($config->fieldapi_presets['description']['placeholder'])) {
       $form['description']['#placeholder'] = $config->fieldapi_presets['description']['placeholder'];
     }
-    //worth field needs special treatment.
-    //The allowed_curr_ids provided by the widget need to be overwritten
-    //by the curr_ids in the designed form, if any.
-    $curr_ids = [];
-    foreach ((array)$config->fieldapi_presets['worth']['preset'] as $item) {
-      if ($item['value'] !== '') {
-        $curr_ids[] = $item['curr_id'];
-      }
-    }
-    if ($curr_ids) {//overwrite the previous set of allowed currencies
-      $form['worth']['widget']['#allowed_curr_ids'] = $curr_ids;
-    }
+
     //hide the state & type
     $form['type']['#type'] = 'value';
     $form['type']['#default_value'] = $config->type;
@@ -88,7 +75,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     $form['state']['#value'] = Type::load($config->type)->start_state;
     unset($form['creator']);
     $form_state->set('config', $config);//not sure if this is ever used.
-    
+
     $form['#twig_template'] = $this->configEntity->experience['twig'];
     return $form;
   }
@@ -123,7 +110,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     $form['#cache']['contexts'][] = 'user';//@todo check this is working.
     return $actions;
   }
- 
+
   /**
    * {@inheritdoc}
    */

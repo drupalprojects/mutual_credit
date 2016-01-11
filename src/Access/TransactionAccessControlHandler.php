@@ -21,13 +21,13 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
   /**
    * {@inheritdoc}
    */
-  
+
   public function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = NULL) {
     return Mcapi::enoughWallets($account->id()) ?
       AccessResult::Allowed()->cachePerUser() :
       AccessResult::Forbidden()->cachePerUser();
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -37,14 +37,14 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
       //todo I think this needs deleting - we don't have such sophisticated access control yet
       //$bool = $transaction->payer->entity->access('viewlog', $account)
       //|| $transaction->payee->entity->access('view', $account);
-      
+
       $bool = $account->hasPermission('view all transactions') ||
           $account->id() == $transaction->payer->entity->getOwnerId() ||
           $account->id() == $transaction->payee->entity->getOwnerId();
-          
+
       if ($return_as_object) {
-        return $bool ? 
-          AccessResult::allowed()->cachePerUser() : 
+        return $bool ?
+          AccessResult::allowed()->cachePerUser() :
           AccessResult::forbidden()->cachePerUser();
       }
       else {

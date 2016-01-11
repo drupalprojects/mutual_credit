@@ -10,7 +10,6 @@ namespace Drupal\mcapi_1stparty\Form;
 
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Plugin\TransactionActionBase;
-use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
@@ -18,13 +17,13 @@ use Drupal\Core\Template\Attribute;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class FirstPartyFormDesigner extends EntityForm {
-  
+
   private $entityFieldManager;
-  
+
   function __construct($entity_field_manager) {
     $this->entityFieldManager = $entity_field_manager;
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -184,21 +183,21 @@ class FirstPartyFormDesigner extends EntityForm {
       '#required' => TRUE,
     ];
 
-    $form['partner'] = [
-      '#title' => $this->t('@fieldname settings', ['@fieldname' => $this->t('Partner')]),
-      '#description' => $this->t('In complex sites, it may be possible to choose a user who cannot use the currency'),
-      '#type' => 'details',
-      '#group' => 'steps',
-      '#weight' => $w++
-    ];
-    $form['partner']['preset'] = [
-      '#title' => $this->t('Preset'),
-      '#type' => 'wallet_reference_autocomplete',
-      '#role' => 'null',
-      '#default_value' => $configEntity->partner['preset'] ? Wallet::load($configEntity->partner['preset']) : NULL,
-      '#multiple' => FALSE,
-      '#required' => FALSE
-    ];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     $moreInfo = $this->t(
       'Put any default values here.') .' '.
@@ -207,23 +206,25 @@ class FirstPartyFormDesigner extends EntityForm {
         Url::fromRoute('entity.entity_form_display.mcapi_transaction.default')
       );
 
+    // for the field API fields we combine or ignore elements of the field definitions
+    // with the EntityFormDisplay field settings and overwrite or augment them with
+    // settings determined here
     $definitions = $this->entityFieldManager
       ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
-    $display = \Drupal\Core\Entity\Entity\EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.default');
-
-    $components = $display->getComponents();
-    unset($components['payer'], $components['payee']);
-    foreach (array_keys($components) as $field_name) {//created, categories, worth, description
-      if ($field_name === 'created') continue;
+    $display = \Drupal\Core\Entity\Entity\EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.1stparty');
+    $components = array_diff_key($display->getComponents(), array_flip(['payer', 'payee', 'created', 'worth']));
+    $defaultTransaction = $configEntity->makeDefaultTransaction();
+    //this ignores the weight
+    foreach ($components as $field_name => $info) {//e.g. categories, worth, description
+      $items = $defaultTransaction->get($field_name);
       //assumes a cardinality of 1!
       $form['fieldapi_presets'][$field_name] = [
         '#title' => $definitions[$field_name]->getLabel(),
         '#description' => $moreInfo,
         '#type' => 'details',
         '#group' => 'steps',
-        'preset' => $display->getRenderer($field_name)
-          ->formElement($configEntity->makeDefaultTransaction()->$field_name, 0, $element, $form, $form_state),
-        '#weight' => $w++
+        'preset' => $display->getRenderer($field_name)->formElement($items, 0, $element, $form, $form_state),
+        '#weight' => $info['weight']
       ];
       $form['fieldapi_presets'][$field_name]['preset']['#title'] = 'Preset value';
     }
@@ -234,6 +235,27 @@ class FirstPartyFormDesigner extends EntityForm {
     $form['fieldapi_presets']['worth']['preset']['#config'] = TRUE;
     $form['fieldapi_presets']['worth']['preset']['#description'] = t('Currencies with blank in the left-most field will not appear on the form.') .' '.t('Leave every row blank to let the system decide which ones to show.');
 
+    $all_fields = \Drupal::service('entity_field.manager')
+      ->getFieldMap()['mcapi_transaction'];
+
+    $tokens = array_diff(
+      array_keys($all_fields),
+      ['xid', 'uuid', 'serial', 'parent', 'payer', 'payee', 'creator', 'type', 'state', 'changed']
+    );
+
+
+
+
+
+
+
+
+
+    $tokens[] = 'partner';
+    $tokens[] = 'mywallet';
+
+
+
     $form['experience'] = [
       '#title' => $this->t('User experience'),
       '#type' => 'details',
@@ -242,7 +264,7 @@ class FirstPartyFormDesigner extends EntityForm {
         '#title' => $this->t('Main form'),
         '#description' => implode(' ', [
           $this->t('Use the following twig tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically.'),
-          ' {{ '. implode(' }}, {{ ', mcapi_1stparty_transaction_tokens()) .' }}',
+          ' {{ '. implode(' }}, {{ ', $tokens) .' }}',
           $this->l(
             $this->t('What is twig?'),
             Url::fromUri('http://twig.sensiolabs.org/doc/templates.html')

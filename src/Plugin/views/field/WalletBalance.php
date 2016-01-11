@@ -2,12 +2,13 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Plugin\views\field\Balance.
+ * Definition of Drupal\mcapi\Plugin\views\field\WalletBalance.
  */
 
 namespace Drupal\mcapi\Plugin\views\field;
 
 use Drupal\views\ResultRow;
+use Drupal\views\Plugin\views\field\FieldPluginBase;
 
 /**
  * Field handler to provide running balance for a given transaction
@@ -17,7 +18,7 @@ use Drupal\views\ResultRow;
  *
  * @ViewsField("transaction_running_balance")
  */
-class Balance extends Worth {
+class WalletBalance extends FieldPluginBase {
 
   private $wallet_id;
 
@@ -52,39 +53,8 @@ class Balance extends Worth {
    * {@inheritdoc}
    */
   public function render(ResultRow $values) {
-    $worth_field = $this->getEntity($values)->worth;
-    //something bizarre is happening here. sometimes the entity associated with
-    //this row has and empty worth value. but it works if we reload it
-    if (!$worth_field->getValue()) {
-      drupal_set_message('reloading transaction '.$values->serial, 'warning');
-      $worth_field = \Drupal\mcapi\Entity\Transaction::load($values->serial)
-        ->worth;
-      if (!$worth_field) {
-        drupal_set_message('failed to reload '.$values->serial, 'error');
-        return array();
-      }
-    }
-    $vals = [];
-    foreach ($worth_field->currencies() as $curr_id) {
-      $raw = \Drupal::entityTypeManager()->getStorage('mcapi_transaction')->runningBalance(
-        $values->wallet_id,
-        $curr_id,
-        $values->xid,
-        'xid'
-      );
-      $vals[] = ['curr_id' => $curr_id, 'value' => $raw];
-    }
-    $worth_field->setValue($vals);
-    $options = [
-      'label' => 'hidden',
-      'settings' => [
-        'format' => $this->options['format']
-      ]
-    ];
-    if (property_exists($values, 'curr_id')) {
-      $options['settings']['curr_ids'] = [$values->curr_id];
-    }
-    return $worth_field->view($options);
+    $worths = $this->getEntity($values)->getWorths();
+    
   }
 
 }

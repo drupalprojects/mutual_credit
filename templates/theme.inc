@@ -1,79 +1,16 @@
 <?php
 
-//@todo find a way to set the width of the chart using config
-const GCHART_HISTORY_WIDTH = 300;
 
 /**
  * @file
  * View and theme preprocessor functions
  */
-use Drupal\mcapi\History;
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\State;
 use Drupal\Core\Render\Element;
 
-/**
- * implements hook_preprocess_THEMEHOOK for wallet_histories
- * generates the javascript for the gchart from the user's history of each currency
- * 
- */
-function mcapi_preprocess_wallet_histories(&$vars) {
-  $element = $vars['element'];
-  $wallet = $element['#wallet'];
-  $vars['width'] = GCHART_HISTORY_WIDTH;
-  $vars['height'] = $vars['width']/2;
-  $histories = History::getAll(
-    $wallet,
-    $wallet->currenciesUsed(), 
-    $vars['width']
-  );
-  foreach ($histories as $curr_id => $points) {
-    if (count($points) < 2) {
-      //don't draw the chart if it is empty
-      continue;
-    }
-    $currency = Currency::load($curr_id);
-    $vars['currencies'][$curr_id]['currency'] = $currency;
-    $vars['currencies'][$curr_id]['functionname'] = 'drawHistory' . $curr_id;
-    $vars['currencies'][$curr_id]['id'] = 'wallet-' . $wallet->id() . '-' . $curr_id;
-    if ($points) {
-      list($min, $middle, $max) = History::axes($points);
-    }
-    else {
-      $min = -10;
-      $middle = 0;
-      $max = 10;
-    }
-    $vars['currencies'][$curr_id]['vaxislabels'] = [
-      [
-        'value' => $min, 
-        'label' => $currency->format($min, TRUE)
-      ],
-      [
-        'value' => $middle, 
-        'label' => $currency->format($middle, TRUE)
-      ],
-      [
-        'value' => $max, 
-        'label' => $currency->format($max, TRUE)
-      ]
-    ];
-    $vars['currencies'][$curr_id]['columns'] = [
-      'date' => t('Date'),
-      'number' => $currency->label()
-    ];
-    //populate the javascript data object
-    foreach ($points as $timestamp => $balance) {
-      //this has a resolution of one day, not very satisfying perhaps
-      $vars['currencies'][$curr_id]['daterows'][] = [
-        date('m/d/Y', $timestamp),
-        $balance,
-        $currency->format($balance, TRUE)
-      ];
-    }
-  }
-}
 
 /**
  * theme preprocessor for 'wallet_stats'
@@ -95,12 +32,24 @@ function template_preprocess_wallet_stats(&$vars) {
   }
 }
 
+function __template_preprocess_worths(&$vars) {
+  foreach ($vars['values'] as $key => &$value) {
+    $value = render($value);
+  }
+}
+
+function template_preprocess_worth(&$vars) {
+  $vars['value'] = $vars['worth']['#value'];
+}
+
 /**
  * default preprocessor for theme wrapper callback 'wallet_wrapper'
  */
 function template_preprocess_mcapi_wallet(&$vars) {
   $wallet = $vars['element']['#mcapi_wallet'];
-  $vars['label'] = $wallet->label();
+  if (Mcapi::maxWalletsOfBundle($wallet->getHolder()->getEntityTypeId(), $wallet->getHolder()->bundle()) > 1) {
+    $vars['label'] = $wallet->label();
+  }
   $vars['canonical'] = $wallet->toUrl('canonical')->toString();
   $vars['attributes'] = [
     'class' => "wallet ".$vars['element']['#view_mode']
@@ -116,7 +65,7 @@ function template_preprocess_mcapi_wallet_component(&$vars) {
 
 /**
  * Theme preprocessor for all of an entity's wallets
- 
+
  */
 function template_preprocess_mcapi_wallets(&$vars) {
   $viewbuilder =\Drupal::entityTypeManager()->getViewBuilder('mcapi_wallet');
@@ -143,7 +92,7 @@ function template_preprocess_wallet_balances(&$vars) {
     }
   }
   $vars['delimited'] = implode(
-    \Drupal::config('mcapi.settings')->get('worths_delimiter'), 
+    \Drupal::config('mcapi.settings')->get('worths_delimiter'),
     $vars['delimited']
   );
 }
@@ -217,11 +166,12 @@ function template_preprocess_mcapi_transaction(&$vars, $hook, $info) {
 function template_preprocess_certificate(&$vars) {
   $element = $vars['transaction'];
   $transaction = $element['#mcapi_transaction'];
-  $vars = get_transaction_vars($transaction) + $vars;
-  unset($element['worth'], $element['created']);//these are already rendered in $vars
+
   //hide the field api label
   foreach (Element::children($element) as $sub) {
     if (array_key_exists('#theme', $element[$sub]) && $element[$sub]['#theme'] == 'field') {
+      //debug($element, 'where are the theme wrappers');
+      unset($element['#theme_wrappers']);//this shoudl be much more elegant
       $element[$sub]['#label_display'] = 'hidden';
     }
     $vars[$sub] = $element[$sub];
@@ -235,14 +185,12 @@ function template_preprocess_certificate(&$vars) {
       unset($vars['children'][$child->id()]['#pre_render']);
     }
   }
-  //choose the transaction theme template based on the first currency of the transaction
-  //not sure if this is worth the processing power at the moment
-  //$vars['theme_hook_suggestions'][] = 'certificate__' . $transaction->get('type')->value;
+  $vars['serial'] = $transaction->serial->value;
 }
 
 /**
  * implements template_preprocess_THEMEHOOK for theme callback 'mcapi_currency'
- * 
+ *
  * @param array $vars
  * @todo there is no currency view page yet!
  */
@@ -260,11 +208,12 @@ function template_preprocess_mcapi_currency(&$vars) {
 
 /**
  * gets all the vars which we know are in the transaction
+ * @todotim refactor this into mcapi.tokens.inc
  */
 function get_transaction_vars(TransactionInterface $transaction) {
   $vars['state'] = State::load($transaction->type->entity->start_state)->label;
   $vars['type'] = $transaction->type->entity->label;
-  $vars['serial'] = $transaction->serial->value;
+  //@todo find a better way to do these
   foreach (['payer', 'payee'] as $trader) {
     $holder = $transaction->{$trader}->entity->getHolder();
     if ($holder->hasLinkTemplate('canonical')) {
@@ -281,9 +230,7 @@ function get_transaction_vars(TransactionInterface $transaction) {
 
   //NB the transaction certificate, which uses entity_view_display overwrites field with display options, i.e. this one!
   //but this is needed for the sentence display'
-  $worth = $transaction->worth->view(); 
   $worth['#label_display'] = 'hidden';
-  $vars['worth'] = \Drupal::service('renderer')->render($worth);
 
   $vars['created'] = format_date($transaction->created->value, 'medium');
 

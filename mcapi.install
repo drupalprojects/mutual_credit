@@ -14,8 +14,6 @@ use Drupal\mcapi\Mcapi;
  */
 function mcapi_install() {
   module_set_weight('field_ui', -1);//mcapi has to be after field_ui for mcapi_local_tasks_alter
-  //see field_ui_local_tasks_alter() where
-  //$local_task->alterLocalTasks($local_tasks); replaces some tasks already passed
 
   //we need to deal with existing users, especially user 1
   //in accordance with the default wallet settings
@@ -27,14 +25,17 @@ function mcapi_install() {
     }
     //give every existing user a wallet
      Wallet::create([
-      'holder' => $account,
-      'name' => 'Default'
+      'holder' => $account
     ])->save();
   }
 
   $zero_icon_uri = '/'. drupal_get_path('module', 'mcapi') . '/templates/present.png';
+  $snippet = '<img src = "'. $zero_icon_uri .'" width = "31" />';
+
+  //TEMP this won't work until we sort out the text filtering see \Drupal\mcapi\Element\WorthView
+  $snippet = '-';
   \Drupal::configFactory()->getEditable('mcapi.settings')
-    ->set('zero_snippet', '<img src = "'. $zero_icon_uri .'" width = "31" />')
+    ->set('zero_snippet', $snippet)
     ->save();
 
 }
@@ -59,7 +60,7 @@ function mcapi_modules_installed() {
 $worth = \Drupal\field\Entity\FieldStorageConfig::load('mcapi_transaction.worth');
 if ($worth)$worth->delete();
 $mem = \Drupal\field\Entity\FieldStorageConfig::load('mcapi_exchange.og_exchange_ref');
-if ($worth)mem->delete();
+if ($mem)$mem->delete();
 field_purge_batch(10000);//rows at a time
 
 db_drop_table('mcapi_transaction');

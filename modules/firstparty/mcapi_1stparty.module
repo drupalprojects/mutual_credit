@@ -49,37 +49,10 @@ function mcapi_1stparty_form_field_config_edit_form_alter(&$form, &$form_state) 
 
 /**
  * machine_name callback
- * @param unknown $id
+ * @param string $id
  */
 function mcapi_editform_load($id) {
   return FirstPartyFormDesign::load($id);
-}
-
-/**
- * get all the tokens which apply in the transaction form
- * @param boolean $natural
- *   TRUE if the transaction entities fields are wanted, FALSE if the form fields
- * @return string[]
- *   the token names, without the 'type:'
- */
-function mcapi_1stparty_transaction_tokens($natural = FALSE) {
-  $tokens = Exchange::transactionTokens(FALSE);
-
-  unset($tokens[array_search('state', $tokens)]);
-  unset($tokens[array_search('serial', $tokens)]);
-  unset($tokens[array_search('creator', $tokens)]);
-//  unset($tokens[array_search('mcapi_EXCHANGE_OG_FIELD', $tokens)]);
-  if (!$natural) {
-    unset($tokens[array_search('payer', $tokens)]);
-    unset($tokens[array_search('payee', $tokens)]);
-    $tokens[] = 'partner';
-    $tokens[] = 'mywallet';
-  }
-  return $tokens;
-}
-
-function mcapi_1stparty_form_field_ui_form_display_overview_form_alter(&$form, $form_state) {
-  $form['#suffix'] = t('N.B. Disabled fields may cause problems with the transaction form editor');
 }
 
 /**
@@ -144,7 +117,7 @@ function mcapi_1stparty_theme() {
  * when a field is added, make sure it appears in the default display
  */
 function dunno() {
-  
+
 }
 
 
@@ -158,13 +131,14 @@ function dunno() {
  * - 'operations' => [Url::fromPath('blah')] an array of items, each with title and path
  */
 function mcapi_1stparty_mcapi_form_list() {
+  $forms = [];
   foreach (FirstPartyFormDesign::loadMultiple() as $id => $entity) {
     $forms[$id] = [
       'title' => $entity->title,
       'route' => 'mcapi.1stparty.'.$id,
       'route_parameters' => [],
     ];
-    
+
     if ($entity->access('update') && $entity->hasLinkTemplate('edit-form')) {
       $forms[$id]['operations']['edit'] = array(
         'title' => t('Edit'),

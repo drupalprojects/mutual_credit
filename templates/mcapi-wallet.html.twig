@@ -2,7 +2,7 @@
 /**
  * @file
  * Default theme implementation for the wallet wrapper
- * label 
+ * label
  * element
  * canonical
  * view_mode
@@ -10,6 +10,6 @@
 
 #}
 <div {{ attributes }}>
-  <h3>{{ label }}</h3>
+  {% if label %}<h3>{{ label }}</h3>{% endif %}
   {{ element }}
 </div>

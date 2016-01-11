@@ -18,21 +18,23 @@ use Drupal\mcapi\Mcapi;
  * @FormElement("transaction_relatives")
  */
 class Relatives extends Checkboxes {
-  
+
   /**
    * {@inheritdoc}
    */
   public function getInfo() {
     $info = parent::getInfo();
     $info['#description'] = t('Check whichever relatives apply');
+    $info['#anon'] = FALSE;
     return $info;
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public static function processCheckboxes(&$element, FormStateInterface $form_state, &$complete_form) {
-    $element['#options'] = Mcapi::transactionRelatives()->options();
+    $element['#options'] = Mcapi::transactionRelatives()->options($element['#anon']);
+
     return parent::processCheckboxes($element, $form_state, $complete_form);
   }
 

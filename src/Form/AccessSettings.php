@@ -42,15 +42,16 @@ class AccessSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    drupal_set_message('Need to configure extra fields for editing transactions, or an extra module');
-    drupal_set_message('How to put this form into a table? See the permissions page for an example');
+    drupal_set_message('@todo How to put this form into a table? See the permissions page for an example');
+    drupal_set_message('@todo Test transaction access for entityQueries, views and canonical url');
     //then maybe the view and edit can be done on the same page.
-    
+
     foreach (Type::loadMultiple() as $type) {
       $form[$type->id()] = [
         '#title' => t('Who can @action transactions of type: @type', ['@action' => $this->opName, '@type' => $type->label()]),
         '#description' => t('Check whichever relatives apply'),
         '#type' => 'transaction_relatives',
+        '#anon' => $this->op == 'view',
         '#default_value' => $type->get($this->op)
       ];
     }
@@ -69,7 +70,7 @@ class AccessSettings extends ConfigFormBase {
     }
     parent::submitForm($form, $form_state);
   }
-  
+
   public function getEditableConfigNames() {
     return [];
   }

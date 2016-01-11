@@ -26,7 +26,7 @@ class ExchangeTransactions extends FieldPluginBase {
    */
   protected function defineOptions() {
     $options = parent::defineOptions();
-    $options['inclusive'] = array('default' => TRUE);
+    $options['uncounted'] = array('default' => TRUE);
     return $options;
   }
 
@@ -34,14 +34,18 @@ class ExchangeTransactions extends FieldPluginBase {
    * {@inheritdoc}
    */
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
-    $form['inclusive'] = array(
-      '#title' => t('Include transactions in all states'),
+    $form['uncounted'] = array(
+      '#title' => t("Include transactions in 'uncounted' states, e.g. erased, pending"),
       '#type' => 'checkbox',
-      '#default_value' => $this->options['link'],
+      '#default_value' => $this->options['uncounted'],
     );
     parent::buildOptionsForm($form, $form_state);
   }
 
+  /**
+   * {@inheritdoc}
+   * @todo is and empty query() needed for virtual views fields?
+   */
   function query(){}
 
   /**
@@ -49,7 +53,10 @@ class ExchangeTransactions extends FieldPluginBase {
    */
   public function render(ResultRow $values) {
     $states = \Drupal::config('mcapi.settings')->get('counted');
-    return $this->getEntity($values)->transactions($this->options['inclusive']);
+    //@todo this should be a transaction entityQuery
+    //return $this->getEntity($values)->transactionCount([state => $states]);
+
+    return '*0*';
   }
 
 }

@@ -23,7 +23,8 @@ use Drupal\Component\Utility\SafeMarkup;
  *   multiple_values = 1,
  *   field_types = {
  *     "worth"
- *   }
+ *   },
+ *   multiple_values = TRUE
  * )
  */
 class WorthWidget extends WidgetBase {
@@ -34,22 +35,15 @@ class WorthWidget extends WidgetBase {
    * @see \Drupal\Core\Field\WidgetInterface
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
-    //@todo utilise the advice below taken from \Drupal\datetime\Plugin\Field\FieldWidget\DateTimeWidgetBase.
-    // We are nesting some sub-elements inside the parent, so we need a wrapper.
-    // We also need to add another #title attribute at the top level for ease in
-    // identifying this item in error messages. We do not want to display this
-    // title because the actual title display is handled at a higher level by
-    // the Field module.
-    //$element['#theme_wrappers'][] = 'worth_wrapper';
-    //$element['#attributes']['class'][] = 'container-inline';
 
-    //$element contains no meaningful information
+    //because this is a multiple widget, we ignore the delta value and put all items
     $element += array(
       '#title' => Safemarkup::checkPlain($this->fieldDefinition->label()),
       '#title_display' => 'attribute',
-      '#type' => 'worth',
-      '#default_value' => $items->getValue(),
+      '#type' => 'worths_form',
+      '#default_value' => $items->getValue()
     );
+    unset($element['#description']);
     return $element;
   }
 

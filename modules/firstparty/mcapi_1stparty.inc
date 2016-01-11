@@ -5,16 +5,16 @@ use \Drupal\Core\Render\Element;
 
 /**
  * theme preprocessor
- * Replace the partner and mywallet tokens with payer and payee; 
+ * Replace the partner and mywallet tokens with payer and payee;
  * Add the actions to the end of the template string
  */
-function template_preprocess_first_party_transaction_form(&$vars) {  
+function template_preprocess_first_party_transaction_form(&$vars) {
   //add the buttons at the end if they weren't in the twig template already
   $form = &$vars['form'];
   if (strpos($form['#twig_template'], '{{ actions }}') === FALSE) {
     $twig_template = $form['#twig_template'] . "\n{{ actions }}";
   }
-  
+
   //replace the partner and mywallet with payer and payee
   if ($form['#incoming']) {
     $replacements = [
@@ -33,7 +33,7 @@ function template_preprocess_first_party_transaction_form(&$vars) {
 
 /**
  * theme implementation of callback 1stpartyform
- * this must be a function, because we are taking a twig string 
+ * this must be a function, because we are taking a twig string
  * instead of using a template file
  */
 function theme_first_party_transaction_form($vars) {
@@ -63,11 +63,10 @@ function theme_first_party_transaction_form($vars) {
       $hidden .= $renderer->render($form[$fieldname]);
     }
     elseif($form[$fieldname]['#type'] == 'value') {
-      
+
     }
     //add the rendered token to the hidden elements
     elseif (isset($form[$fieldname]['widget'])) {
-      
     }
     //if it is required, and its not yet added as a token show an error
     elseif ($form[$fieldname]['#required']) {

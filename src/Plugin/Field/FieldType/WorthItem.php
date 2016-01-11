@@ -78,6 +78,9 @@ class WorthItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public function setValue($value, $notify = true) {
+    if (!isset($value['value'])) {
+      return;
+    }
     $this->set('curr_id', $value['curr_id']);
     $this->set('value', $value['value']);
     //set the computed field

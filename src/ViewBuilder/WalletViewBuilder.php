@@ -22,7 +22,7 @@ class WalletViewBuilder extends EntityViewBuilder {
 
   private $localTaskManager;
   private $accessManager;
-  
+
   /**
    * Constructs a new EntityViewBuilder.
    *
@@ -57,8 +57,8 @@ class WalletViewBuilder extends EntityViewBuilder {
       $container->get('entity.manager')//deprecated
     );
   }
-  
-  
+
+
   /**
    * {@inheritdoc}
    * For multiple nice wallets see theme callback 'mcapi_wallets'
@@ -72,7 +72,7 @@ class WalletViewBuilder extends EntityViewBuilder {
 
   /**
    * default Wallet entity_label_callback
-   * 
+   *
    * put the Holder entity's name with the wallet name in brackets if there is one
    */
   public static function defaultLabel($wallet) {
@@ -86,33 +86,34 @@ class WalletViewBuilder extends EntityViewBuilder {
     }
     else return $holdername;
   }
-  
-   /** 
+
+   /**
    * {@inheritdoc}
    */
   public function buildComponents(array &$build, array $entities, array $displays, $view_mode) {
     parent::buildComponents($build, $entities, $displays, $view_mode);
+    $display = $displays['mcapi_wallet'];
     foreach ($entities as $id => $wallet) {
       $extra = mcapi_entity_extra_field_info()['mcapi_wallet']['mcapi_wallet']['display'];
       foreach (['balances', 'balance_bars', 'histories', 'stats'] as $component) {
-        if ($info = $displays[$wallet->bundle()]->getComponent($component)) {
+        if ($info = $display->getComponent($component)) {
           $build[$id][$component] = [
+            '#title' => $extra[$component]['label'],
             '#theme' => 'wallet_'.$component,
             '#wallet' => $wallet,
             '#attributes' => ['class' => ['component', $component]],
             '#theme_wrappers' => ['mcapi_wallet_component'],
             '#weight' => $info['weight'],
-            '#title' => $extra[$component]['label']
           ];
         }
       }
-      if ($info = $displays[$wallet->bundle()]->getComponent('wallet_log')) {
+      if ($info = $display->getComponent('wallet_log')) {
         $build[$id]['wallet_log'] = views_embed_view('wallet_log', 'embed', $wallet->id());
       }
-      if ($info = $displays[$wallet->bundle()]->getComponent('income_expenditure')) {
+      if ($info = $display->getComponent('income_expenditure')) {
         $build[$id]['income_expenditure'] = views_embed_view('income_expenditure', 'income_embed', $wallet->id());
       }
-      if ($info = $displays[$wallet->bundle()]->getComponent('canonical_link')) {
+      if ($info = $display->getComponent('canonical_link')) {
         $build[$id]['canonical_link'] = [
           '#type' => 'link',
           '#title' => $this->t('Visit wallet'),
@@ -124,6 +125,6 @@ class WalletViewBuilder extends EntityViewBuilder {
     }
     $build['#prefix'] = '<div class="wallets">';
     $build['#suffix'] = '</div>';
-//    $build['#attributes']['class'][] = 'wallets';
+    //$build['#attributes']['class'][] = 'wallets';
   }
 }

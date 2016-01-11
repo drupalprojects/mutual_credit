@@ -4,15 +4,12 @@
  * @file
  * Contains \Drupal\Core\Field\Plugin\Field\FieldFormatter\WalletNameFormatter.
  *
- * @deprecated
+ * @deprecated remove all methods but not the file
  */
 
 namespace Drupal\mcapi\Plugin\Field\FieldFormatter;
 
-use Drupal\Component\Utility\String;
-use Drupal\Core\Field\FormatterBase;
-use Drupal\Core\Field\FieldItemListInterface;
-use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Plugin implementation of the 'worth' formatter.
@@ -25,54 +22,18 @@ use Drupal\Core\Form\FormStateInterface;
  *   }
  * )
  */
-class WalletNameFormatter extends FormatterBase {
+class WalletNameFormatter extends \Drupal\Core\Field\Plugin\Field\FieldFormatter\EntityReferenceLabelFormatter {
 
   /**
    * {@inheritdoc}
+   *
+   * Grants everyone with access to see the main entity permission to view the
+   * wallet name, if not the wallet. By granting access here, a link is created
+   * to the destination wallet canonical page, even if the user can't see that page.
    */
-  public function viewElements(FieldItemListInterface $items, $langcode) {
-    $wallet = reset($items->referencedEntities());
-    $replacements = [
-      '{{ wallet_id }}' => $wallet->id(),
-      '{{ wallet_name }}' => $wallet->name->value,//@todo checkplain
-      '{{ owner_label }}' => $wallet->getowner()->label(),
-      '{{ owner_type }}' => $wallet->getowner()->getEntityType()->label
-    ];
-//try this with #markup?
-    return [0 => strtr($this->options['template'], $replacements)];
-
+  protected function checkAccess(EntityInterface $entity) {
+    return parent::checkAccess($entity);
+    return \Drupal\Core\Access\AccessResult::allowed()->cachePerPermissions('view user profile');
   }
-
-
-  /**
-   * {@inheritdoc}
-   */
-  public function settingsForm(array $form, FormStateInterface $form_state) {
-    $form = parent::settingsForm($form, $form_state);
-    $form['template'] = [
-      '#title' => $this->t('Wallet name template'),
-      '#description' => $this->t('Arrange any of the following tokens, considering that wallet names are optional.') .' '.
-        '{{ wallet_id }}, {{ wallet_name }}, {{ owner_label }}, {{ owner_type }}',
-      '#type' => 'textfield',
-      '#default_value' => $this->getSetting('template')
-    ];
-    return $form;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function settingsSummary() {
-    return ['#markup' => $this->getSetting('template')];
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function defaultSettings() {
-    $settings = parent::defaultSettings();
-    $settings['template'] = '#{{ wallet_id }}: {{ owner_type }} {{ owner_label }} {{ wallet_name }}';
-    return $settings;
-  }
-
 }
+

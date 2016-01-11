@@ -32,7 +32,7 @@ class RouteExchanges extends ArgumentDefaultPluginBase {
     //so this function needs to decide whether to return an argument
     $ids = [];
     foreach (\Drupal::routeMatch()->getParameters()->all() as $key => $entity) {
-      if (Mcapi::isWalletable($entity->getEntityTypeId(), $entity->bundle())) {
+      if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())) {
         $ids = Exchanges::memberOf();
         break;
       }

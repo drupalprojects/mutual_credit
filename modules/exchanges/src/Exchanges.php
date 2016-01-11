@@ -16,7 +16,6 @@ use Drupal\og\Og;
 use Drupal\og\OgMembershipInterface;
 use Drupal\user\Entity\User;
 use Drupal\user\EntityOwnerInterface;
-use Drupal\Core\Session\AccountInterface;
 
 use Drupal\Core\Entity\ContentEntityInterface;
 
@@ -32,7 +31,7 @@ class Exchanges extends Exchange {
    *
    * @return integer[]
    *   Exchange entity ids
-   * 
+   *
    * @todo check all calls to this are using the needed boolean args
    * @todo consider usering entityQuery directly
    */
@@ -95,24 +94,21 @@ class Exchanges extends Exchange {
     uasort($currencies, array('\Drupal\Component\Utility\SortArray', 'sortByWeightProperty'));
     return $currencies;
   }
-  
+
 
 
   /**
    * get a list of all the currencies currently in a wallet's scope
    * which is to say, in any of the wallet's parent's exchanges
    *
-   * @param WalletInterface $wallet
+   * @param UserInterface $account
    *
    * @return CurrencyInterface[]
    *   keyed by currency id
    *
    */
-  public static function currenciesAvailableToUser(AccountInterface $account = NULL) {
+  public static function currenciesAvailableToUser(\Drupal\user\UserInterface $account = NULL) {
     $exchanges = $account->get(EXCHANGE_OG_FIELD)->referencedEntities();
-    if (empty($exchanges) && $account->id() == 1){
-      $exchanges = \Drupal\mcapi_exchanges\Entity\Exchange::loadMultiple();
-    }
     return Self::exchangeCurrencies($exchanges);
   }
 
@@ -123,8 +119,8 @@ class Exchanges extends Exchange {
    * @param array $exchange_ids
    * @return array
    *   the currency ids
-   * 
-   * @todo might it be better to iterate though the exchange entities and 
+   *
+   * @todo might it be better to iterate though the exchange entities and
    * $exchange->get('currencies')->referencedEntities()
    * then make them unique?
    * @todo put this a static container
@@ -142,10 +138,10 @@ class Exchanges extends Exchange {
    * I don't think there is a way to do reverse lookup entity query.
    * So this is a bit of a hack, accessesing the entity reference field table directly
    * @param string $curr_id
-   * 
+   *
    * @return array
    *   the exchange ids
-   * 
+   *
    */
   static function getExchangesUsing($curr_id) {
     return \Drupal::database()->select('mcapi_exchange__currencies', 'c')
@@ -164,7 +160,7 @@ class Exchanges extends Exchange {
 
   /**
    * field api default value callback
-   * Populate the currencies entityref field (on exchange entity) 
+   * Populate the currencies entityref field (on exchange entity)
    * using the currencies in exchanges the current user is in
    *
    * @param ContentEntityInterface $exchange
@@ -188,5 +184,35 @@ class Exchanges extends Exchange {
     return $output;
   }
 
-
+  /**
+   * Utility:
+   * get all the wallets whose holders are members of a given exchange
+   * this is where things get ugly but we've saved having a redundant automated membership field on wallets
+   * @param integer[] $exids
+   *
+   * @todo clarify and document whether this includes intertrading wallets. probably does
+   */
+  static function walletsInExchange(array $exids) {
+    //get all the entities in the exchange
+    $results = \Drupal::database()->select('og_membership', 'm')
+      ->fields('m', ['member_entity_type', 'member_entity_id'])
+      ->condition('group_entity_type', 'mcapi_exchange')
+      ->condition('group_entity_id', $exids)
+      ->execute()->fetchAll();
+    foreach ($results as $result) {
+      $holders[$result->member_entity_type][] = $result->member_entity_id;
+    }
+    return Mcapi::walletsOfHolders($holders);
+  }
+/*
+ * [user] => Array
+        (
+            [1] => 70
+            [2] => 23
+            [3] => 30
+            [4] => 42
+            [5] => 46
+            [6] => 40
+        )
+ */
 }

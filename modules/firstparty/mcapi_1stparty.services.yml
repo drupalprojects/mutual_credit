@@ -1,6 +1,8 @@
-#services:
-#  paramconverter.mcapi_transaction_form:
-#    class: Drupal\mcapi_1stparty\TransactionFormParamConverter
-#    tags:
-#      - { name: paramconverter, priority: 11 }
+services:
+
+  mcapi_1stparty.route.subscriber:
+    class: Drupal\mcapi_1stparty\Routing\RouteSubscriber
+    arguments: [@entity_type.manager, @config.factory]
+    tags:
+     - { name: event_subscriber }
 

@@ -95,29 +95,19 @@ Direction: [mcapiform:direction]
     ];
 
   }
-  
+
   /**
   * Make a transaction entity loaded up with the defaults from the Designed form
   *
-  * @return \Drupal\mcapi\Entity\Transaction Transaction
+  * @return \Drupal\mcapi\Entity\Transaction
   *   a (partially populated) transaction entity
   */
   function makeDefaultTransaction() {
-    //the partner is either the holder of the current page's entity, under certain circumstances
-    //or is taken from the form preset.
-    //or is yet to be determined.
-    $partner = $this->partner['preset'] ? : '';
     //prepare a transaction using the defaults here
     $vars = ['type' => $this->type];
-    //now handle the payer and payee, based on partner and direction
-    if ($this->incoming) {
-      $vars['payee'] = \Drupal::currentUser()->id();
-      $vars['payer'] = $partner;
-    }
-    else {
-      $vars['payer'] = \Drupal::currentUser()->id();
-      $vars['payee'] = $partner;
-    }
+
+    //things have evolved so this is probably only the description field now
+    //@todo refactor this
     foreach ($this->fieldapi_presets as $fieldname => $setting) {
       if (isset($setting['preset'])) {
         $vars[$fieldname] = $setting['preset'];

@@ -49,9 +49,12 @@ class TransactionRelativeManager extends DefaultPluginManager {
   }
 
   //return the names of the config items
-  public function options() {
+  public function options($include_anon = FALSE) {
     foreach ($this->activePlugins() as $id => $info) {
       $names[$id] = $info->getPluginDefinition()['label'];//is this translated?
+    }
+    if (!$include_anon) {
+      unset($names['anon']);
     }
     return $names;
   }

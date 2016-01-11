@@ -1,0 +1,49 @@
+uuid: 0e6ea44b-42fa-4bf3-a709-9fb03d63f459
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.mcapi_transaction.1stparty
+    - field.field.mcapi_transaction.mcapi_transaction.worth
+  module:
+    - mcapi
+id: mcapi_transaction.mcapi_transaction.1stparty
+targetEntityType: mcapi_transaction
+bundle: mcapi_transaction
+mode: 1stparty
+content:
+  created:
+    type: datetime_timestamp
+    weight: 3
+    settings: {  }
+    third_party_settings: {  }
+  description:
+    type: string_textfield
+    weight: 2
+    settings:
+      size: 60
+      placeholder: 'What for?'
+    third_party_settings: {  }
+  payee:
+    type: wallet_reference_autocomplete
+    weight: 1
+    settings:
+      match_operator: CONTAINS
+      size: '60'
+      placeholder: 'Payee wallet'
+    third_party_settings: {  }
+  payer:
+    type: wallet_reference_autocomplete
+    weight: 0
+    settings:
+      match_operator: CONTAINS
+      size: '60'
+      placeholder: 'Payer wallet'
+    third_party_settings: {  }
+  worth:
+    type: worth
+    weight: 4
+    settings: {  }
+    third_party_settings: {  }
+hidden: {  }
+

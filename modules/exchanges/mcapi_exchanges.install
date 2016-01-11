@@ -12,7 +12,7 @@ use Drupal\mcapi\Mcapi;
  */
 function mcapi_exchanges_install() {
   \Drupal\og\Og::groupManager()->addGroup('mcapi_exchange', 'mcapi_exchange');
-  
+
   //@todo test this on exchange/add
   EntityFormDisplay::create([
     'targetEntityType' => 'mcapi_exchange',
@@ -20,37 +20,41 @@ function mcapi_exchanges_install() {
     'mode' => 'default',
     'status' => TRUE
   ])->setComponent(
-    'currencies', 
+    'currencies',
     ['weight'  => 10, 'type' => 'options_select', 'settings' => []]
   );//->save();
-  
-  
+
+  //make the exchange walletable
   $conf = \Drupal::configFactory()->getEditable('mcapi.settings');
   $types = $conf->get('entity_types');
   $types['mcapi_exchange:mcapi_exchange'] = 1;
   $conf->set('entity_types', $types)->save();
   \Drupal\Core\Cache\Cache::invalidateTags(['walletable_bundles']);
-  
-  
+
+  //put the membership field on all walletable entity types
   mcapi_exchanges_check_og_fields([], []);
 
-  //now make a default exchange and put all the existing users in it.
+  //now make a default exchange
+  //Og should put the entityOwner IN the exchange automatically
   $exchange = Exchange::create([
     'name' => 'Default exchange',
     'uid' => 1,
     'mail' => \Drupal::config('system.site')->get('mail'),
     'currencies' => \Drupal\mcapi\Entity\Currency::loadMultiple()
   ]);
-  
   $exchange->save();
+  drupal_set_message('User 1 has joined the default exchange. @todo has this happened?');
+
+  //put all other users in the default exchanges
   foreach (User::loadMultiple() as $account) {
-    if ($account->id() <= 1){ 
+    if ($account->id() <= 1){
       continue;
     }
     //@todo there may be a way of doing this in og
     $account->set(EXCHANGE_OG_FIELD, $exchange);
     $account->save();
   }
+  drupal_set_message('All other users have joined the default exchange');
 
   $path = '/admin/structure/exchanges/display';
   drupal_set_message(
@@ -64,7 +68,6 @@ function mcapi_exchanges_install() {
 
 /**
  * form submit callback for mcapi_wallet_settings_form
- * 
  */
 function mcapi_exchanges_check_og_fields($form, $form_state) {
   foreach (Mcapi::walletableBundles(TRUE) as $entity_type_id => $bundles) {
@@ -89,12 +92,12 @@ function mcapi_exchanges_uninstall() {
 }
 
 /**
- * utility function 
+ * utility function
  * add the group reference field to an entity
- * 
+ *
  * @param type $entity_type
  * @param type $bundle
- * 
+ *
  * @todo replace with Og::createField($plugin_id, $entity_type, $bundle, array $settings = [])
  * \Drupal\og\Og::createField(EXCHANGE_OG_FIELD, $entity_type, $bundle);
  */
@@ -128,7 +131,7 @@ function mcapi_exchanges_create_group_ref($entity_type, $bundle) {
     ]
   ];
   $field = \Drupal\og\Og::createField(OgGroupAudienceHelper::DEFAULT_FIELD, $entity_type, $bundle, $settings);
-  
+
   drupal_set_message("Created field for $entity_type entity, bundle $bundle membership of exchanges.");
 }
 

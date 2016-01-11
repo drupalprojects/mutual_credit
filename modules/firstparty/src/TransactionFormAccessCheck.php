@@ -28,6 +28,6 @@ class TransactionFormAccessCheck extends EntityAccessCheck {
     //so though I wanted this to be neutral coz its not used yet, it is allowed for now
     return \Drupal\Core\Access\AccessResult::allowed();
   }
-  
+
 }
 

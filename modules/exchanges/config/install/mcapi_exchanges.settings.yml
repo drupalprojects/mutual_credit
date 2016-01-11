@@ -1,1 +1,2 @@
-force_group: false
+segregate_exchanges: false
+intertrading: false

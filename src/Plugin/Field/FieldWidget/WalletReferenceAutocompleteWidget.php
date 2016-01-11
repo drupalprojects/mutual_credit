@@ -2,7 +2,7 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\Field\Widget\WalletReferenceAutocompleteWidget.
- * @deprecated
+ * @todo inject entityTypeManager
  */
 
 namespace Drupal\mcapi\Plugin\Field\FieldWidget;
@@ -26,7 +26,7 @@ use Symfony\Component\Validator\ConstraintViolationInterface;
  * )
  */
 class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidget {
-  
+
   /**
    * {@inheritdoc}
    */
@@ -34,9 +34,8 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
     $form = parent::settingsForm($form, $form_state);
     unset($form['size']);
     return $form;
-    //ensure the placeholder is used
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -52,14 +51,19 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $referenced_entities = $items->referencedEntities();
     $op = ($this->fieldDefinition->getName() == 'payer' ? 'payin' : 'payout');
-    //@todo inject entityMansger
-    $wids = Mcapi::whichWallets($op, \Drupal::currentUser()->id());
+
+    $wids = \Drupal::entityTypeManager()->getStorage('mcapi_wallet')
+      ->whichWalletsQuery($op, \Drupal::currentUser()->id());
     $count = count($wids);
+    $default_value = isset($referenced_entities[$delta]) ? $referenced_entities[$delta] : NULL;
+    if (!$count) {
+      throw new \Exception('No wallets to show for '.$this->fieldDefinition->getName());
+    }
     $config = \Drupal::config('mcapi.settings');
     //present different widgets according to the number of wallets to choose from, and settings
     if ($count == 1) {
       $element += [
-        '#type' => 'hidden',
+        '#type' => 'value',
         '#value' => reset($wids)
       ];
     }
@@ -69,7 +73,7 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
         //assuming that the field item name IS the role
         '#selection_handler' => 'default:wallet',//this should be implicit because of the $type
         '#selection_settings' => ['op' => $op],
-        '#default_value' => isset($referenced_entities[$delta]) ? $referenced_entities[$delta] : NULL,
+        '#default_value' => $default_value,
         '#placeholder' => $this->getSetting('placeholder'),
         '#size' => 60,//appearance should be managed with css
         '#maxlength' => 64,
@@ -85,7 +89,7 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
       }
       $element += [
         '#options' => Mcapi::entityLabelList('mcapi_wallet', $wids),
-        '#default_value' => isset($referenced_entities[$delta]) ? $referenced_entities[$delta]->id() : ''
+        '#default_value' => $default_value
       ];
     }
     return ['target_id' => $element];
@@ -94,7 +98,7 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
   /**
    * {@inheritdoc}
    */
-  public function errorElement(array $element, ConstraintViolationInterface $error, array $form, FormStateInterface $form_state) {    
+  public function errorElement(array $element, ConstraintViolationInterface $error, array $form, FormStateInterface $form_state) {
     return isset($element['target_id']) ? $element['target_id'] : FALSE;
   }
 

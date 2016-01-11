@@ -6,7 +6,6 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Url;
-use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Wallet;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -18,7 +17,7 @@ class WalletSettings extends ConfigFormBase {
     $this->setConfigFactory($configFactory);
     $this->entityTypeManager = $entityTypeManager;
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
-    
+
   }
   /**
    * {@inheritdoc}
@@ -42,7 +41,7 @@ class WalletSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    //display a warning message 
+    //display a warning message
     $display = \Drupal\Core\Entity\Entity\EntityFormDisplay::load('mcapi_wallet.mcapi_wallet.default');
     if (!$display or !$display->getComponent('payees') or !$display->getComponent('payers')) {
       drupal_set_message($this->t('Field payers and payees needs to be visible in the wallet form display.'), 'warning');
@@ -51,7 +50,7 @@ class WalletSettings extends ConfigFormBase {
         drupal_set_message($this->t('Enable the Field UI module edit the form display.'), 'warning');
       }
     }
-    
+
     $config = $this->configFactory()->get('mcapi.settings');
 
     //A wallet can be attached to any entity with an entity reference field pointing towards the exchange entity
@@ -108,18 +107,19 @@ class WalletSettings extends ConfigFormBase {
       '#default_value' => $config->get('render_unused'),
       '#weight' => 7,
     ];
-    
+
     $form['payways'] = [
       '#title' => $this->t('Default payment direction'),
       '#description' => 'Setting given to new wallets',
       '#type' => 'radios',
-      '#options' => Mcapi::payWays(),
+      '#options' => Wallet::payWays(),
       '#default_value' => $config->get('payways'),
       '#weight' => 9
     ];
-    $form['widget'] = [
-      '#title' => $this->t('Wallet widget settings'),
-      '#type' => 'fieldset',
+
+    $form['user_interface'] = [
+      '#title' => $this->t('User interface'),
+      '#type' => 'details',
       'wallet_widget_max_radios' => [
         '#title' => $this->t('Radio button threshhold'),
         '#title' => $this->t('This tiny number of references will give a radio button widget'),
@@ -128,36 +128,13 @@ class WalletSettings extends ConfigFormBase {
       ],
       'wallet_widget_max_select' => [
         '#title' => $this->t('Dropdown threshhold'),
-        '#title' => $this->t('More than this number of options will give an autocomplete field'),
+        '#description' => $this->t('More than this number of options will give an autocomplete field'),
         '#type' => 'number',
         '#default_value' => $config->get('wallet_widget_max_select'),
-      ]
-    ];
-
-    $form['user_interface'] = [
-      '#title' => $this->t('User interface'),
-      '#type' => 'details',
-      'threshhold' => [
-        '#title' => $this->t('Threshhold'),
-        '#description' => $this->t('If there are more wallets to choose from than this number, the autocomplete widget will be used.'),
-        '#type' => 'number',
-        '#default_value' => $config->get('threshhold'),
-        '#required' => TRUE
-      ],
-      'widget' => [
-        '#title' => $this->t('Widget'),
-        '#description' => $this->t('The preferred widget to select from a small number of wallets.'),
-        '#type' => 'radios',
-        '#options' => [
-          'select' => $this->t('A dropdown box'),
-          'radios' => $this->t('Radio buttons')
-        ],
-        '#default_value' => $config->get('widget'),
-        '#required' => TRUE
       ],
       '#weight' => 12
     ];
-    
+
     $form['user_interface']['wallet_tab'] = [
       '#title' => $this->t('Show wallets tab on canonical entity page'),
       '#description' => $this->t("Tab would show 'summary' view of each wallet owned by the entity. Otherwise show links to wallets canonical pages using the entity's display fields"),
@@ -187,20 +164,18 @@ class WalletSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    
+
     $vars = [
       'entity_types',
-      'wallet_tab', 
+      'wallet_tab',
       'wallet_inex_tab',
       'wallet_log_tab',
       'wallet_widget_max_select',
       'wallet_widget_max_radios',
       'payways',
       'autoadd',
-      'threshhold',
-      'widget'
     ];
-    
+
     $config = $this->configFactory->getEditable('mcapi.settings');
     foreach ($vars as $var) {
       $config->set($var, $form_state->getValue($var));

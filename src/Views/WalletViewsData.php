@@ -18,11 +18,11 @@ class WalletViewsData extends EntityViewsData {
     $data = parent::getViewsData();
     $data['mcapi_wallet']['wid']['field']['id'] = 'mcapi_entity';
 
-    $data['mcapi_wallet']['name']['help'] = $this->t("When the holder can hold one wallet only, the wallet's name is inherit from its holder");
+    $data['mcapi_wallet']['name']['help'] = $this->t("When the holder can hold one wallet only, the wallet inherits the name of its holder");
     //@todo surely the entity label should have been added already?
     $data['mcapi_wallet']['label'] = [
-      'title' => t('Label'),
-      'help' => t('The label of the wallet, usually the same as the name'),
+      'title' => $this->t('Label'),
+      'help' => $this->t('The label of the wallet, (usually the same as the raw name)'),
       'real field' => 'wid',
       'field' => [
         //@todo waiting for entity_label to abandon the 'entity type field' in its definition
@@ -32,8 +32,8 @@ class WalletViewsData extends EntityViewsData {
     ];
 
     $data['mcapi_wallet']['holder'] = [
-      'title' => t('Link to holding entity'),
-      'help' => t('Could be any entity implementing OwnerInterface'),
+      'title' => $this->t('Link to holding entity'),
+      'help' => $this->t('Could be any entity implementing OwnerInterface'),
       'field' => [
         'id' => 'mcapi_wallet_holder',
       ],

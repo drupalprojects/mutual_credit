@@ -19,26 +19,28 @@ namespace Drupal\mcapi\Plugin\EntityReferenceSelection;
  */
 class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelection\DefaultSelection {
 
+  /**
+   *
+   * @param type $match
+   * @param type $match_operator IS IGNORED
+   * @param type $limit
+   */
   public function getReferenceableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
-    
-    $wids = $this->queryEntities();
-    
+    $wids = $this->queryEntities($match);
+    echo 'getReferenceableEntities'; print_R($wids);
     if ($limit > 0) {
       $wids = array_splice($wids, 0, $limit);
     }
-
-    $options = array();
     $entities = $this->entityManager
       ->getStorage('mcapi_wallet')
       ->loadMultiple($wids);
-    
+
+    $options = [];
     foreach ($entities as $entity_id => $entity) {
       $options['mcapi_wallet'][$entity_id] = \Drupal\Component\Utility\Html::escape($entity->label());
     }
-    
     return $options;
   }
-  
 
   /**
    * {@inheritdoc}
@@ -54,15 +56,25 @@ class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelectio
   public function validateReferenceableEntities(array $ids) {
     return array_intersect($ids, $this->queryEntities());
   }
-  
-  private function queryEntities() {
-    return \Drupal\mcapi\Mcapi::whichWallets(
-      $this->configuration['handler_settings']['op'], 
-      \Drupal::currentUser()->id()
-    );
+
+  /**
+   *
+   * @param type $match
+   * @param type $match_operator
+   *
+   * @return integer[]
+   *   wallet ids
+   */
+  private function queryEntities($match = NULL) {
+    return \Drupal::entityTypeManager()->getStorage('mcapi_wallet')
+      ->whichWalletsQuery(
+        $this->configuration['handler_settings']['op'],
+        \Drupal::currentUser()->id(),
+        $match
+      );
   }
-  
-  
+
+
   /**
    * Builds an EntityQuery to get referenceable entities.
    *
@@ -77,9 +89,9 @@ class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelectio
    *   it.
    */
   protected function buildEntityQuery($match = NULL, $match_operator = 'CONTAINS') {
-    
+
     mtrace();//this should NEVER be called
-    
+
   }
 
 }

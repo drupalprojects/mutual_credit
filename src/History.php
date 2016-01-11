@@ -12,13 +12,15 @@ namespace Drupal\mcapi;
 
 use Drupal\Core\Cache\Cache;
 
+//@todo find a way to set the width of the chart using config
+const GCHART_HISTORY_WIDTH = 300;
 
 
 class History {
-  
+
   /**
    * get some or all all the histories for a given wallet
-   * 
+   *
    * @param Wallet $wallet
    * @param array $currencies
    *   currencies for which the history is desired, keyed by currency id
@@ -53,7 +55,7 @@ class History {
         }
         //angular graph with diagonal lines between transactions
         else {
-          $histories[$id] = $points; 
+          $histories[$id] = $points;
 
         }
       }
@@ -66,11 +68,11 @@ class History {
     }
     return $histories;
   }
-  
+
   /**
-   * Get the history of one currency in one wallet from the transaction storage 
+   * Get the history of one currency in one wallet from the transaction storage
    * controller.
-   * 
+   *
    * @param integer $wallet_id
    * @param string $currency_id
    * @return array
@@ -81,11 +83,11 @@ class History {
       ->getStorage('mcapi_transaction')
       ->timesBalances($wallet_id, $currency_id);
   }
-  
+
   /**
-   * Converts points from get into a stepped pattern with 2 points for every 
+   * Converts points from get into a stepped pattern with 2 points for every
    * transation so it shows the correct balance at any given time
-   * 
+   *
    * @param array $points
    * @return array
    *   balances, keyed by by unixtimes
@@ -104,10 +106,10 @@ class History {
     array_shift($times);
     return array_combine($times, $values);
   }
-  
+
   /**
    * A simple smoothing function which uses the pixel width to get the right resolution
-   * 
+   *
    * @param array $points
    * @return array
    *   balances, keyed by by unixtimes
@@ -123,10 +125,10 @@ class History {
       $i++;
     }
   }
-  
+
   /**
    * Calculate some good axis labels, using the min & max balance extents
-   * 
+   *
    * @param array $vals
    *   the $points history of balances keyed by unixtimes
    * @return array
@@ -147,6 +149,68 @@ class History {
       return [-_mcapi_get_axis_max(abs($min)), 0, _mcapi_get_axis_max($max)];
     }
   }
-  
-  
+
+
+}
+
+/**
+ * implements hook_preprocess_THEMEHOOK for wallet_histories
+ * generates the javascript for the gchart from the user's history of each currency
+ *
+ */
+function mcapi_preprocess_wallet_histories(&$vars) {
+  $element = $vars['element'];
+  $wallet = $element['#wallet'];
+  $vars['width'] = GCHART_HISTORY_WIDTH;
+  $vars['height'] = $vars['width']/2;
+  $histories = History::getAll(
+    $wallet,
+    $wallet->currenciesUsed(),
+    $vars['width']
+  );
+  foreach ($histories as $curr_id => $points) {
+    if (count($points) < 2) {
+      //don't draw the chart if it is empty
+      continue;
+    }
+    $currency = Currency::load($curr_id);
+    $vars['currencies'][$curr_id]['currency'] = $currency;
+    $vars['currencies'][$curr_id]['functionname'] = 'drawHistory' . $curr_id;
+    $vars['currencies'][$curr_id]['id'] = 'wallet-' . $wallet->id() . '-' . $curr_id;
+    if ($points) {
+      list($min, $middle, $max) = History::axes($points);
+    }
+    else {
+      $min = -10;
+      $middle = 0;
+      $max = 10;
+    }
+    $vars['currencies'][$curr_id]['vaxislabels'] = [
+      [
+        'value' => $min,
+        'label' => $currency->format($min, TRUE)
+      ],
+      [
+        'value' => $middle,
+        'label' => $currency->format($middle, TRUE)
+      ],
+      [
+        'value' => $max,
+        'label' => $currency->format($max, TRUE)
+      ]
+    ];
+    $vars['currencies'][$curr_id]['columns'] = [
+      'date' => t('Date'),
+      'number' => $currency->label()
+    ];
+    //populate the javascript data object
+    foreach ($points as $timestamp => $balance) {
+      //this has a resolution of one day, not very satisfying perhaps
+      $vars['currencies'][$curr_id]['daterows'][] = [
+        date('m/d/Y', $timestamp),
+        $balance,
+        $currency->format($balance, TRUE)
+      ];
+    }
+  }
 }

@@ -20,7 +20,9 @@ class WorthFieldItemList extends FieldItemList {
    */
   public function filterEmptyItems() {
     foreach ($this->list as $key => $item) {
-      if (!$item->getValue()['value']) {
+      $val = $item->getValue();
+      //@todo this might be the place to filter or not filter zero values
+      if (!isset($val['value'])) {
         unset($this->list[$key]);
       }
     }
@@ -39,22 +41,6 @@ class WorthFieldItemList extends FieldItemList {
     }
     return TRUE;
   }
-
-
-  /**
-   * {@inheritdoc}
-   */
-  public function __view($mode = 'normal') {
-    foreach ($this->list as $item) {
-      $renderable[] = $item->view($mode);
-      $values[] = \Drupal::service('renderer')->render($renderable);
-    }
-    $delimiter = count($values) > 1 ?
-      \Drupal::config('mcapi.settings')->get('worths_delimiter')
-      :0;
-    return ['#markup' => implode($delimiter, $values)];
-  }
-
 
   /**
    * get the raw value for a given currency
@@ -90,8 +76,7 @@ class WorthFieldItemList extends FieldItemList {
   public function __toString() {
     return render($this->view());
   }
-  
-  
+
   /**
    * {@inheritdoc}
    */
@@ -99,7 +84,7 @@ class WorthFieldItemList extends FieldItemList {
     //we ignore the given $count, add one or maybe 2 currencies
     //use 1 or maybe two of the active currencies
     $currencies = \Drupal::entityTypeManager()->getStorage('mcapi_currency')->loadByProperties(['status' => TRUE]);
-    
+
     $field_definition = $this->getFieldDefinition();
     $field_type_class = \Drupal::service('plugin.manager.field.field_type')->getPluginClass($field_definition->getType());
     $temp = $currencies;

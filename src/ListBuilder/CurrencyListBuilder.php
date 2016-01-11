@@ -2,6 +2,7 @@
 
 /**
  * Definition of Drupal\mcapi\ListBuilder\CurrencyListBuilder.
+ * @todo inject current_user and entity_type.manager
  */
 
 namespace Drupal\mcapi\ListBuilder;
@@ -47,7 +48,7 @@ class CurrencyListBuilder extends DraggableListBuilder {
 
     $type = $entity->issuance ? $entity->issuance : Currency::TYPE_ACKNOWLEDGEMENT;
 
-    $count = $entity->transactions(['curr_id' => $entity->id()]);
+    $count = $entity->transactionCount();
     //this includes deleted transactions
     $row['transactions'] = [
       '#markup' => $count
@@ -78,26 +79,30 @@ class CurrencyListBuilder extends DraggableListBuilder {
       unset($build['entities'][$id]['operations']['data']['#links']['delete']);
     }
     return $build;
-    
+
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public function load() {
     //just show the currencies the current user has permission to edit
     //get the currencies in all exchanges of which current user is manager
-    if ($this->currentUser->hasPermission('manage mcapi')) {
+    //if (\Drupal::currentUser()->hasPermission('manage mcapi')) {
       $curr_ids = $this->getStorage()->getQuery()
         ->sort('name')
         ->execute();
-    }
+    //}
+    /*
     else {
-      $exchange_ids = $this->exchangeStorage->getQuery()
+      $exchange_ids = \Drupal::entityTypeManager()
+        ->getStorage('mcapi_exchange')->getQuery()
         ->condition('manager', $currentUser->id())
         ->execute();
       $curr_ids = Exchanges::getCurrenciesOfExchanges($exchange_ids);
     }
+     *
+     */
     return $this->storage->loadMultiple($curr_ids);//no sort has been applied
   }
 

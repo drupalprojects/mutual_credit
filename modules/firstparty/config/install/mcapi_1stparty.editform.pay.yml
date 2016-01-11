@@ -13,12 +13,7 @@ mywallet:
 partner:
   preset: ''
 fieldapi_presets:
-  worth:
-    preset:
-      -
-        curr_id: cc
-        value: 0
-  description: 
+  description:
     preset:
       placeholder: blah
 experience:

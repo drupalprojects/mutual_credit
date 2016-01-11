@@ -59,29 +59,31 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
  * @see https://api.drupal.org/api/drupal/modules!node!node.tokens.inc/function/node_token_info/7
  */
 function mcapi_token_info() {
-  $info = array(
-    'types' => array(
-      'mcapi' => array(
+  $info = [
+    'types' => [
+      'xaction' => [
         'name' => t('Transactions'),
         'description' => t('Tokens related to a community accounting transactions.'),
         'needs-data' => 'mcapi_transaction',
-      )
-    )
-  );
+      ]
+    ]
+  ];
   $definitions = \Drupal::service('entity_field.manager')
     ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
   //chance to remove some tokens here using unset($definitions['uuid']).
+  unset($definitions['parent'], $definitions['uuid'], $definitions['xid']);
 
   //see node_token_info();
   foreach ($definitions as $key => $def) {
-    $info['tokens']['mcapi'][$key] = array(
+    $info['tokens']['xaction'][$key] = [
       'name' => $def->getLabel(),
       'description' => $def->getDescription()
-    );
+    ];
   }
-  $info['tokens']['mcapi']['url'] =  array(
-    'name' => t('URL'),
-  );
+
+  $info['tokens']['xaction']['url'] = [
+    'name' => t('Absolute link'),
+  ];
 
   return $info;
 }

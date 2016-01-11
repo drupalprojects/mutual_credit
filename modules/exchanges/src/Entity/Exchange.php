@@ -66,13 +66,13 @@ use Drupal\mcapi\Mcapi;
  */
 class Exchange extends ContentEntityBase implements EntityOwnerInterface, ExchangeInterface{
 
-  
+
   const VISIBILITY_PRIVATE =  0;
   const VISIBILITY_RESTRICTED = 1;
   const VISIBILITY_TRANSPARENT = 2;
-  
+
   const intertradingWallet_NAME = '_intertrading';
-  
+
   /**
    * {@inheritdoc}
    */
@@ -125,7 +125,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       ->setLabel(t('UUID'))
       ->setDescription(t('The exchange UUID.'))
       ->setReadOnly(TRUE);
-    
+
     $fields['langcode'] = BaseFieldDefinition::create('language')
       ->setLabel(t('Language code'))
       ->setDescription(t('Language used.'))
@@ -141,12 +141,12 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
         ['label' => 'hidden', 'type' => 'string', 'weight' => -5]
       )
       ->addConstraint('UniqueField');
-    
+
     $fields['code'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Machine name'))
       ->setSettings(['default_value' => '', 'max_length' => 32])
       ->setReadOnly(TRUE);
-    
+
     $fields['body'] = BaseFieldDefinition::create('string_long')
       ->setLabel(t('Home page content'))
       ->setDescription(t('Welcome, about us, how to join etc.'))
@@ -262,7 +262,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     $this->set('uid', $account->id());
     return $this;
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -340,8 +340,25 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
       ->condition('group_entity_id', $this->id())
       ->execute();
   }
-  
-  
+
+  /**
+   *
+   * @return integer
+   *   the number of transactions, by serial, in the exchange
+   */
+  function transactionCount(array $conditions = []) {
+    $query = \Drupal::entityTypeManager()
+      ->getStorage('mcapi_transaction')->getQuery();
+    foreach ($conditions as $field => $val) {
+       $operator = is_array($val) ? '<>' : '=';
+       $query->condition($field, $val, $operator);
+    }
+    //get all the wallets in this exchange
+    $query->condition('involving', Exchanges::walletsInExchange([$this->id()]));
+
+    $serials = $query->execute();
+    return count(array_unique($serials));
+  }
 }
 
 

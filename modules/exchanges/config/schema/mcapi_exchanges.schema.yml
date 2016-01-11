@@ -2,6 +2,9 @@ mcapi_exchanges.settings:
   type: config_object
   label: 'Other configuration'
   mapping:
-    force_group:
+    segregate_exchanges:
       type: boolean
       label: Every user is a member of one and only one groups
+    intertrading:
+      type: boolean
+      label: Whether intertrading is enabled with another module

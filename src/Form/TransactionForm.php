@@ -20,7 +20,7 @@ class TransactionForm extends ContentEntityForm {
   private $tempstore;
 
   /**
-   * 
+   *
    * @param Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    * @param \Drupal\user\PrivateTempStore $tempstore
    */
@@ -45,11 +45,11 @@ class TransactionForm extends ContentEntityForm {
    */
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
+
     //the masspay form doesn't provide a transaction via the router or the paramConverter
     $transaction = $this->entity->getEntityTypeId() == 'mcapi_transaction'
       ? $this->entity
       : Transaction::Create();
-
     $form['type'] = [
       '#title' => t('Transaction type'),
       '#options' => Mcapi::entityLabelList('mcapi_type'),
@@ -70,6 +70,27 @@ class TransactionForm extends ContentEntityForm {
       '#default_value' => User::load(\Drupal::currentUser()->id()),
       '#weight' => 20
     ];
+
+    //try to prevent the same wallet being in both payer and payee fields.
+    //we can only do this is one field has only one option
+    $payer = &$form['payer']['widget'][0]['target_id'];
+    $payee = &$form['payee']['widget'][0]['target_id'];
+    if ($payer['#type'] == 'value') {
+      if (isset($payee['#options'])) {
+        unset($payee['#options'][$payer['#value']]);
+      }
+      else {
+        $payee['#selection_settings']['exclude'] = [$payer['#value']];
+      }
+    }
+    elseif ($payee['#type'] == 'value') {
+      if (isset($payer['#options'])) {
+        unset($payer['#options'][$payee['#value']]);
+      }
+      else {
+        $payer['#selection_settings']['exclude'] = [$payee['#value']];
+      }
+    }
 
     return $form;
   }
@@ -92,7 +113,7 @@ class TransactionForm extends ContentEntityForm {
 
   /**
    * {@inheritdoc}
-   * 
+   *
    * @note does NOT call parent.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
@@ -102,7 +123,7 @@ class TransactionForm extends ContentEntityForm {
       ->set('mcapi_transaction', $this->entity);
     //Drupal\mcapi\TransactionSerialConverter
     //then
-    //Drupal\mcapi\Plugin\Transition\Create 
+    //Drupal\mcapi\Plugin\Transition\Create
     //now we divert to the transition confirm form
     $form_state->setRedirect(
       'mcapi.transaction.operation',

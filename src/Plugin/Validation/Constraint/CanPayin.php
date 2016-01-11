@@ -31,16 +31,12 @@ class CanPayin extends CanPay {
    * {@inheritdoc}
    */
   public function validate($items, Constraint $constraint) {
-    $currentUser = \Drupal::currentUser();
-    if ($currentUser->isAnonymous()) {
-      //intertrading transactions may involve anonymous in which case we trust external validation
-      return;
-    }
-    $result = \Drupal::entityTypeManager()
-      ->getAccessControlHandler('mcapi_wallet')
-      ->checkAccess(\Drupal\mcapi\Entity\Wallet::load($items->target_id), 'payin', $currentUser);
-    
-    if ($result->isForbidden()) {
+    //$items is the payee wallet listfield
+    $eligible = \Drupal::entityTypeManager()
+      ->getStorage('mcapi_wallet')
+      ->whichWalletsQuery('payin', \Drupal::currentUser()->id());
+
+    if (!in_array($items->target_id, $eligible)) {
       $this->context->addViolation('message', []);
     }
   }

@@ -74,12 +74,6 @@ mcapi.settings:
       type: boolean
       label: 'Show unused currency stats in wallet view.'
       sequence: { }
-    threshhold:
-      type: integer
-      label: 'If there are more wallets to choose from than this number, the autocomplete widget will be used.'
-    widget:
-      type: string
-      label: 'The preferred widget to select from a small number of wallets.'
     ticks_name:
       type: String
       label: Base accounting unit

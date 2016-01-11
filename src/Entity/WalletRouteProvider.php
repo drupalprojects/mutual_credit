@@ -42,7 +42,7 @@ class WalletRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRoutePr
     );
   }
 
-    
+
   /**
    * {@inheritdoc}
    */
@@ -96,14 +96,14 @@ class WalletRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRoutePr
         ]
       ]);
       $route_collection->add("entity.{$entity_type_id}.wallets", $route);
-       * 
+       *
        */
     }
-    
+
     $route_collection
       ->get('entity.mcapi_wallet.edit_form')->setDefault('_title', 'Manage wallet');
-    
-    
+
+
     return $route_collection;
   }
 

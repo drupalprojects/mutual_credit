@@ -48,12 +48,12 @@ class SettingsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('mcapi.settings');
-    foreach (Exchange::transactionTokens(TRUE) as $token) {
-      $tokens[] = "[mcapi:$token]";
-    }
     $form['sentence_template'] = [
       '#title' => $this->t('Sentence view mode.'),
-      '#description' => $this->t('Use the following tokens to define how the transaction will read when displayed in sentence view mode: @tokens', array('@tokens' => implode(', ', $tokens))),
+      '#description' => $this->t(
+        'Use the following tokens to define how the transaction will read when displayed in sentence view mode: @tokens',
+        ['@tokens' => Mcapi::twigHelp()]
+      ),
       '#type' => 'textfield',
       '#default_value' => $config->get('sentence_template'),
       '#weight' => 2

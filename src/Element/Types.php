@@ -47,7 +47,6 @@ class Types extends Radios {
     $element['#options'] = Mcapi::entityLabelList('mcapi_type');
     if ($element['#multiple']) {
       $element['#theme_wrappers'] = ['checkboxes'];
-     // $element['theme_wrappers'] = array('checkboxes');
       return Checkboxes::processCheckboxes($element, $form_state, $complete_form);
     }
     else {

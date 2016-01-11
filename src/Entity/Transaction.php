@@ -148,7 +148,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    * Validate a transaction including children
    * The Drupal way has 'validate' and 'save' phases. We need to map those onto
    * this Transaction's needs which are 'add children', alter, validate, and save
-   * 
+   *
    * @see https://drupalwatchdog.com/volume-5/issue-2/introducing-drupal-8s-entity-validation-api
    *
    * @return \Drupal\Core\Entity\EntityConstraintViolationListInterface
@@ -174,12 +174,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    */
   public static function preCreate(EntityStorageInterface $storage, array &$values) {
     $values += [
-      'serial' => 0,
       'type' => 'default',
-      'description' => '',
-      //'created' => REQUEST_TIME,
       'creator' => \Drupal::currentUser()->id(),//uid of 0 means drush must have created it
-      'parent' => 0,
     ];
     $type = Type::load($values['type']);
     if (!$type) {
@@ -239,9 +235,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setDescription(t('A one line description of what was exchanged.'))
       ->setRequired(TRUE)
       ->setDefaultValue('')
-      ->setSettings(['max_length' => 255])//this could be a setting.
+      ->setSettings(['max_length' => 255])
       ->setDisplayConfigurable('form', TRUE)
-      ->setDisplayConfigurable('view', TRUE);
+      ->setDisplayOptions('form', ['type' => 'string_textfield',  'weight' => 3])
+      ->setDisplayConfigurable('view', TRUE)
+      ->setDisplayOptions('view', ['type' => 'string',  'weight' => 3]);
 
     $fields['serial'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Serial number'))
@@ -263,7 +261,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setCardinality(1)
       ->setSetting('handler_settings', ['op' => 'payin'])
       ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayOptions('form', ['type' => 'worth', 'weight' => 1])
       ->setDisplayConfigurable('view', TRUE)
+      ->setDisplayOptions('view', ['type' => 'worth', 'weight' => 1])
       ->addConstraint('CanPayin');
 
     $fields['payee'] = BaseFieldDefinition::create('wallet')
@@ -274,7 +274,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setSetting('handler_settings', ['op' => 'payout'])
       ->setCardinality(1)
       ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayOptions('form', ['type' => 'worth', 'weight' => 2])
       ->setDisplayConfigurable('view', TRUE)
+      ->setDisplayOptions('view', ['type' => 'worth', 'weight' => 2])
       ->addConstraint('CanPayout');
 
     $fields['creator'] = BaseFieldDefinition::create('entity_reference')
@@ -290,6 +292,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setLabel(t('Type'))
       ->setDescription(t('The type/workflow path of the transaction'))
       ->setSetting('target_type', 'mcapi_type')
+      ->setDisplayConfigurable('view', TRUE)
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 

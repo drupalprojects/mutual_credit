@@ -10,10 +10,10 @@ field_name: worth
 entity_type: mcapi_transaction
 bundle: mcapi_transaction
 label: Value(s)
-description: ''
+description: 'Quantities of one or more currencies'
 required: true
 translatable: false
 default_value: {  }
 default_value_callback: ''
-settings: {  }
+settings: { }
 field_type: worth

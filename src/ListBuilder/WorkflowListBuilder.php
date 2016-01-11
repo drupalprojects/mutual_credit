@@ -64,7 +64,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
       'operations' => [
         '#type' => 'link',
         '#title' => t('Edit'),
-        '#url' => Url::fromRoute('entity.action.edit_form', ['action' => $action->id()])
+        '#url' => Url::fromRoute('mcapi.admin.workflow.actionedit', ['action' => $action->id()])
       ],
       'weight' => [
         '#type' => 'weight',
@@ -144,7 +144,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     return 'workflow_draggable_plugin_list';
   }
 
-    
+
   private function visualise() {
     foreach (Type::loadMultiple() as $type => $info) {
       $types[] = '<dt>'.$info->label.'</dt><dd>'.$info->description.'</dd>';

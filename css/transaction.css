@@ -6,7 +6,7 @@ div.certificate span.quantity {
   font-size: 250%;
   line-height: 1.1em;
 }
-div.state-erased div.certificate, 
+div.state-erased div.certificate,
 div.state-erased div.sentence {
   opacity: 0.3;
 }
@@ -72,7 +72,7 @@ ul.transaction-operations li a{
 div.sentence .link {
   padding: 0 0 0 1em;
 }
-div.transaction.certificate div.field, div.transaction.certificate div.field div{
+div.transaction div.certificate div.field {
   display:inline;
 }
 form.transaction-operation-form div#edit-actions{

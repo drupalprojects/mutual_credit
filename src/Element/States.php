@@ -7,7 +7,7 @@
 
 namespace Drupal\mcapi\Element;
 
-use Drupal\mcapi\mcapi;
+use Drupal\mcapi\Mcapi;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\Radios;
 use Drupal\Core\Render\Element\Checkboxes;
@@ -42,7 +42,6 @@ class States extends Radios {
     $element['#options'] = Mcapi::entityLabelList('mcapi_state');
     if ($element['#multiple']) {
       $element['#theme_wrappers'] = ['checkboxes'];
-     // $element['theme_wrappers'] = array('checkboxes');
       return Checkboxes::processCheckboxes($element, $form_state, $complete_form);
     }
     else {

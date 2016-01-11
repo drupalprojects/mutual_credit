@@ -4,7 +4,7 @@
  * @file
  *
  * Contains \Drupal\mcapi\Mcapi
- * utility methods 
+ * utility methods
  *
  */
 
@@ -12,22 +12,13 @@ namespace Drupal\mcapi;
 
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\Core\Access\AccessResult;
 
 class Mcapi {
-  
-  public static function payWays() {
-    return [
-      Wallet::PAYWAY_ANYONE_IN => t('Anyone can pay into this wallet'),
-      Wallet::PAYWAY_ANYONE_OUT => t('Anyone can pay out of this wallet'),
-      Wallet::PAYWAY_ANYONE_BI => t('Anyone can pay in or out of this wallet'),
-    ];
-  }
-  
+
   /**
    * Get a list of bundles which can have wallets
    * which is to say, whether it is a contentEntity configured to have at least 1 wallet
-   * 
+   *
    * @return array
    *   bundle names keyed by entity type ids
    *
@@ -57,10 +48,10 @@ class Mcapi {
     }
     return $bundles;
   }
-  
+
   /**
    * Find the maximum number of wallets a bundle can have
-   * 
+   *
    * @param type $entity_type_id
    * @param type $bundle
    * @return integer
@@ -106,23 +97,6 @@ class Mcapi {
     return \Drupal::entityTypeManager()
       ->getStorage('action')
       ->loadByProperties(['type' => 'mcapi_transaction']);
-  }
-
-  /**
-   * Determine whether the system architecture allows an entity to hold wallets.
-   * which is to say, whether it is a contentEntity with an audience field
-   *
-   * @param string $entity_type_id
-   * @param string $bundle_name
-   *
-   * @return boolean
-   *   TRUE means the entitytype can hold wallets
-   */
-  static function isWalletable($entity_type_id, $bundle_name) {
-    $bundles = Mcapi::walletableBundles();
-    if (isset($bundles[$entity_type_id]) && isset($bundles[$entity_type_id][$bundle_name])) {
-      return TRUE;
-    }
   }
 
   /**
@@ -173,13 +147,14 @@ class Mcapi {
     }
     return $list;
   }
-  
+
   /**
    * retrieve all the wallets held by a given ContentEntity
+   *
    * @param ContentEntityInterface $entity
    * @param boolean $load
    *   TRUE means return the fully loaded wallets
-   * 
+   *
    * @return WalletInterface[]
    *   or just the wallet ids if $load is false
    */
@@ -190,57 +165,27 @@ class Mcapi {
       ->condition('holder_entity_id', $entity->id())
       ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
       ->execute();
-    return $load ? 
+    return $load ?
       $walletStorage->loadMultiple($wids) :
       $wids;
   }
-  
-  /**
-   * get the wallets the given user can do the operation on
-   *
-   * @param string $operation
-   *   can be payin or payout
-   *
-   * @param integer $uid
-   *
-   * @return integer[]
-   *   wallet ids
-   * 
-   */
-  public static function whichWallets($operation, $uid) {
-    $results = (array)drupal_static(__FUNCTION__);
-    drupal_set_message("$operation on $uid");
-    if (!isset($results[$uid][$operation])) {
-      $query = \Drupal::entityTypeManager()
-        ->getStorage('mcapi_wallet')
-        ->getQuery()
-        ->condition('orphaned', 0)
-        ->condition('payways', Wallet::PAYWAY_AUTO, '<>');
-      
-      //include users who have been nominated to pay in or out of wallets
-      $or = $query->orConditionGroup();
-      $users = $query->orConditionGroup();
-      if ($operation == 'payin') {
-        $users->condition('payways', [Wallet::PAYWAY_ANYONE_OUT, Wallet::PAYWAY_ANYONE_BI], 'IN');
-        $users->condition('payers', $uid);
-      }
-      elseif ($operation == 'payout') {
-        $users->condition('payways', [Wallet::PAYWAY_ANYONE_IN, Wallet::PAYWAY_ANYONE_BI], 'IN');
-        $users->condition('payees', $uid);
-      }
-      $or->condition($users);
 
-      //now ensure the wallet holder is included
-      $holder = $query->andConditionGroup();
-      $holder->condition('holder_entity_type', 'user');
-      $holder->condition('holder_entity_id', $uid);
-      $or->condition($holder);
-      
-      $results[$uid][$operation] = $query->condition($or)->execute();
+  public static function walletsOfHolders(array $entities) {
+    $query = \Drupal::database()->select('mcapi_wallet', 'w')
+      ->fields('w', ['wid'])
+      ->condition('orphaned', 0)
+      ->condition('payways', Wallet::PAYWAY_AUTO, '<>');
+
+    $or = $query->orConditionGroup();
+    foreach ($entities as $entity_type_id => $entity_ids) {
+      $and = $query->andConditionGroup()
+        ->condition('holder_entity_type', $entity_type_id)
+        ->condition('holder_entity_id', $entity_ids, 'IN');
+      $or->condition($and);
     }
-    return $results[$uid][$operation];
+    return $query->condition($or)->execute()->fetchCol();
   }
-  
+
   /**
    * Find out if the user can payin to at least one wallet and payout of at least one wallet
    *
@@ -249,10 +194,10 @@ class Mcapi {
    *   TRUE if the $uid has access to enough wallets to trade
    */
   public static function enoughWallets($uid) {
-    $payin = Mcapi::whichWallets('payin', $uid);
-    $payout = Mcapi::whichWallets('payout', $uid);
-    //these results don't inlcude'
-    
+//dsm('enoughwallets '.$uid);
+    $walletStorage = \Drupal::entityTypeManager()->getStorage('mcapi_wallet');
+    $payin = $walletStorage->whichWalletsQuery('payin', $uid);
+    $payout = $walletStorage->whichWalletsQuery('payout', $uid);
     if (count($payin) < 2 && count($payout) < 2) {
       //this is deliberately ambiguous as to whether you have no wallets or the system has no other wallets.
       drupal_set_message('There are no wallets for you to trade with', 'warning');
@@ -261,8 +206,8 @@ class Mcapi {
     //there must be at least one wallet in each (and they must be different!)
     return (count(array_unique(array_merge($payin, $payout))) > 1);
   }
-  
-  
+
+
   /**
    * Service container
    * @return type
@@ -270,8 +215,8 @@ class Mcapi {
   public static function transactionRelatives() {
     return \Drupal::service('mcapi.transaction_relative_manager');
   }
-  
-  
+
+
   /**
    * {@inheritdoc}
    * @todotim make a new baseField in this file, a boolean called 'used' default 0
@@ -280,28 +225,25 @@ class Mcapi {
    */
   public static function walletIsUsed($wid) {
     drupal_set_message('Checking wallet isUsed()'); //is this called too often?
-    $count = \Drupal::entityTypeManager()->getStorage('mcapi_transaction')
-      ->getQuery()
+    $count = \Drupal::entityTypeManager()
+      ->getStorage('mcapi_transaction')->getQuery()
       ->condition('involving', $wid)
       ->count()
       ->execute();
   }
-  
-  /**
-   * get the ids of the wallets owned by the given entity
-   *
-   * @param ContentEntityInterface $entity
-   *
-   * @return array
-   *   wallet ids belonging to the passed entity
-   */
-  public static function widsHeldBy(ContentEntityInterface $entity) {
-    return \Drupal::entityTypeManager()
-      ->getStorage('mcapi_wallet')
-      ->getQuery()
-      ->condition('holder_entity_type', $entity->getEntityTypeId())
-      ->condition('holder_entity_id', $entity->id())
-      ->execute();
+
+  public static function twigHelp(array $exclude = []) {
+    foreach (array_keys(\Drupal::Token()->getInfo()['tokens']['xaction']) as $token) {
+      $tokens[] = "[xaction:$token]";
+    }
+    $tokens = array_diff(
+      array_keys($all_fields),
+      $exclude
+    );
+    return ' {{ ' .
+      implode(' }}, {{ ', $tokens) .
+      ' }} ' .
+      $this->l($this->t('What is twig?'), Url::fromUri('http://twig.sensiolabs.org/doc/templates.html'));
   }
 
 }

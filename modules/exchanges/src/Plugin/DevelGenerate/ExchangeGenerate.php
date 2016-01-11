@@ -32,7 +32,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPluginInterface {
 
   protected $entityTypeManager;
-  
+
   public function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_type_manager) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->entityTypeManager = $entity_type_manager;
@@ -47,7 +47,6 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
       $container->get('entity_type.manager')
     );
   }
-  
 
   /**
    * {@inheritdoc}
@@ -100,7 +99,7 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
       '#max' => 100,
       '#default_value' => 20
     ];
-    
+
     return $form;
   }
 
@@ -113,21 +112,23 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
     //@todo when the batching is fixed, use batches every time.
     //$this->generateBatchContent($values);
   }
-  
+
   /**
    * Method responsible for creating a small number of exchanges
-   * 
+   *
    * @param type $values
    *   kill, num, since
    * @throws \Exception
    */
   private function generateContent($values) {
-    
+
     if (!empty($values['kill'])) {
       $this->contentKill($values);
     }
-    
-    $uids = $this->entityTypeManager->getStorage('user')->getQuery()->execute();
+
+    $uids = $this->entityTypeManager
+      ->getStorage('user')->getQuery()
+      ->execute();
     $chunk_size = ceil(count($uids)/$values['num']);
     foreach (array_chunk($uids, $chunk_size) as $delta => $uid_chunk) {
       if ($values['num'] == 9) {
@@ -137,8 +138,12 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
       else {
         list($name, $currency_name) = $this->get200names($delta);
       }
-      $this->develGenerateExchangeAdd($values, $uid_chunk, $name, $currency_name);
+      $exchange = $this->develGenerateExchangeAdd($values, $uid_chunk, $name, $currency_name);
     }
+    //put user 1 in the last exchange
+    //@todo there may be a way of doing this in og
+    User::load(1)->set(EXCHANGE_OG_FIELD, $exchange)->save();
+
     if (function_exists('drush_log') && $i % drush_get_option('feedback', 1000) == 0) {
       drush_log(dt('Finished creating @count exchanges', ['@count' => drush_get_option('feedback', 1000)], 'ok'));
     }
@@ -206,6 +211,7 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
    */
   protected function develGenerateExchangeAdd(&$results, $uids, $exchange_name, $currency_name) {
     //put the members in and choose a random member as exchange owner
+    $owner_uid = $uids[array_rand($uids)];
     $props = [
       'name' => $exchange_name,
       'body' => $this->getRandom()->paragraphs(2),
@@ -214,11 +220,11 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
       'open' =>  rand(0, 99) > $results['closed'],
       'visibility' => rand(0, 2),
       'mail' => 'exchangeX@example.com',
-      'uid' => $uids[array_rand($uids)]
+      'uid' => $owner_uid
     ];
 
     $exchange = \Drupal\mcapi_exchanges\Entity\Exchange::create($props);
-    
+
     // Populate all fields with sample values.
     $this->populateFields($exchange);
 
@@ -233,7 +239,7 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
       $currency = Currency::load($id);
       if (!$currency) {
         $first = substr($currency_name, 0, 1);
-        
+
         $currency = Currency::create([
           'id' => $id,
           'name' => $currency_name,
@@ -242,7 +248,7 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
           'format' => $this->getFormat($id),
           'uid' => 1
         ]);
-        
+
         $currency->save();
       }
       $currencies[] = $currency;
@@ -251,14 +257,18 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
     $exchange->currencies->setValue($currencies);
     $exchange->save();
     drupal_set_message("Created exchange ".$exchange->label(). ' with currencies '.implode(', ', $cids));
-    
+    //now the exchange owner has the wrong type of membership created in og_entity_insert
+    //so quick and dirty here we delete that membership because we are re-joining all members next
+    \Drupal::database()->delete('og_membership')->condition('field_name', OG_GROUP_FIELD)->execute();
+
     foreach ($this->entityTypeManager->getStorage('user')->loadMultiple($uids) as $user) {
       if ($user->id() < 2) continue;
       $user->set(EXCHANGE_OG_FIELD, $exchange->id())->save();
     }
     drupal_set_message('users '.implode(', ', $uids).' put into exchange '.$exchange->label());
+    return $exchange;
   }
-  
+
   private function get9names($delta) {
     $results = [
       ['Mercury' => 'Mercurial Silver'],
@@ -271,10 +281,10 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
       ['Neptune' => 'Nuptual candles'],
       ['Uranus' => 'Urinal blocks']
     ];
-    
+
     return $results[$delta];
   }
-    
+
   private function getFormat($id) {
     $formats = [
       ['000', ':', '99'],
@@ -286,8 +296,8 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
       ['000']
     ];
     $rand = $formats[array_rand($formats)];
-    array_unshift($rand, '<b>'.strtoupper($id).'</b>');
+    array_unshift($rand, strtoupper($id));
     return $rand;
   }
-  
+
 }

@@ -25,7 +25,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    *
    * @return integer.
    */
-  function transactions(array $conditions = [], $serial = FALSE);
+  function transactionCount(array $conditions = []);
 
   /**
    * return the sum of all transactions, in all states

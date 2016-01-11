@@ -18,10 +18,10 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class WalletForm extends ContentEntityForm {
 
   private $walletConfig;
-  
+
   /**
    *
-   * @var /Drupal/Core/Entity/EntityTypeManager 
+   * @var /Drupal/Core/Entity/EntityTypeManager
    */
   ///private $entityTypeManager;
 
@@ -67,7 +67,7 @@ class WalletForm extends ContentEntityForm {
     foreach (array_keys($walletableBundles) as $entity_type_id) {
       $types[$entity_type_id] = $this->entityTypeManager->getDefinition($entity_type_id)->getLabel();
     }
-    
+
     $form['transfer'] = [
       '#title' => t('Change holder'),
       '#type' => 'details',
@@ -77,10 +77,10 @@ class WalletForm extends ContentEntityForm {
         '#options' => $types,
         '#default_value' => $this->entity->holder_entity_type->value,
         '#required' => FALSE,
-        '#access' => $this->currentUser()->haspermission('manage exchange')
+        '#access' => $this->currentUser()->haspermission('manage exchange') && count($types) > 1
       ]
     ];
-    
+
     foreach ($walletableBundles as $entity_type_id => $bundles) {
       $form['transfer'][$entity_type_id .'_entity_id'] = [
         '#title' => t('Name or unique ID'),
@@ -120,7 +120,7 @@ class WalletForm extends ContentEntityForm {
 
     $values = $form_state->getValues();
     //update the wallet with any change of access
-      
+
 
     //check for the change of holdership
     $key = $values['holder_entity_type'] . '_entity_id';
@@ -128,7 +128,7 @@ class WalletForm extends ContentEntityForm {
       //invalidate cache tags on the current parent.
       //@see Wallet::invalidateTagsOnSave to invalidate tags on the new parent.
       Cache::invalidateTags([$wallet->holder_entity_type->value . ':' . $wallet->holder_entity_id->value]);
-      
+
       $wallet->set('holder_entity_type', $values['holder_entity_type'])
         ->set('holder_entity_id', $values[$key]);
       //@todo need to clear the walletaccess cache for both users

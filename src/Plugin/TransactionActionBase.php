@@ -3,7 +3,7 @@
 /**
  * @file
  * Contains Drupal\mcapi\Plugin\TransactionActionBase.
- * 
+ *
  * @todo currently there's no easy way to override the redirect in actionFormBase::Save. Might need an alter hook
  */
 namespace Drupal\mcapi\Plugin;
@@ -17,7 +17,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 
 /**
- * Base class for transaction actions 
+ * Base class for transaction actions
  */
 abstract class TransactionActionBase extends ConfigurableActionBase implements ContainerFactoryPluginInterface {
 
@@ -26,7 +26,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
   protected $moduleHandler;
   protected $entityTypeManager;
   private $entityDisplayRepository;
-  
+
   const CONFIRM_NORMAL = 0;
   const CONFIRM_AJAX = 1;
   const CONFIRM_MODAL = 2;
@@ -39,13 +39,13 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
     $this->entityTypeManager = $entity_type_manager;
     $this->entityDisplayRespository = $entity_display_respository;
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
     return new static(
-      $configuration, 
+      $configuration,
       $plugin_id,
       $plugin_definition,
       $container->get('entity.form_builder'),
@@ -61,7 +61,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
    */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
     $result = $this->accessOp($object, $account) && $this->accessState($object, $account);
-    
+
     if (!$return_as_object) {
       return $result;
     }
@@ -73,7 +73,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
    *
    * @param TransactionInterface $transaction
    * @param AccountInterface $account
-   * 
+   *
    * @return boolean
    *   TRUE if the transaction is in a viewable state
    */
@@ -108,7 +108,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
     }
     return FALSE;
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -146,7 +146,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
       '#default_value' => $this->configuration['access'],
       '#weight' => 8,
     ];
-    
+
     $elements['sure']= [
       '#title' => t('Are you sure page'),
       '#type' => 'fieldset',
@@ -169,25 +169,13 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
       '#required' => TRUE,
       '#weight' => 6
     ];
-    mdump($this);
     foreach ($this->entityDisplayRespository->getViewModes('mcapi_transaction') as $id => $def) {
       $elements['sure']['format']['#options'][$id] = $def['label'];
     }
 
-    $twig_help = t(
-      'Use the following twig tokens: @tokens.',
-      //transactionTokens are array keyed page_title, twig, format, button, cancel_link
-      ['@tokens' => implode(', ', \Drupal\mcapi\Exchange::transactionTokens(FALSE))]
-    )
-    .' '.
-    \Drupal::l(
-      t('What is twig?'),
-      \Drupal\Core\Url::fromUri('http://twig.sensiolabs.org/doc/templates.html')
-    );
-    
     $elements['sure']['twig'] = [
       '#title' => t('Template'),
-      '#description' => $twig_help,//@note this is escaped in twig so links don't work
+      '#description' => Mcapi::twigHelp(),//@note this is escaped in twig so links don't work
       '#type' => 'textarea',
       '#default_value' => $this->configuration['twig'],
       '#states' => [
@@ -244,9 +232,11 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
       '#placeholder' => $this->t('The operation was successful'),
       '#weight' => 18
     ];
+
+
     return $elements;
   }
-  
+
   //from PluginFormInterface
   public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
   }
@@ -259,7 +249,6 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
     foreach ($values as $field_name => $value) {
       $this->configuration[$field_name] = $value;
     }
-    //@todo this is overriden by the main form's save()
     //@todo how does this play with the views operations field which offers to add a redirect to the link to the operation?
     $form_state->setRedirect('mcapi.admin.workflow');
   }
@@ -284,9 +273,9 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
     ];
   }
 
-  
+
   //the following are from ConfigurablePluginInterface
-  
+
   /**
    * {@inheritdoc}
    */
@@ -306,5 +295,5 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
       'message' => '',
     ];
   }
-  
+
 }

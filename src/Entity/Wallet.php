@@ -10,7 +10,6 @@ namespace Drupal\mcapi\Entity;
 
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Exchange;
-use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
@@ -22,7 +21,7 @@ use Drupal\Core\Field\BaseFieldDefinition;
  * Defines the wallet entity.
  * The metaphor is not perfect because this wallet can hold a negaive balance.
  * A more accurate term, 'account', has another meaning in Drupal
- * 
+ *
  * This Entity knows all about the special intertrading wallets though none are installed by default
  *
  * @note Wallet 'holders' could be any content entity, but the wallet owner is
@@ -68,7 +67,7 @@ use Drupal\Core\Field\BaseFieldDefinition;
  * )
  */
 class Wallet extends ContentEntityBase implements WalletInterface {
-  
+
   /*
    * constants used for access control
    * @todo remove these carefully
@@ -77,17 +76,25 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   const ACCESS_OG = 'g';//same groups as wallet owner
   const ACCESS_USERS = 'u';//refer to wallet_access table
   const ACCESS_OWNER = 'o';//wallet owner; this is used in the creation phase only, then converted to ACCESS_USERS
-  
+
   const PAYWAY_ANYONE_IN = 'I';
   const PAYWAY_ANYONE_OUT = 'O';
   const PAYWAY_ANYONE_BI = 'B';
   const PAYWAY_AUTO = 'A';
-  
+
   private $holder;
   private $stats = [];
   private $access = [];
 
-  
+
+  public static function payWays() {
+    return [
+      Self::PAYWAY_ANYONE_IN => t('Anyone can pay into this wallet'),
+      Self::PAYWAY_ANYONE_OUT => t('Anyone can pay out of this wallet'),
+      Self::PAYWAY_ANYONE_BI => t('Anyone can pay in or out of this wallet'),
+    ];
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -98,13 +105,12 @@ class Wallet extends ContentEntityBase implements WalletInterface {
         ->load($this->holder_entity_id->value);
       //in the impossible event that there is no owner, set
       if (!$this->holder) {
-        mtrace();
         throw new \Exception('Holder of wallet ' . $this->id() . ' does not exist: ' . $this->holder_entity_type->value . ' ' . $this->holder_entity_id->value);
       }
     }
     return $this->holder;
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -126,13 +132,13 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     }
     $values['holder_entity_type'] = $values['holder']->getEntityTypeId();
     $values['holder_entity_id'] = $values['holder']->id();
-    
+
     //now set the default permissions
     if (!isset($values['payways'])) {
       $values['payways'] = \Drupal::config('mcapi.settings')->get('payways');
     }
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -159,7 +165,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
         $this->payees->setValue($payees);
         drupal_set_message('Allowing owner of '.$this->holder_entity_type->value .' to be a payee');
       }
-      
+
       if (in_array($this->payways->value, [Wallet::PAYWAY_ANYONE_IN, Wallet::PAYWAY_ANYONE_BI])) {
         $payers = $this->payers->referencedEntities();
         $payers[] = $this->getOwner();
@@ -169,13 +175,13 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       }
     }
   }
-  
-  
+
+
   public function isAutonamed() {
     return Mcapi::maxWalletsOfBundle($this->getHolder()->getEntityTypeId(), $this->getHolder()->bundle()) == 1
     || $this->payways->value == Self::PAYWAY_AUTO;
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -213,7 +219,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     $fields['holder_entity_id'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Holder entity ID'))
       ->setRequired(TRUE);
-    
+
     $fields['name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Wallet name'))
       ->setDescription(t("Set by the wallet's owner"))
@@ -221,16 +227,16 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       ->setRequired(TRUE)
       ->setConstraints(['NotNull' => []]);//if we leave the default to be NULL it is difficult to filter with mysql
 
-    $fields['payways'] = BaseFieldDefinition::create('string') 
+    $fields['payways'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Payment direction'))
       ->setDescription(t('Everybody can pay in, out, or both'))
       ->setSetting('length', 1);
-    
+
     $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Created on'))
       ->setDescription(t('The time that the wallet was created.'))
       ->setRevisionable(FALSE);
-    
+
     $fields['orphaned'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Orphaned'))
       ->setDescription(t('TRUE if this wallet is not currently held'))
@@ -298,23 +304,37 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   }
 
   /**
+   * get the balance(s) of the current wallet, in worth format
+   * @param string $stat
+   * @return array
+   */
+  public function getWorths($stat = 'balance') {
+    foreach ($this->getSummaries() as $curr_id => $stats) {
+      $worth[] = [
+        'curr_id' => $curr_id,
+        'value' => $stats[$stat]
+      ];
+    }
+    return $worth;
+  }
+
+  /**
    * {@inheritDoc}
    * @todo move to static history class
    */
   public function history($from = 0, $to = 0) {
-    
+
     $query = $this->entityTypeManager()
-      ->getStorage('mcapi_transaction')
-      ->getQuery()
+      ->getStorage('mcapi_transaction')->getQuery()
       ->condition('involving', $this->id());
-    
+
     if ($from) {
       $query->condition('created', $from, '>');
     }
     if ($to) {
       $query->condition('created', $from, '>');
     }
-    return $query->execute();    
+    return $query->execute();
   }
 
   /**
@@ -325,6 +345,10 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     foreach (Mcapi::walletsOf($holder, TRUE) as $wallet) {
       if (Mcapi::walletIsUsed($wallet->id())) {
         //move the wallet
+        $new_holder_entity = \Drupal::moduleHandler()->moduleExists('mcapi_exchanges') ?
+          Exchanges::findNewHolder($holder) :
+          User::load(1);
+
         $new_holder_entity = Exchange::findNewHolder($holder);
         $new_name = t(
           "Formerly @name's wallet: @label", ['@name' => $wallet->label(), '@label' => $wallet->label(NULL, FALSE)]
@@ -377,14 +401,14 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   public function isIntertrading() {
     return $this->payways->value == Self::PAYWAY_AUTO;
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public function currenciesAvailable() {
     return \Drupal\mcapi\Exchange::currenciesAvailableToUser($this->getOwner());
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -402,7 +426,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       //because all wallet holder, whatever entity type, implement OwnerInterface
       $holder->getOwner();
   }
-  
-  
-  
+
+
+
 }

@@ -24,18 +24,21 @@ class RouteWallets extends ArgumentDefaultPluginBase {
 
   /**
    * Return the default argument.
+   * @todo inject the service
    */
   public function getArgument() {
     //there's no validator in core either for ANY entity or for ANY contentEntity or ANY Owned Entity
     //only for ONE given specific entityType
     //so this function needs to decide whether to return an argument
-    foreach (\Drupal::service('current_route_match')->getParameters()->all() as $key => $entity) {
-      if (Mcapi::isWalletable($entity->getEntityTypeId(), $entity->bundle())) {
-        $ids = Mcapi::widsHeldBy($entity);
+    $ids = [];
+    foreach (\Drupal::routeMatch()->getParameters()->all() as $key => $entity) {
+      if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())) {
+        $wids = Mcapi::walletsOf($entity);
       }
     }
     //@todo returning nothing means the view doesn't show - maybe throw a 404?
     //@see Drupal\mcapi_exchanges\Plugin\views\argument_default\RouteExchanges.
+    return implode('+', $wids);
 
   }
 

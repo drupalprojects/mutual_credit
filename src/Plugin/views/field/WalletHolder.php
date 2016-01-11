@@ -7,10 +7,9 @@
 
 namespace Drupal\mcapi\Plugin\views\field;
 
-use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\Plugin\views\field\Standard;
-use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ResultRow;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Field handler to link the transaction description to the transaction itself
@@ -22,13 +21,13 @@ use Drupal\views\ResultRow;
 class WalletHolder extends Standard {
 
 
-  
+
   protected function defineOptions() {
     $options = parent::defineOptions();
-
     $options['owner'] = array('default' => '');
+    return $options;
   }
-  
+
   /**
    * Default options form that provides the label widget that all fields
    * should have.
@@ -42,7 +41,7 @@ class WalletHolder extends Standard {
       '#default_value' => $this->options['owner']
     ];
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -55,10 +54,9 @@ class WalletHolder extends Standard {
    */
   function render(ResultRow $values) {
     $holder = $this->getEntity($values)->getHolder();
-    return $this->options['owner'] ? 
-      $holder->getOwner()->link() : 
+    return $this->options['owner'] ?
+      $holder->getOwner()->link() :
       $holder->getLink();
-
   }
 
 }

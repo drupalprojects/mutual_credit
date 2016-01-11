@@ -59,16 +59,10 @@ class CommonCurrencyConstraint extends CompositeConstraintBase {
     foreach ($transaction->flatten() as $trans) {
       //I don't know why but $trans->payer->entity computed property isn't working here
       if ($absent = $this->uncommonCurrencies($trans->payer->target_id, $trans->payee->target_id, $trans->worth)) {
-        //itereate through the existing worth values to get the right delta
-        foreach ($trans->worth->getValue() as $delta => $worth) {
-          if (in_array($worth['curr_id'], $absent)) {
-            $this->context
-              ->buildViolation($constraint->message)
-              ->atPath('worth.'.$delta)//@todo this isn't working correctly and is highlighting the whole field
-              ->addViolation();
-          }
-        }
-      
+        $this->context
+          ->buildViolation($constraint->message)
+          ->atPath('worth')//@todo its impossible to identify which currency value once the $list has been built and filtered
+          ->addViolation();
       }
 
     }

@@ -5,23 +5,7 @@ use \Drupal\mcapi\Entity\Wallet;
  * implements hook_install().
  */
 function mcapi_cc_install() {
-  //create a new intertrading wallet owned by user 1
-  //the wallet isn't deleted on uninstallation, so check first if it exists.
-  $exists = \Drupal::entityTypeManager()
-      ->getStorage('mcapi_wallet')
-      ->getQuery()
-      ->condition('payways', Wallet::PAYWAY_AUTO)
-      ->condition('holder_entity_id', 1)
-      ->condition('holder_entity_type', 'user')
-      ->execute();
-  if (!$exists) {
-    \Drupal\mcapi\Entity\Wallet::create([
-      'payways' => Wallet::PAYWAY_AUTO,
-      'holder_entity_type' => \Drupal\user\Entity\User::load(1),
-      'payin' => 'o',//this means 
-      'payout' => 'o'
-    ])->save();
-  }
+
 }
 
 

@@ -21,12 +21,13 @@ use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
  *   category = @Translation("Reference"),
  *   no_ui = TRUE,
  *   default_formatter = "entity_reference_label",
+ *   default_widget = "wallet_reference_autocomplete",
  *   list_class = "\Drupal\Core\Field\EntityReferenceFieldItemList",
  * )
  */
 class WalletItem extends EntityReferenceItem {
 
-  
+
   /**
    * {@inheritdoc}
    */
@@ -49,6 +50,6 @@ class WalletItem extends EntityReferenceItem {
       ],
     ) + parent::defaultFieldSettings();
   }
-  
-  
+
+
 }

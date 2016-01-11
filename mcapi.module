@@ -118,7 +118,7 @@ function mcapi_element_info_alter(&$items) {
 function mcapi_entity_presave($entity) {
   if ($entity instanceOf ContentEntityInterface && Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())==1) {
     //get the entity's one wallet, and rename it.
-    if ($wids = Mcapi::widsHeldBy($entity)) {
+    if ($wids = Mcapi::walletsOf($entity)) {
       $wallet = Wallet::load(reset($wids))->setHolder($entity)->save();
     }
   }
@@ -136,7 +136,6 @@ function mcapi_entity_insert($entity) {
     //NB autoadd applies to ALL entity types or to none
     if (Mcapi::maxWalletsOfBundle($type, $entity->bundle())) {
       //no need to check what the max is, since this is the first wallet created for this entity
-      if ($type == 'user')print_r($entity->toArray());
       Wallet::create([
         'holder' => $entity,
         'name' => t('Default'),
@@ -156,7 +155,7 @@ function mcapi_entity_insert($entity) {
  * orphan any wallets owned by the deleted entity.
  */
 function mcapi_entity_predelete($entity) {
-  if (Mcapi::isWalletable($entity->getEntityTypeId(), $entity->bundle())) {
+  if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())) {
     Wallet::orphan($entity);
   }
 }
@@ -186,7 +185,7 @@ function mcapi_local_tasks_alter(&$tasks) {
   }
   //remove the parent tab as well.
   //unset($tasks['field_ui.fields:display_overview_mcapi_transaction']);
-  
+
   $settings = \Drupal::config('mcapi_settings');
   if (!$settings->get('wallet_inex_tab')) {
     unset($tasks['views_view:view.income_expenditure.income_page']);
@@ -199,11 +198,13 @@ function mcapi_local_tasks_alter(&$tasks) {
 
 /**
  * implements hook_entity_type_alter().
+ * @param \Drupal\Core\Entity\EntityTypeInterface[] $entity_types
  * Change the action list controller to a wrapper which hides this modules operation actions
  */
 function mcapi_entity_type_alter(array &$entity_types) {
   $entity_types['action']
-    ->setListBuilderClass('Drupal\mcapi\Controller\ActionListOverride');
+    ->setListBuilderClass('Drupal\mcapi\Controller\ActionListOverride')
+    ->setFormClass('mcapiedit', 'Drupal\mcapi\Form\TransactionActionEditForm');
 }
 
 /**
@@ -247,7 +248,7 @@ function mcapi_entity_extra_field_info() {
       ]
     ];
   }
-  
+
   $extra['mcapi_wallet']['mcapi_wallet']['display'] = [
     'stats' => [
       'label' => t('Trading stats'),
@@ -269,34 +270,31 @@ function mcapi_entity_extra_field_info() {
       'description' => t('One barchart per currency showing incoming and outgoing volumes'),
       'weight' => 8
     ],
-    'wallet_log' => [
-      'label' => t('Transaction_log'),
-      'description' => t('List of transactions (view)'),
-      'weight' => 9
-    ],
-    'income_expenditure' => [
-      'label' => t('Income & expenditure (view)'),
-      'description' => t('Two tables showing transactions in either direction'),
-      'weight' => 10
-    ],
     'canonical_link' => [
       'label' => t("Link to canonical view"),
       'description' => t("Link to canonical view"),
       'weight' => 11
     ]
   ];
-  //most of the transaction fields appear on the display
-  //@todo isn't this specified in the field definitioni itself?
-  $props = \Drupal::service('entity_field.manager')
-      ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
-  $fields = ['payer', 'payee', 'description', 'state', 'type'];//these are all base fields on transaction entity
-  foreach ($fields as $weight => $fieldname) {
-    $extra['mcapi_transaction']['mcapi_transaction']['display'][$fieldname] = [
-      'label' => $props[$fieldname]['label'],
-      'description' => $props[$fieldname]['description'],
-      'weight' => $weight,
+  if (\Drupal::service('router.route_provider')->getRoutesByNames(['view.wallet_log.page'])) {
+    $extra['mcapi_wallet']['mcapi_wallet']['display']['wallet_log'] = [
+      'label' => t('Transaction_log (view)'),
+      'description' => t('List of transactions (view)'),
+      'weight' => 9
     ];
   }
+  else drupal_set_message('Route view.wallet_log.page expected not found');
+
+  if (\Drupal::service('router.route_provider')->getRoutesByNames(['view.income_expenditure.income_page'])) {
+    $extra['mcapi_wallet']['mcapi_wallet']['display']['income_expenditure'] = [
+      'label' => t('Income & expenditure (view)'),
+      'description' => t('Two tables showing transactions in either direction'),
+      'weight' => 10
+    ];
+  }
+  else drupal_set_message('Route view.income_expenditure.income_page not found');
+
+
   return $extra;
 }
 
@@ -305,6 +303,15 @@ function mcapi_entity_extra_field_info() {
  */
 function mcapi_theme() {
   $file = ['file' => 'templates/theme.inc'];
+  $items['worths'] = [
+    'variables' => [
+      'values' => [],
+      'separator' => ''
+    ]
+  ] + $file;
+  $items['worth'] = [
+    'render element' => 'worth'
+  ] + $file;
   $items['mcapi_transaction'] = [
     'render element' => 'transaction',
     'template' => 'transaction'
@@ -323,13 +330,15 @@ function mcapi_theme() {
     'render element' => 'currency',
     'template' => 'currency'
   ] + $file;
-  
+  $items['wallet_histories'] = [
+    'render element' => 'element',
+    'file' => 'src/History.php'
+  ];
   $wallet_callbacks = [
-    'mcapi_wallet', 
-    'mcapi_wallet_component', 
-    'wallet_balances', 
-    'wallet_balance_bars', 
-    'wallet_histories', 
+    'mcapi_wallet',
+    'mcapi_wallet_component',
+    'wallet_balances',
+    'wallet_balance_bars',
     'wallet_stats',
   ];
   foreach ($wallet_callbacks as $callback) {
@@ -389,15 +398,21 @@ function mcapi_mcapi_form_list() {
 }
 
 function mcapi_entity_query_transaction_query_alter($query)  {
-  dsm('mcapi_entity_query_transaction_query_alter chance to do some transaction access control');
+  drupal_set_message('mcapi_entity_query_transaction_query_alter chance to do some transaction access control');
 }
 
-
-function mcapi_entity_query_mcapi_wallet_alter($query) {
-  die('dfdf');
+/**
+ * implements hook_entity_form_display_alter().
+ * Ensure on startup that the worth field is visible in the entity form
+ * this is nasty but there was no other way
+ */
+function mcapi_entity_form_display_alter($display, $display_context){
+  if ($display_context['bundle'] == 'mcapi_transaction') {
+    $display->setComponent('worth', ['type' =>'worth']);
+  }
 }
-
-
-function mcapi_entity_query_alter(\Drupal\Core\Entity\Query\QueryInterface $query) {
-  mtrace();
+function mcapi_entity_view_display_alter($display, $display_context){
+  if ($display_context['bundle'] == 'mcapi_transaction') {
+    $display->setComponent('worth', ['type' =>'worth']);
+  }
 }

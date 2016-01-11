@@ -17,19 +17,19 @@ use Drupal\mcapi\Mcapi;
 class ActionListOverride extends \Drupal\action\ActionListBuilder {
 
   private $transactionActions;
-  
-  function __construct(EntityTypeInterface $entity_type, EntityStorageInterface $storage) {
-    parent::__construct($entity_type, $storage);
+
+  function __construct($entity_type, $storage, $action_manager) {
+    parent::__construct($entity_type, $storage, $action_manager);
     $this->transactionActions = Mcapi::transactionActionsLoad();
   }
-    
+
   /**
    * {@inheritdoc}
    */
   public function load() {
     $entities = parent::load();
     //remove the mcapi actions
-    foreach (array_keys($this->transactionActions) as $id) {echo $id;
+    foreach (array_keys($this->transactionActions) as $id) {
       unset($entities[$id]);
     }
     return $entities;

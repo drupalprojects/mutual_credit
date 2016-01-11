@@ -22,8 +22,8 @@ class CurrencyForm extends EntityForm {
 
     $form['name'] = [
       '#type' => 'textfield',
-      '#title' => t('Name of currency'),
-      '#description' => t('Use the plural'),
+      '#title' => $this->t('Name of currency'),
+      '#description' => $this->t('Use the plural'),
       '#default_value' => $currency->label(),
       '#size' => 40,
       '#maxlength' => 80,
@@ -32,8 +32,8 @@ class CurrencyForm extends EntityForm {
     ];
     $form['description'] = [
       '#type' => 'textarea',
-      '#title' => t('Description of the currency'),
-      '#description' => t('Use the plural'),
+      '#title' => $this->t('Description of the currency'),
+      '#description' => $this->t('Use the plural'),
       '#default_value' => $currency->description,
       '#weight' => 1,
     ];
@@ -57,8 +57,8 @@ class CurrencyForm extends EntityForm {
     }
     if ($roles = user_roles(TRUE, 'manage mcapi')) {
       $form['uid'] = [
-        '#title' => t('Comptroller'),
-        '#description' => t("Any user with 'Manage community accounting' role"),
+        '#title' => $this->t('Comptroller'),
+        '#description' => $this->t("Any user with 'Manage community accounting' role"),
         '#type' => 'entity_autocomplete',
         '#target_type' => 'user',
         '#selection_handler' => 'default:user',
@@ -83,9 +83,9 @@ class CurrencyForm extends EntityForm {
     $form['acknowledgement'] = [
       '#type' => 'container',
       '#children' => implode(" ", [//<br /> breaks don't work here
-        t('Acknowledgement currencies are abundant - they are usually issued to pay for something of value and are not redeemable.'),
-        t("These are sometimes called 'fiat' currencies and have no value in themselves."),
-        t('Most timebanking systems and most LETS should choose this.')
+        $this->t('Acknowledgement currencies are abundant - they are usually issued to pay for something of value and are not redeemable.'),
+        $this->t("These are sometimes called 'fiat' currencies and have no value in themselves."),
+        $this->t('Most timebanking systems and most LETS should choose this.')
       ]),
       '#states' => [
         'visible' => [
@@ -97,10 +97,10 @@ class CurrencyForm extends EntityForm {
     $form['exchange'] = [
       '#type' => 'container',
       '#children' => implode(" ", [
-        t("Exchange currencies are 'sufficient' - they are issued and redeemed as as users earn and spend."),
-        t('The sum of all balances of active accounts, including the reservoir account, is zero, and ideally, accounts are returned to zero before being deactivated.'),
-        t('To stop accounts straying too far from zero, positive and negative balance limits are often used.'),
-        t('This model is sometimes called mutual credit, barter, or reciprocal exchange.'),
+        $this->t("Exchange currencies are 'sufficient' - they are issued and redeemed as as users earn and spend."),
+        $this->t('The sum of all balances of active accounts, including the reservoir account, is zero, and ideally, accounts are returned to zero before being deactivated.'),
+        $this->t('To stop accounts straying too far from zero, positive and negative balance limits are often used.'),
+        $this->t('This model is sometimes called mutual credit, barter, or reciprocal exchange.'),
       ]),
       '#states' => [
         'visible' => [
@@ -112,10 +112,10 @@ class CurrencyForm extends EntityForm {
     $form['commodity'] = [
       '#type' => 'container',
       '#children' => implode(" ", [
-        t('Commodity currencies are limited to the quantity of a valuable commodity in storage.'),
-        t('They are valued according to that commodity, and redeemed for that commodity, although fractional reserve rules may apply.'),
-        t('Effectively the commodity is monetised, for the cost of the stuff in storage.'),
-        t("This would be the choice for all 'backed' complementary currencies.")
+        $this->t('Commodity currencies are limited to the quantity of a valuable commodity in storage.'),
+        $this->t('They are valued according to that commodity, and redeemed for that commodity, although fractional reserve rules may apply.'),
+        $this->t('Effectively the commodity is monetised, for the cost of the stuff in storage.'),
+        $this->t("This would be the choice for all 'backed' complementary currencies.")
       ]),
       '#states' => [
         'visible' => [
@@ -126,24 +126,25 @@ class CurrencyForm extends EntityForm {
     ];
 
     $form['issuance'] = [
-      '#title' => t('Basis of issuance'),
-      '#description' => t('Currently only affects visualisation.'),
+      '#title' => $this->t('Basis of issuance'),
+      '#description' => $this->t('Currently only affects visualisation.'),
       '#type' => 'radios',
       '#options' => Currency::issuances(),
       '#default_value' => property_exists($currency, 'issuance') ? $currency->issuance : 'acknowledgement',
       //this should have an API function to work with other transaction controllers
       //disable this if transactions have already happened
-      '#disabled' => !empty($currency->transactions()),
+      '#disabled' => !empty($currency->transactionCount()),
       '#required' => TRUE,
       '#weight' => 4,
     ];
 
     $serials = $currency->isNew() ?
-      [] :
-      $currency->transactions(['curr_id' => $currency->id(), 'value' => 0]);
+      0 :
+      $currency->transactionCount(['worth.value' => 0]);
 
     $form['zero'] = [
-      '#title' => t('Allow zero transactions'),
+      '#title' => $this->t('Allow zero transactions'),
+      '#description' => $this->t('Special effects can be accomplised with css.'),
       '#type' => 'checkbox',
       '#default_value' => $currency->zero,
       //this is required if any existing transactions have zero value
@@ -151,23 +152,24 @@ class CurrencyForm extends EntityForm {
     ];
     if ($serials) {
       $form['zero']['#required'] = TRUE;
-      $form['zero']['#description'] = t("Zero transaction already exist so this field is required");
+      $form['zero']['#description'] = $this->t("Zero transaction already exist so this field is required");
     }
     else {
-      $form['zero']['#description'] = t("Leave blank to disallow zero value transactions");
+      $form['zero']['#description'] = $this->t("Leave blank to disallow zero value transactions");
     }
 
     $form['display'] = [
-      '#title' => t('Appearance'),
+      '#title' => $this->t('Appearance'),
       '#type' => 'fieldset',
       '#collapsible' => TRUE,
       '#weight' => 10,
     ];
-    $help[] = t('E.g. for Hours, Minutes put Hr00:60/4mins , for dollars and cents put $0.00; for loaves put 0 loaves.');
-    $help[] = t('The first number is always a string of zeros showing the number of characters (powers of ten) the widget will allow.');
-    $help[] = t('The optional /n at the end will render the final number widget as a dropdown field showing intervals, in the example, of 15 mins.');
+    $help[] = $this->t('E.g. for Hours, Minutes put Hr00:60/4mins , for dollars and cents put $0.00; for loaves put 0 loaves.');
+    $help[] = $this->t('The first number is always a string of zeros showing the number of characters (powers of ten) the widget will allow.');
+    $help[] = $this->t('The optional /n at the end will render the final number widget as a dropdown field showing intervals, in the example, of 15 mins.');
+    $help[] = $this->t('Special effects can be accomplised with css.');
     $form['display']['format'] = [
-      '#title' => t('Format'),
+      '#title' => $this->t('Format'),
       '#description' => implode(' ', $help),
       '#type' => 'textfield',
       '#default_value' => implode('', $currency->format),
@@ -179,8 +181,8 @@ class CurrencyForm extends EntityForm {
     ];
 
     $form['display']['color'] = [
-    	'#title' => t('Colour'),
-    	'#description' => t('Colour may be used in visualisations'),
+    	'#title' => $this->t('Colour'),
+    	'#description' => $this->t('Colour may be used in visualisations'),
     	'#type' => 'color',
     	'#default_value' => $currency->color,
     ];
@@ -202,11 +204,13 @@ class CurrencyForm extends EntityForm {
     else {
       drupal_set_message(t('Currency %label has been added.', ['%label' => $currency->label()]));
     }
-    
-    $required = !\Drupal::entityTypeManager()->getStorage('mcapi_currency')->getQuery('zero', '1')->count();
-      \Drupal\field\Entity\FieldConfig::load('mcapi_transaction.mcapi_transaction.worth')
-        ->set('required', $required)
-        ->save();
+
+    $required = !\Drupal::entityTypeManager()
+      ->getStorage('mcapi_currency')->getQuery('zero', '1')
+      ->count();
+    \Drupal\field\Entity\FieldConfig::load('mcapi_transaction.mcapi_transaction.worth')
+      ->set('required', $required)
+      ->save();
 
     $form_state->setRedirect('entity.mcapi_currency.collection');
   }

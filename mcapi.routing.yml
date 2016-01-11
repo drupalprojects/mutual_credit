@@ -28,6 +28,16 @@ mcapi.admin.workflow:
   options:
     _admin_route: TRUE
 
+mcapi.admin.workflow.actionedit:
+  path: '/admin/accounting/workflow/{action}'
+  defaults:
+    _entity_form: 'action.mcapiedit'
+    _title: 'Edit'
+  requirements:
+    _permission: 'configure mcapi'
+  options:
+    _admin_route: TRUE
+
 #these have tabs. not sure whether they can be one
 mcapi.admin.access.op:
   path: /admin/accounting/access/{op}
@@ -44,7 +54,7 @@ mcapi.admin_wallets:
     _title: 'Wallet Settings'
   requirements:
     _permission: 'configure mcapi'
-    
+
 mcapi.transaction.add:
   path: /transaction/add
   defaults:

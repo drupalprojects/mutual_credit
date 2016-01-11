@@ -28,8 +28,7 @@ class CurrentUserWallets extends ArgumentDefaultPluginBase {
    */
   public function getArgument() {
     $ids = \Drupal::entityTypeManager()
-      ->getStorage('mcapi_wallet')
-      ->getQuery()
+      ->getStorage('mcapi_wallet')->getQuery()
       ->condition('holder_entity_type', 'user')
       ->condition('holder_entity_id', \Drupal::currentUser()->id())
       ->execute();

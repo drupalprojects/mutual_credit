@@ -8,21 +8,33 @@
 
 namespace Drupal\mcapi\Form;
 
+use Drupal\mcapi\Mcapi;
 use Drupal\Core\Entity\ContentEntityForm;
-use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class WalletAddForm extends ContentEntityForm {
 
   private $holder;
   private $pluginManager;
-  
+
   /**
    * {@inheritdoc}
    */
   public function getFormId() {
     return 'wallet_add_form';
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getEntityFromRouteMatch(RouteMatchInterface $route_match, $entity_type_id) {
+    $params = $route_match->getParameters()->all();
+    $entity = $this->entityManager
+      ->getStorage($entity_type_id)
+      ->create(['holder' => reset($params)]);
+    return $entity;
   }
 
   /**
@@ -34,6 +46,7 @@ class WalletAddForm extends ContentEntityForm {
       ->getStorage($params->getIterator()->key())
       ->load($params->getIterator()->current()->id());
     $this->database = $database;
+
   }
 
   /**
@@ -63,8 +76,8 @@ class WalletAddForm extends ContentEntityForm {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
-    
+  public function form(array $form, FormStateInterface $form_state) {
+
     $form['wid'] = [
       '#type' => 'value',
       '#value' => NULL,
@@ -83,16 +96,20 @@ class WalletAddForm extends ContentEntityForm {
       '#default_value' => '',
       '#required' => '',
     ];
-    
-    if (maxWalletsOfBundle($this->holder->getEntityTypeId(), $this->holder->bundle())==1) {
+
+    if (Mcapi::maxWalletsOfBundle($this->holder->getEntityTypeId(), $this->holder->bundle())==1) {
       $form['name']['#access'] = FALSE;
     }
-    
-    $form['submit'] = [
-    	'#type' => 'submit',
-      '#value' => t('Create')
-    ];
     return $form;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function actions(array $form, FormStateInterface $form_state) {
+    $actions = parent::actions($form, $form_state);
+    $actions['submit']['#value'] = t('Create');
+    return $actions;
   }
 
   /**
@@ -121,11 +138,9 @@ class WalletAddForm extends ContentEntityForm {
   /**
    * {@inheritdoc}
    */
-  function submitForm(array &$form, FormStateInterface $form_state) {
-    parent::submitForm($form, $form_state);
-    $form_state->setRedirectUrl($wallet->urlInfo('edit-form'));
-    drupal_set_message('Wallet ');
+  public function save(array $form, FormStateInterface $form_state) {
+    $this->entity->save();
+    $form_state->setRedirectUrl($this->entity->urlInfo('edit-form'));
   }
-  
-  
+
 }

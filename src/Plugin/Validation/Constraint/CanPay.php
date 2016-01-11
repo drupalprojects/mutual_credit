@@ -4,6 +4,7 @@
  * @file
  * Contains \Drupal\mcapi\Plugin\Validation\Constraint\CanPay.
  * Combined Constraint / Constraintvalidator
+ * @todo make this a single entity level validation instead of two almost identical fields
  */
 
 namespace Drupal\mcapi\Plugin\Validation\Constraint;

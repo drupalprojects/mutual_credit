@@ -22,7 +22,7 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
   private $currentuser;
   private $exchangeStorage;
   private $database;
-  
+
   /**
    * {@inheritdoc}
    */
@@ -57,7 +57,7 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
     $header['exchanges'] = t('Used in');
     return parent::buildHeader() + $header;
   }
-  
+
   /**
    * {@inheritdoc}
    * @todo we might want to somehow filter the currencies before they get here, if there are large number
@@ -68,8 +68,7 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
       ->condition('currencies_target_id', $entity->id())
       ->execute()->fetchCol();
     $used_in_exchange_ids = \Drupal::entityTypeManager()
-      ->getStorage('mcapi_exchange')
-      ->getQuery()
+      ->getStorage('mcapi_exchange')->getQuery()
       ->condition('currencies', $entity->id())
       ->count()
       ->execute();
@@ -82,12 +81,12 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
         $names[] = $e->link();
       }
       $row['exchanges']['#markup'] = implode(', ', $names);
-      
+
     }
     return parent::buildRow($entity) + $row;
   }
-  
-  
+
+
   /**
    * {@inheritdoc}
    */
@@ -105,7 +104,7 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
 
     return $this->storage->loadMultiple($curr_ids);//no sort has been applied
   }
-  
+
 }
 
   /**

@@ -4,16 +4,21 @@
  * Default theme implementation to display a transaction certificate.
  *
  * Available variables:
- * - transaction: Full mcapi_transaction entity including
-  *   - created: unixtime of creation date. Preprocess functions can reformat it by
+ * - transaction: Full mcapi_transaction entity
+ * - attributes
+ * - created: unixtime of creation date. Preprocess functions can reformat it by
  *     calling format_date()
- * - payer: The formatted username of the payer
- * - payee: The formatted username of the payee
+ *
+ * - serial: The id of the transaction cluster
+ * - payer: The payer wallet label
+ * - payee: The payee wallet label
+ * - creator: The formatted username of the user who entered the transaction
  * - worth: The formatted currency quantities
  * - state: The name of the transaction state
  * - type: The transaction type
  * - description: The one line description
  * - created: Formatted creation date
+ * - changed: Formatted changed date
  * - attributes
  * -   attributes.class
  * - mcapi_signatures

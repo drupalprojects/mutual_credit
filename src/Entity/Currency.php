@@ -53,16 +53,16 @@ use Drupal\Core\Entity\EntityStorageInterface;
  */
 
 class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwnerInterface {
-  
-  
+
+
   const TYPE_ACKNOWLEDGEMENT = 2;
   const TYPE_COMMODITY = 1;
   const TYPE_EXCHANGE = 0;
-  
+
   const DISPLAY_NATIVE = 1;//the raw integer value held in the database e.g.5400
   const DISPLAY_NORMAL = 2;//the text value for display eg 1hr 30 mins
   const DISPLAY_PLAIN = 3;//formatted to appear as a number but without e.g 1.30
-    
+
   public $id;
 
   public $uuid;
@@ -112,7 +112,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * @var integer
    */
   public $weight;
-  
+
   /**
    * the value of the currency as a multiple of the ticks_name
    * NB this is used for all internal accounting
@@ -156,18 +156,19 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * {@inheritdoc}
    */
-  public function transactions(array $conditions = [], $serial = FALSE) {
-    $serials = $this->entityTypeManager()
-      ->getStorage('mcapi_transaction')
-      ->getQuery()
-      ->condition('worth.curr_id', $this->id())
-      ->condition('state', TRANSACTION_STATE_ERASED, '<>')
-      ->execute();
-    if ($serial) {
-      $serials = array_unique($serials);
-    }
-    return count($serials);
+
+  public function transactionCount(array $conditions = [], $serial = FALSE) {
+   $query = $this->entityTypeManager()
+      ->getStorage('mcapi_transaction')->getQuery()
+      ->count()
+      ->condition('worth.curr_id', $this->id());
+     foreach ($conditions as $field => $val) {
+       $operator = is_array($val) ? 'IN' : '=';
+       $query->condition($field, $val, $operator);
+     }
+    return $query->execute();
   }
+
 
   /**
    * {@inheritdoc}
@@ -235,10 +236,10 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       $output = preg_replace('/([^0-9.]+)/', '', $output);
       //hopefully now we've got a machine readable number...
     }
-    
+
     return $minus_sign . implode('', $output);
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -287,8 +288,8 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * {@inheritdoc}
    */
   function deletable() {
-    $all_transactions = $this->transactions(array('state' => 0));
-    $deleted_transactions = $this->transactions(array('state' => 0));
+    $all_transactions = $this->transactionCount();
+    $deleted_transactions = $this->transactionCount(['state' => TRANSACTION_STATE_ERASED]);
     return $all_transactions == $deleted_transactions;
   }
 
@@ -298,26 +299,26 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   function isDefaultRevision() {
     return TRUE;
   }
-  
+
   static function formats() {
     return [
-      Currency::DISPLAY_NORMAL => t('Normal'),
-      Currency::DISPLAY_NATIVE => t('Native integer'),
-      Currency::DISPLAY_PLAIN => t('Force decimal (Rarely needed)')
+      Self::DISPLAY_NORMAL => t('Normal'),
+      Self::DISPLAY_NATIVE => t('Native integer'),
+      Self::DISPLAY_PLAIN => t('Force decimal (Rarely needed)')
     ];
   }
-  
+
   /**
    * look up function
    */
   public static function issuances() {
     return [
-      Currency::TYPE_ACKNOWLEDGEMENT => t('Acknowledgement', [], ['context' => 'currency-type']),
-      Currency::TYPE_EXCHANGE => t('Exchange', [], ['context' => 'currency-type']),
-      Currency::TYPE_COMMODITY => t('Backed by a commodity', [], ['context' => 'currency-type']),
+      Self::TYPE_ACKNOWLEDGEMENT => t('Acknowledgement', [], ['context' => 'currency-type']),
+      Self::TYPE_EXCHANGE => t('Exchange', [], ['context' => 'currency-type']),
+      Self::TYPE_COMMODITY => t('Backed by a commodity', [], ['context' => 'currency-type']),
     ];
   }
-  
+
   /**
    * generate a random value which reflects the currency's relationship to its parts
    * do this by choosing a nice number like 3.6  and unformatting it

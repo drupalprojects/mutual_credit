@@ -27,7 +27,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
     $this->settings = $config_factory->get('mcapi.settings');
     parent::__construct($entity_type, $entity_manager, $language_manager);
   }
-  
+
   /**
    * {@inheritdoc}
    * @todo update with entity_type.manager when core interface changes
@@ -89,7 +89,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
           '#template' => _filter_autop($this->settings->get('twig')),
           '#context' => get_transaction_vars($entity)
         ];
-       * 
+       *
        */
     }
     $build += [
@@ -110,7 +110,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
     //@todo we might need to use the post-render cache to get the links right instead of template_preprocess_mcapi_transaction
     return $build;
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -139,7 +139,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
       }
     }
   }
-  
+
   /**
    *
    * @param TransactionInterface $transaction
@@ -148,7 +148,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
    *
    * @return array
    *   A renderable array of links
-   * 
+   *
    * @todo what's going on with $show_view here?
    */
   function buildActionlinks(TransactionInterface $transaction, $show_view = TRUE) {
@@ -161,7 +161,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
         'url' => $transaction->urlInfo('edit-form'),
       ];
     }
-    
+
     foreach (Mcapi::transactionActionsLoad() as $action_name => $action) {
       $plugin = $action->getPlugin();
       if ($plugin->access($transaction)) {
@@ -173,14 +173,14 @@ class TransactionViewBuilder extends EntityViewBuilder {
           $route_name = $action->getPlugin()->getPluginDefinition()['confirm_form_route_name'];
           $route_params['operation'] = substr($action_name, 12);
         }
-        
+
         //there is a way of doing this for actions which might yield a different URL
         $operations[$action_name] = [
           'title' => $plugin->getConfiguration()['title'],
           'url' => Url::fromRoute($route_name, $route_params)
         ];
-        
-        
+
+
         $display = $plugin->getConfiguration('display');
         if ($display != TransactionActionBase::CONFIRM_NORMAL) {
           if ($display == TransactionActionBase::CONFIRM_MODAL) {
@@ -201,7 +201,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
             ];
           }
         }
-        elseif ($display != TransactionActionBase::CONFIRM_NORMAL && $action_name != 'view') {        
+        elseif ($display != TransactionActionBase::CONFIRM_NORMAL && $action_name != 'view') {
           //the link should redirect back to the current page, if not otherwise stated
           if($dest = $plugin->getConfiguration('redirect')) {
             $redirect = ['destination' => $dest];
@@ -214,7 +214,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
         }
       }
     }
-    
+
     $operations += \Drupal::moduleHandler()->invokeAll('entity_operation', [$transaction]);
     \Drupal::moduleHandler()->alter('entity_operation', $operations, $transaction);
     //@todo check the order is sensible
@@ -222,7 +222,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
     return $operations;
   }
 
-  
+
 
 }
 
