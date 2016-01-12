@@ -9,7 +9,7 @@ namespace Drupal\mcapi\Element;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
-use Drupal\mcapi\Entity\Currency as CurrencyEntity;
+use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Exchange;
 
 /**
@@ -32,11 +32,14 @@ class Worthform extends FormElement {
         [$class, 'validate']
       ],
       '#attached' => ['library' => ['mcapi/mcapi.worth.element']],
+      '#attributes' => ['class' => ['worth']],
       '#minus' => FALSE,
       '#config' => FALSE,
       '#min' => 0,
       '#max' => NULL,
-      '#allowed_curr_ids' => []
+      '#allowed_curr_ids' => [],
+      '#theme_wrappers' => ['form_element'],
+      '#oneofmany' => TRUE
     ];
   }
 
@@ -46,7 +49,10 @@ class Worthform extends FormElement {
    * receives something like this:
    * [
         '#type' => 'worth_form',
-        '#default_value' => 3600,
+        '#default_value' => [
+          'curr_id',
+          'value'
+         ],
         '#allowed_curr_ids' => [cc],
         '#config' => $element['#config'],
         '#max' => NULL,
@@ -59,20 +65,23 @@ class Worthform extends FormElement {
     }
     //we might need to filter #default_value not in config mode
     if (count($element['#allowed_curr_ids']) == 1) {
-      $currency = CurrencyEntity::load(reset($element['#allowed_curr_ids']));
-      if ($element['#config'] && !is_numeric($element['#default_value'])) {
+      $currency = Currency::load(strtolower(reset($element['#allowed_curr_ids'])));//@todo remove strtolower
+      $element['#default_value'] = (array)$element['#default_value'];
+      $value = isset($element['#default_value']['value']) ? $element['#default_value']['value'] : 0;
+
+      if ($element['#config'] && !is_numeric($value)) {
         $value_parts = [];
       }
       else {
-        $value_parts = (strlen($element['#default_value'])) ?
-          $currency->formattedParts(intval($element['#default_value'])) :
+        $value_parts = (strlen($value)) ?
+          $currency->formattedParts(intval($value)) :
           [];
       }
       Self::subfields($element, $currency, $value_parts);
     }
-    else {//this would be if cardinality was 1 but multiple currencies available
-
-      $currencies = CurrencyEntity::loadMultiple($element['#allowed_curr_ids']);
+    //multiple choice of currencies, but only showing one widget
+    else {
+      $currencies = Currency::loadMultiple($element['#allowed_curr_ids']);
       $element['curr_id'] = [
         '#type' => 'select',
         '#options' => \Drupal\mcapi\Mcapi::entityLabelList('mcapi_currency', $currencies),
@@ -87,9 +96,6 @@ class Worthform extends FormElement {
         $element['value']['#maxlength'] = 10;
       }
     }
-    $element['#type'] = 'container';//if necessary
-    //consider moving this to the css
-    $element['#attributes'] = ['style' => 'display:inline-block'];
     return $element;
   }
 
@@ -98,8 +104,14 @@ class Worthform extends FormElement {
       '#type' => 'hidden',
       '#value'  => $currency->id()
     ];
+    if ($element['#minus']) {
+      $element[-1] = [
+        '#markup' => '-',
+        '#weight' => -1
+      ];
+    }
     foreach ($currency->format as $i => $component) {
-
+      $element[$i] = ['#weight' => $i];
       if ($i % 2) { //an odd number so render a form element
         $step = 1;
         $options = [];
@@ -112,31 +124,37 @@ class Worthform extends FormElement {
             $options[intval($v)] = $v;
           }
         }
-        $element[$i] = array(
-          '#weight' => $i,
+        $element[$i] += [
           '#default_value' => @$value_parts[$i],
           '#theme_wrappers' => []//try removing this
-        );
+        ];
         //if a preset value isn't in the $options
         //then we ignore the options and use the numeric sub-widget
         if (isset($options) && array_key_exists(@$value_parts[$i], $options)) {
-          $element[$i] += array(
+          $element[$i] += [
             '#type' => 'select',
             '#options' => $options,
-          );
+          ];
         }
         else {
           $size = strlen($component);
-          $element[$i] += array(
+          $element[$i] += [
             '#type' => 'number',
-            //'#type' => 'textfield',//number was behaving very strangely in alpha 15,
-            '#max' => $i == 1 ? pow(10, strlen($component))-1 : $component,//first component matters only for the num of digits
             '#min' => 0,
             '#step' => $step,
             '#size' => $size,//no effect in opera
             '#maxlength' => $size,
             '#attributes' => ['style' => 'width:'.($size +1) .'em;']
-          );
+          ];
+          if ($i == 1){
+            //for the first part, 000 translates to a max of 999
+            $element[$i]['#max'] = pow(10, strlen($component))-1;
+          }
+          else {
+            //for subsequent parts, the $component is the max
+            $element[$i]['#max'] = $component;//first component matters only for the num of digits
+          }
+
           if ($element['#config']) {
             $element['#type'] = 'textfield';
             //@todo markup
@@ -154,13 +172,12 @@ class Worthform extends FormElement {
         unset($options);
       }
       else {//an even number so render it as markup
-        //@todo markup
-        $element[$i] = array(
-          '#weight' => $i,
-          '#markup' => is_array($component) ? $component[0] : $component, //@todo component is never an array
-        );
+        $element[$i]['#markup'] = $component;
       }
     }
+    $cardinality = $element['#oneofmany'] ? 'multiple' : 'single';
+    $element['#prefix'] = "<span class = \"worth $cardinality\">";
+    $element['#suffix'] = "</span>";
   }
 
   /**
@@ -173,9 +190,9 @@ class Worthform extends FormElement {
       if ($element['#config'] && $input[1] == '') {
         return;
       }
-      $val = CurrencyEntity::load($input['curr_id'])->unformat($input);
+      $val = Currency::load($input['curr_id'])->unformat($input);
       if ($val == 0) {
-        return [];
+        //return [];
       }
 
       if ($element['#minus']) {
@@ -186,7 +203,9 @@ class Worthform extends FormElement {
         'value' => $val
       ];
     }
-    else return $element['#default_value'];
+    else {
+      return $element['#default_value'];
+    }
   }
 
   /**
@@ -210,9 +229,8 @@ class Worthform extends FormElement {
       $setval = TRUE;
     }
     else {
-
       //check for allowed zero values.
-      $currency = CurrencyEntity::load($val['curr_id']);
+      $currency = Currency::load($val['curr_id']);
       //zero values are only accepted if the currency allows and if cardinality there is only one currency in the field
       if ($val['value'] == '0') {
         if (empty($currency->zero)) {

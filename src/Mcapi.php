@@ -243,7 +243,7 @@ class Mcapi {
     return ' {{ ' .
       implode(' }}, {{ ', $tokens) .
       ' }} ' .
-      $this->l($this->t('What is twig?'), Url::fromUri('http://twig.sensiolabs.org/doc/templates.html'));
+      \Drupal::l(t('What is twig?'), \Drupal\Core\Url::fromUri('http://twig.sensiolabs.org/doc/templates.html'));
   }
 
 }

@@ -1,7 +1,7 @@
 <?php
 
 use Drupal\mcapi\Entity\WalletInterface;
-use Drupal\mcapi\Exchange;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * preprocessor function for theme callback mcapi_limits_absolute
@@ -25,7 +25,6 @@ function template_preprocess_mcapi_limits_absolute(&$vars) {
  * preprocessor function for theme callback mcapi_limits_relative
  */
 function template_preprocess_mcapi_limits_relative(&$vars) {
-
   $balance = $vars['wallet']->getStat($currency->id(), 'balance');
   $limiter = \Drupal::service('mcapi_limits.wallet_limiter')
     ->setwallet($vars['wallet']);
@@ -55,7 +54,7 @@ function template_preprocess_mcapi_limits_balanced(&$vars) {
   $vars['id'] = $vars['id'] = $curr_id.'-ometer-'.$wallet->id();
   $vars['functionname'] = str_replace('-', '_', $vars['id']);
   //the google gauge cannot mask the real number with a formatted value
-  
+
   $limiter = \Drupal::service('mcapi_limits.wallet_limiter')
     ->setwallet($wallet);
   $vars['balance'] = $currency->format($summary['balance'], Currency::DISPLAY_PLAIN);
@@ -68,22 +67,16 @@ function template_preprocess_mcapi_limits_balanced(&$vars) {
  * implement hook_form_MCAPI_CURRENCY_EDIT_FORM_alter
  * add the limits settings to the currency form
  */
-function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) {
+function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, FormStateInterface $form_state) {
   $limitsManager = \Drupal::service('plugin.manager.mcapi_limits');
 
   foreach($limitsManager->getDefinitions() as $name => $plugin) {
     $options[$name] = $plugin['label'];
   }
   $currency = $form_state->getFormObject()->getEntity();
-  if ($plugin_id = $form_state->getValue('plugin')) {
-    //the form was submitted by ajax and we retain the previous value
-    $plugin = $limitsManager->createInstance($plugin_id, ['currency' => $currency]);
-  }
-  else {
-    //the first time the form has loaded
-    $plugin = $limitsManager->createInstanceCurrency($currency);
-  }
-  $form_state->set('limits_plugin', $plugin);
+
+  $plugin = mcapi_limits_form_state_load_plugin($form_state, $currency);
+  $form_state->set('limits_plugin', $plugin->id);
 
   //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
   $warning[] = t("Transactions will be rejected which take accounts beyond these limits.");
@@ -116,7 +109,6 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) 
 
   //show the options form for the selected plugin
   $form['limits']['limits_settings'] = $plugin->buildConfigurationForm($form, $form_state, $currency);
-
   //this is the ajax wrapper
   $form['limits']['limits_settings']['#prefix'] = '<div id="limits-settings">';
   $form['limits']['limits_settings']['#suffix'] = '</div>';
@@ -126,10 +118,30 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) 
 }
 
 /**
+ *
+ * @param FormStateInterface $form_state
+ * @param CurrencyInterface $currency
+ * @return \Drupal\mcapi_limits\Plugin\McapiLimitsInterface
+ */
+function mcapi_limits_form_state_load_plugin(FormStateInterface $form_state, $currency) {
+  $limitsManager = \Drupal::service('plugin.manager.mcapi_limits');
+  if ($plugin_id = $form_state->getValue('plugin')) {
+    $plugin = $limitsManager->createInstance(
+      $plugin_id,
+      ['currency' => $currency]
+    );
+  }
+  else {
+    $plugin = $limitsManager->createInstanceCurrency($currency);
+  }
+  return $plugin;
+}
+
+/**
  * ajax callback
  */
-function mcapi_limits_validate(&$form, $form_state) {
-  $form_state->get('limits_plugin')
+function mcapi_limits_validate(&$form, FormStateInterface $form_state) {
+  mcapi_limits_form_state_load_plugin($form_state, $form_state->getFormObject()->getEntity())
     ->validateConfigurationForm($form, $form_state);
 }
 
@@ -137,15 +149,16 @@ function mcapi_limits_validate(&$form, $form_state) {
  * form submission callback on the submit button
  * save the plugin settings as config.
  */
-function mcapi_limits_submit(&$form, $form_state) {
-  $plugin = $form_state->get('limits_plugin');
+function mcapi_limits_submit(&$form, FormStateInterface $form_state) {
+
+  $currency = $form_state->getFormObject()->getEntity();
+  $plugin = mcapi_limits_form_state_load_plugin($form_state, $currency);
   $plugin->submitConfigurationForm($form, $form_state);
 
   //rendered wallets may be affected by changes in balance limits
   Drupal\Core\Cache\Cache::invalidateTags(['mcapi_wallet_view']);
 
   //load the plugin settings AS CONFIG
-  $currency = $form_state->getFormObject()->getEntity();
   foreach ($plugin->getConfiguration() as $key => $val) {
     $currency->setThirdPartySetting('mcapi_limits', $key, $val);
   }
@@ -164,7 +177,7 @@ function mcapi_limits_submit(&$form, $form_state) {
 /**
  * ajax callback
  */
-function limits_settings_subform($form, $form_state) {
+function limits_settings_subform($form, FormStateInterface $form_state) {
   return $form['limits']['limits_settings'];
 }
 
@@ -180,10 +193,9 @@ function limits_settings_subform($form, $form_state) {
  *   a renderable array
  */
 function mcapi_view_limits(WalletInterface $wallet, $curr_ids = []) {
-  
   //@todo how do we attach css in twig or in preprocessing?
   $renderable['#attached']['library'] = ['mcapi/mcapi.wallets', 'mcapi/mcapi.gchart'];
-  
+
   $currencies = $wallet->currenciesAvailable();
   if ($curr_ids) {
     $currencies = array_intersect_key($currencies, array_flip($curr_ids));

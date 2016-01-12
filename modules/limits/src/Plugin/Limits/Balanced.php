@@ -10,7 +10,6 @@ namespace Drupal\mcapi_limits\Plugin\Limits;
 
 use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\Core\Form\FormStateInterface;
-Use Drupal\mcapi_limits\Plugin\McapiLimitsInterface;
 Use Drupal\mcapi_limits\Plugin\McapiLimitsBase;
 
 
@@ -23,7 +22,7 @@ Use Drupal\mcapi_limits\Plugin\McapiLimitsBase;
  *   description = @Translation("Limits are the same distance from zero")
  * )
  */
-class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
+class Balanced extends McapiLimitsBase {
 
   /**
    * {@inheritdoc}
@@ -31,7 +30,14 @@ class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $subform = parent::buildConfigurationForm($form, $form_state);
     //the order seemes to matter more than the weight
-    $subform['liquidity'] = $this->widget();
+    $subform['liquidity'] = [
+      '#title' => $this->t('Liquidity per user'),
+      '#description' => $this->t('The distance from zero a user can trade'),
+      '#type' => 'worth_form',
+      '#allowed_curr_ids' => [$this->currency->id()],
+      '#default_value' => $this->configuration['liquidity'],
+      '#min' => 0
+    ];
     return $subform;
   }
 
@@ -52,39 +58,19 @@ class Balanced extends McapiLimitsBase implements McapiLimitsInterface {
   }
 
   /**
-   * Does this need to be a separate function? It is used on the currency form and on the everride form
-   *
-   * @param array $default
-   * @return array
-   *   a form element
-   */
-  public function widget() {
-    return array(
-      '#title' => t('Liquidity per user'),
-      '#description' => t('The distance from zero a user can trade'),
-      '#type' => 'worth',
-      '#allowed_curr_ids' => [$this->currency->id()],
-      '#default_value' => array($this->configuration['liquidity'][0]),
-      '#min' => 0,
-    );
-  }
-
-  /**
    * (non-PHPdoc)
    * @see \Drupal\mcapi_limits\Plugin\Limits\McapiLimitsBase::defaultConfiguration()
    */
   public function defaultConfiguration() {
     $defaults = parent::defaultConfiguration();
-    return $defaults+ array(
+    return $defaults+ [
       //this is the format the worth widget expects
-      'liquidity' => array(
-        array(
-          'curr_id' => $this->currency->id(),
-            //@todo check this after we have saved a value
-          'value' => 1000
-        )
-      ),
-    );
+      'liquidity' => [
+        'curr_id' => $this->currency->id(),
+          //@todo check this after we have saved a value
+        'value' => 1000
+      ]
+    ];
   }
 
 }

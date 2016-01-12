@@ -2,32 +2,29 @@
  * Styling for the Worth Element
  */
 
-fieldset#edit-worth--wrapper div.multiple{
+fieldset.worth-element div.fieldset-wrapper {
+  float:left;
+}
+fieldset.worth-element span.multiple{
   text-align: right;
 }
 
-.form-type-worth .form-item {
-  display: inline-block;
-  color:red;
-}
-
-fieldset#edit-worth--wrapper {
-  display:inline-block;
-}
-fieldset#edit-worth--wrapper div.multiple{
+span.worth.multiple{
   text-align: right;
   margin-bottom: 3px;
+  display:block;
 }
-fieldset#edit-worth--wrapper div.multiple input{
+span.worth.multiple input{
   text-align: end;
 }
 
 /* get rid of the spinners */
-fieldset#edit-worth--wrapper input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
+span.worth input::-webkit-outer-spin-button,
+span.worth input::-webkit-inner-spin-button {
    display: none;
    -webkit-appearance: none;
    margin: 0;
 }
-fieldset#edit-worth--wrapper input[type='number'] {
+span.worth input[type='number'] {
   -moz-appearance:textfield;
 }

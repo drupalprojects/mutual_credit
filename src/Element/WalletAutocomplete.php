@@ -33,7 +33,7 @@ class WalletAutocomplete extends EntityAutocomplete {
   /**
    * {@inheritdoc}
    */
-  public static function __extractEntityIdFromAutocompleteInput($input) {
+  public static function extractEntityIdFromAutocompleteInput($input) {
     $match = NULL;
     // Take "label #entity id', match the ID from number after #
     if (preg_match("/.*\#(\d+)/", $input, $matches)) {
@@ -45,14 +45,11 @@ class WalletAutocomplete extends EntityAutocomplete {
   /**
    * {@inheritdoc}
    */
-  public static function getEntityLabels(array $entities) {die('getEntityLabels GOOD');
+  public static function getEntityLabels(array $entities) {
     $wallet_labels = [];
     foreach ($entities as $wallet) {
-      $label = ($wallet->access('view')) ?
-        $wallet->label() :
-        $this->t('- Restricted access -');
       // Labels containing commas or quotes must be wrapped in quotes.
-      $wallet_labels[] = Tags::encode($label)  . ' #' . $wallet->wid->value;
+      $wallet_labels[] = Tags::encode($wallet->label())  . ' #' . $wallet->wid->value;
     }
     return implode(', ', $wallet_labels);
   }

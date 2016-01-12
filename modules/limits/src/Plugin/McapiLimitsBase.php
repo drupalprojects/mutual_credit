@@ -8,14 +8,14 @@
 namespace Drupal\mcapi_limits\Plugin;
 
 use Drupal\mcapi\Entity\CurrencyInterface;
-use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Component\Plugin\ConfigurablePluginInterface;
 
 /**
  * Base class for Limits plugins.
  */
 abstract class McapiLimitsBase implements McapiLimitsInterface {
+
+  use \Drupal\Core\StringTranslation\StringTranslationTrait;
 
   public $id;
 
@@ -69,8 +69,8 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     //we are relying in the inserted fields to validate themselves individually, so there is no validation added at the form level
     $subform['override'] = [
-      '#title' => t('Allow wallet-level override'),
-      '#description' => t('Settings on the user profiles override these general limits.'),
+      '#title' => $this->t('Allow wallet-level override'),
+      '#description' => $this->t('Settings on the user profiles override these general limits.'),
       '#type' => 'checkbox',
       '#default_value' => $this->configuration['override'],
       '#weight' => 5,
@@ -81,17 +81,17 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       ]
     ];
     $subform['skip'] = [
-      '#title' => t('Skip balance limit check for the following transactions'),
-      '#description' => t('Especially useful for mass transactions and automated transactions'),
+      '#title' => $this->t('Skip balance limit check for the following transactions'),
+      '#description' => $this->t('Especially useful for mass transactions and automated transactions'),
       '#type' => 'checkboxes',
       //casting it here saves us worrying about the default, which is awkward
       '#default_value' => array_keys(array_filter($this->configuration['skip'])),
       //would be nice if this was pluggable, but not needed for the foreseeable
       '#options' => [
-        'auto' => t("of type 'auto'"),
-        'mass' => t("of type 'mass'"),
-        'user1' => t("created by user 1"),
-        'owner' => t("created by the currency owner"),
+        'auto' => $this->t("of type 'auto'"),
+        'mass' => $this->t("of type 'mass'"),
+        'user1' => $this->t("created by user 1"),
+        'owner' => $this->t("created by the currency owner"),
       ],
       '#states' => [
         'invisible' => [
@@ -102,11 +102,11 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
     ];
     //we are relying in the inserted fields to validate themselves individually, so there is no validation added at the form level
     $subform['display_relative'] = [
-      '#title' => t('Display perspective'),
+      '#title' => $this->t('Display perspective'),
       '#type' => 'radios',
       '#options' => [
-        0 => t('Show absolute balance limits'),
-        1 => t('Show spend/earn limits relative to the balance'),
+        0 => $this->t('Show absolute balance limits'),
+        1 => $this->t('Show spend/earn limits relative to the balance'),
       ],
       '#default_value' => intval($this->configuration['display_relative']),
       '#weight' => 10,
@@ -139,7 +139,7 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
    * {@inheritdoc}
    */
   public function calculateDependencies() {
-    return ['modules' => 'mcapi_limits'];
+    return ['module' => 'mcapi_limits'];
   }
 }
 

@@ -8,6 +8,7 @@
  */
 namespace Drupal\mcapi\Plugin;
 
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;

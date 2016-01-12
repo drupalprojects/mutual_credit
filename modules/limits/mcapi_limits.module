@@ -1,8 +1,5 @@
 <?php
 
-use Drupal\mcapi\Entity\CurrencyInterface;
-use Drupal\mcapi\Entity\WalletInterface;
-use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 
 /**
  * implements hook_entity_type_alter().

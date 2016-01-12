@@ -27,7 +27,6 @@ class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelectio
    */
   public function getReferenceableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
     $wids = $this->queryEntities($match);
-    echo 'getReferenceableEntities'; print_R($wids);
     if ($limit > 0) {
       $wids = array_splice($wids, 0, $limit);
     }

@@ -125,6 +125,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * the $format is an intricately formatted expression which tells the system
    * how to transform an integer value into a rendered currency value, or form
    * widget and back again.
+   * @todo the format is irregular, the initial zeros should be replaced for 9s
    *
    * @var string
    */
@@ -146,7 +147,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
     $values += array(
       'issuance' => 'acknowledgement',
-      'format' => ['$', 0, '.', '99'],
+      'format' => ['$', '999', '.', '99'],
       'zero' => FALSE,
       'color' => '000',
       'weight' => 0,

@@ -36,6 +36,8 @@ class Worthsform extends FormElement {
       '#pre_render' => [
         [$class, 'preRenderCompositeFormElement'],
       ],
+      //'#theme_wrappers' => ['form_element'],
+      '#attributes' => ['class' => ['worth-element']],
       '#config' => FALSE,
       '#allowed_curr_ids' => []
     ];
@@ -44,14 +46,21 @@ class Worthsform extends FormElement {
   /**
    * helper function to ensure the worth field is showing the right subset of currencies
    * the #default_value is then used to build the widget
-   * its difficult to decide when to show which currencies:
-   * - currencies available to the current user
-   * - currencies used in the saved value
-   * - currencies available to both wallets
    */
   public static function processDefaults($element, FormStateInterface $form_state, $form) {
+//    print_r($element['#default_value']);mtrace();
     if (empty($element['#default_value'])) {
-      Self::ensureDefault($element);
+      if (empty($element['#allowed_curr_ids'])) {
+        $element['#allowed_curr_ids'] = array_keys(Exchange::currenciesAvailableToUser());
+      }
+      if (empty($element['#default_value'])) {
+        foreach ($element['#allowed_curr_ids'] as $curr_id) {
+          $element['#default_value'][] = [
+            'curr_id' => $curr_id,
+            'value' => ''
+          ];
+        }
+      }
     }
     else {
       $map = Self::currMap($element['#default_value']);
@@ -68,37 +77,21 @@ class Worthsform extends FormElement {
     return $element;
   }
 
-  public static function ensureDefault(&$element) {
-    if (empty($element['#allowed_curr_ids'])) {
-      $element['#allowed_curr_ids'] = array_keys(Exchange::currenciesAvailableToUser());
-    }
-    if (empty($element['#default_value'])) {
-      foreach ($element['#allowed_curr_ids'] as $curr_id) {
-        $element['#default_value'][] = [
-          'curr_id' => $curr_id,
-          'value' => ''
-        ];
-      }
-    }
-  }
-
   /**
    * form element processor callback for 'worth'
    * takes the raw #default_values and makes child widgets according to the currency format.
    */
   public static function process($element, FormStateInterface $form_state, $form) {
     //we might need to filter #default_value not in config mode
-    $worth_cardinality = count($element['#default_value']) > 1 ? 'multiple' : 'single';
     //by now the #default_value MUST contain some $items.
     foreach ($element['#default_value'] as $delta => $item) {
       $element[] = [
         '#type' => 'worth_form',
-        '#default_value' => $item['value'],
+        '#default_value' => $item,
         '#allowed_curr_ids' => [$item['curr_id']],
-        //currently there is no way passing in max and min
         '#config' => $element['#config'],
-        '#prefix' => "<div class = \"$worth_cardinality\">",
-        '#suffix' => '</div>',
+        '#theme_wrappers' => [],
+        '#oneofmany' => count($element['#default_value']) > 1
       ];
     }
     return $element;
@@ -124,7 +117,15 @@ class Worthsform extends FormElement {
    * validate callback
    * all validation takes place in the children
    */
-  public static function validate(&$element, FormStateInterface $form_state) {}
+  public static function validate(&$element, FormStateInterface $form_state) {
+    foreach ($element['#value'] as $key => $val) {
+      if (!isset($val['value'])) {
+        unset($element['#value'][$key]);
+      }
+    }
+    $element['#value'] = array_values($element['#value']);
+    $form_state->setValue($element['#name'], $element['#value']);
+  }
 
   private static function currMap($value) {
     if (empty($value)) {

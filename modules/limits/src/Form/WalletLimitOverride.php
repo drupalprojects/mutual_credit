@@ -24,10 +24,10 @@ class WalletLimitOverride extends FormBase {
     }
     $this->database = $database;
   }
-  
+
   static function create(ContainerInterface $container) {
     return new static(
-      $container->get('current.route_match'),
+      $container->get('current_route_match'),
       $container->get('database')
     );
   }

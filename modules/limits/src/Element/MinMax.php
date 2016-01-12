@@ -49,13 +49,11 @@ class MinMax extends FormElement {
       'min' => [
         '#title' => t('Minimum'),
         '#description' => t('Must be less than or equal to zero'),
-        '#type' => 'worth',
+        '#type' => 'worth_form',
         '#config' => TRUE,
         '#default_value' => [
-          [
-            'curr_id' => $element['#curr_id'],
-            'value' => $element['#default_value']['min']
-          ]
+          'curr_id' => $element['#curr_id'],
+          'value' => $element['#default_value']['min']
         ],
         '#allowed_curr_ids' => [$element['#curr_id']],
         '#placeholder' => [@$element['#placeholder']['min']
@@ -65,14 +63,12 @@ class MinMax extends FormElement {
       'max' => [
         '#title' => t('Maximum'),
         '#description' => t('Must be greater than 1.'),
-        '#type' => 'worth',
+        '#type' => 'worth_form',
         '#config' => TRUE,
         //we key the default value with the curr_id to make the saved settings easier to read
         '#default_value' => [
-          [
-            'curr_id' => $element['#curr_id'],
-            'value' => $element['#default_value']['max']
-          ]
+          'curr_id' => $element['#curr_id'],
+          'value' => $element['#default_value']['max']
         ],
         '#allowed_curr_ids' => [$element['#curr_id']],
         '#placeholder' => [@$element['#placeholder']['max']],
@@ -88,13 +84,15 @@ class MinMax extends FormElement {
    *
    */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
-    if (is_null($input))return;
+    if (is_null($input)){
+      return;
+    }
     foreach (['min', 'max'] as $limit) {
       $result[$limit] = is_numeric($input[$limit]) ? Worth::valueCallback($element[$limit], $input[$limit], $form_state) : NULL;
     }
-    return $result;
+
+    return [];
+//    return $result;
   }
 
 }
-
-

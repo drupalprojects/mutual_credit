@@ -10,7 +10,6 @@ namespace Drupal\mcapi_limits\Plugin\Limits;
 
 use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\Core\Form\FormStateInterface;
-Use Drupal\mcapi_limits\Plugin\McapiLimitsInterface;
 Use Drupal\mcapi_limits\Plugin\McapiLimitsBase;
 
 /**
@@ -22,7 +21,7 @@ Use Drupal\mcapi_limits\Plugin\McapiLimitsBase;
  *   description = @Translation("Calculate from user summary stats")
  * )
  */
-class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
+class Calculated extends McapiLimitsBase {
 
   /**
    * {@inheritdoc}
@@ -31,9 +30,9 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
     $subform = parent::buildConfigurationForm($form, $form_state);
     $class = get_class($this);
     $subform['max_formula'] = [
-      '#prefix' => t('N.B Result values are measured in native units, which might be cents, or seconds'),
-      '#title' => t('Formula to calculate maximum limit'),
-      '#description' => t('Make a formula from the following variables: @vars', ['@vars' => $this->help()]),
+      '#prefix' => $this->t('N.B Result values are measured in native units, which might be cents, or seconds'),
+      '#title' => $this->t('Formula to calculate maximum limit'),
+      '#description' => $this->t('Make a formula from the following variables: @vars', ['@vars' => $this->help()]),
       '#type' => 'textfield',
       '#default_value' => $this->configuration['max_formula'],
       '#element_validate' => [
@@ -41,8 +40,8 @@ class Calculated extends McapiLimitsBase implements McapiLimitsInterface {
       ]
     ];
     $subform['min_formula'] = [
-      '#title' => t('Formula to calculate minimum limit'),
-      '#description' => t('Make a formula to output a NEGATIVE result from the following variables: @vars', ['@vars' => $this->help()]),
+      '#title' => $this->t('Formula to calculate minimum limit'),
+      '#description' => $this->t('Make a formula to output a NEGATIVE result from the following variables: @vars', ['@vars' => $this->help()]),
       '#type' => 'textfield',
       '#default_value' => $this->configuration['min_formula'],
       '#element_validate' => [

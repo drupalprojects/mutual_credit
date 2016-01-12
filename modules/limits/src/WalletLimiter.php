@@ -9,7 +9,6 @@ namespace Drupal\mcapi_limits;
 
 use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\mcapi\Entity\WalletInterface;
-use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Currency;
 
 class WalletLimiter {//couldn't be bothered to make an interface for this
@@ -23,13 +22,13 @@ class WalletLimiter {//couldn't be bothered to make an interface for this
    * an array keyed by currency ids each containing a min and a max value
    * Needed in every public function
    */
-  private $limits;
-  
+  private $limits = [];
+
   /**
-   * The database 
+   * The database
    */
   private $database;
-  
+
   public function __construct($database) {
     $this->database = $database;
   }

@@ -1,12 +1,15 @@
 <?php
 
-use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi_signatures\Signatures;
 use Drupal\mcapi\Mcapi;
 
-define ('TRANSACTION_STATE_PENDING', 'pending');
+const TRANSACTION_STATE_PENDING = 'pending';
 
+/**
+ * implements hook_help().
+ * @return string
+ */
 function mcapi_signatures_help($route_name, $route_match) {
   switch ($route_name) {
     case 'mcapi.admin.signatures':
@@ -104,8 +107,12 @@ function mcapi_signatures_mcapi_transaction_insert($transaction) {
   }
 }
 
+/**
+ * implements hook_ENTITY_TYPE_insert().
+ * @param EntityInterface $type
+ */
 function mcapi_signatures_mcapi_type_insert($type) {
-  module_load_install('mcapi_signatures');
+  module_load_include('install', 'mcapi_signatures');
   mcapi_signatures_configure_type($type->id());
 }
 
@@ -118,7 +125,7 @@ function mcapi_signatures_mcapi_transaction_update($transaction) {
     return;
   }
   foreach ($transaction->signatures as $uid => $signed) {
-    $q = \Drupal::database()->merge('mcapi_signatures')
+    \Drupal::database()->merge('mcapi_signatures')
       ->keys([
         'serial' => $transaction->serial->value,
         'uid' => $uid
@@ -210,46 +217,6 @@ function mcapi_signatures_user_view(array &$build, $account, $display) {
       ];
     }
   }
-}
-
-
-function mcapi_signall($form, $form_state, $account) {
-  $serials = Signatures::transactions_needing_sig_of_user($account);
-  $form['preview'][] = \Drupal::entityTypeManager()
-    ->getViewBuilder('mcapi_transaction')
-    ->viewMultiple(Transaction::loadBySerials($serials), 'sentence');
-
-  $form['account'] = array(
-    '#type' => 'value',
-    '#value' => $account
-  );
-  $form['buttons']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Sign all')
-  );
-  return $form;
-}
-
-function mcapi_signall_submit($form, $form_state) {
-  $values = $form_state->getValues();
-  foreach (Signatures::transactions_needing_sig_of_user($values['account']) as $serial) {
-    $transaction = current(Transaction::loadBySerials(array($serial)));
-    Self::sign($transaction, $values['account']);
-  }
-  $transaction->save();
-  drupal_set_message($message);
-  $form_state->setRedirect('user.page');
-}
-
-
-function transactions_needing_sig_of_user($uid) {
-  //assumes data integrity that all transactions referenced are in pending state
-  return \Drupal::database()->select("mcapi_signatures", 's')
-    ->fields('s', array('serial'))
-    ->condition('uid', $uid)
-    ->condition('signed', '')
-    ->execute()
-    ->fetchCol();
 }
 
 /**

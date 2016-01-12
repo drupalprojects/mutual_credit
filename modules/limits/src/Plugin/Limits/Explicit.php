@@ -10,7 +10,6 @@ namespace Drupal\mcapi_limits\Plugin\Limits;
 
 use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\Core\Form\FormStateInterface;
-Use Drupal\mcapi_limits\Plugin\McapiLimitsInterface;
 Use Drupal\mcapi_limits\Plugin\McapiLimitsBase;
 
 /**
@@ -30,13 +29,14 @@ class Explicit extends McapiLimitsBase {
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $args = func_get_args();
     $conf = $this->configuration['minmax'];
+
     $subform['minmax'] =  [
       '#type' => 'minmax',
       '#default_value' => [
-        'min' => $conf['min'] ? $conf['min'][0]['value'] : '',
-        'max' => $conf['max'] ? $conf['max'][0]['value'] : ''
+        'min' => $conf['min'] ? $conf['min']['value'] : '',
+        'max' => $conf['max'] ? $conf['max']['value'] : ''
       ],
-      '#curr_id' => array_pop($args)->id()
+      '#curr_id' => $this->currency->id
     ];
 
     $subform += parent::buildConfigurationForm($form, $form_state);
@@ -64,8 +64,8 @@ class Explicit extends McapiLimitsBase {
     $defaults = parent::defaultConfiguration();
     return $defaults + [
       'minmax' => [
-        'min' => [['value' => -1000]],
-        'max' => [['value' => 1000]]
+        'min' => ['value' => -1000],
+        'max' => ['value' => 1000]
       ]
     ];
   }

@@ -43,4 +43,18 @@ class Signatures {
     }
   }
 
+  /**
+   * @param integer $uid
+   * @return string[]
+   *   serial numbers of the transactions
+   */
+  static function transactionsNeedingSigOfUser($uid) {
+    //assumes data integrity that all transactions referenced are in pending state
+    return \Drupal::database()->select("mcapi_signatures", 's')
+      ->fields('s', array('serial'))
+      ->condition('uid', $uid)
+      ->condition('signed', '')
+      ->execute()
+      ->fetchCol();
+  }
 }

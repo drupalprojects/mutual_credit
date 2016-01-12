@@ -359,7 +359,7 @@ function mcapi_theme() {
  */
 function empty_worth(array $worth) {
   foreach ($worth as $item) {
-    if ($item['value']) {
+    if (isset($item['value'])) {
       return FALSE;
     }
   }

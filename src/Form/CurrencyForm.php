@@ -211,7 +211,6 @@ class CurrencyForm extends EntityForm {
     \Drupal\field\Entity\FieldConfig::load('mcapi_transaction.mcapi_transaction.worth')
       ->set('required', $required)
       ->save();
-
     $form_state->setRedirect('entity.mcapi_currency.collection');
   }
 
