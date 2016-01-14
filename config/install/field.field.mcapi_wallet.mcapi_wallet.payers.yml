@@ -10,7 +10,7 @@ id: mcapi_wallet.mcapi_wallet.payers
 field_name: payers
 entity_type: mcapi_wallet
 bundle: mcapi_wallet
-label: 'Nominated payers'
+label: 'Nominated payer members'
 description: 'Name the users apart from you, whose wallets can pay this wallet'
 required: false
 translatable: false
@@ -21,7 +21,10 @@ settings:
   handler_settings:
     include_anonymous: false
     filter:
-      type: _none
+      type: role
+      role:
+        trader: trader
+        committee: '0'
     target_bundles: null
     sort:
       field: name

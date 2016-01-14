@@ -128,7 +128,8 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
     if (!isset($values['holder'])) {
       //this is an error or a temp entityType @see _field_create_entity_from_ids
-      return;
+      //set a temp holder
+      $values['holder'] = \Drupal\user\Entity\User::load(1);
     }
     $values['holder_entity_type'] = $values['holder']->getEntityTypeId();
     $values['holder_entity_id'] = $values['holder']->id();

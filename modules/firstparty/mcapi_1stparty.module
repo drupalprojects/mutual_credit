@@ -42,7 +42,7 @@ function mcapi_1stparty_entity_type_build(array &$entity_types) {
  * implements hook_form_field_config_edit_form_alter().
  */
 function mcapi_1stparty_form_field_config_edit_form_alter(&$form, &$form_state) {
-  if ($form['#entity']->getEntityTypeId() == 'mcapi_transaction') {
+  if ($form_state->getFormObject()->getEntity()->getTargetEntityTypeId() == 'mcapi_transaction') {
     drupal_set_message(t("Most of the time, these values won't be seen on transaction forms"));
   }
 }

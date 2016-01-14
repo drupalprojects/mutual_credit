@@ -100,11 +100,11 @@ class WalletForm extends ContentEntityForm {
       ];
     }
 
-    if (in_array($this->entity->payways->value, [Wallet::PAYWAY_ANYONE_IN, Wallet::PAYWAY_ANYONE_BI])) {
+    if (in_array($this->entity->payways->value, [Wallet::PAYWAY_ANYONE_OUT, Wallet::PAYWAY_ANYONE_BI])) {
       //that means anyone can pay out, so no need to nominate friends
       $form['payers']['#access'] = FALSE;
     }
-    if (in_array($this->entity->payways->value, [Wallet::PAYWAY_ANYONE_OUT, Wallet::PAYWAY_ANYONE_BI])) {
+    if (in_array($this->entity->payways->value, [Wallet::PAYWAY_ANYONE_IN, Wallet::PAYWAY_ANYONE_BI])) {
       //that means anyone can pay in, so no need to nominate friends
       $form['payees']['#access'] = FALSE;
     }

@@ -87,7 +87,7 @@ class Worthsform extends FormElement {
     foreach ($element['#default_value'] as $delta => $item) {
       $element[] = [
         '#type' => 'worth_form',
-        '#default_value' => $item,
+        '#default_value' => $item['value'],
         '#allowed_curr_ids' => [$item['curr_id']],
         '#config' => $element['#config'],
         '#theme_wrappers' => [],

@@ -18,4 +18,5 @@ translatable: true
 indexes: {  }
 persist_with_no_fields: false
 custom_storage: false
-
+_core:
+  default_config_hash: 7p5z2CeCtUdnCSFeB6alHKhEo9fir8_1-DxKeWs8Im8

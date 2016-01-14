@@ -11,7 +11,7 @@ namespace Drupal\mcapi\Storage;
 use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\mcapi\Entity\Wallet;
 
-class WalletStorage extends SqlContentEntityStorage {
+class WalletStorage extends SqlContentEntityStorage implements WalletStorageInterface {
 
   /**
    *
@@ -32,6 +32,9 @@ class WalletStorage extends SqlContentEntityStorage {
     $query = $this->database->select('mcapi_wallet', 'w')
       ->fields('w', ['wid'])
       ->condition('orphaned', 0);
+    if ($match) {
+      $query->condition('w.name', '%'.$this->database->escapeLike($match).'%', 'LIKE');
+    }
     //include users who have been nominated to pay in or out of wallets
     $or = $query->orConditionGroup();
 
@@ -56,9 +59,6 @@ class WalletStorage extends SqlContentEntityStorage {
     $or->condition($holder);
     $query->condition($or);
     $query->addTag('whichWallets');
-    if ($match) {
-      $query->condition('name', $match, 'CONTAINS');
-    }
     return $query->execute()->fetchCol();
   }
 
