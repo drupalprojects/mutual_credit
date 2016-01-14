@@ -22,19 +22,19 @@ use Drupal\mcapi\Entity\Wallet;
  * )
  */
 class CommonCurrencyConstraint extends CompositeConstraintBase {
-  
+
   /**
    * @var \Symfony\Component\Validator\ExecutionContextInterface
    */
   protected $context;
-  
+
   public $message = 'The payer and payee have no currencies in common';
-  
+
   public function initialize(ExecutionContextInterface $context) {
     $this->context = $context;
   }
 
-    
+
   /**
    * {@inheritdoc}
    * how is this used?
@@ -42,7 +42,7 @@ class CommonCurrencyConstraint extends CompositeConstraintBase {
   public function coversFields() {
     return ['payer', 'payee', 'worth'];
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -50,6 +50,7 @@ class CommonCurrencyConstraint extends CompositeConstraintBase {
     //don't have a separate class for the validator, use this one.
     return get_class($this);
   }
+  
   /**
    * {@inheritdoc}
    */
@@ -64,13 +65,13 @@ class CommonCurrencyConstraint extends CompositeConstraintBase {
           ->atPath('worth')//@todo its impossible to identify which currency value once the $list has been built and filtered
           ->addViolation();
       }
-
     }
   }
+
   /**
    * utility
    * show which currencies in a transaction are NOT common to both wallets
-   * 
+   *
    * @param integer $wid1
    * @param integer $wid2
    * @param FieldItemList $worth

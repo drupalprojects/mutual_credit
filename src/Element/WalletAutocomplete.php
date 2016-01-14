@@ -3,6 +3,8 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Element\WalletAutocomplete
+ * @todo would be nice to use the #NUM as the wallet identifier,
+ * but this would mean overwriting another class
  */
 
 namespace Drupal\mcapi\Element;
@@ -32,8 +34,9 @@ class WalletAutocomplete extends EntityAutocomplete {
 
   /**
    * {@inheritdoc}
+   *
    */
-  public static function extractEntityIdFromAutocompleteInput($input) {
+  public static function __extractEntityIdFromAutocompleteInput($input) {
     $match = NULL;
     // Take "label #entity id', match the ID from number after #
     if (preg_match("/.*\#(\d+)/", $input, $matches)) {
@@ -45,7 +48,7 @@ class WalletAutocomplete extends EntityAutocomplete {
   /**
    * {@inheritdoc}
    */
-  public static function getEntityLabels(array $entities) {
+  public static function __getEntityLabels(array $entities) {
     $wallet_labels = [];
     foreach ($entities as $wallet) {
       // Labels containing commas or quotes must be wrapped in quotes.
