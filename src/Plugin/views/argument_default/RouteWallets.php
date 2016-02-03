@@ -16,8 +16,8 @@ use Drupal\mcapi\Mcapi;
  * @ingroup views_argument_default_plugins
  *
  * @ViewsArgumentDefault(
- *   id = "route_wallets",
- *   title = @Translation("Wallets from route entity ")
+ *   id = "route_wallet",
+ *   title = @Translation("First wallet from route entity")
  * )
  */
 class RouteWallets extends ArgumentDefaultPluginBase {
@@ -30,7 +30,7 @@ class RouteWallets extends ArgumentDefaultPluginBase {
     //there's no validator in core either for ANY entity or for ANY contentEntity or ANY Owned Entity
     //only for ONE given specific entityType
     //so this function needs to decide whether to return an argument
-    $ids = [];
+    $wids = [];
     foreach (\Drupal::routeMatch()->getParameters()->all() as $key => $entity) {
       if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())) {
         $wids = Mcapi::walletsOf($entity);
@@ -38,7 +38,7 @@ class RouteWallets extends ArgumentDefaultPluginBase {
     }
     //@todo returning nothing means the view doesn't show - maybe throw a 404?
     //@see Drupal\mcapi_exchanges\Plugin\views\argument_default\RouteExchanges.
-    return implode('+', $wids);
+    return reset($wids);
 
   }
 

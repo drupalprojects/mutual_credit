@@ -2,7 +2,4 @@ id: hanging
 label: Hanging
 description: Waiting confirmation from Clearing Central
 counted: false
-provider: mcapi
-dependencies:
-  module:
-    - mcapi_cc
+provider: mcapi_cc

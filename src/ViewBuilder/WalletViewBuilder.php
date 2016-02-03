@@ -93,11 +93,11 @@ class WalletViewBuilder extends EntityViewBuilder {
   public function buildComponents(array &$build, array $entities, array $displays, $view_mode) {
     parent::buildComponents($build, $entities, $displays, $view_mode);
     $display = $displays['mcapi_wallet'];
-    foreach ($entities as $id => $wallet) {
+    foreach ($entities as $key => $wallet) {
       $extra = mcapi_entity_extra_field_info()['mcapi_wallet']['mcapi_wallet']['display'];
       foreach (['balances', 'balance_bars', 'histories', 'stats'] as $component) {
         if ($info = $display->getComponent($component)) {
-          $build[$id][$component] = [
+          $build[$key][$component] = [
             '#title' => $extra[$component]['label'],
             '#theme' => 'wallet_'.$component,
             '#wallet' => $wallet,
@@ -107,24 +107,45 @@ class WalletViewBuilder extends EntityViewBuilder {
           ];
         }
       }
-      if ($info = $display->getComponent('wallet_log')) {
-        $build[$id]['wallet_log'] = views_embed_view('wallet_log', 'embed', $wallet->id());
+      if ($info = $display->getComponent('link_income_expenditure')) {
+        $build[$key]['link_income_expenditure'] = [
+          '#type' => 'link',
+          '#title' => t('Income & Expenditure'),
+          '#url' => Url::fromRoute('view.income_expenditure.income_page', ['mcapi_wallet' => $wallet->id()]),
+          '#attributes' => ['class' => 'wallet-link'],
+        ];
+        //views_embed_view('income_expenditure', 'income_embed', $wallet->id());
       }
-      if ($info = $display->getComponent('income_expenditure')) {
-        $build[$id]['income_expenditure'] = views_embed_view('income_expenditure', 'income_embed', $wallet->id());
+      if ($info = $display->getComponent('link_transactions')) {
+        $build[$key]['link_transactions'] = [
+          '#type' => 'link',
+          '#title' => t('View transactions'),
+          '#url' => Url::fromRoute('view.wallet_transactions.page', ['mcapi_wallet' => $wallet->id()]),
+          '#attributes' => ['class' => 'wallet-link'],
+        ];
       }
       if ($info = $display->getComponent('canonical_link')) {
-        $build[$id]['canonical_link'] = [
+        $build[$key]['canonical_link'] = [
           '#type' => 'link',
-          '#title' => $this->t('Visit wallet'),
+          '#title' => $this->t('more...'),
           '#url' => Url::fromRoute('entity.mcapi_wallet.canonical', ['mcapi_wallet' => $wallet->id()]),
-          '#attributes' => ['class' => 'visit-wallet-link'],
+          '#attributes' => ['class' => 'wallet-link'],
+          '#weight' => $info['weight']
+        ];
+      }
+      if ($info = $display->getComponent('holder_link')) {
+        $holder = $wallet->getHolder();
+        $build[$key]['holder_link'] = [
+          '#type' => 'link',
+          '#title' => $this->t('Held by %name', ['%name' => $holder->label()]),
+          '#url' => $holder->toUrl('canonical'),
+          '#attributes' => ['class' => 'wallet-link'],
           '#weight' => $info['weight']
         ];
       }
     }
-    $build['#prefix'] = '<div class="wallets">';
-    $build['#suffix'] = '</div>';
-    //$build['#attributes']['class'][] = 'wallets';
+    //@todo this should probably go elsewhere, and only on non-canonical pages
+//    $build['#prefix'] = '<div class="wallets">';
+//    $build['#suffix'] = '</div>';
   }
 }

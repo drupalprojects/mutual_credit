@@ -2,7 +2,7 @@
 
 
 /**
- * implements hook_entity_type_alter().
+ * Implements hook_entity_type_alter().
  */
 function mcapi_limits_entity_type_alter(array &$entity_types) {
   $constraints = $entity_types['mcapi_transaction']->getConstraints();
@@ -12,7 +12,7 @@ function mcapi_limits_entity_type_alter(array &$entity_types) {
 }
 
 /**
- * implements hook_form_FORM_ID_alter().
+ * Implements hook_form_FORM_ID_alter().
  * Add the limits section to the currency form
  */
 function mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, $form_state) {
@@ -55,7 +55,7 @@ function mcapi_limits_theme($existing, $type, $theme, $path){
 }
 
 /**
- * implements hook_entity_extra_field_info().
+ * Implements hook_entity_extra_field_info().
 */
 function mcapi_limits_entity_extra_field_info() {
   return [
@@ -75,9 +75,9 @@ function mcapi_limits_entity_extra_field_info() {
 }
 
 /**
- * implement hook_ENTITY_TYPE_view().
+ * Implements hook_ENTITY_TYPE_view().
  * adds the extra_fields to the wallet view according to the display settings
-*/
+ */
 function mcapi_limits_mcapi_wallet_view(&$build, $wallet, $display, $view_mode) {
   if ($display->getComponent('balance_limits')) {
     module_load_include('inc', 'mcapi_limits');

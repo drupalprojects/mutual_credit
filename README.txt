@@ -3,7 +3,7 @@ This document contains the following
 ** Basic setup **
 ** Advanced usage **
 
-For an architectural description see 
+For an architectural description see
 http://matslats.net/mutual-credit-architecture-4
 
 This document is a work in progress and may not be entirely up-to-date!
@@ -19,7 +19,7 @@ A badly managed money system can cause people to lose out and create bad feeling
 ***********************
 
 ENABLE MODULES
-Enable Community Accounting API, Firstparty, Views, and possibly rules
+Enable Community Accounting API, Forms designer, Views, and possibly rules
 Optionally enable the other modules in the Community Accounting Section.
 
 On admin/accounting are the major architectural elements
@@ -28,18 +28,18 @@ In a larger system a user can be in many exchanges and exchanges can contain man
 Any entity which has an entity_reference field referencing exchanges (like the user entity) can own wallets
 Wallets which have transacted cannot be deleted, but if the holder entity is deleted, The wallet can be transferred to the holder entity's exchange
 
-Visit admin/accounting/currencies and configure your first currency. 
+Visit admin/accounting/currencies and configure your first currency.
 The currency 'type' refers to how the integers in the database are converted and displayed.
 
 Visit admin/accounting/transactions
-Here you can access a full transaction form and enter a raw transaction. 
-Normal users should always enter transactions using a more appropriate form, such as provided by the 1stparty module.
+Here you can access a full transaction form and enter a raw transaction.
+Normal users should always enter transactions using a more appropriate form, such as provided by the forms designer module.
 Its possible to add a description, or a date, or an image or categories to your transaction object
 You can see the 'states' and 'types' which comprise the workflow map
 The transaction 'type' determines the 'start state' and hence the workflow path.
 When you 'configure workflow' you can see the 'actions' which are the workflow vectors.
 Each action is fully configurable for you to decide the user experience.
-Use the 1stparty_forms module to design forms for users to use under different circumstances.
+Use the mcapi_forms module to design forms for users to use under different circumstances.
 
 Explore admin/accounting/misc
 
@@ -54,7 +54,7 @@ Some default views are provided with many helpful displays.
 Be careful not to mix the handlers of the main transaction table with the index table
 More display plugins would help to make these more attractive.
 Integration with Google Charts or equivalent is needed.
-Note that there isn't row-level access control on the index table. 
+Note that there isn't row-level access control on the index table.
 Views should either show aggregated data which tends to be less sensitive, or manage access per display.
 
 Now you can start assembling the pieces according to the needs of your site.
@@ -100,7 +100,7 @@ Intended for Drupal developers
 
 1. Transaction processing hooks
 2. Transaction Worflow
-3. Firstparty Forms
+3. Forms designer
 4. Limits system
 5. Views integration
 
@@ -113,7 +113,7 @@ By default, transactions are created in FINISHED state, and the 'undo' transitio
 The signatures module shows how transaction workflow can be augmented with a new type, a new state, and two actions
 These actions are also used for entity operations
 
-3. Firstparty forms
+3. Forms designer
 Of course you can build your own forms using modules for creating transactions, but this powerful form builder is provided. Each form has its own address in the menu system, access control, and can be available as a block also.
 The administrator can design forms in HTML for different purposes and different places in the site.
 The HTML template contains tokens for each transaction property / field, elements not referenced by tokens are hidden and must have preset values. Properties and fields can be preset or otherwise configured also Note that most fields can also be 'stripped' which removes the outer box, making them easier to theme.

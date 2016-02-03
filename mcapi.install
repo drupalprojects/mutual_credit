@@ -15,6 +15,11 @@ use Drupal\mcapi\Mcapi;
 function mcapi_install() {
   module_set_weight('field_ui', -1);//mcapi has to be after field_ui for mcapi_local_tasks_alter
 
+  //create an intertrading wallet (on user 1)
+  Wallet::create([
+    'payways' => Wallet::PAYWAY_AUTO
+  ])->save();
+
   //we need to deal with existing users, especially user 1
   //in accordance with the default wallet settings
   //-put every user in the default exchange
@@ -90,7 +95,7 @@ db_delete('key_value')->condition('value', '%mcapi%', 'LIKE')->execute();
 db_truncate('cache_config')->execute();
 Drupal::configFactory()->getEditable('core.extension')
 ->clear("module.mcapi")
-->clear("module.mcapi_1stparty")
+->clear("module.mcapi_forms")
 ->clear("module.mcapi_limits")
 ->clear("module.mcapi_signatures")
 ->clear("module.mcapi_exchanges")

@@ -4,7 +4,7 @@ use Drupal\mcapi\Mcapi;
 
 
 /**
- * implements hook_views_data_alter
+ * Implements hook_views_data_alter
  * @todo alter this when exchange is fieldAPI again.
 */
 function mcapi_exchanges_views_data_alter(&$data) {

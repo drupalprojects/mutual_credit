@@ -26,21 +26,31 @@ class WorthsView extends \Drupal\Core\Render\Element\RenderElement {
   /**
    * @param array $element
    *   a render element with keys #format, #worths
-   * @todo this should use the theme function and template, but I spent 3 hours and couldn't get the twig not to escape the individual worth values
+   *
+   * @todo this should use the theme function and template to render worths with many currencies
+   * but I spent 3 hours and couldn't get the twig not to escape the individual worth values
+   * which is a problem because it means we can't have html in the currency formatting strings
    */
   public static function preRender(array $element) {
-    $element['#values'] = [];
+    $delimiter = \Drupal::config('mcapi.settings')->get('delimiter');
 
     foreach ($element['#worths'] as  $worth) {
+      $currency = \Drupal\mcapi\Entity\Currency::load($worth['curr_id']);
       $subelement = [
         '#type' => 'worth_view',
-        '#currency' => \Drupal\mcapi\Entity\Currency::load($worth['curr_id']),
+        '#currency' => $currency,
         '#format' => $element['#format'],
         '#value' => $worth['value'],
+        '#attributes' => [
+          'title' => $currency->name,
+          'class' => ['worth-'.$currency->id]
+        ]
       ];
-      $values[] = render($subelement);
+      $element[] = $subelement;
+      $element[] = $delimiter;
     }
-    $element['#markup'] = implode(\Drupal::config('mcapi.settings')->get('delimiter'), $values);
+
+    array_pop($element);//remove the last delimiter
     return $element;
   }
 

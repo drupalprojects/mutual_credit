@@ -8,7 +8,7 @@ use Drupal\og\OgGroupAudienceHelper;
 use Drupal\mcapi\Mcapi;
 
 /**
- * implements hook_install()
+ * Implements hook_install()
  */
 function mcapi_exchanges_install() {
   \Drupal\og\Og::groupManager()->addGroup('mcapi_exchange', 'mcapi_exchange');

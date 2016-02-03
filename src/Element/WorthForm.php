@@ -186,7 +186,7 @@ class Worthform extends FormElement {
    */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
     $output = [];
-    if ($input != FALSE) {
+    if ($input != FALSE && isset($input['curr_id'])) {
       if ($element['#config'] && $input[1] == '') {
         return;
       }

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * implements hook_tokens().
+ * Implements hook_tokens().
  */
 function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
   if ($type != 'mcapi' || !array_key_exists('mcapi', $data) || !is_object($data['mcapi'])) {
@@ -53,7 +53,7 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
 }
 
 /**
- * implements hook_token_info().
+ * Implements hook_token_info().
  *
  * @todo entity token generation should be more automated
  * @see https://api.drupal.org/api/drupal/modules!node!node.tokens.inc/function/node_token_info/7

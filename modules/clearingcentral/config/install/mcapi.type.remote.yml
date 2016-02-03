@@ -1,12 +1,9 @@
 id: remote
 label: Remote
-description: Requires signatures by default
+description: Transaction with another exchange via intertrading wallets and Clearing Central.
 start_state: hanging
-provider: mcapi
+provider: mcapi_cc
 view:
   authenticated: authenticated
 edit: { }
-dependencies:
-  module:
-    - mcapi_cc
 third_party_settings: { }

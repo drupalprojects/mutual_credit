@@ -10,13 +10,13 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\user\Entity\User;
-use Drupal\mcapi\Entity\Transaction;
-use Drupal\mcapi\Mcapi;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class TransactionForm extends ContentEntityForm {
 
+  /**
+   * @var \Drupal\user\PrivateTempStore
+   */
   private $tempstore;
 
   /**
@@ -45,32 +45,6 @@ class TransactionForm extends ContentEntityForm {
    */
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
-
-    //the masspay form doesn't provide a transaction via the router or the paramConverter
-    $transaction = $this->entity->getEntityTypeId() == 'mcapi_transaction'
-      ? $this->entity
-      : Transaction::Create();
-    $form['type'] = [
-      '#title' => t('Transaction type'),
-      '#options' => Mcapi::entityLabelList('mcapi_type'),
-      '#type' => 'mcapi_types',
-      '#default_value' => $transaction->get('type')->target_id,
-      '#required' => TRUE,
-      '#weight' => 18,
-    ];
-
-    $form['creator'] = [
-      '#title' => t('Creator'),
-      '#description' => t("The user who logged this transaction"),
-      '#type' => 'entity_autocomplete',
-      '#target_type' => 'user',
-      '#selection_handler' => 'default:user',
-      '#selection_settings' => [],
-      '#tags' => FALSE,
-      '#default_value' => User::load(\Drupal::currentUser()->id()),
-      '#weight' => 20
-    ];
-
     //try to prevent the same wallet being in both payer and payee fields.
     //we can only do this is one field has only one option
     $payer = &$form['payer']['widget'][0]['target_id'];
@@ -139,7 +113,7 @@ class TransactionForm extends ContentEntityForm {
     //if a valid creator uid was submitted then use that
     //is this the best place to be putting defaults? not in Transaction::precreate?
     $uid = $form_state->getValue('creator') ? : \Drupal::currentUser()->id();
-    $entity->creator->entity = user::load($uid);
+    $entity->creator->entity = \Drupal\user\Entity\User::load($uid);
     return $entity;
   }
 

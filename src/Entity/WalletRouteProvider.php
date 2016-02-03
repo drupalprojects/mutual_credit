@@ -48,7 +48,8 @@ class WalletRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRoutePr
    */
   public function getRoutes(EntityTypeInterface $entity_type) {
     $route_collection = parent::getRoutes($entity_type);
-    //this gives the canonical and the deleteForm
+    //this gives the canonical, the editForm and the deleteForm
+
     foreach(Mcapi::walletableBundles() as $entity_type_id => $bundles) {
       $canonical_path = $this->entityTypeManager
         ->getDefinition($entity_type_id, TRUE)
@@ -62,6 +63,7 @@ class WalletRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRoutePr
         ])
         ->setRequirement('_entity_create_access', 'mcapi_wallet')
         ->setOptions([
+          //can't remember what this is for
           'parameters' => [
             'user' => [
               'type' => 'entity:user',
@@ -101,7 +103,9 @@ class WalletRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRoutePr
     }
 
     $route_collection
-      ->get('entity.mcapi_wallet.edit_form')->setDefault('_title', 'Manage wallet');
+      ->get('entity.mcapi_wallet.edit_form')
+      ->setDefault('_title', 'Manage wallet')
+      ->setRequirement('user', '\d+');
 
 
     return $route_collection;

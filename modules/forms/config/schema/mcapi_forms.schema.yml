@@ -1,0 +1,73 @@
+mcapi_forms.firstpartyform.*:
+  type: mapping
+  label: 'Designed transaction form'
+  mapping:
+    id:
+      type: string
+      label: 'Mcapiform identifier'
+    title:
+      type: label
+      label: 'Form title'
+    path:
+      type: path
+      label: 'Path'
+    menu:
+      type: mapping
+      label: 'Menu'
+      mapping:
+        title:
+          type: string
+          label: 'Title'
+        weight:
+          type: integer
+          label: 'Weight'
+        menu_name:
+          type: string
+          label: 'Menu name'
+    status:
+      type: boolean
+      label: Enabled
+    type:
+      type: string
+      label: 'Transaction type'
+    incoming:
+      type: boolean
+      label: 'Direction of payment relative to the current user'
+    mywallet:
+      type: mapping
+      label: 'My Wallet'
+      mapping:
+        unused:
+          type: string
+          label: 'Widget'
+    partner:
+      type: mapping
+      label: 'Settings for partner field'
+      mapping:
+        selection:
+          type: string
+          label: 'Users to choose from'
+        preset:
+          type: integer
+          label: 'Preset trading partner'
+    fieldapi_presets:
+      type: mapping
+      label: 'Other presets'
+      mapping: { }
+    experience:
+      type: mapping
+      label: 'Experience'
+      mapping:
+        twig:
+          type: text
+          label: Main form
+        button:
+          type: text
+          label: Button label
+        preview:
+          type: string
+          label: Preview mode
+    third_party_settings:
+      type: sequence
+      label: Third party settings
+      sequence: { }

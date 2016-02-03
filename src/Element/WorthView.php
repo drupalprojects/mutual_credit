@@ -20,7 +20,6 @@ class WorthView extends \Drupal\Core\Render\Element\RenderElement {
         get_class() . '::preRender',
       ],
       '#minus' => FALSE,
-      '#theme' => 'worth',
     ];
   }
 
@@ -31,7 +30,7 @@ class WorthView extends \Drupal\Core\Render\Element\RenderElement {
   public static function preRender($element) {
     $currency = $element['#currency'];
 
-    $element['#attributes']['class'] = 'currency-'.$currency->id;
+    $element['#attributes']['class'][] = 'currency-'.$currency->id;
     $markup = '';
     if ($element['#value']) {
       if ($element['#value'] < 0) {
@@ -42,7 +41,8 @@ class WorthView extends \Drupal\Core\Render\Element\RenderElement {
     else {
       //apply any special formatting for zero value transactions
       if ($currency->zero) {
-        if ($element['#format'] == Currency::DISPLAY_NORMAL) {
+        if ($element['#format'] == \Drupal\mcapi\Entity\Currency::DISPLAY_NORMAL) {
+          //@todo this format can't currently output #attributes
           $element['#attributes']['class'][] = 'zero';
           $markup .=  \Drupal::config('mcapi.settings')->get('zero_snippet');
         }
@@ -57,10 +57,9 @@ class WorthView extends \Drupal\Core\Render\Element\RenderElement {
     if ($element['#minus']) {
       $markup = '-'.$markup;
     }
-    $element['#attributes']['title'] = $currency->name;
-    //@todo how do we tell twig that this value is already escaped?
-    $element['#value'] = $markup;
-    return $element;
+    return [
+      '#markup' => $markup,
+    ];
   }
 
 }

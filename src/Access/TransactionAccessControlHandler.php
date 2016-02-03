@@ -33,11 +33,8 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
    */
   public function access(EntityInterface $transaction, $operation, AccountInterface $account = NULL, $return_as_object = false) {
     if ($operation == 'view') {
-      //you can view a transaction if you can view either the payer OR payee wallets
-      //todo I think this needs deleting - we don't have such sophisticated access control yet
-      //$bool = $transaction->payer->entity->access('viewlog', $account)
-      //|| $transaction->payee->entity->access('view', $account);
-
+      //you can view a transaction if you can view all transactions or if you own either wallet
+      //@todo URGENT. Also if you are named as a payee or payer on the wallet
       $bool = $account->hasPermission('view all transactions') ||
           $account->id() == $transaction->payer->entity->getOwnerId() ||
           $account->id() == $transaction->payee->entity->getOwnerId();

@@ -1,0 +1,17 @@
+d8 to d8: need 2 d8s
+d7 to d7: need 2 d7s
+d8 to d7 
+d7 to d8
+d8 to C: need full duplex
+d7 to C: need full duplex
+C to d7: need c pay form
+C to d8: need c pay form
+d8 from d8: need 2 d8s
+d7 from d7: need 2 d7s
+d8 from d7: need d8 claim form
+d7 from d8: need d7 claim form
+d8 from C: need d8 claim form
+d7 from C: eed d7 claim form
+C from d7
+C from d8
+

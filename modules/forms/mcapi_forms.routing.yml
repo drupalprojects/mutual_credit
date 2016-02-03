@@ -1,0 +1,7 @@
+mcapi.forms.3rdparty:
+  path: '/transaction/create'
+  defaults:
+    _entity_form: 'mcapi_transaction.3rdparty'
+    _title: 'Create transaction'
+  requirements:
+    _permission: 'create 3rdparty transactions'

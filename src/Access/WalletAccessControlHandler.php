@@ -22,7 +22,6 @@ use Drupal\Core\Entity\EntityAccessControlHandler;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessResult;
-use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Mcapi;
 
 /**
@@ -56,7 +55,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
   /**
    * {@inheritdoc}
    */
-  public function checkAccess(EntityInterface $entity, $op, AccountInterface $account) {
+  protected function checkAccess(EntityInterface $entity, $op, AccountInterface $account) {
 
     if ($account->hasPermission('manage mcapi')) {
       //includes user 1
@@ -70,16 +69,40 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
       //there might need to be an intermediate option, for groups
       return AccessResult::allowedIfhasPermission($account, 'view all wallets')
         ->orif(
-            AccessResult::allowedIf($entity->getOwnerId() == $account->id())
+          AccessResult::allowedIf($entity->getOwnerId() == $account->id())
         )
         ->cachePerUser();
     }
     elseif($op == 'delete') {
-      return AccessResult::allowedIf(!Mcapi::walletIsUsed($entity->id()))->addCacheTags(['mcapi_wallet:'.$entity->id()]);
+      return AccessResult::allowedIf(!$entity->isUsed())->addCacheTags(['mcapi_wallet:'.$entity->id()]);
       //can only delete if there are no transactions.
       //@todo maybe create a basefield unused flag rather than reading ledger
     }
-    else mtrace();
+    elseif($op == 'transactions') {
+      if ($account->hasPermission('view all transactions') or $wallet->payways->value == Wallet::PAYWAY_AUTO) {
+        return AccessResult::allowed()->cachePerPermissions();
+      }
+      elseif ($wallet->public->value == TRUE) {
+        return AccessResult::allowed()->addCacheableDependency($entity);
+      }
+      //Named users on each wallet must be able to see transactions
+      //@todo these need testing.
+      elseif ($wallet->payways->value == Wallet::PAYWAY_ANYONE_IN) {
+        foreach ($wallet->payers->referencedEntities() as $user) {
+          if ($user->id() == $account->id()) {
+            return AccessResult::allowed()->addCacheableDependency($entity);
+          }
+        }
+      }
+      elseif ($wallet->payways->value == Wallet::PAYWAY_ANYONE_OUT) {
+        foreach ($wallet->payees->referencedEntities() as $user) {
+          if ($user->id() == $account->id()) {
+            return AccessResult::allowed()->addCacheableDependency($entity);
+          }
+        }
+      }
+      return AccessResult::denied()->addCacheableDependency($entity);
+    }
   }
 
 }

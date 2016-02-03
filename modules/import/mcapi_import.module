@@ -557,7 +557,7 @@ function mcapi_import_uif_help() {
 }
 
 /**
- * implements uif hook_post_create
+ * Implements uif hook_post_create
  * Give users an initial balance, paid from the central account
  */
 function mcapi_import_uif_post_create($account, $user_data, $form_state) {

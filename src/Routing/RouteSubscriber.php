@@ -12,6 +12,7 @@ namespace Drupal\mcapi\Routing;
 use Drupal\Core\Routing\RouteSubscriberBase;
 use Symfony\Component\Routing\RouteCollection;
 use Drupal\Core\Routing\RoutingEvents;
+use Drupal\mcapi\Mcapi;
 
 /**
  * Subscriber for walletadd routes on specified entities
@@ -33,8 +34,7 @@ class RouteSubscriber extends RouteSubscriberBase {
    * {@inheritdoc}
    */
   protected function alterRoutes(RouteCollection $collection) {
-    //add a route to add a wallet to each entity type
-    
+
   }
 
 

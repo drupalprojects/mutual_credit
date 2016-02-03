@@ -72,16 +72,6 @@ class SettingsForm extends ConfigFormBase {
       ->save();
 
     parent::submitForm($form, $form_state);
-    if($config->get('counted') != $values['counted']) {
-      SELF::rebuild_mcapi_index($form, $form_state);
-    }
-  }
-
-  static function rebuild_mcapi_index(array &$form, FormStateInterface $form_state) {
-    //not sure where to put this function
-    \Drupal::entityTypeManager()->getStorage('mcapi_transaction')->indexRebuild();
-    drupal_set_message("Index table is rebuilt");
-    $form_state->setRedirect('system.status');
   }
 
   protected function getEditableConfigNames() {

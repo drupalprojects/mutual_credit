@@ -3,6 +3,12 @@
 /**
  * @file
  * Definition of Drupal\mcapi\Plugin\views\field\Worth.
+ * renders worth values on the transactionIndex table
+ *
+ * @todo in \Drupal\views\Plugin\views\display\DisplayPluginBase::gethandlers
+ * this handler is automatically overridden to be numeric in group queries which
+ * means there's currently no way to format worth values in aggregate queries
+ * @see https://api.drupal.org/api/drupal/core!modules!views!src!Plugin!views!query!Sql.php/function/Sql%3A%3AgetAggregationInfo/8
  */
 
 namespace Drupal\mcapi\Plugin\views\field;
@@ -53,18 +59,19 @@ class Worth extends FieldPluginBase {
     $settings = [
       'format' => $this->options['format']
     ];
+    return 'temp';
+    mdump($this);die();
     $worth_items = $this->getEntity($values)->worth;
     if (property_exists($values, 'curr_id')) {
       $val = [
-        'curr_id' => $values->curr_id, 
+        'curr_id' => $values->curr_id,
         'value' => $this->getValue($values)
       ];
       $worth_items->setValue($val);
     }
-    
     return $worth_items->view(
       [
-        'label' => 'hidden', 
+        'label' => 'hidden',
         'settings' => $settings
       ]
     );

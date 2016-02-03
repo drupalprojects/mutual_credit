@@ -25,7 +25,7 @@ class CanPayin extends CanPay {
    *
    * @var string
    */
-  public $message = 'You are not allowed to pay into this wallet';
+  public $message = 'Not allowed to pay into wallet @wid';
 
   /**
    * {@inheritdoc}
@@ -35,9 +35,11 @@ class CanPayin extends CanPay {
     $eligible = \Drupal::entityTypeManager()
       ->getStorage('mcapi_wallet')
       ->whichWalletsQuery('payin', \Drupal::currentUser()->id());
+    echo "\nTesting to pay in as user ".\Drupal::currentUser()->id();
+    echo "\nUser can pay in to wallets: ";print_r($eligible);
 
     if (!in_array($items->target_id, $eligible)) {
-      $this->context->addViolation('message', []);
+      $this->context->addViolation($this->message, ['@wid' => $items->target_id]);
     }
   }
 }

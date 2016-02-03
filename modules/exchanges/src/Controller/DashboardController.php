@@ -10,7 +10,7 @@ namespace Drupal\mcapi_exchanges\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Currency;
-use Drupal\mcapi_1stparty\Entity\FirstPartyFormDesign;
+use Drupal\mcapi_forms\Entity\FirstPartyFormDesign;
 use Drupal\Core\Template\Attribute;
 
 /**

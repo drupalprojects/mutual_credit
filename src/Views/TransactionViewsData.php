@@ -14,7 +14,7 @@ class TransactionViewsData extends EntityViewsData {
 
   /**
    * {@inheritdoc}
-   * 
+   *
    * @todo see Drupal\taxonomy\TermViewsData to see how an index table can be incporated after beta 11
    */
   public function getViewsData() {
@@ -22,6 +22,8 @@ class TransactionViewsData extends EntityViewsData {
     $data['mcapi_transaction']['table']['base']['defaults']['field'] = 'xid';
     $data['mcapi_transaction']['table']['wizard_id'] = 'transactions';
     $data['mcapi_transaction']['table']['access query tag'] = 'mcapi_views_access';
+    //expected in \Drupal\views\Plugin\views\query\QueryPluginBase::getEntityTableInfo()...
+    $data['mcapi_transaction']['table']['entity revision'] = NULL;
 
     $data['mcapi_transaction']['state']['field']['id'] = 'mcapi_state';
     $data['mcapi_transaction']['state']['filter'] = [
@@ -75,17 +77,24 @@ class TransactionViewsData extends EntityViewsData {
     $data['mcapi_transaction']['payer']['relationship'] = [
       'base' => 'mcapi_wallet',
       'base field' => 'wid',
-      //'label' => 'Payer wallet',
-      'title' => 'Payer',
+      'label' => 'Debited wallet',
+      'title' => 'Debited wallet',
       'id' => 'standard'
     ];
     $data['mcapi_transaction']['payee']['help'] = $this->t('The wallet which was credited');
     $data['mcapi_transaction']['payee']['relationship'] = [
       'base' => 'mcapi_wallet',
       'base field' => 'wid',
-      //'label' => 'Payee wallet',
-      'title' => 'Payee',
+      'label' => 'Credited wallet',
+      'title' => 'Credited wallet',
       'id' => 'standard'
+    ];
+    $data['mcapi_transaction']['first_wallet'] = [
+      'title' => $this->t('First wallet'),
+      'help' => $this->t('Wallet held by the user'),
+      'argument' => [
+        'id' => 'mcapi_first_wallet',
+      ]
     ];
     /*
     $data['mcapi_transaction']['transaction_bulk_form'] = [
@@ -122,6 +131,7 @@ class TransactionViewsData extends EntityViewsData {
         'weight' => 5,
         'defaults' => []
       ],
+      'entity revision' => '',//expected in \Drupal\views\Plugin\views\query\QueryPluginBase::getEntityTableInfo()
       'wizard_id' => 'transaction_index', //this links it to the wizard plugin
     ];
 
@@ -180,6 +190,8 @@ class TransactionViewsData extends EntityViewsData {
       ],
       'field' => [
         'id' => 'standard',
+//        'entity type field' => 'holder_entity_type',
+        'type' => 'holder_entity_type'
       ],
       'filter' => [
         'id' => 'wallet_name',
@@ -250,19 +262,21 @@ class TransactionViewsData extends EntityViewsData {
         'field' => 'created'
       ],
     ];
+
     $data['mcapi_transactions_index']['incoming'] = [
       'title' => $this->t('Income'),
       'help' => $this->t('The income from the transaction; positive or zero'),
+      //@todo if worth plugin isn't needed for the main entity table its not needed here either
       'field' => [
         'id' => 'worth',
         'additional fields' => ['curr_id']
       ],
       /*'filter' => [
-        //@todo make a filter that knows not to show the native value 
+        //@todo make a filter that knows not to show the native value
         'id' => 'numeric',
       ],*/
       'sort' => [
-        'id' => 'groupby_numeric',
+        'id' => 'numeric',
       ],
     ];
     $data['mcapi_transactions_index']['outgoing'] = [
@@ -273,11 +287,11 @@ class TransactionViewsData extends EntityViewsData {
         'additional fields' => ['curr_id']
       ],
       /*'filter' => [
-        //@todo make a filter that knows not to show the native value 
+        //@todo make a filter that knows not to show the native value
         'id' => 'numeric',
       ],*/
       'sort' => [
-        'id' => 'groupby_numeric',
+        'id' => 'numeric',
       ],
     ];
     $data['mcapi_transactions_index']['diff'] = [
@@ -291,7 +305,7 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'numeric',
       ],
       'sort' => [
-        'id' => 'groupby_numeric',
+        'id' => 'numeric',
       ],
     ];
     $data['mcapi_transactions_index']['volume'] = [
@@ -305,7 +319,7 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'numeric',
       ],
       'sort' => [
-        'id' => 'groupby_numeric',
+        'id' => 'numeric',
       ],
     ];
     $data['mcapi_transactions_index']['curr_id'] = [
@@ -347,14 +361,13 @@ class TransactionViewsData extends EntityViewsData {
       ],
     ];
     $data['mcapi_transactions_index']['held_wallet'] = [
-      'title' => $this->t('Held wallet'),
+      'title' => $this->t('First wallet'),
       'help' => $this->t('Wallet held by the user'),
       'argument' => [
-        'id' => 'mcapi_first_wallet',
-        'field' => 'wallet_id'
+        'id' => 'mcapi_first_wallet_index',
       ]
     ];
-    
+
     return $data;
   }
 

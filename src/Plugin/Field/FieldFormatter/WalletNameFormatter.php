@@ -10,15 +10,16 @@
 namespace Drupal\mcapi\Plugin\Field\FieldFormatter;
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Field\FieldItemListInterface;
 
 /**
- * Plugin implementation of the 'worth' formatter.
+ * Plugin implementation of the 'wallet_name' formatter.
  *
  * @FieldFormatter(
  *   id = "wallet_name",
  *   label = @Translation("wallet name"),
  *   field_types = {
- *     "wallet"
+ *     "wallet_reference"
  *   }
  * )
  */
@@ -33,7 +34,8 @@ class WalletNameFormatter extends \Drupal\Core\Field\Plugin\Field\FieldFormatter
    */
   protected function checkAccess(EntityInterface $entity) {
     return parent::checkAccess($entity);
-    return \Drupal\Core\Access\AccessResult::allowed()->cachePerPermissions('view user profile');
+    //return \Drupal\Core\Access\AccessResult::allowed()->cachePerPermissions('view user profile');
   }
+
 }
 

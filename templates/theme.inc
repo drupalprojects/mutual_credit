@@ -32,14 +32,9 @@ function template_preprocess_wallet_stats(&$vars) {
   }
 }
 
-function __template_preprocess_worths(&$vars) {
-  foreach ($vars['values'] as $key => &$value) {
-    $value = render($value);
-  }
-}
-
-function template_preprocess_worth(&$vars) {
-  $vars['value'] = $vars['worth']['#value'];
+//not currently used
+function __template_preprocess_worth(&$vars) {
+  print_r(array_keys($vars));
 }
 
 /**
@@ -87,8 +82,8 @@ function template_preprocess_wallet_balances(&$vars) {
       $currency = Currency::load($curr_id);
       $vars['currencies'][$curr_id]['label'] = $currency->label();
       $balance = $currency->format($data['balance'], Currency::DISPLAY_NORMAL);
-      $vars['currencies'][$curr_id]['balance'] = $balance;
-      $vars['delimited'][] = $balance;
+      $vars['currencies'][$curr_id]['balance'] = strip_tags($balance);//@todo even better if we can let the html through
+      $vars['delimited'][] = strip_tags($balance);
     }
   }
   $vars['delimited'] = implode(
@@ -105,22 +100,24 @@ function template_preprocess_wallet_balance_bars(&$vars) {
   foreach ($wallet->getSummaries() as $curr_id => $data) {
     $currency = Currency::load($curr_id);
     //if ($vars['data']['gross_in'] == 0 && $vars['data']['gross_out']) return;
-    $vars['currencies'][$curr_id]['label'] = $currency->label();
-    $id = "given-gotten-" . $curr_id . '-' . $wallet->id();
-    $vars['currencies'][$curr_id]['id'] = $id;
-    $vars['currencies'][$curr_id]['functionname'] = str_replace('-', '_', $id);
-    $vars['currencies'][$curr_id]['incoming'] = $data['gross_in'];
-    $vars['currencies'][$curr_id]['outgoing'] = $data['gross_out'];
-    $vars['currencies'][$curr_id]['show_in'] = $currency->format($data['gross_in'], TRUE);
-    $vars['currencies'][$curr_id]['show_out'] = $currency->format($data['gross_out'], TRUE);
-    $vars['currencies'][$curr_id]['given'] = t('Given');
-    $vars['currencies'][$curr_id]['gotten'] = t('Gotten');
+    $id = "given-received-" . $curr_id . '-' . $wallet->id();
     $max = _mcapi_get_axis_max(max($data['gross_in'], $data['gross_out']));
-    $vars['currencies'][$curr_id]['max'] = $max;
-    $vars['currencies'][$curr_id]['vaxislabels'] = [
-      ['value' => 0, 'label' => $currency->format(0, TRUE)],
-      ['value' => $max / 2, 'label' => $currency->format(intval($max / 2), TRUE)],
-      ['value' => $max, 'label' => $currency->format($max), TRUE]
+    $vars['currencies'][$curr_id] = [
+      'label' => $currency->label(),
+      'id' => $id,
+      'functionname' => str_replace('-', '_', $id),
+      'incoming' => $data['gross_in'],
+      'outgoing' => $data['gross_out'],
+      'show_in' => $currency->format($data['gross_in'], TRUE),
+      'show_out' => $currency->format($data['gross_out'], TRUE),
+      'given' => t('Given'),
+      'received' => t('Received'),
+      'max' => $max,
+      'vaxislabels' => [
+        ['value' => 0, 'label' => $currency->format(0, TRUE)],
+        ['value' => $max / 2, 'label' => $currency->format(intval($max / 2), TRUE)],
+        ['value' => $max, 'label' => $currency->format($max), TRUE]
+      ]
     ];
   }
 }
@@ -134,7 +131,7 @@ function _mcapi_get_axis_max($val) {
 
 
 /**
- * implements template_preprocess_THEMEHOOK for theme callback 'mcapi_transaction'
+ * Implements template_preprocess_THEMEHOOK for theme callback 'mcapi_transaction'
  * DO NOT OVERRIDE, javascript transaction operations depend on the classes defined here
  * override certificate or change the mcapi_sentence variable instead
  */
@@ -159,7 +156,7 @@ function template_preprocess_mcapi_transaction(&$vars, $hook, $info) {
 }
 
 /**
- * implements template_preprocess_THEMEHOOK for theme callback 'certificate'
+ * Implements template_preprocess_THEMEHOOK for theme callback 'certificate'
  *
  * @param array $vars
  */
@@ -167,11 +164,19 @@ function template_preprocess_certificate(&$vars) {
   $element = $vars['transaction'];
   $transaction = $element['#mcapi_transaction'];
 
-  //hide the field api label
+  //simplify the description, coz I can't find where it is themed
+  //can't see how to remove the <div> around it
+  //don't know why, inside the #field it is an inline-template
+  $vars['description'] = $element['description'][0]['#context']['value'];
+  unset($element['description']);
+
+  $vars['created'] = $element['created'][0]['#markup'];
+  unset($element['created']);
+
+  //for any remaining fields, hide the field api label and remove the surrounding <div>
   foreach (Element::children($element) as $sub) {
     if (array_key_exists('#theme', $element[$sub]) && $element[$sub]['#theme'] == 'field') {
-      //debug($element, 'where are the theme wrappers');
-      unset($element['#theme_wrappers']);//this shoudl be much more elegant
+      //unset($element['#theme_wrappers']);//this should be much more elegant
       $element[$sub]['#label_display'] = 'hidden';
     }
     $vars[$sub] = $element[$sub];
@@ -189,7 +194,7 @@ function template_preprocess_certificate(&$vars) {
 }
 
 /**
- * implements template_preprocess_THEMEHOOK for theme callback 'mcapi_currency'
+ * Implements template_preprocess_THEMEHOOK for theme callback 'mcapi_currency'
  *
  * @param array $vars
  * @todo there is no currency view page yet!
@@ -228,10 +233,6 @@ function get_transaction_vars(TransactionInterface $transaction) {
   //@todo do we need to sanitise this or does the theme engine do it? Test with a transaction
   $vars['description'] = $transaction->description->getString();
 
-  //NB the transaction certificate, which uses entity_view_display overwrites field with display options, i.e. this one!
-  //but this is needed for the sentence display'
-  $worth['#label_display'] = 'hidden';
-
   $vars['created'] = format_date($transaction->created->value, 'medium');
 
   //the token service lets you pass url options, but this function doesn't
@@ -239,4 +240,69 @@ function get_transaction_vars(TransactionInterface $transaction) {
   return $vars;
 }
 
+
+//@todo find a way to set the width of the chart using config
+const GCHART_HISTORY_WIDTH = 300;
+use \Drupal\mcapi\History;
+/**
+ * Implements hook_preprocess_THEMEHOOK for wallet_histories
+ * generates the javascript for the gchart from the user's history of each currency
+ *
+ */
+function mcapi_preprocess_wallet_histories(&$vars) {
+  $element = $vars['element'];
+  $wallet = $element['#wallet'];
+  $vars['width'] = GCHART_HISTORY_WIDTH;
+  $vars['height'] = $vars['width']/2;
+  $histories = History::getAll(
+    $wallet,
+    $wallet->currenciesUsed(),
+    $vars['width']
+  );
+  foreach ($histories as $curr_id => $points) {
+    if (count($points) < 2) {
+      //don't draw the chart if it is empty
+      continue;
+    }
+    $currency = Currency::load($curr_id);
+    $vars['currencies'][$curr_id]['currency'] = $currency;
+    $vars['currencies'][$curr_id]['functionname'] = 'drawHistory' . $curr_id;
+    $vars['currencies'][$curr_id]['id'] = 'wallet-' . $wallet->id() . '-' . $curr_id;
+    if ($points) {
+      list($min, $middle, $max) = History::axes($points);
+    }
+    else {
+      $min = -10;
+      $middle = 0;
+      $max = 10;
+    }
+    $vars['currencies'][$curr_id]['vaxislabels'] = [
+      [
+        'value' => $min,
+        'label' => $currency->format($min, TRUE)
+      ],
+      [
+        'value' => $middle,
+        'label' => $currency->format($middle, TRUE)
+      ],
+      [
+        'value' => $max,
+        'label' => $currency->format($max, TRUE)
+      ]
+    ];
+    $vars['currencies'][$curr_id]['columns'] = [
+      'date' => t('Date'),
+      'number' => $currency->label()
+    ];
+    //populate the javascript data object
+    foreach ($points as $timestamp => $balance) {
+      //this has a resolution of one day, not very satisfying perhaps
+      $vars['currencies'][$curr_id]['daterows'][] = [
+        date('m/d/Y', $timestamp),
+        $balance,
+        $currency->format($balance, TRUE)
+      ];
+    }
+  }
+}
 

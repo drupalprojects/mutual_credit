@@ -59,11 +59,15 @@ class CommonCurrencyConstraint extends CompositeConstraintBase {
     //check the payer and payee aren't the same
     foreach ($transaction->flatten() as $trans) {
       //I don't know why but $trans->payer->entity computed property isn't working here
-      if ($absent = $this->uncommonCurrencies($trans->payer->target_id, $trans->payee->target_id, $trans->worth)) {
-        $this->context
-          ->buildViolation($constraint->message)
-          ->atPath('worth')//@todo its impossible to identify which currency value once the $list has been built and filtered
-          ->addViolation();
+      //this entity level validation runs even if the element level validation failed.
+      //to prevent mess, only do this if we have ids for both wallets.
+      if ($wid1 = $trans->payer->target_id and $wid2 = $trans->payee->target_id) {
+        if ($absent = $this->uncommonCurrencies($wid1, $wid2, $trans->worth)) {
+          $this->context
+            ->buildViolation($constraint->message)
+            ->atPath('worth')//@todo its impossible to identify which currency value once the $list has been built and filtered
+            ->addViolation();
+        }
       }
     }
   }

@@ -8,7 +8,6 @@
 
 namespace Drupal\mcapi\Plugin\Field\FieldFormatter;
 
-use Drupal\Component\Utility\String;
 use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -65,12 +64,14 @@ class WorthFormatter extends FormatterBase {
    * {@inheritdoc}
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
-    $element = [
-      '#type' => 'worths_view',
-      '#format' => $this->getSetting('format'),
-      '#worths' => $items->getValue()
+    $elements = [
+      0 => [
+        '#type' => 'worths_view',
+        '#format' => $this->getSetting('format'),
+        '#worths' => $items->getValue()
+      ]
     ];
-    return $element;
+    return $elements;
   }
 
   private function getOptions() {

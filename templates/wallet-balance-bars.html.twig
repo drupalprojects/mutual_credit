@@ -2,7 +2,7 @@
 /**
  * @file
  * Default theme implementation to display a wallet's balance history.
- * 
+ *
  * label //of the wallet
  * canonical //to the wallet uri
  * log_link //to the wallet transaction listing
@@ -14,8 +14,8 @@
  * - outgoing     #raw outgoing value
  * - show_in      #formatted incoming value
  * - show_out     #formatted outgoing value
- * - given        #translation of 'Gotten'
- * - gotten       #translation of 'Given'
+ * - given        #translation of 'Given'
+ * - received     #translation of 'Received'
  * - currency     #configEntity object
  * - max
  * - vaxislabels
@@ -27,7 +27,7 @@
 google.setOnLoadCallback({{ chart.functionname }});
 function {{ chart.functionname }}() {
   var data = google.visualization.arrayToDataTable([
-    ['', 'Given', 'Gotten'],
+    ['', 'Given', 'Received'],
     ['', {{ chart.incoming }}, {{ chart.outgoing }}]
   ]);
   var options = {
@@ -36,7 +36,7 @@ function {{ chart.functionname }}() {
     enableInteractivity: false,
     vAxis: {viewWindowMode: 'explicit'},
     vAxis: {viewWindow: {min: 0, max: {{ chart.max  }}}},
-    hAxis: {title: "{{ chart.given }}, {{ chart.gotten }}"},
+    hAxis: {title: "{{ chart.given }}, {{ chart.received }}"},
     legend: {position: 'none'},
     colors: ['#2aab49', '#21a0db'],
     vAxis: { ticks: [{% for tick in chart.vaxislabels %}
@@ -51,6 +51,6 @@ function {{ chart.functionname }}() {
 {% for chart in currencies %}
 <div class = "balance-bar">
   <div>{{ chart.label }}</div>
-  <div class = "givengotten" id = "{{ chart.id }}"></div>
+  <div class = "givenreceived" id = "{{ chart.id }}"></div>
 </div>
 {% endfor %}

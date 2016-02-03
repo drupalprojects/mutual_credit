@@ -26,19 +26,19 @@ class TransactionStorageSchema extends SqlContentEntityStorageSchema {
       //this allows for views integration as long as the storage controller respects the index
       'description' => 'A more queryable way of storing transactions',
       'fields' => [
-        'serial' => [
-          'type' => 'int',
-          'unsigned' => TRUE,
-          'not null' => TRUE,
-          'default' => 0,
-          'description' => 'The serial number.',
-        ],
         'xid' => [
           'type' => 'int',
           'unsigned' => TRUE,
           'not null' => TRUE,
           'default' => 0,
           'description' => 'Primary Key: The xid of the term.'
+        ],
+        'serial' => [
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+          'default' => 0,
+          'description' => 'The serial number.',
         ],
         'wallet_id' => [
           'type' => 'int',

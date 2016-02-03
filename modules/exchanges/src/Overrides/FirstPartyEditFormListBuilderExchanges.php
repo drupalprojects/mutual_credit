@@ -9,7 +9,7 @@ namespace Drupal\mcapi_exchanges\Overrides;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\mcapi_exchanges\Entity\Exchange;//only if enabled!
-use Drupal\mcapi_1stparty\FirstPartyEditFormListBuilder;
+use Drupal\mcapi_forms\FirstPartyEditFormListBuilder;
 
 /**
  * Provides a listing of editable transaction forms

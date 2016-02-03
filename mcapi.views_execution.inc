@@ -5,7 +5,7 @@ use Drupal\views\Plugin\views\query\QueryPluginBase;
 use Drupal\views\Views;
 
 /**
- * implements hook_views_query_tag_alter().
+ * Implements hook_views_query_tag_alter().
  * Per-transaction access control on transaction views
  * on the basis of seeing EITHER wallet
  *

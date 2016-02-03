@@ -2,7 +2,7 @@
 
 
 /*
- * implements hook_views_data_alter
+ * Implements hook_views_data_alter
  * add the virtual limits field to the user table
  */
 function mcapi_limits_views_data_alter(&$data) {

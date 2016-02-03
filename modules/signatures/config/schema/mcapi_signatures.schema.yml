@@ -1,0 +1,7 @@
+mcapi_signatures.settings:
+  type: mapping
+  label: 'Signature settings'
+  mapping:
+    personal:
+      type: pending_messages
+      label: Signature reminders on every page

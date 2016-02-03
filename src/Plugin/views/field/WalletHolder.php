@@ -56,7 +56,7 @@ class WalletHolder extends Standard {
     $holder = $this->getEntity($values)->getHolder();
     return $this->options['owner'] ?
       $holder->getOwner()->link() :
-      $holder->getLink();
+      $holder->link();
   }
 
 }

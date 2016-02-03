@@ -158,16 +158,16 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
   private function generateBatchContent($values) {
     // Add the kill operation.
     if ($values['kill']) {
-      $operations[] = array('devel_generate_operation', array($this, 'batchContentKill', $values));
+      $operations[] = ['devel_generate_operation', [$this, 'batchContentKill', $values]];
     }
 
     // Add the operations to create the exchanges.
     for ($num = 0; $num < $values['num']; $num ++) {
-      $operations[] = array('devel_generate_operation', array($this, 'batchContentAddExchange', $values));
+      $operations[] = ['devel_generate_operation', [$this, 'batchContentAddExchange', $values]];
     }
 
     // Start the batch.
-    $batch = array(
+    $batch = [
       'title' => $this->t('Generating Small ads'),
       'operations' => $operations,
       'finished' => 'devel_generate_batch_finished',
@@ -175,7 +175,7 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
       'results' => [
         'num' => 0
       ]
-    );
+    ];
     batch_set($batch);
   }
 

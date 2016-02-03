@@ -1,0 +1,5 @@
+display:
+  version: VERSION
+  css:
+    component:
+      mcapi_forms.css: {}

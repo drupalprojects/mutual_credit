@@ -2,7 +2,7 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\Field\Widget\WalletReferenceAutocompleteWidget.
- * @todo inject entityTypeManager
+ * @todo inject entityTypeManager and config('mcapi.settings')
  */
 
 namespace Drupal\mcapi\Plugin\Field\FieldWidget;
@@ -21,7 +21,7 @@ use Symfony\Component\Validator\ConstraintViolationInterface;
  *   label = @Translation("Wallets"),
  *   description = @Translation("Autocomplete field on wallets"),
  *   field_types = {
- *     "wallet"
+ *     "wallet_reference"
  *   }
  * )
  */
@@ -31,10 +31,25 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
    * {@inheritdoc}
    */
   public function settingsForm(array $form, FormStateInterface $form_state) {
-    $form = parent::settingsForm($form, $form_state);
-    unset($form['size']);
-    return $form;
+    $element = parent::settingsForm($form, $form_state);
+    unset($element['size']);
+    $element['restrict'] = [
+      '#title' => 'Restrict available wallets',
+      '#type' => 'checkbox',
+      '#default_value' => $this->getSetting('restrict')
+    ];
+    return $element;
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function defaultSettings() {
+    return array(
+      'restrict' => TRUE
+    ) + parent::defaultSettings();
+  }
+
 
   /**
    * {@inheritdoc}
@@ -42,6 +57,7 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
   public function settingsSummary() {
     $summary = parent::settingsSummary();
     unset($summary[1]);//size
+    $summary[] = $this->getSetting('restrict')  ? $this->t('Restricted') : $this->t('Any wallets');
     return $summary;
   }
 
@@ -50,12 +66,26 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $referenced_entities = $items->referencedEntities();
-    $op = ($this->fieldDefinition->getName() == 'payer' ? 'payin' : 'payout');
 
-    $wids = \Drupal::entityTypeManager()->getStorage('mcapi_wallet')
-      ->whichWalletsQuery($op, \Drupal::currentUser()->id());
-    $count = count($wids);
     $default_value = isset($referenced_entities[$delta]) ? $referenced_entities[$delta] : NULL;
+    if ($default_value && $default_value->isIntertrading()) {
+      $wids = [$default_value->id()];
+    }
+    else {
+      $walletStorage = \Drupal::entityTypeManager()->getStorage('mcapi_wallet');
+      if ($this->getSetting('restrict')) {
+        $operation = ($this->fieldDefinition->getName() == 'payer' ? 'payout' : 'payin');
+        $wids = $walletStorage->whichWalletsQuery($operation, \Drupal::currentUser()->id());
+      }
+      else {
+        $operation = '';
+        //what conditions needed on here?
+        $wids = $walletStorage->getQuery()->execute();
+      }
+    }
+
+    $count = count($wids);
+
     if (!$count) {
       throw new \Exception('No wallets to show for '.$this->fieldDefinition->getName());
     }
@@ -68,11 +98,12 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
       ];
     }
     elseif ($count > $config->get('wallet_widget_max_select')) {
+//    echo $this->fieldDefinition->getName();print_r($wids);echo $operation;
       $element += [
         '#type' => 'wallet_entity_auto',
         //assuming that the field item name IS the role
-        '#selection_handler' => 'default:wallet',//this should be implicit because of the $type
-        '#selection_settings' => ['op' => $op],
+        '#selection_handler' => 'default:mcapi_wallet',//this should be implicit because of the $type
+        '#selection_settings' => ['op' => $operation],
         '#default_value' => $default_value,
         '#placeholder' => $this->getSetting('placeholder'),
         '#size' => 60,//appearance should be managed with css
@@ -81,15 +112,10 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
       ];
     }
     else {
-      if($count > $config->get('wallet_widget_max_radios')) {
-        $element['#type'] = 'select';
-      }
-      else {
-        $element['#type'] = 'radios';
-      }
       $element += [
+        '#type' => ($config->get('wallet_widget_max_radios')) ? 'select' : 'radios',
         '#options' => Mcapi::entityLabelList('mcapi_wallet', $wids),
-        '#default_value' => $default_value
+        '#default_value' => $default_value ? $default_value->id() : ''
       ];
     }
     return ['target_id' => $element];

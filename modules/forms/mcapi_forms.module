@@ -1,0 +1,128 @@
+<?php
+
+use Drupal\mcapi_forms\Entity\FirstPartyFormDesign;
+use Drupal\Core\Entity\EntityTypeInterface;
+
+/**
+ * Implements hook_entity_type_build().
+ */
+function mcapi_forms_entity_type_build(array &$entity_types) {
+  $entity_types['mcapi_transaction']->setFormClass('1stparty', 'Drupal\mcapi_forms\FirstPartyTransactionForm');
+  $entity_types['mcapi_transaction']->setFormClass("3rdparty", "Drupal\mcapi\Form\TransactionForm");
+}
+
+/*
+ * Implements hook_form_field_config_edit_form_alter().
+ */
+function mcapi_forms_form_field_config_edit_form_alter(&$form, &$form_state) {
+  if ($form_state->getFormObject()->getEntity()->getTargetEntityTypeId() == 'mcapi_transaction') {
+    drupal_set_message(t("Most of the time, these values won't be seen on transaction forms"));
+  }
+}
+
+/**
+ * machine_name callback
+ * @param string $id
+ */
+function mcapi_editform_load($id) {
+  return FirstPartyFormDesign::load($id);
+}
+
+/**
+ * Implements hook_menu_links_discovered_alter().
+ * adds menu links where the firstparty forms specify them
+ *
+ * @param array $links
+ *   each link is an array
+ */
+function mcapi_forms_menu_links_discovered_alter(&$links) {
+  foreach (FirstPartyFormDesign::loadMultiple() as $id => $first_party_form) {
+    if ($menu = $first_party_form->menu['menu_name']) {
+      $route_name = 'mcapi.1stparty.'.$id;
+      $parent_path = substr($first_party_form->path, 0, strrpos($first_party_form->path, '/'));
+      $links[$route_name.'.link'] = [
+        'title' => $first_party_form->title,
+        'route_name' => $route_name,
+        'provider' => 'mcapi_forms',
+        'menu_name' => $menu,
+        //'parent' => '',// currently the entity doesn't support nested menu items
+        'weight' => 5//giving them all the same weight at least keep them all together by default
+      ];
+    }
+  }
+}
+
+/**
+ *
+ * implement hook_entity_base_field_info_alter().
+ *
+ * change the default date widget for the created field
+ *
+ * @todo make this work with the date_popup widget, but in what module
+ */
+function mcapi_forms_entity_base_field_info_alter(&$fields, EntityTypeInterface $entity_type) {
+  if ($entity_type->id() == 'mcapi_transaction') {
+    $fields['created']->setDisplayOptions(
+      'form',
+      [
+        'type' => \Drupal::moduleHandler()->moduleExists('datetime') ? 'datetime_timestamp' : 'datetime_timestamp',
+        'weight' => 10
+      ]
+    );
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function mcapi_forms_theme() {
+  return [
+    'first_party_transaction_form' => [
+      'function' => 'theme_first_party_transaction_form',//no template is possible in this case
+      'render element' => 'form',
+      'file' => 'mcapi_forms.inc',
+    ]
+  ];
+}
+
+
+/**
+ * implement mcapi hook_mcapi_form_list().
+ * return a list of transaction forms declared in this module.
+ * each item must e an array with the following keys
+ * - 'title' => 'Blah'
+ * - 'route' => 'mcapi.transaction_form'
+ * - 'route_parameters' => []
+ * - 'operations' => [Url::fromPath('blah')] an array of items, each with title and path
+ */
+function mcapi_forms_mcapi_form_list() {
+  $forms = [];
+
+  $forms['default'] = [
+    'title' => t('Administration'),
+    'route' => 'mcapi.transaction.admin',
+  ];
+  foreach (FirstPartyFormDesign::loadMultiple() as $id => $entity) {
+    $forms[$id] = [
+      'title' => $entity->title,
+      'route' => 'mcapi.1stparty.'.$id,
+      'route_parameters' => [],
+    ];
+
+    if ($entity->access('update') && $entity->hasLinkTemplate('edit-form')) {
+      $forms[$id]['operations']['edit'] = [
+        'title' => t('Edit'),
+        'weight' => 10,
+        'url' => $entity->urlInfo('edit-form'),
+      ];
+    }
+    if ($entity->access('delete') && $entity->hasLinkTemplate('delete-form')) {
+      $forms[$id]['operations']['delete'] = [
+        'title' => t('Delete'),
+        'weight' => 100,
+        'url' => $entity->urlInfo('delete-form'),
+      ];
+    }
+  }
+  return $forms;
+}

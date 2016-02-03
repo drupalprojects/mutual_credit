@@ -25,7 +25,7 @@ class CanPayout extends CanPay {
    *
    * @var string
    */
-  public $message = 'You are not allowed to pay out of this wallet';
+  public $message = 'Not allowed to pay out of wallet @uid';
 
   /**
    * {@inheritdoc}
@@ -37,7 +37,7 @@ class CanPayout extends CanPay {
       ->whichWalletsQuery('payout', \Drupal::currentUser()->id());
 
     if (!in_array($items->target_id, $eligible)) {
-      $this->context->addViolation('message', []);
+      $this->context->addViolation($this->message, ['@uid' => $items->target_id]);
     }
   }
 }

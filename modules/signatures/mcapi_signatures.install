@@ -5,11 +5,11 @@ use \Drupal\mcapi\Entity\Type;
 
 
 /**
- * implements hook_install().
+ * Implements hook_install().
  */
 function mcapi_signatures_install() {
   module_set_weight('mcapi_signatures', 2);
-  mcapi_signatures_configure_type('default');
+  mcapi_signatures_configure_types();
   $settings = \Drupal::configFactory()->getEditable('mcapi.settings');
   $rels = $settings->get('active_relatives');
   $rels['signatory'] = 'signatory';
@@ -18,7 +18,7 @@ function mcapi_signatures_install() {
 }
 
 /**
- * implements hook_modules_installed().
+ * Implements hook_modules_installed().
  */
 function mcapi_signatures_modules_installed($modules) {
   //this isn't working in installation profiles because I think the router isn't updated
@@ -36,8 +36,8 @@ function mcapi_signatures_modules_installed($modules) {
 }
 
 /*
- * implements hook_uninstall().
- * 
+ * Implements hook_uninstall().
+ *
  * @todo ideally we would prevent this module from uninstalling if ANY transactions
  * were in pending state. Ideally any module providing a transaction state in use
  * would not be uninstallable.
@@ -121,17 +121,22 @@ function signature_integrity_check($modify = FALSE) {
     ->fields('s', ['serial'])
     ->condition('pending', 1)
     ->execute()->fetchCol();
-  if (empty($pending_serials)) return;
+  if (empty($pending_serials)) {
+    return;
+  }
   \Drupal::database()->update('mcapi_transaction')
     ->fields(['state' => TRANSACTION_STATE_PENDING])
     ->condition('serial', $pending_serials)
     ->execute();
 }
 
-function mcapi_signatures_configure_type($type_name) {
-  Type::load($type_name)->setThirdPartySetting(
-    'mcapi_signatures', 
-    'signatures', 
-    ['payer' => 'payer', 'payee' => 'payee']
-  )->save();
+function mcapi_signatures_configure_type($type_name, $signable = FALSE) {
+  foreach (Type::loadMultiple() as $id => $type) {
+    $type->setThirdPartySetting(
+      'mcapi_signatures',
+      'signatures',
+      ($id == 'default') ? ['payer' => 'payer', 'payee' => 'payee'] : []
+    )
+    ->save();
+  }
 }

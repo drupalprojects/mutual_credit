@@ -3,7 +3,7 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\Derivative\McapiLocalTask.
- * @deprecated ?
+ * @deprecated
  */
 
 namespace Drupal\mcapi\Plugin\Derivative;
@@ -17,7 +17,7 @@ use Drupal\Core\StringTranslation\StringTranslationTrait;
  * Provides local task definitions to create a wallet tab for all entities of types configured.
  */
 class McapiLocalTask extends DeriverBase implements ContainerDeriverInterface {
-  
+
   use StringTranslationTrait;
 
   var $settings;
@@ -46,27 +46,11 @@ class McapiLocalTask extends DeriverBase implements ContainerDeriverInterface {
    */
   public function getDerivativeDefinitions($base_plugin_definition) {
     $this->derivatives = [];
-    foreach($this->settings->get('entity_types') as $entity_type_bundle => $max) {
-      if (!$max) {
-        continue;
-      }
-      continue;
-      
-      list($entity_type_id, $bundle_name) = explode(':', $entity_type_bundle);
-      $key = "mcapi.wallet.{$bundle_name}.task";
-      //assumes bundle names don't clash!
-      $this->derivatives[$key] = [
-        'id' => $key,
-        'route_name' => "entity.{$bundle_name}.wallets",
-        'title' => $this->formatPlural($max, 'Wallet', 'Wallets'),
-        //assumes this pattern for the canonical route name
-        'base_route' => "entity.{$bundle_name}.canonical"
-      ];
-    }
+
     foreach ($this->derivatives as &$entry) {
       $entry += $base_plugin_definition;
     }
     return $this->derivatives;
   }
-  
+
 }

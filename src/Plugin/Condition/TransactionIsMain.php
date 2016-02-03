@@ -5,7 +5,7 @@
  * Contains \Drupal\mcapi\Plugin\Condition\TransactionIsMain.
  */
 
-namespace Drupal\rules\Plugin\Condition;
+namespace Drupal\mcapi\Plugin\Condition;
 
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\rules\Core\RulesConditionBase;

@@ -7,7 +7,7 @@
 
 namespace Drupal\mcapi\Element;
 
-use Drupal\user\Entity\User;
+use Drupal\mcapi\Mcapi;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
 use Drupal\Core\Render\Element\Checkboxes;
@@ -30,7 +30,6 @@ class Currency extends FormElement {
       ],
       '#theme_wrappers' => ['form_element'],
       '#multiple' => FALSE,
-      '#options' => [],//array of curr_ids and currency names
       '#status' => TRUE //filter only for active currences
     );
   }
@@ -58,10 +57,9 @@ class Currency extends FormElement {
     }
 
     if (count($element['#options']) == 1) {
-      //$element['#type'] = 'value';
-      $element['#type'] = 'value';
-      $element['#theme_wrappers'] = [];
-      $element['#default_value'] = key($element['#options']);
+      debug('See if the curr_id comes though');
+      $element['#disabled'] = TRUE;
+      $element['#value'] = reset($element['#options']);
     }
     elseif ($element['#multiple']) {
       //have to do some of the checkbox processing manually coz we missed it
@@ -75,7 +73,7 @@ class Currency extends FormElement {
     return $element;
   }
 
-   static function valueCallback(&$element, $input, FormStateInterface $form_state) {
+  public static function __valueCallback(&$element, $input, FormStateInterface $form_state) {
     if ($input == NULL) return;
     return $input;
   }

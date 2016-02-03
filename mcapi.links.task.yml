@@ -1,11 +1,11 @@
-#sits next to the wallet field ui tabs
+#default tab
 mcapi.admin_wallet_tab:
   route_name: mcapi.admin_wallets
   title: 'Settings'
   base_route: mcapi.admin_wallets
   weight: 0
 
-#actions on an individual wallet
+#default tab
 mcapi.wallet.view.tab:
   route_name: entity.mcapi_wallet.canonical
   title: 'View'
@@ -37,35 +37,41 @@ mcapi.masspay.many21:
   base_route: mcapi.masspay.12many
   weight: 0
 
-#default tab
+#default tab needed when signatures tab is added
 mcapi.admin_workflow_default_tab:
   route_name: mcapi.admin.workflow
   title: Workflow
   base_route: mcapi.admin.workflow
   weight: 0
-#edit view and edit access
-mcapi.admin.workflow.view_tab:
-  title: View access
-  route_name: mcapi.admin.access.op
-  route_parameters:
-    op: view
-  base_route: mcapi.admin.workflow
-  weight: 0
-mcapi.admin.workflow.edit_tab:
-  title: Edit access
-  route_name: mcapi.admin.access.op
-  route_parameters:
-    op: edit
-  base_route: mcapi.admin.workflow
-  weight: 1
-  
+
+#default tab
 mcapi.admin.transactions.default_tab:
   title: Ledger
   route_name: view.mcapi_transactions.admin
   base_route: view.mcapi_transactions.admin
   weight: 0
-  
-  
+
+#default tab
+mcapi.misc_settings.tab:
+  route_name: mcapi.admin_misc
+  title: Miscellaneous
+  base_route: mcapi.admin_misc
+  weight: 0
+mcapi.admin.workflow.view_tab:
+  title: Transaction Viewing
+  route_name: mcapi.admin.access.op
+  route_parameters:
+    op: view
+  base_route: mcapi.admin_misc
+  weight: 1
+mcapi.admin.workflow.edit_tab:
+  title: Transaction Editing
+  route_name: mcapi.admin.access.op
+  route_parameters:
+    op: edit
+  base_route: mcapi.admin_misc
+  weight: 2
+
 mcapi.tasks:
   class: \Drupal\Core\Menu\LocalTaskDefault
   deriver: \Drupal\mcapi\Plugin\Derivative\McapiLocalTask

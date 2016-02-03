@@ -16,7 +16,7 @@ const TRANSACTION_STATE_FINISHED = 'done';
 const TRANSACTION_STATE_ERASED = 'erased';
 
 /**
- * implements hook_requirements().
+ * Implements hook_requirements().
  */
 function mcapi_requirements($phase) {
   if ($phase == 'runtime') {
@@ -40,7 +40,7 @@ function mcapi_requirements($phase) {
 }
 
 /**
- * implements hook_help().
+ * Implements hook_help().
  */
 function mcapi_help($route_name) {
   switch ($route_name) {
@@ -79,7 +79,7 @@ function mcapi_help($route_name) {
 }
 
 /**
- * implements hook_entity_view().
+ * Implements hook_entity_view().
  * add a wallet summary view to wallet-enabled entities
  *
  * @todo check the cache contexts because this contains a link to wallet creation.
@@ -88,7 +88,7 @@ function mcapi_entity_view(array &$build, $entity, $display) {
   if ($display->getComponent('wallets_summaries')) {
     $wallets = [];
     foreach (Mcapi::walletsOf($entity, TRUE) as $wid => $wallet) {
-      if ($wallet->access('view')) {
+      if ($wallet->access('view') && !$wallet->orphaned->value) {
         $wallets[] = $wallet;
       }
     }
@@ -104,7 +104,7 @@ function mcapi_entity_view(array &$build, $entity, $display) {
 }
 
 /**
- * implements hook_element_info_alter().
+ * Implements hook_element_info_alter().
  * adds the 'balances' icon via css
  */
 function mcapi_element_info_alter(&$items) {
@@ -112,7 +112,7 @@ function mcapi_element_info_alter(&$items) {
 }
 
 /**
- * implements hook_entity_presave()
+ * Implements hook_entity_presave()
  * rename the entity's wallet in case the entity's name is changed
  */
 function mcapi_entity_presave($entity) {
@@ -125,7 +125,7 @@ function mcapi_entity_presave($entity) {
 }
 
 /**
- * implements hook_entity_insert()
+ * Implements hook_entity_insert()
  * give a new wallet to new entities, if the settings require
  */
 function mcapi_entity_insert($entity) {
@@ -150,18 +150,19 @@ function mcapi_entity_insert($entity) {
 
 
 /**
- * implements hook_entity_predelete().
+ * Implements hook_entity_predelete().
  *
  * orphan any wallets owned by the deleted entity.
  */
 function mcapi_entity_predelete($entity) {
+  if ($entity instanceOf ContentEntityInterface)
   if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())) {
-    Wallet::orphan($entity);
+    Drupal\mcapi\Exchange::orphan($entity);
   }
 }
 
 /**
- * implements hook_module_implements_alter().
+ * Implements hook_module_implements_alter().
  *
  * Ensures that mcapi_local_tasks_alter runs after field_ui_local_tasks_alter
  */
@@ -174,7 +175,7 @@ function mcapi_module_implements_alter(&$implementations, $hook) {
 }
 
 /**
- * implements hook_local_tasks_alter().
+ * Implements hook_local_tasks_alter().
  *
  * prevent the three fixed transaction display modes from being edited
  * Remove any unneeded wallet tabs
@@ -183,21 +184,11 @@ function mcapi_local_tasks_alter(&$tasks) {
   foreach (['default', 'certificate', 'twig', 'sentence'] as $mode) {
     //unset($tasks["field_ui.fields:field_display_{$mode}_mcapi_transaction"]);
   }
-  //remove the parent tab as well.
-  //unset($tasks['field_ui.fields:display_overview_mcapi_transaction']);
-
-  $settings = \Drupal::config('mcapi_settings');
-  if (!$settings->get('wallet_inex_tab')) {
-    unset($tasks['views_view:view.income_expenditure.income_page']);
-  }
-  if (!$settings->get('wallet_log_tab')) {
-    unset($tasks['views_view:view.wallet_log.page']);
-  }
 }
 
 
 /**
- * implements hook_entity_type_alter().
+ * Implements hook_entity_type_alter().
  * @param \Drupal\Core\Entity\EntityTypeInterface[] $entity_types
  * Change the action list controller to a wrapper which hides this modules operation actions
  */
@@ -208,7 +199,7 @@ function mcapi_entity_type_alter(array &$entity_types) {
 }
 
 /**
- * implements hook_entity_operation_alter().
+ * Implements hook_entity_operation_alter().
  * prevent the transaction view modes from being tampered with
  */
 function mcapi_entity_operation_alter(&$operations, $entity) {
@@ -218,7 +209,7 @@ function mcapi_entity_operation_alter(&$operations, $entity) {
 }
 
 /*
- * implements hook_form_field_config_edit_form_alter().
+ * Implements hook_form_field_config_edit_form_alter().
  */
 function mcapi_form_field_config_edit_form_alter(&$form, &$form_state) {
   if ($form_state->getFormObject()->getEntity()->getEntityTypeId() == 'mcapi_transaction') {
@@ -228,7 +219,8 @@ function mcapi_form_field_config_edit_form_alter(&$form, &$form_state) {
 }
 
 /**
- * implements hook_entity_extra_field_info().
+ * Implements hook_entity_extra_field_info().
+ * @todo move this to another file i.e.. call another function _mcapi_entity_extra_field_info()
  */
 function mcapi_entity_extra_field_info() {
   //go through all the bundles which are configured to hold wallets
@@ -248,8 +240,10 @@ function mcapi_entity_extra_field_info() {
       ]
     ];
   }
+  $extra['mcapi_wallet']['mcapi_wallet']['display'] = [];
+  $wallet_display = &$extra['mcapi_wallet']['mcapi_wallet']['display'];
 
-  $extra['mcapi_wallet']['mcapi_wallet']['display'] = [
+  $wallet_display = [
     'stats' => [
       'label' => t('Trading stats'),
       'description' => t('Grid showing trading stats for all currencies'),
@@ -266,7 +260,7 @@ function mcapi_entity_extra_field_info() {
       'weight' => 7
     ],
     'balance_bars' => [
-      'label' => t('Given & gotten'),
+      'label' => t('Given & received'),
       'description' => t('One barchart per currency showing incoming and outgoing volumes'),
       'weight' => 8
     ],
@@ -274,32 +268,37 @@ function mcapi_entity_extra_field_info() {
       'label' => t("Link to canonical view"),
       'description' => t("Link to canonical view"),
       'weight' => 11
+    ],
+    'holder_link' => [
+      'label' => t("Link to holder"),
+      'description' => t("Each wallet is owned by a content entity"),
+      'weight' => 14,
+      'visible' => FALSE
     ]
   ];
-  if (\Drupal::service('router.route_provider')->getRoutesByNames(['view.wallet_log.page'])) {
-    $extra['mcapi_wallet']['mcapi_wallet']['display']['wallet_log'] = [
-      'label' => t('Transaction_log (view)'),
-      'description' => t('List of transactions (view)'),
+  $route_provider = \Drupal::service('router.route_provider');
+  //we don't want this to break if these views are not present, for any reason
+  if ($route_provider->getRoutesByNames(['view.wallet_transactions.page'])) {
+    $wallet_display['link_transactions'] = [
+      'label' => t("Link to this wallet's transactions"),
+      'description' => t("A page generated by views"),
       'weight' => 9
     ];
   }
-  else drupal_set_message('Route view.wallet_log.page expected not found');
 
-  if (\Drupal::service('router.route_provider')->getRoutesByNames(['view.income_expenditure.income_page'])) {
-    $extra['mcapi_wallet']['mcapi_wallet']['display']['income_expenditure'] = [
-      'label' => t('Income & expenditure (view)'),
+  if ($route_provider->getRoutesByNames(['view.income_expenditure.income_page'])) {
+    $wallet_display['link_income_expenditure'] = [
+      'label' => t('Link to Income & expenditure'),
       'description' => t('Two tables showing transactions in either direction'),
       'weight' => 10
     ];
   }
-  else drupal_set_message('Route view.income_expenditure.income_page not found');
-
 
   return $extra;
 }
 
 /**
- * implements hook_theme().
+ * Implements hook_theme().
  */
 function mcapi_theme() {
   $file = ['file' => 'templates/theme.inc'];
@@ -366,6 +365,16 @@ function empty_worth(array $worth) {
   return TRUE;
 }
 
+
+/**
+ * Implements hook_help().
+ */
+function mcapi_forms_help($route_name) {
+  if ($route_name == 'mcapi.admin.transaction_form.list') {
+    return t('These are transaction forms from all over the system: entity display forms and custom forms.');
+  }
+}
+
 /**
  * implement mcapi hook_mcapi_form_list().
  * return a list of transaction forms declared in this module.
@@ -376,24 +385,20 @@ function empty_worth(array $worth) {
  * - 'operations' => [Url::fromPath('blah')] an array of items, each with title and path
  */
 function mcapi_mcapi_form_list() {
-  $forms['default'] = [
-    'title' => t('Default'),
-    'route' => 'mcapi.transaction.add',
-    'route_parameters' => [],
-    'operations' => []
-  ];
+  //@todo get the title from the route.
   $forms['12many'] = [
-    'title' => t('One wallet pays many'),
+    'title' => t('One to many'),
     'route' => 'mcapi.masspay.12many',
     'route_parameters' => [],
     'operations' => []
   ];
   $forms['many21'] = [
-    'title' => t('Many wallets pay one'),
+    'title' => t('Many to one'),
     'route' => 'mcapi.masspay.many21',
     'route_parameters' => [],
     'operations' => []
   ];
+  //add
   return $forms;
 }
 
@@ -402,7 +407,7 @@ function mcapi_entity_query_transaction_query_alter($query)  {
 }
 
 /**
- * implements hook_entity_form_display_alter().
+ * Implements hook_entity_form_display_alter().
  * Ensure on startup that the worth field is visible in the entity form
  * this is nasty but there was no other way
  */
@@ -416,3 +421,25 @@ function mcapi_entity_view_display_alter($display, $display_context){
     $display->setComponent('worth', ['type' =>'worth']);
   }
 }
+
+/*
+ * utility retrieve any enabled views embed displays which takes a wallet id as its first argument
+ * @todo make some settings here, or some responsivness to the actual views, then cache it
+ */
+function mcapi_one_wallet_entity_views_displays() {
+  //probably also need to return a path component and the menu link title
+  return [
+    //'entity_transactions' => 'embed',
+    'wallet_transactions' => [
+      'display_id' => 'embed',
+      'path' => 'transactions',
+      'title' => t('Transactions')//might be a good idea to get this from the views display, translated
+    ],
+    'income_expenditure' => [
+      'display_id' => 'embed_1',//can't seem to attach the outgoing transactions to an embed
+      'path' => 'inex',
+      'title' => t('Income & Expenditure')//might be a good idea to get this from the views display, translated
+    ]
+  ];
+}
+

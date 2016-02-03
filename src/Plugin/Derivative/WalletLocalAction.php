@@ -41,12 +41,12 @@ class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface
    * {@inheritdoc}
    */
   public function getDerivativeDefinitions($base_plugin_definition) {
-    
+
     //add wallet links can go in three locations
     foreach($this->settings->get('entity_types') as $entity_type_bundle => $max) {
       if (!$max) {
         continue;
-        }
+      }
       list($entity_type, $bundle_name) = explode(':', $entity_type_bundle);
       $key = "mcapi.wallet.add.{$bundle_name}.action";
       //assumes bundle names don't clash!

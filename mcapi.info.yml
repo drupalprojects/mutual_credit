@@ -1,8 +1,10 @@
 name: Accounting core
-description: Wallets, Currencies, and Transactions
+description: Provides wallets, currencies, and transactions
 package: Community Accounting
 configure: mcapi.admin
 core: 8.x
 type: module
 dependencies:
   - action
+#dependency on rules is temporary
+  - rules

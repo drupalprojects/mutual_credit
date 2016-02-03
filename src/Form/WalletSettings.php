@@ -116,6 +116,17 @@ class WalletSettings extends ConfigFormBase {
       '#default_value' => $config->get('payways'),
       '#weight' => 9
     ];
+    $form['public'] = [
+      '#title' => $this->t('Default wallet visibility'),
+      '#description' => 'Setting given to new wallets',
+      '#type' => 'radios',
+      '#options' => [
+        0 => $this->t('Can only be seen by the owners and admins'),
+        1 => $this->t("Can be seen by anybody with 'view public wallets' permission")
+      ],
+      '#default_value' => $config->get('payways'),
+      '#weight' => 9
+    ];
 
     $form['user_interface'] = [
       '#title' => $this->t('User interface'),

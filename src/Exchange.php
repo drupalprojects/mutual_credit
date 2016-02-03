@@ -68,4 +68,68 @@ class Exchange {
     }
     return $multiple;
   }
+
+
+  /**
+   * Handle the deletion of the wallet's parent
+   * If the wallet has no transactions it can be deleted
+   * Otherwise make the passed exchange the parent, must be found.
+   *
+   * @param ContentEntityInterface $holder
+   */
+  public static function orphan(ContentEntityInterface $holder) {
+    $entityTypeManager = \Drupal::entityTypeManager();
+    foreach (Mcapi::walletsOf($holder, TRUE) as $wallet) {
+      if ($wallet->isUsed()) {
+        //move the wallet
+        $new_holder_entity = \Drupal::moduleHandler()->moduleExists('mcapi_exchanges') ?
+          Exchanges::findNewHolder($holder) : //@todo this is a bit inelegant
+          User::load(1);
+        $new_holder_entity = class_exists('\Drupal\mcapi_exchanges\Exchanges') ?
+          Exchange::findNewHolder($holder) :
+          User::load(1);
+        $new_name = t(
+          "Formerly @name's wallet: @label", ['@name' => $wallet->label(), '@label' => $wallet->label(NULL, FALSE)]
+        );
+        $wallet->set('name', $new_name)
+          ->set('holder_entity_type', $new_holder_entity->getEntityTypeId())
+          ->set('holder_entity_id', $new_holder_entity->id())
+          ->save();
+        //@note this implies the number of wallets an exchange can own to be unlimited.
+        //or more likely that this max isn't checked during orphaning
+        drupal_set_message(t(
+          "@name's wallets are now owned by @entity_type @entity_label", [
+          '@name' => $wallet->label(),
+          '@entity_type' => $new_holder_entity->getEntityType()->getLabel(),
+            //todo I tried toLink but it doesn't render from here
+          '@entity_label' => $new_holder_entity->label()
+            ]
+        ));
+        \Drupal::logger('mcapi')->notice(
+          'Wallet @wid was orphaned to @entitytype @id', [
+          '@wid' => $wallet->id(),
+          '@entitytype' => $new_holder_entity->getEntityTypeId(),
+          '@id' => $new_holder_entity->id()
+          ]
+        );
+      }
+      else {
+        drupal_set_message('deleting unused wallet '.$wallet->label());
+        $wallet->delete();
+        return;
+      }
+    }
+  }
+
+  static function intertradingWalletId() {
+    $query = \Drupal::entityQuery('mcapi_wallet')
+      ->condition('payways', \Drupal\mcapi\Entity\Wallet::PAYWAY_AUTO);
+    if (Self::multipleExchanges()) {
+      //there might be a better name for this method,
+      //if there were many methods that were filtering on the current user's exchange
+      Exchanges::intertradingWalletId($query);
+    }
+    $wids = $query->execute();
+    return reset($wids);
+  }
 }

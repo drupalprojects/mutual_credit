@@ -180,7 +180,7 @@ function mcapi_command_sms_incoming($op, $number, $message) {
 }
 
 /*
- * implements hook_twitter_status_save().
+ * Implements hook_twitter_status_save().
  * parse the tweet as it is saved
  * this module does NOT ISSUE COMMANDS OR RESPONSES via twitter
  * likely to be fired on cron

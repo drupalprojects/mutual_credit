@@ -1,0 +1,51 @@
+uuid: 836d8e66-4133-4716-8f00-e267173faf71
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.mcapi_wallet.mcapi_wallet.payees
+    - field.field.mcapi_wallet.mcapi_wallet.payers
+  module:
+    - mcapi
+id: mcapi_wallet.mcapi_wallet.default
+targetEntityType: mcapi_wallet
+bundle: mcapi_wallet
+mode: default
+content:
+  balance_bars:
+    weight: 4
+    settings: {  }
+    third_party_settings: {  }
+  balance_limits:
+    weight: 0
+    settings: {  }
+    third_party_settings: {  }
+  balances:
+    weight: 2
+    settings: {  }
+    third_party_settings: {  }
+  histories:
+    weight: 3
+    settings: {  }
+    third_party_settings: {  }
+  holder_link:
+    weight: 7
+    settings: {  }
+    third_party_settings: {  }
+  link_income_expenditure:
+    weight: 6
+    settings: {  }
+    third_party_settings: {  }
+  link_transactions:
+    weight: 5
+    settings: {  }
+    third_party_settings: {  }
+  stats:
+    weight: 1
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  canonical_link: true
+  payees: true
+  payers: true
+

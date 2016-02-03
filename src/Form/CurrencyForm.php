@@ -64,7 +64,7 @@ class CurrencyForm extends EntityForm {
         '#selection_handler' => 'default:user',
         '#selection_settings' => [
           'filter' => [
-            'permission' => ['manage mcapi']
+            //'role' => [ROLE]
           ]
         ],
         '#tags' => FALSE,

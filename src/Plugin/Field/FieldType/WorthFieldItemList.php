@@ -3,7 +3,6 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\Field\FieldType\WorthFieldItemList.
- * @todo make an interface for this?
  */
 
 namespace Drupal\mcapi\Plugin\Field\FieldType;

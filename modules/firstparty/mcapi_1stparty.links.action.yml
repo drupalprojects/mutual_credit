@@ -1,6 +1,0 @@
-mcapi.1stparty_form.add_action:
-  route_name: mcapi.admin_firstparty_editform.add
-  title: 'New form'
-  appears_on:
-    - mcapi.admin.transaction_form.list
-

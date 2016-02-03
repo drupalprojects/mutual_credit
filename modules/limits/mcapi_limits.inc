@@ -162,6 +162,7 @@ function mcapi_limits_submit(&$form, FormStateInterface $form_state) {
   foreach ($plugin->getConfiguration() as $key => $val) {
     $currency->setThirdPartySetting('mcapi_limits', $key, $val);
   }
+  //@todo how does the system know that these settings are defined as a config type in mcapi_limits.schema.yml?
   //this has to go after the plugin has set the values
   $currency->setThirdPartySetting('mcapi_limits', 'plugin', $plugin->id);
   $currency->save();

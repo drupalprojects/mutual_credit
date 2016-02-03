@@ -1,0 +1,39 @@
+uuid: f08864e9-f8e9-46fe-8005-5d7881242217
+langcode: und
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.mcapi_wallet.summary
+    - field.field.mcapi_wallet.mcapi_wallet.payees
+    - field.field.mcapi_wallet.mcapi_wallet.payers
+  module:
+    - mcapi
+_core:
+  default_config_hash: fYT4USC7AVc0PvczMNngzcH9ICecngO5YigF5WLslQE
+id: mcapi_wallet.mcapi_wallet.summary
+targetEntityType: mcapi_wallet
+bundle: mcapi_wallet
+mode: summary
+content:
+  balances:
+    weight: 0
+    settings: {  }
+    third_party_settings: {  }
+  canonical_link:
+    weight: 1
+    settings: {  }
+    third_party_settings: {  }
+  link_transactions:
+    weight: 2
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  balance_bars: true
+  balance_limits: true
+  histories: true
+  holder_link: true
+  link_income_expenditure: true
+  payees: true
+  payers: true
+  stats: true
+

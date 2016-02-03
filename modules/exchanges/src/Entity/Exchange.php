@@ -71,8 +71,6 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   const VISIBILITY_RESTRICTED = 1;
   const VISIBILITY_TRANSPARENT = 2;
 
-  const intertradingWallet_NAME = '_intertrading';
-
   /**
    * {@inheritdoc}
    */
@@ -96,19 +94,14 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
     //@todo add the manager user to the exchange if it is not a member
     //$exchange_manager = User::load($this->get('uid')->value);
 
-    //create a new wallet for new exchanges
+    //create a new intertrading wallet for new exchanges
     if (!$update) {
-      $this->addIntertradingWallet();
+      $props = [
+        'holder' => $this,
+        'payways' => Wallet::PAYWAY_AUTO,
+      ];
+      Wallet::create($props)->save();
     }
-  }
-
-  private function addIntertradingWallet() {
-    $props = [
-      'holder' => $this,
-      'payways' => Wallet::PAYWAY_AUTO,
-    ];
-    $wallet = Wallet::create($props);
-    $wallet->save();
   }
 
   /**
@@ -207,7 +200,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
   /**
    * {@inheritdoc}
    */
-  function intertradingWallet() {
+  public function intertradingWallet() {
     $wallets = $this->entityTypeManager()
       ->getStorage('mcapi_wallet')
       ->loadByProperties(['payways' => Wallet::PAYWAY_AUTO, 'holder_entity_id' => $this->id()]);

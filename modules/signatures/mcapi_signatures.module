@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * @todo rewrite this module using a signataure service
+ */
 
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi_signatures\Signatures;
@@ -7,7 +11,7 @@ use Drupal\mcapi\Mcapi;
 const TRANSACTION_STATE_PENDING = 'pending';
 
 /**
- * implements hook_help().
+ * Implements hook_help().
  * @return string
  */
 function mcapi_signatures_help($route_name, $route_match) {
@@ -22,7 +26,7 @@ function mcapi_signatures_help($route_name, $route_match) {
 }
 
 /**
- * implements hook_ENTITY_TYPE_load().
+ * Implements hook_ENTITY_TYPE_load().
  * alter the start_state of transaction types according to this module's settings
  */
 function mcapi_signatures_mcapi_type_load($entities) {
@@ -36,7 +40,7 @@ function mcapi_signatures_mcapi_type_load($entities) {
 }
 
 /**
- * implements hook_ENTITY_TYPE_presave().
+ * Implements hook_ENTITY_TYPE_presave().
  * add the signatures to a new transaction object and sign for the current user
  */
 function mcapi_signatures_mcapi_transaction_presave($transaction) {
@@ -57,7 +61,7 @@ function mcapi_signatures_mcapi_transaction_presave($transaction) {
 
 
 /**
- * implements hook_ENTITY_TYPE_load
+ * Implements hook_ENTITY_TYPE_load
  * put the signatories into the transaction entity
  */
 function mcapi_signatures_mcapi_transaction_load($entities) {
@@ -91,7 +95,7 @@ function mcapi_signatures_mcapi_transaction_delete($transaction) {
 }
 
 /**
- * implements hook_ENTITY_insert().
+ * Implements hook_ENTITY_insert().
  * writes the signatures after the transaction is written
  */
 function mcapi_signatures_mcapi_transaction_insert($transaction) {
@@ -107,17 +111,9 @@ function mcapi_signatures_mcapi_transaction_insert($transaction) {
   }
 }
 
-/**
- * implements hook_ENTITY_TYPE_insert().
- * @param EntityInterface $type
- */
-function mcapi_signatures_mcapi_type_insert($type) {
-  module_load_include('install', 'mcapi_signatures');
-  mcapi_signatures_configure_type($type->id());
-}
 
 /**
- * implements hook_ENTITY_update().
+ * Implements hook_ENTITY_update().
  * rewrites the signatures after the transaction is updated
  */
 function mcapi_signatures_mcapi_transaction_update($transaction) {
@@ -136,7 +132,7 @@ function mcapi_signatures_mcapi_transaction_update($transaction) {
 }
 
 /**
- * implements hook_theme().
+ * Implements hook_theme().
  */
 function mcapi_signatures_theme() {
   $items['mcapi_signatures'] = [
@@ -149,7 +145,7 @@ function mcapi_signatures_theme() {
 }
 
 /**
- * implements hook_ENTITY_TYPE_view().
+ * Implements hook_ENTITY_TYPE_view().
  * show the signatures on the transaction certificate.
  */
 function mcapi_signatures_mcapi_transaction_view(array &$build, $transaction, $display, $view_mode) {
@@ -169,66 +165,78 @@ function mcapi_signatures_mcapi_transaction_view(array &$build, $transaction, $d
 }
 
 /**
- * implements hook_entity_extra_field_info().
+ * Implements hook_entity_extra_field_info().
  */
 function mcapi_signatures_entity_extra_field_info() {
-  return [
-    'user' => [
-      'user' => [
-        'display' => [
-          'mcapi_signatures' => [
-            'label' => t('Pending transactions'),
-            'description' => t("Transactions awaiting others' signatures"),
-            'weight' => 3,
-          ],
-        ]
-      ]
-    ],
-    'mcapi_transaction' => [
-      'mcapi_transaction' => [
-        'display' => [
-          'mcapi_signatures' => [
-            'label' => t('Signatures'),
-            'description' => t('List of signatures needed and obtained'),
-            'weight' => 5,
-          ]
-        ]
-      ]
-    ]
-  ];
+  $fields = [];
+  if (\Drupal::moduleHandler()->moduleExists('views')) {
+    $fields['user']['user']['display'] = [
+      'waiting_on_me' => [
+        'label' => t('Requests to sign'),
+        'description' => t("Transactions awaiting the user's signature"),
+        'weight' => 3,
+      ],
+      'waiting_on_another' => [
+        'label' => t('Signatures awaited'),
+        'description' => t("Transactions awaiting others' signatures"),
+        'weight' => 3,
+      ],
+    ];
+  }
+  return $fields;
 }
 
 /**
  * Implements hook_ENTITY_TYPE_view() for user entities.
- * add the extraField
+ * show the pending transactions on the user
  */
 function mcapi_signatures_user_view(array &$build, $account, $display) {
-  if ($display->getComponent('mcapi_signatures')) {
-    if (\Drupal::moduleHandler()->moduleExists('views')) {
-      $build['mcapi_signatures'] = [
-        'title' => [
-          '#markup' => t('Pending transactions')
-        ],
-        'content' => views_embed_view(
-          'mcapi_pending_signatures',
-          'my_pending',
-          $account->id()
-        )
-      ];
-    }
+  drupal_set_message('check the views for pending signatures');
+  if ($display->getComponent('waiting_on_me')) {
+    $build['mcapi_signatures'] = [
+      'content' => views_embed_view(
+        'mcapi_pending_signatures',
+        'my_sig_needed',
+        $account->id()
+      )
+    ];
+  }
+  if ($display->getComponent('waiting_on_others')) {
+    $build['mcapi_signatures'] = [
+      'content' => views_embed_view(
+        'mcapi_pending_signatures',
+        'other_sig_needed',
+        $account->id()
+      )
+    ];
   }
 }
 
 /**
- * implements template_preprocess_THEMEHOOK
+ * Implements template_preprocess_THEMEHOOK
  */
 function template_preprocess_mcapi_signatures(&$vars) {
   foreach ($vars['transaction']->signatures as $uid => $signed) {
     $account = User::load($uid);
-    $vars['signatures'][$uid] = array(
+    $vars['signatures'][$uid] = [
       'account' => $account,
       'class' => 'signature '. (empty($signed) ? 'pending' : 'signed'),
       'name' =>  $account->getDisplayName(),
-    );
+    ];
   }
 }
+
+function mcapi_signatures_form_mcapi_misc_settings_alter(&$form, $form_state) {
+  $form['pending_messages'] = [
+    '#title' => t('Remind users to sign transactions on every page.'),
+    '#type' => 'checkbox',
+    '#default_value' => \Drupal::Config('mcapi_signatures.settings')->get('pending_messages')
+  ];
+  $form['action']['submit']['#submit'][] = 'mcapi_signature_settings_submit';
+}
+
+function mcapi_signature_settings_submit($form, &$form_state) {
+  \Drupal::configFactory()->get('mcapi_signatures.settings')->set('pending_messages', $form_state->getValue('pending_messages'));
+}
+
+

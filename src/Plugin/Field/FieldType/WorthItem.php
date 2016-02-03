@@ -47,8 +47,8 @@ class WorthItem extends FieldItemBase {
     $properties['currency'] = DataReferenceDefinition::create('entity')
       ->setLabel(t('Currency'))
       ->setComputed(TRUE)
-      ->setReadOnly(FALSE)
-      ->setTargetDefinition(EntityDataDefinition::create('mcapi_currency'));
+      ->setClass('\Drupal\mcapi\CurrencyComputed')
+      ->setSetting('currency source', 'curr_id');
     return $properties;
   }
 
@@ -83,8 +83,6 @@ class WorthItem extends FieldItemBase {
     }
     $this->set('curr_id', $value['curr_id']);
     $this->set('value', $value['value']);
-    //set the computed field
-    $this->set('currency', Currency::load($value['curr_id']), $notify);
     // Notify the parent of any changes.
     if ($notify && isset($this->parent)) {
       $this->parent->onChange($this->name);
@@ -95,6 +93,7 @@ class WorthItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public function isEmpty() {
+
     if ($this->currency->zero) {
       return FALSE;
     }
@@ -110,11 +109,20 @@ class WorthItem extends FieldItemBase {
       'curr_id' => $field_definition->currency->id
     ];
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public static function mainPropertyName() {
     return 'value';
+  }
+
+  public function onChange($property_name, $notify = TRUE) {
+    if ($property_name == 'currency') {
+      $this->curr_id = $this->currency->id;
+
+    mtrace();
+    }
+    parent::onChange($property_name, $notify);
   }
 }

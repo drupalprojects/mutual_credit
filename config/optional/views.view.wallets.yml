@@ -433,7 +433,7 @@ display:
             title: All
           title_enable: false
           title: ''
-          default_argument_type: route_wallets
+          default_argument_type: route_wallet
           default_argument_options: {  }
           default_argument_skip_url: false
           summary_options:
@@ -499,7 +499,7 @@ display:
             title: All
           title_enable: false
           title: ''
-          default_argument_type: route_wallets
+          default_argument_type: route_wallet
           default_argument_options: {  }
           default_argument_skip_url: false
           summary_options:

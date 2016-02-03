@@ -1,0 +1,26 @@
+id: credit
+path: 'transact/credit'
+menu:
+  title: 'Credit'
+  menu_name: 'account'
+  weight: 5
+title: 'Credit another member'
+status: 1
+type: default
+incoming: 0
+mywallet:
+  unused: disabled
+partner:
+  preset: ''
+fieldapi_presets:
+  description:
+    preset:
+      placeholder: What you are crediting the member for...
+experience:
+  twig: "I, {{ payer }}\r\nreceived {{ description }}\r\nfrom\r\n{{ payee }}\r\nand now credit them for\r\n{{ worth }}"
+  button: Preview
+  preview: page
+langcode: en
+dependencies: {  }
+third_party_settings: { }
+

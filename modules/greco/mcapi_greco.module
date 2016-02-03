@@ -29,7 +29,7 @@ function mcapi_greco_theme() {
 }
 
 /*
- * implements hook_cron().
+ * Implements hook_cron().
  * Greco says:
  * Dividing the sum of all the debit balances by the average daily sales gives us the sales performance ratio for the system.
  */

@@ -5,6 +5,7 @@
  * Contains \Drupal\mcapi\Element\WalletAutocomplete
  * @todo would be nice to use the #NUM as the wallet identifier,
  * but this would mean overwriting another class
+ * @todo this doesn't support the exclude setting yet
  */
 
 namespace Drupal\mcapi\Element;
@@ -14,8 +15,6 @@ use Drupal\Component\Utility\Tags;
 
 /**
  * Provides a widget to select wallet references by name, using autocomplete
- * This field can ONLY be used on fields called payer and payee;
- * it reads the fieldname to know what direction it is going in
  *
  * @FormElement("wallet_entity_auto")
  *

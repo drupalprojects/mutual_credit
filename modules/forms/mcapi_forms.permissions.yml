@@ -1,0 +1,8 @@
+'design 1stparty forms':
+  title: 'Design first-party forms'
+  description: 'Create transaction forms for specific purposes, exchanges or currencies'
+  'restrict access': TRUE
+'create 3rdparty transaction':
+  title: 'Create 3rd party transactions'
+  description: 'Log a transaction in which the user has no part'
+

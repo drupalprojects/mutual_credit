@@ -157,6 +157,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     }
     $wids = $this->prepareWallets();
     for ($i = 1; $i <= $values['num']; $i++) {
+      shuffle($wids);
       $this->develGenerateTransactionAdd($results, reset($wids), end($wids));
     }
     if (function_exists('drush_log') && $i % drush_get_option('feedback', 1000) == 0) {

@@ -233,6 +233,11 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       ->setDescription(t('Everybody can pay in, out, or both'))
       ->setSetting('length', 1);
 
+    $fields['public'] = BaseFieldDefinition::create('boolean')
+      ->setLabel(t('Public'))
+      ->setDescription(t("Visible to everyone with 'view public wallets' permission"))
+      ->setDefaultValue(1);
+
     $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Created on'))
       ->setDescription(t('The time that the wallet was created.'))
@@ -341,52 +346,6 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   /**
    * {@inheritDoc}
    */
-  public static function orphan(ContentEntityInterface $holder) {
-    $entityTypeManager = \Drupal::entityTypeManager();
-    foreach (Mcapi::walletsOf($holder, TRUE) as $wallet) {
-      if (Mcapi::walletIsUsed($wallet->id())) {
-        //move the wallet
-        $new_holder_entity = \Drupal::moduleHandler()->moduleExists('mcapi_exchanges') ?
-          Exchanges::findNewHolder($holder) :
-          User::load(1);
-
-        $new_holder_entity = Exchange::findNewHolder($holder);
-        $new_name = t(
-          "Formerly @name's wallet: @label", ['@name' => $wallet->label(), '@label' => $wallet->label(NULL, FALSE)]
-        );
-        $wallet->set('name', $new_name)
-          ->set('holder_entity_type', $new_holder_entity->getEntityTypeId())
-          ->set('holder_entity_id', $new_holder_entity->id())
-          ->save();
-        //@note this implies the number of wallets an exchange can own to be unlimited.
-        //or more likely that this max isn't checked during orphaning
-        drupal_set_message(t(
-          "@name's wallets are now owned by @entity_type @entity_label", [
-          '@name' => $wallet->label(),
-          '@entity_type' => $new_holder_entity->getEntityType()->getLabel(),
-            //todo I tried toLink but it doesn't render from here
-          '@entity_label' => $new_holder_entity->label()
-            ]
-        ));
-        \Drupal::logger('mcapi')->notice(
-          'Wallet @wid was orphaned to @entitytype @id', [
-          '@wid' => $wallet->id(),
-          '@entitytype' => $new_holder_entity->getEntityTypeId(),
-          '@id' => $new_holder_entity->id()
-          ]
-        );
-      }
-      else {
-        drupal_set_message('deleting unused wallet '.$wallet->label());
-        $wallet->delete();
-        return;
-      }
-    }
-  }
-
-  /**
-   * {@inheritDoc}
-   */
   public function invalidateTagsOnSave($update) {
     parent::invalidateTagsOnSave($update);
     //invalidate tags for the previous and current parents
@@ -429,5 +388,20 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   }
 
 
+  /**
+   * {@inheritdoc}
+   * @todotim make a new baseField in this file, a boolean called 'used' default 0
+   * in getSummaries set that flag and save
+   * in this function just read that flag
+   * @todo put this in the interface
+   */
+  public function isUsed() {
+    return (bool) $this->entityTypeManager()
+      ->getStorage('mcapi_transaction')->getQuery()
+      ->condition('involving', $this->id())
+      ->count()
+      ->execute();
+
+  }
 
 }

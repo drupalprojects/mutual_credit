@@ -9,7 +9,7 @@
  */
 
 /**
-* implements hook_views_data_alter
+* Implements hook_views_data_alter
 */
 function mcapi_views_data_alter(&$data) {
   if (\Drupal::config('mcapi.wallet')->get('entity_types')['user:user'] == 1) {
@@ -24,7 +24,7 @@ function mcapi_views_data_alter(&$data) {
 }
 
 /**
- * implements hook_form_FORM_ID_alter
+ * Implements hook_form_FORM_ID_alter
  * renames the exposed filters on views forms
  */
 function mcapi_form_views_exposed_form_alter(&$form, $form_state) {

@@ -27,7 +27,7 @@ const EXCHANGE_OG_FIELD = 'og_exchange_ref';
 
 
 /**
- * implements hook_entity_info_alter().
+ * Implements hook_entity_info_alter().
  * add new handlers for the Exchange entity
  * @param Drupal\Core\Entity\EntityTypeInterface[] $entity_types
  */
@@ -48,7 +48,7 @@ function mcapi_exchanges_entity_type_alter(array &$entity_types) {
 }
 
 /**
- * implements hook_menu_links_discovered_alter().
+ * Implements hook_menu_links_discovered_alter().
  * remove the masspay route because this module replaces it
  * @param array[] $definitions
  */
@@ -69,7 +69,7 @@ function mcapi_exchanges_local_tasks_alter(&$items) {
 
 
 /**
- * implements hook_entity_extra_field_info().
+ * Implements hook_entity_extra_field_info().
  */
 function mcapi_exchanges_entity_extra_field_info() {
   $extra['mcapi_exchange']['mcapi_exchange']['display'] = [
@@ -97,7 +97,7 @@ function mcapi_exchanges_entity_extra_field_info() {
 }
 
 /**
- * implements hook_mcapi_exchange_view().
+ * Implements hook_mcapi_exchange_view().
  * adds extra_fields to the exchange
  */
 function mcapi_exchanges_mcapi_exchange_view(&$build, $entity, $display) {
@@ -137,7 +137,7 @@ function mcapi_exchanges_mcapi_exchange_view(&$build, $entity, $display) {
 }
 
 /**
- * implements hook_mcapi_transaction_validate().
+ * Implements hook_mcapi_transaction_validate().
  * check that intertrading wallet is being used correctly.
  *
  * @param Transaction $transaction
@@ -183,7 +183,7 @@ function mcapi_exchanges_form_transaction_transition_edit_form(&$form, &$form_st
 }
 
 /**
- * implements hook_FORM_FORM_ID_alter();
+ * Implements hook_FORM_FORM_ID_alter();
  * Add the ticks property to the currency form
  */
 function mcapi_exchanges_form_mcapi_currency_form_alter(&$form, $form_state) {
@@ -205,7 +205,7 @@ function mcapi_exchanges_form_mcapi_currency_form_alter(&$form, $form_state) {
   }
 }
 /**
- * implements hook_form_FORM_ID_alter()
+ * Implements hook_form_FORM_ID_alter()
  * add a submit callback to the wallet settings
  */
 function mcapi_exchanges_form_mcapi_wallet_settings_form_alter(&$form, $form_state) {
@@ -268,7 +268,7 @@ function mcapi_exchange_mail_alter($message) {
 }
 
 /**
- * implements hook_form_FORM_ID_alter().
+ * Implements hook_form_FORM_ID_alter().
  * adds the segregate_exchanges setting checkbox to the user admin settings form
  */
 function mcapi_exchanges_form_user_admin_settings_alter(&$form, $form_state) {
@@ -301,7 +301,7 @@ function mcapi_exchanges_segregate_exchanges_submit($form, $form_state) {
 }
 
 /**
- * implements hook_field_widget_WIDGET_TYPE_form_alter()
+ * Implements hook_field_widget_WIDGET_TYPE_form_alter()
  */
 function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $context) {
   $user = User::load(\Drupal::currentUser()->id());
@@ -309,7 +309,7 @@ function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $
 }
 
 /**
- * implements hook_query_TAG_alter for tag entity_query_mcapi_wallet
+ * Implements hook_query_TAG_alter for tag entity_query_mcapi_wallet
  * limits all wallet entityQueries to the exchanges of the current user OR the wallets of the current user
  */
 function mcapi_exchanges_query_whichWallets_alter(\Drupal\Core\Database\Driver\mysql\Select $query) {
@@ -332,7 +332,7 @@ function mcapi_exchanges_query_whichWallets_alter(\Drupal\Core\Database\Driver\m
 }
 
 /**
- * implements hook_ENTITY_TYPE_insert for mcapi_wallet().
+ * Implements hook_ENTITY_TYPE_insert for mcapi_wallet().
  * Ensure the wallet is in the same Exchange as its holder
  * @todo update this when og field is loading into the entity
  * @note this assumes that every holder is in an exchange

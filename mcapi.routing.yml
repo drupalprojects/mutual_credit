@@ -11,7 +11,7 @@ mcapi.admin:
 mcapi.admin_misc:
   path: '/admin/accounting/misc'
   defaults:
-    _form: 'Drupal\mcapi\Form\SettingsForm'
+    _form: 'Drupal\mcapi\Form\MiscSettings'
     _title: 'Other configuration'
   requirements:
     _permission: 'configure mcapi'
@@ -40,7 +40,7 @@ mcapi.admin.workflow.actionedit:
 
 #these have tabs. not sure whether they can be one
 mcapi.admin.access.op:
-  path: /admin/accounting/access/{op}
+  path: /admin/accounting/misc/{op}
   defaults:
     _form: 'Drupal\mcapi\Form\AccessSettings'
     _title: 'Transaction Access'
@@ -54,17 +54,6 @@ mcapi.admin_wallets:
     _title: 'Wallet Settings'
   requirements:
     _permission: 'configure mcapi'
-
-mcapi.transaction.add:
-  path: /transaction/add
-  defaults:
-    _entity_form: mcapi_transaction.admin
-    _title: 'Log transaction'
-  requirements:
-    _permission: 'manage mcapi'
-    _entity_create_access: mcapi_transaction
-  options:
-    _admin_route: TRUE
 
 mcapi.admin.transaction_form.list:
   path: '/admin/accounting/forms'
@@ -90,4 +79,3 @@ mcapi.masspay.many21:
     _title: 'Many wallets pay one'
   requirements:
     _permission: 'manage mcapi'
-

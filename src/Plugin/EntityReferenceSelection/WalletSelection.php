@@ -7,14 +7,14 @@
 
 namespace Drupal\mcapi\Plugin\EntityReferenceSelection;
 
-
 /**
  * Provide default Wallet selection handler.
  *
  * @EntityReferenceSelection(
- *   id = "default:wallet",
+ *   id = "default:mcapi_wallet",
  *   label = @Translation("Wallet selection"),
- *   group = "mcapi"
+ *   entity_types = {"mcapi_wallet"},
+ *   group = "default"
  * )
  */
 class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelection\DefaultSelection {
@@ -53,7 +53,11 @@ class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelectio
    * {@inheritdoc}
    */
   public function validateReferenceableEntities(array $ids) {
-    return array_intersect($ids, $this->queryEntities());
+    //user 1 skips validation. this is helpful for importing
+    if (\Drupal::currentUser()->id() != 1) {
+      $ids = array_intersect($ids, $this->queryEntities());
+    }
+    return $ids;
   }
 
   /**
@@ -73,24 +77,20 @@ class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelectio
       );
   }
 
-
-  /**
-   * Builds an EntityQuery to get referenceable entities.
-   *
-   * @param string|null $match
-   *   (Optional) Text to match the label against. Defaults to NULL.
-   * @param string $match_operator
-   *   (Optional) The operation the matching should be done with. Defaults
-   *   to "CONTAINS".
-   *
-   * @return \Drupal\Core\Entity\Query\QueryInterface
-   *   The EntityQuery object with the basic conditions and sorting applied to
-   *   it.
-   */
-  protected function buildEntityQuery($match = NULL, $match_operator = 'CONTAINS') {
-
-    mtrace();//this should NEVER be called
-
+  public function buildConfigurationForm(array $form, \Drupal\Core\Form\FormStateInterface $form_state) {
+    parent::buildConfigurationForm($form, $form_state);
+    debug('I think this is never needed');
+    $form['direction'] = [
+      '#title' => t('Direction'),
+      '#type' => 'radios',
+      '#options' => [
+        'payin' => $this->t('Select from wallets user can pay in to.'),
+        'payout' => $this->t('Select from wallets user can pay out from.')
+      ],
+      '#default_value' => $this->configuration['handler_settings']['direction']
+    ];
+    return $form;
   }
 
 }
+

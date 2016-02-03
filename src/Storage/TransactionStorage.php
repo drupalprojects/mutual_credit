@@ -21,16 +21,16 @@ class TransactionStorage extends TransactionIndexStorage {
 
   /**
    * {@inheritdoc}
-   * 
+   *
    * Because the transaction entity is keyed by serial number not xid,
    * and because it contains child entities,
    * We need to overwrite the whole save function
-   * and by the time we call the parent, we pass it individual transaction 
+   * and by the time we call the parent, we pass it individual transaction
    * entities having called $transaction->flatten
    *
    */
   public function save(EntityInterface $transaction) {
-    
+
     //determine the serial number
     if ($transaction->isNew()) {
       $last = $this->database->query(
@@ -52,14 +52,14 @@ class TransactionStorage extends TransactionIndexStorage {
         $parent = $entity->id();
       }
     }
-    
+
     $transaction->serial->value = $serial;
     // Allow code to run after saving.
     $transaction->setOriginalId($transaction->id());
     unset($transaction->original);
     return $return;
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -69,7 +69,7 @@ class TransactionStorage extends TransactionIndexStorage {
     $return = parent::doSave($entity->xid->value, $entity);
     // The entity is no longer new.
     $entity->enforceIsNew(FALSE);//because we were working on a clone
-    
+
     return $return;
   }
 

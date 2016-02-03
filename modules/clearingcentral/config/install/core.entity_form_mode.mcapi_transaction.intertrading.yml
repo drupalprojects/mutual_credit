@@ -1,0 +1,11 @@
+uuid: c3bfd48f-8eb0-4f7c-9a00-bc8a3c572308
+langcode: en
+status: true
+dependencies:
+  module:
+    - mcapi_cc
+id: mcapi_transaction.intertrading
+label: Intertrading
+targetEntityType: mcapi_transaction
+cache: true
+

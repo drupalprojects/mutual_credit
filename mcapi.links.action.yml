@@ -1,6 +1,6 @@
 mcapi.admin.transaction:
-  route_name: mcapi.transaction.add
-  title: 'Log Transaction'
+  route_name: mcapi.transaction.admin
+  title: 'Register Transaction'
   appears_on:
     - mcapi.admin
     - view.mcapi_transactions.admin

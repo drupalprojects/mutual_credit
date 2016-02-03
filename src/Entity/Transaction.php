@@ -40,7 +40,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *       "12many" = "Drupal\mcapi\Form\One2Many",
  *       "many21" = "Drupal\mcapi\Form\Many2One",
  *       "admin" = "Drupal\mcapi\Form\TransactionForm",
- *       "edit" = "Drupal\mcapi\Form\TransactionEditForm"
+ *       "edit" = "Drupal\mcapi\Form\TransactionEditForm",
  *     },
  *     "views_data" = "Drupal\mcapi\Views\TransactionViewsData",
  *     "route_provider" = {
@@ -59,6 +59,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *   links = {
  *     "canonical" = "/transaction/{mcapi_transaction}",
  *     "edit-form" = "/transaction/{mcapi_transaction}/edit",
+ *     "collection" = "/admin/accounting/transactions"
  *   },
  *   constraints = {
  *     "DifferentWallets" = {},
@@ -148,8 +149,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    * Validate a transaction including children
    * The Drupal way has 'validate' and 'save' phases. We need to map those onto
    * this Transaction's needs which are 'add children', alter, validate, and save
-   *
-   * @see https://drupalwatchdog.com/volume-5/issue-2/introducing-drupal-8s-entity-validation-api
    *
    * @return \Drupal\Core\Entity\EntityConstraintViolationListInterface
    *
@@ -253,37 +252,36 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 
-    $fields['payer'] = BaseFieldDefinition::create('wallet')
+    $fields['payer'] = BaseFieldDefinition::create('wallet_reference')
       ->setLabel(t('Payer'))
       ->setDescription(t('The giving wallet'))
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
       ->setCardinality(1)
-      ->setSetting('handler_settings', ['op' => 'payin'])
       ->setDisplayConfigurable('form', TRUE)
-      ->setDisplayOptions('form', ['type' => 'worth', 'weight' => 1])
+      ->setDisplayOptions('form', ['type' => 'wallet_reference_autocomplete', 'weight' => 1])
       ->setDisplayConfigurable('view', TRUE)
-      ->setDisplayOptions('view', ['type' => 'worth', 'weight' => 1])
-      ->addConstraint('CanPayin');
+      ->setDisplayOptions('view', ['type' => 'wallet_name', 'weight' => 1])
+      ->addConstraint('CanPayout');
 
-    $fields['payee'] = BaseFieldDefinition::create('wallet')
+    $fields['payee'] = BaseFieldDefinition::create('wallet_reference')
       ->setLabel(t('Payee'))
       ->setDescription(t('The receiving wallet'))
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
-      ->setSetting('handler_settings', ['op' => 'payout'])
       ->setCardinality(1)
       ->setDisplayConfigurable('form', TRUE)
-      ->setDisplayOptions('form', ['type' => 'worth', 'weight' => 2])
+      ->setDisplayOptions('form', ['type' => 'wallet_reference_autocomplete', 'weight' => 2])
       ->setDisplayConfigurable('view', TRUE)
-      ->setDisplayOptions('view', ['type' => 'worth', 'weight' => 2])
-      ->addConstraint('CanPayout');
+      ->setDisplayOptions('view', ['type' => 'wallet_name', 'weight' => 2])
+      ->addConstraint('CanPayin');
 
     $fields['creator'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Creator'))
       ->setDescription(t('The user who created the transaction'))
       ->setSetting('target_type', 'user')
       ->setDisplayConfigurable('view', TRUE)
+      ->setDisplayConfigurable('form', TRUE)
       ->setReadOnly(TRUE)
       ->setRevisionable(FALSE)
       ->setRequired(TRUE);
@@ -293,6 +291,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setDescription(t('The type/workflow path of the transaction'))
       ->setSetting('target_type', 'mcapi_type')
       ->setDisplayConfigurable('view', TRUE)
+      ->setDisplayConfigurable('form', TRUE)
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 

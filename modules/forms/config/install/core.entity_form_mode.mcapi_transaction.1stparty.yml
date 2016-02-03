@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - mcapi_forms
+id: mcapi_transaction.1stparty
+label: '1st Party'
+targetEntityType: mcapi_transaction
+cache: true
+third_party_settings: { }

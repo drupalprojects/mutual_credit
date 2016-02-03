@@ -8,8 +8,6 @@
 
 namespace Drupal\mcapi\Plugin\views\filter;
 
-use Drupal\Component\Utility\Tags;
-use Drupal\Core\Entity\Element\EntityAutocomplete;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Plugin\views\filter\InOperator;
 
@@ -109,7 +107,7 @@ class Wallet extends InOperator {
       '#weight' => -20
     ];
   }
-  
+
   protected function defineOptions() {
     $options = parent::defineOptions();
     $options['placeholder']['default'] = t('Wallet name...');

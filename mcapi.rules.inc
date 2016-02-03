@@ -2,7 +2,7 @@
 
 
 /*
- * implements hook_rules_data_info
+ * Implements hook_rules_data_info
  * defines types for actions parameters and for event variables
  */
 function mcapi_rules_data_info() {
@@ -10,7 +10,7 @@ function mcapi_rules_data_info() {
 }
 
 /*
- * implements hook_rules_action_info
+ * Implements hook_rules_action_info
  */
 function mcapi_rules_action_info() {
   //I'd really really like a way for rules to add dependent transactions to the cluster during hook_transaction_children

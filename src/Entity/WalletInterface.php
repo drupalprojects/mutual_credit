@@ -18,16 +18,16 @@ interface WalletInterface extends ContentEntityInterface {
 
   /**
    * return the holding entity entity
-   * 
+   *
    * @return ContentEntityInterface
    *   The one entity to which this wallet belongs
    */
   function getHolder();
 
   /**
-   * set the holder entity 
+   * set the holder entity
    * @param
-   * 
+   *
    * @return WalletInterface
    *   The one entity to which this wallet belongs
    */
@@ -89,29 +89,20 @@ interface WalletInterface extends ContentEntityInterface {
   function history($from = 0, $to = 0);
 
   /**
-   * Handle the deletion of the wallet's parent
-   * If the wallet has no transactions it can be deleted
-   * Otherwise make the passed exchange the parent, must be found.
-   *
-   * @param ContentEntityInterface $holder
-   */
-  static function orphan(ContentEntityInterface $holder);
-
-  /**
    * determine if the wallet is an intertrading wallet
-   * 
+   *
    * @return boolean
    */
   function isIntertrading();
-  
+
   /**
-   * 
+   *
    * @return CurrencyInterface[]
    *   keyed by currency id
-   * 
+   *
    */
   public function currenciesAvailable();
-  
+
   /**
    * Returns the entity owner's user entity.
    *

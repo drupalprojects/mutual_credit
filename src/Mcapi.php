@@ -139,7 +139,7 @@ class Mcapi {
       $entities = $data;
     }
     if (property_exists(current($entities), 'weight') && count($entities) > 1) {
-      uasort($entities, 'Mcapi::uasortWeight');
+      uasort($entities, '\Drupal\mcapi\Mcapi::uasortWeight');
     }
     $list = [];
     foreach ($entities as $entity) {
@@ -155,7 +155,7 @@ class Mcapi {
    * @param boolean $load
    *   TRUE means return the fully loaded wallets
    *
-   * @return WalletInterface[]
+   * @return \Drupal\mcapi\Entity\WalletInterface[]
    *   or just the wallet ids if $load is false
    */
   public static function walletsOf(ContentEntityInterface $entity, $load = FALSE) {
@@ -164,12 +164,19 @@ class Mcapi {
       ->condition('holder_entity_type', $entity->getEntityTypeId())
       ->condition('holder_entity_id', $entity->id())
       ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
+      ->condition('orphaned', 0)
       ->execute();
     return $load ?
       $walletStorage->loadMultiple($wids) :
       $wids;
   }
 
+  /**
+   * retrieve all the wallets held by any of many ContentEntities
+   * @param ContentEntityInterface[] $entities
+   * @return int[]
+   *   the wallet ids
+   */
   public static function walletsOfHolders(array $entities) {
     $query = \Drupal::database()->select('mcapi_wallet', 'w')
       ->fields('w', ['wid'])
@@ -194,7 +201,6 @@ class Mcapi {
    *   TRUE if the $uid has access to enough wallets to trade
    */
   public static function enoughWallets($uid) {
-//dsm('enoughwallets '.$uid);
     $walletStorage = \Drupal::entityTypeManager()->getStorage('mcapi_wallet');
     $payin = $walletStorage->whichWalletsQuery('payin', $uid);
     $payout = $walletStorage->whichWalletsQuery('payout', $uid);
@@ -216,30 +222,12 @@ class Mcapi {
     return \Drupal::service('mcapi.transaction_relative_manager');
   }
 
-
-  /**
-   * {@inheritdoc}
-   * @todotim make a new baseField in this file, a boolean called 'used' default 0
-   * in getSummaries set that flag and save
-   * in this function just read that flag
-   */
-  public static function walletIsUsed($wid) {
-    drupal_set_message('Checking wallet isUsed()'); //is this called too often?
-    $count = \Drupal::entityTypeManager()
-      ->getStorage('mcapi_transaction')->getQuery()
-      ->condition('involving', $wid)
-      ->count()
-      ->execute();
-  }
-
   public static function twigHelp(array $exclude = []) {
     foreach (array_keys(\Drupal::Token()->getInfo()['tokens']['xaction']) as $token) {
-      $tokens[] = "[xaction:$token]";
+      if (!in_array($token, $exclude)) {
+        $tokens[] = "[xaction:$token]";
+      }
     }
-    $tokens = array_diff(
-      array_keys($all_fields),
-      $exclude
-    );
     return ' {{ ' .
       implode(' }}, {{ ', $tokens) .
       ' }} ' .

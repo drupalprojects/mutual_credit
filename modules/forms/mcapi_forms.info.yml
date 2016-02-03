@@ -1,0 +1,10 @@
+name: Transaction form designer
+description: Design payment forms for any occaision!
+package: Community Accounting
+core: 8.x
+type: module
+
+configure: mcapi.admin.transaction_form.list
+
+dependencies:
+  - mcapi

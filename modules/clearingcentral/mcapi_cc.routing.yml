@@ -1,12 +1,26 @@
-mcapi.remotepay:
-  path: '/transact/remote/pay'
+mcapi_cc.remote.bill:
+  path: '/transact/remote/bill'
   defaults:
-    _entity_form: mcapi_transaction.remotepay
-    _title: 'Pay a remote account'
+    _entity_form: mcapi_transaction.intertrading
+    _title: 'Bill a remote account'
   requirements:
-    _custom_access: \Drupal\mcapi_cc\IntertradePayAccess::access
+    _custom_access: \Drupal\mcapi_cc\IntertradeAccess::access
+  options:
+    parameters:
+      operation: bill
 
-mcapi.cc_endpoint:
+mcapi_cc.remote.credit:
+  path: '/transact/remote/credit'
+  defaults:
+    _entity_form: mcapi_transaction.intertrading
+    _title: 'Credit a remote account'
+  requirements:
+    _custom_access: \Drupal\mcapi_cc\IntertradeAccess::access
+  options:
+    parameters:
+      operation: credit
+
+mcapi_cc.endpoint:
   path: '/clearingcentral'
   defaults:
     _controller: \Drupal\mcapi_cc\Endpoint::receiver

@@ -12,8 +12,6 @@ namespace Drupal\mcapi;
 
 use Drupal\Core\Cache\Cache;
 
-//@todo find a way to set the width of the chart using config
-const GCHART_HISTORY_WIDTH = 300;
 
 
 class History {
@@ -151,66 +149,4 @@ class History {
   }
 
 
-}
-
-/**
- * implements hook_preprocess_THEMEHOOK for wallet_histories
- * generates the javascript for the gchart from the user's history of each currency
- *
- */
-function mcapi_preprocess_wallet_histories(&$vars) {
-  $element = $vars['element'];
-  $wallet = $element['#wallet'];
-  $vars['width'] = GCHART_HISTORY_WIDTH;
-  $vars['height'] = $vars['width']/2;
-  $histories = History::getAll(
-    $wallet,
-    $wallet->currenciesUsed(),
-    $vars['width']
-  );
-  foreach ($histories as $curr_id => $points) {
-    if (count($points) < 2) {
-      //don't draw the chart if it is empty
-      continue;
-    }
-    $currency = Currency::load($curr_id);
-    $vars['currencies'][$curr_id]['currency'] = $currency;
-    $vars['currencies'][$curr_id]['functionname'] = 'drawHistory' . $curr_id;
-    $vars['currencies'][$curr_id]['id'] = 'wallet-' . $wallet->id() . '-' . $curr_id;
-    if ($points) {
-      list($min, $middle, $max) = History::axes($points);
-    }
-    else {
-      $min = -10;
-      $middle = 0;
-      $max = 10;
-    }
-    $vars['currencies'][$curr_id]['vaxislabels'] = [
-      [
-        'value' => $min,
-        'label' => $currency->format($min, TRUE)
-      ],
-      [
-        'value' => $middle,
-        'label' => $currency->format($middle, TRUE)
-      ],
-      [
-        'value' => $max,
-        'label' => $currency->format($max, TRUE)
-      ]
-    ];
-    $vars['currencies'][$curr_id]['columns'] = [
-      'date' => t('Date'),
-      'number' => $currency->label()
-    ];
-    //populate the javascript data object
-    foreach ($points as $timestamp => $balance) {
-      //this has a resolution of one day, not very satisfying perhaps
-      $vars['currencies'][$curr_id]['daterows'][] = [
-        date('m/d/Y', $timestamp),
-        $balance,
-        $currency->format($balance, TRUE)
-      ];
-    }
-  }
 }

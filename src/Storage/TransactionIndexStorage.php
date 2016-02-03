@@ -22,7 +22,7 @@ use Drupal\mcapi\Entity\Transaction;
 
 
 abstract class TransactionIndexStorage extends SqlContentEntityStorage implements TransactionStorageInterface {
-  
+
   /**
    * {@inheritdoc}
    * save 2 rows per worth into the index tables
@@ -75,7 +75,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     $query->execute();
     return $return;
   }
-  
+
   /**
    * {@ineritdoc}
    * @todo test this fires
@@ -124,7 +124,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
           - worth_value AS diff,
           worth_value AS volume,
           worth_curr_id,
-          t.parent as child
+          if (t.parent, 1, 0) as child
         FROM {mcapi_transaction} t
         RIGHT JOIN {mcapi_transaction__worth} w ON t.xid = w.entity_id
         WHERE state IN ($states)
@@ -146,7 +146,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
           worth_value AS diff,
           worth_value AS volume,
           worth_curr_id,
-          t.parent as child
+          if (t.parent, 1, 0) as child
         FROM {mcapi_transaction} t
         RIGHT JOIN {mcapi_transaction__worth} w ON t.xid = w.entity_id
         WHERE state IN ($states)
@@ -214,7 +214,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * {@inheritdoc}
    */
   public function timesBalances(WalletInterface $wallet, $curr_id, $since = 0) {
-    
+
     $history = [$wallet->created->value => 0];
     //this is a way to add up the results as we go along
     $this->database->query("SET @csum := 0");
@@ -358,7 +358,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    */
   public function runningBalance($wid, $curr_id, $until, $sort_field = 'xid') {
     //the running balance depends the order of the transactions. we will assume
-    //the order of creation is what's wanted because that corresponds to the 
+    //the order of creation is what's wanted because that corresponds to the
     //order of the xid. NB it is possible to change the apparent creation date.
     return db_query(
       "SELECT SUM(diff) FROM {mcapi_transactions_index}
@@ -387,14 +387,14 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     $transactions = Transaction::loadBySerials([$serial]);
     return reset($transactions);
   }
-  
+
   /**
    * {@inheritdoc}
    */
   function getQueryServiceName() {
     return 'mcapi.query.sql';
   }
-  
+
   /**
    * {@inheritdoc}
    * overriding this because entityQuery returns xids and serials
@@ -404,8 +404,8 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     $entity_query = $this->getQuery();
     $this->buildPropertyQuery($entity_query, $values);
     $result = $entity_query->execute();
-    
+
     return $result ? $this->loadMultiple(array_keys($result)) : array();
   }
-  
+
 }
