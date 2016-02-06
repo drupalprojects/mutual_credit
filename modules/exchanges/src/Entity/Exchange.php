@@ -340,8 +340,7 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    *   the number of transactions, by serial, in the exchange
    */
   function transactionCount(array $conditions = []) {
-    $query = \Drupal::entityTypeManager()
-      ->getStorage('mcapi_transaction')->getQuery();
+    $query = \Drupal::entityQuery('mcapi_transaction');
     foreach ($conditions as $field => $val) {
        $operator = is_array($val) ? '<>' : '=';
        $query->condition($field, $val, $operator);

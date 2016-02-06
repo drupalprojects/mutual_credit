@@ -20,13 +20,19 @@ class TransactionForm extends ContentEntityForm {
   private $tempstore;
 
   /**
+   * @var \Drupal\
+   */
+  protected $request;
+
+  /**
    *
    * @param Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    * @param \Drupal\user\PrivateTempStore $tempstore
    */
-  public function __construct($entity_type_manager, $tempstore) {
+  public function __construct($entity_type_manager, $tempstore, $current_request) {
     parent::__construct($entity_type_manager);
     $this->tempStore = $tempstore;
+    $this->request = $current_request;
   }
 
   /**
@@ -36,14 +42,16 @@ class TransactionForm extends ContentEntityForm {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('entity.manager'),
-      $container->get('user.private_tempstore')
+      $container->get('user.private_tempstore'),
+      $container->get('request_stack')->getCurrentRequest()
     );
   }
 
   /**
-   * Overrides Drupal\Core\Entity\EntityForm::form().
+   * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
+
     $form = parent::form($form, $form_state);
     //try to prevent the same wallet being in both payer and payee fields.
     //we can only do this is one field has only one option
@@ -65,15 +73,13 @@ class TransactionForm extends ContentEntityForm {
         $payer['#selection_settings']['exclude'] = [$payee['#value']];
       }
     }
-
     return $form;
   }
 
   /**
    * {@inheritdoc}
-   * @note we are overriding here because this form is neither for saving nor deleting
-   * and because previewing is not optional. The created entitiy is passed to the
-   * 'create' operation form where it is saved.
+   * @note we are overriding here because this form is neither for saving nor
+   * deleting and because previewing is not optional.
    */
   protected function actions(array $form, FormStateInterface $form_state) {
     return [
@@ -87,11 +93,9 @@ class TransactionForm extends ContentEntityForm {
 
   /**
    * {@inheritdoc}
-   *
-   * @note does NOT call parent.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    parent::submitForm($form, $form_state);//set $this->entity
+    parent::submitForm($form, $form_state);//builds $this->entity
     $this->tempStore
       ->get('TransactionForm')
       ->set('mcapi_transaction', $this->entity);
@@ -108,7 +112,7 @@ class TransactionForm extends ContentEntityForm {
    * {@inheritdoc}
    * @todo test creating a transaction with and without specifying the creator
    */
-  public function buildEntity(array $form, FormStateInterface $form_state) {
+  public function ______buildEntity(array $form, FormStateInterface $form_state) {
     $entity = parent::buildEntity($form, $form_state);
     //if a valid creator uid was submitted then use that
     //is this the best place to be putting defaults? not in Transaction::precreate?

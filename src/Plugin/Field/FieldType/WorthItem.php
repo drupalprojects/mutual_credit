@@ -49,6 +49,9 @@ class WorthItem extends FieldItemBase {
       ->setComputed(TRUE)
       ->setClass('\Drupal\mcapi\CurrencyComputed')
       ->setSetting('currency source', 'curr_id');
+      //don't know why a special class is needed when its not in \Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem::propertyDefinitions
+      //->setTargetDefinition(EntityDataDefinition::create('mcapi_currency'))
+      //->addConstraint('EntityType', 'mcapi_currency')
     return $properties;
   }
 

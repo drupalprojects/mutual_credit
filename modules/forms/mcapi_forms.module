@@ -126,3 +126,39 @@ function mcapi_forms_mcapi_form_list() {
   }
   return $forms;
 }
+
+/**
+ * Implements hook_entity_extra_field_info().
+ */
+function mcapi_forms_entity_extra_field_info() {
+  $extra['mcapi_wallet']['mcapi_wallet']['display']['trade_with'] = [
+    'label' => t('Link(s) to trade'),
+    'description' => t("Link or links to log a transaction with each of the entity's wallets, in each direction"),
+    'weight' => 7
+  ];
+  return $extra;
+}
+
+function mcapi_forms_mcapi_wallet_view(array &$build, $entity, $display) {
+  if ($display->getComponent('trade_with')) {
+    $ids = \Drupal::entityQuery('firstparty_editform')
+      ->condition('wallet_link_title', '', '<>')
+      ->execute();
+    foreach (FirstPartyFormDesign::loadMultiple($ids) as $id => $configEntity) {
+      //I'm presuming the loaded config entity is translated
+      $query = [];
+      if ($configEntity->incoming) {
+        $query['payer'] = $entity->id();
+      }
+      else {
+        $query['payee'] = $entity->id();
+      }
+      $build['wallet_link_'.$id] = [
+        '#type' => 'link',
+        '#title' => $configEntity->wallet_link_title,
+        '#url' => Drupal\Core\Url::fromUserInput($configEntity->path, ['query' => $query]),
+        '#attributes' => ['class' => 'wallet-link'],
+      ];
+    }
+  }
+}

@@ -90,7 +90,6 @@ class Worthsform extends FormElement {
         '#default_value' => $item['value'],
         '#allowed_curr_ids' => [$item['curr_id']],
         '#config' => $element['#config'],
-        '#theme_wrappers' => [],
         '#oneofmany' => count($element['#default_value']) > 1
       ];
     }

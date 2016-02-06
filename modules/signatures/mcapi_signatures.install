@@ -130,7 +130,7 @@ function signature_integrity_check($modify = FALSE) {
     ->execute();
 }
 
-function mcapi_signatures_configure_type($type_name, $signable = FALSE) {
+function mcapi_signatures_configure_types() {
   foreach (Type::loadMultiple() as $id => $type) {
     $type->setThirdPartySetting(
       'mcapi_signatures',

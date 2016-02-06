@@ -22,35 +22,18 @@ class FirstPartyTransactionForm extends TransactionForm {
    * the editform configEntity whos e defaults are used to build the tempalte transaction Entity
    */
   private $configEntity;
-  private $overrides;
 
   public function __construct($entity_manager, $tempstore, $request) {
-    parent::__construct($entity_manager, $tempstore);
-    $this->overrides = $request->query->all();
+    parent::__construct($entity_manager, $tempstore, $request);
     $id = $request
       ->attributes->get('_route_object')
       ->getOptions()['parameters']['firstparty_editform']['id'];
     $this->configEntity = entity_load('firstparty_editform', $id);
   }
 
-  /**
-   * {@inheritdoc}
-   * @todo update with entity_type.manager
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('entity.manager'),
-      $container->get('user.private_tempstore'),
-      $container->get('request_stack')->getCurrentRequest()
-    );
-  }
-
   public function init(FormStateInterface $form_state) {
     parent::init($form_state);
-    $this->entity = $this->configEntity->makeDefaultTransaction();
-    foreach ($this->overrides as $key => $value) {
-      $this->entity->{$key} = $value;
-    }
+    $this->entity = $this->configEntity->makeDefaultTransaction($this->request->query->all());
   }
 
   /**

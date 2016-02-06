@@ -29,7 +29,6 @@ class WorthView extends \Drupal\Core\Render\Element\RenderElement {
    */
   public static function preRender($element) {
     $currency = $element['#currency'];
-
     $element['#attributes']['class'][] = 'currency-'.$currency->id;
     $markup = '';
     if ($element['#value']) {

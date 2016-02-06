@@ -3,6 +3,8 @@
 /**
  * @file
  * Contains \Drupal\mcapi\CurrencyComputed.
+ * @deprecated
+ * @see \Drupal\mcapi\Plugin\Field\FieldType\WorthItem
  */
 
 namespace Drupal\mcapi;

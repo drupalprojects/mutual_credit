@@ -35,8 +35,6 @@ class CanPayin extends CanPay {
     $eligible = \Drupal::entityTypeManager()
       ->getStorage('mcapi_wallet')
       ->whichWalletsQuery('payin', \Drupal::currentUser()->id());
-    echo "\nTesting to pay in as user ".\Drupal::currentUser()->id();
-    echo "\nUser can pay in to wallets: ";print_r($eligible);
 
     if (!in_array($items->target_id, $eligible)) {
       $this->context->addViolation($this->message, ['@wid' => $items->target_id]);

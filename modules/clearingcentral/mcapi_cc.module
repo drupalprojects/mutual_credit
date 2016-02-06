@@ -90,7 +90,7 @@ function mcapi_cc_entity_type_build(array &$entity_types) {
 function mcapi_cc_mcapi_form_list() {
   $forms['remotecredit'] = [
     'title' => t('Buy from a remote account'),
-    'route' => 'mcapi.remotecredit',
+    'route' => 'mcapi_cc.remote.credit',
   ];
   return $forms;
 }

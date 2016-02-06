@@ -11,6 +11,9 @@ mcapi_forms.firstpartyform.*:
     path:
       type: path
       label: 'Path'
+    wallet_link_title:
+      type: label
+      label: Link title to show on wallet
     menu:
       type: mapping
       label: 'Menu'
@@ -33,27 +36,9 @@ mcapi_forms.firstpartyform.*:
     incoming:
       type: boolean
       label: 'Direction of payment relative to the current user'
-    mywallet:
-      type: mapping
-      label: 'My Wallet'
-      mapping:
-        unused:
-          type: string
-          label: 'Widget'
-    partner:
-      type: mapping
-      label: 'Settings for partner field'
-      mapping:
-        selection:
-          type: string
-          label: 'Users to choose from'
-        preset:
-          type: integer
-          label: 'Preset trading partner'
-    fieldapi_presets:
-      type: mapping
-      label: 'Other presets'
-      mapping: { }
+    hide_one_wallet:
+      type: boolean
+      label: TRUE to hide wallet fields with no choice
     experience:
       type: mapping
       label: 'Experience'

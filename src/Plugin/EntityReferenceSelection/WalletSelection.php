@@ -69,6 +69,7 @@ class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelectio
    *   wallet ids
    */
   private function queryEntities($match = NULL) {
+    //print_r($this->configuration);die();
     return \Drupal::entityTypeManager()->getStorage('mcapi_wallet')
       ->whichWalletsQuery(
         $this->configuration['handler_settings']['op'],
@@ -77,20 +78,6 @@ class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelectio
       );
   }
 
-  public function buildConfigurationForm(array $form, \Drupal\Core\Form\FormStateInterface $form_state) {
-    parent::buildConfigurationForm($form, $form_state);
-    debug('I think this is never needed');
-    $form['direction'] = [
-      '#title' => t('Direction'),
-      '#type' => 'radios',
-      '#options' => [
-        'payin' => $this->t('Select from wallets user can pay in to.'),
-        'payout' => $this->t('Select from wallets user can pay out from.')
-      ],
-      '#default_value' => $this->configuration['handler_settings']['direction']
-    ];
-    return $form;
-  }
 
 }
 

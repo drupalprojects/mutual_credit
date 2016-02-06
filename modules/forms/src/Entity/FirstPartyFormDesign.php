@@ -50,15 +50,13 @@ class FirstPartyFormDesign extends ConfigEntityBase {
 
   public $id;
   public $path;
+  public $wallet_link_title;
   public $menu;
   public $title;
   public $status;
   public $type;
-  //especially because we need to include unknown field API fields as well
-  public $mywallet;
-  public $partner;
   public $incoming;
-  public $fieldapi_presets;
+  public $hide_one_wallet;
   public $experience;
 
   /**
@@ -68,23 +66,13 @@ class FirstPartyFormDesign extends ConfigEntityBase {
     $values += [
       'id' => '',
       'path' => '',
+      'wallet_link_title' => 1,
       'menu' => [],
       'title' => '',
       'status' => 1,
       'type' => 'default',
-      'mywallet' => [
-        'stripped' => TRUE
-      ],
-      'partner' => [
-        'selection' => '',
-        'preset' => '',
-        'stripped' => TRUE
-      ],
       'incoming' => FALSE,
-      'fieldapi_presets' => [
-        'worth' => [],
-        'description' => []
-      ],
+      'hide_one_wallet' => FALSE,
       'experience' => [
         'twig' => 'Partner: [mcapiform:secondperson]
 Direction: [mcapiform:direction]
@@ -102,17 +90,10 @@ Direction: [mcapiform:direction]
   * @return \Drupal\mcapi\Entity\Transaction
   *   a (partially populated) transaction entity
   */
-  function makeDefaultTransaction() {
+  function makeDefaultTransaction($overrides = []) {
     //prepare a transaction using the defaults here
     $vars = ['type' => $this->type];
-
-    //things have evolved so this is probably only the description field now
-    //@todo refactor this
-    foreach ($this->fieldapi_presets as $fieldname => $setting) {
-      if (isset($setting['preset'])) {
-        $vars[$fieldname] = $setting['preset'];
-      }
-    }
+    $vars += $overrides;
     return \Drupal\mcapi\Entity\Transaction::create($vars);
   }
 

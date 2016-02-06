@@ -35,6 +35,10 @@ class WorthsView extends \Drupal\Core\Render\Element\RenderElement {
     $delimiter = \Drupal::config('mcapi.settings')->get('delimiter');
 
     foreach ($element['#worths'] as  $worth) {
+      //we only render zero value worths if there is only one
+      if (count($element['#worths'] > 1) and $worth['value'] == 0) {
+        continue;
+      }
       $currency = \Drupal\mcapi\Entity\Currency::load($worth['curr_id']);
       $subelement = [
         '#type' => 'worth_view',

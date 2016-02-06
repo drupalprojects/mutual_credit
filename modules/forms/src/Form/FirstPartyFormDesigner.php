@@ -18,10 +18,10 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class FirstPartyFormDesigner extends EntityForm {
 
-  private $entityFieldManager;
+  private $requestContext;
 
-  function __construct($entity_field_manager) {
-    $this->entityFieldManager = $entity_field_manager;
+  function __construct($request_context) {
+    $this->requestContext = $request_context;
   }
 
   /**
@@ -29,7 +29,7 @@ class FirstPartyFormDesigner extends EntityForm {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity_field.manager')
+      $container->get('router.request_context')
     );
   }
 
@@ -73,16 +73,26 @@ class FirstPartyFormDesigner extends EntityForm {
       '#disabled' => !$configEntity->isNew(),
     ];
 
+    $form['wallet_link_title'] = [
+      '#title' => $this->t('Link title to show on wallet'),
+      '#description' => $this->t('Optionally use token [mcapi_wallet:name]'),
+      '#type' => 'textfield',
+      '#weight' => $w++,
+      '#default_value' => $configEntity->wallet_link_title,
+    ];
+
     $form['path'] = [
       '#title' => $this->t('Path'),
-      '#description' => t('The url path at which this form will appear. Must be unique.'),
+      '#description' => t('The url path at which this form will appear. Must begin with / and be unique.'),
       '#type' => 'textfield',
       '#weight' => $w++,
       '#element_validate' => [
         [get_class($this), 'unique_path']
       ],
       '#default_value' => $configEntity->path,
-      '#placeholder' => $this->t('internal/path'),
+      '#placeholder' => $this->t('/internal/path'),
+      '#element_validate' => [[get_class($this), 'validatePath']],//this should be in core!
+      '#field_prefix' => $this->requestContext->getCompleteBaseUrl(),
       '#required' => TRUE
     ];
 
@@ -141,46 +151,14 @@ class FirstPartyFormDesigner extends EntityForm {
       \Drupal::service('module_installer')->install(['field_ui']);
       \Drupal::service('router.builder')->rebuild();
     }
-    //following section of the form allows the admin to handle the individual fields of the transaction form.
-    //the fields are handled here one in each tab, each field having some shared settings and some specific ones.
-    $form['steps'] = [
-      '#title' => $this->t('Field settings'),
-      '#description' => '('.$this->t(
-        "You may need to enable fields at %link",
-        [
-          '%link' => $this->l(
-            $this->t('Manage form display'),
-            Url::fromRoute(
-              'entity.entity_form_display.mcapi_transaction.form_mode',
-              ['form_mode_name' => 'default']
-            )
-          )
-        ]
-      ).')',
-      '#type' => 'vertical_tabs',
-      '#weight' => $w++,
-      '#attributes' => new Attribute(['id' => ['field-display-overview-wrapper']]),
-      //'#attributes' => ['id' => ['field-display-overview-wrapper'))
-    ];
 
-    $form['mywallet'] = [
-      '#title' => $this->t('My wallets settings'),
-      '#description' => $this->t("Choose from the current user's wallets."),
-      '#type' => 'details',
-      '#group' => 'steps',
-      '#weight' => $w++
-    ];
-    $form['mywallet']['unused'] = [
-      '#title' => $this->t('Unused behaviour'),
-      '#description' => $this->t('What to do when the user has just one wallet?'),
-      '#type' => 'radios',
-      '#options' => [
-        'normal' => $this->t('Normal'),
-        'disabled' => $this->t('Greyed out'),
-        'hidden' => $this->t('Disappeared'),
-      ],
-      '#default_value' => intval($configEntity->mywallet['unused']),
-      '#required' => TRUE,
+    //@todo make this work
+    $form['hide_one_wallet'] = [
+      '#title' => $this->t('One wallet'),
+      '#description' => $this->t('Hide the wallet field if there is only one.'),
+      '#type' => 'checkbox',
+      '#default_value' => intval($configEntity->hide_one_wallet),
+      '#weight' => $w++,
     ];
 
     $moreInfo = $this->t(
@@ -189,35 +167,6 @@ class FirstPartyFormDesigner extends EntityForm {
         $this->t('More field configuration options...'),
         Url::fromRoute('entity.entity_form_display.mcapi_transaction.default')
       );
-
-    // for the field API fields we combine or ignore elements of the field definitions
-    // with the EntityFormDisplay field settings and overwrite or augment them with
-    // settings determined here
-    $definitions = $this->entityFieldManager
-      ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
-    $display = \Drupal\Core\Entity\Entity\EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.1stparty');
-    $components = array_diff_key($display->getComponents(), array_flip(['payer', 'payee', 'created', 'worth']));
-    $defaultTransaction = $configEntity->makeDefaultTransaction();
-    //this ignores the weight
-    foreach ($components as $field_name => $info) {//e.g. categories, worth, description
-      $items = $defaultTransaction->get($field_name);
-      //assumes a cardinality of 1!
-      $form['fieldapi_presets'][$field_name] = [
-        '#title' => $definitions[$field_name]->getLabel(),
-        '#description' => $moreInfo,
-        '#type' => 'details',
-        '#group' => 'steps',
-        'preset' => $display->getRenderer($field_name)->formElement($items, 0, $element, $form, $form_state),
-        '#weight' => $info['weight']
-      ];
-      $form['fieldapi_presets'][$field_name]['preset']['#title'] = 'Preset value';
-    }
-
-    $form['fieldapi_presets']['#tree'] = TRUE;
-    $form['fieldapi_presets']['worth']['preset']['#allowed_curr_ids'] = array_keys(entity_load_multiple('mcapi_currency'));
-    //other modifications to the worth widget before it is processed
-    $form['fieldapi_presets']['worth']['preset']['#config'] = TRUE;
-    $form['fieldapi_presets']['worth']['preset']['#description'] = t('Currencies with blank in the left-most field will not appear on the form.') .' '.t('Leave every row blank to let the system decide which ones to show.');
 
     $all_fields = \Drupal::service('entity_field.manager')
       ->getFieldMap()['mcapi_transaction'];
@@ -312,6 +261,15 @@ class FirstPartyFormDesigner extends EntityForm {
           ['@fieldname' => $element['#title']]
         )
       );
+    }
+  }
+
+  /*
+   * element validation function
+   */
+  static function validatePath(&$element, $form_state) {
+    if ($form_state->getValue('path')[0] !== '/') {
+      $form_state->setError($element, t("The path '%path' has to start with a slash.", ['%path' => $form_state->getValue('path')]));
     }
   }
 

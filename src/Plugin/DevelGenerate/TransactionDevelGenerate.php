@@ -85,8 +85,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   public function prepareWallets() {
     static $wallet_ids;
     if (!isset($wallet_ids)) {
-      $wallet_ids = \Drupal::entityTypeManager()
-        ->getStorage('mcapi_wallet')->getQuery()
+      $wallet_ids = \Drupal::entityQuery('mcapi_wallet')
         ->condition('holder_entity_type', 'user')
         ->execute();
 

@@ -159,15 +159,14 @@ class Mcapi {
    *   or just the wallet ids if $load is false
    */
   public static function walletsOf(ContentEntityInterface $entity, $load = FALSE) {
-    $walletStorage = \Drupal::entityTypeManager()->getStorage('mcapi_wallet');
-    $wids = $walletStorage->getQuery()
+    $wids = \Drupal::entityQuery('mcapi_wallet')
       ->condition('holder_entity_type', $entity->getEntityTypeId())
       ->condition('holder_entity_id', $entity->id())
       ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
       ->condition('orphaned', 0)
       ->execute();
     return $load ?
-      $walletStorage->loadMultiple($wids) :
+      \Drupal::entityTypeManager()->getStorage('mcapi_wallet')->loadMultiple($wids) :
       $wids;
   }
 

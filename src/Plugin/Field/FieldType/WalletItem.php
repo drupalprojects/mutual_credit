@@ -3,14 +3,13 @@
 /**
  * @file
  * Contains \Drupal\Core\Field\Plugin\Field\FieldType\WalletItem.
- * @todo this doesn't need a list class, but much of it is coded in already
+ * @todo this doesn't want a list class, but much of it is coded in already
  */
 
 namespace Drupal\mcapi\Plugin\Field\FieldType;
 
 use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Field\FieldStorageDefinitionInterface;
 
 
 /**
@@ -26,7 +25,7 @@ use Drupal\Core\Field\FieldStorageDefinitionInterface;
  *   category = @Translation("Reference"),
  *   default_formatter = "entity_reference_label",
  *   default_widget = "wallet_reference_autocomplete",
- *   list_class = "\Drupal\mcapi\Plugin\Field\FieldType\WalletItemList",
+ *   list_class = "\Drupal\Core\Field\EntityReferenceFieldItemList",
  * )
  */
 class WalletItem extends EntityReferenceItem {

@@ -66,7 +66,6 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $referenced_entities = $items->referencedEntities();
-
     $default_value = isset($referenced_entities[$delta]) ? $referenced_entities[$delta] : NULL;
     if ($default_value && $default_value->isIntertrading()) {
       $wids = [$default_value->id()];
@@ -98,7 +97,6 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
       ];
     }
     elseif ($count > $config->get('wallet_widget_max_select')) {
-//    echo $this->fieldDefinition->getName();print_r($wids);echo $operation;
       $element += [
         '#type' => 'wallet_entity_auto',
         //assuming that the field item name IS the role

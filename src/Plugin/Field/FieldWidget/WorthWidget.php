@@ -11,7 +11,6 @@ use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\Validator\ConstraintViolationInterface;
-use Drupal\Component\Utility\SafeMarkup;
 
 /**
  * Plugin implementation of the 'worth' widget.
@@ -38,11 +37,12 @@ class WorthWidget extends WidgetBase {
 
     //because this is a multiple widget, we ignore the delta value and put all items
     $element += array(
-      '#title' => Safemarkup::checkPlain($this->fieldDefinition->label()),
+      '#title' => $this->fieldDefinition->label(),
       '#title_display' => 'attribute',
       '#type' => 'worths_form',
       '#default_value' => $items->getValue()
     );
+
     unset($element['#description']);
     return $element;
   }

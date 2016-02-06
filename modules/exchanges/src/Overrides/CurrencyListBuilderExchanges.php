@@ -67,8 +67,7 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
       ->fields('c', array('entity_id'))
       ->condition('currencies_target_id', $entity->id())
       ->execute()->fetchCol();
-    $used_in_exchange_ids = \Drupal::entityTypeManager()
-      ->getStorage('mcapi_exchange')->getQuery()
+    $used_in_exchange_ids = \Drupal::entityQuery('mcapi_exchange')
       ->condition('currencies', $entity->id())
       ->count()
       ->execute();

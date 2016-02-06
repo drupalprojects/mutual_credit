@@ -57,9 +57,9 @@ class Currency extends FormElement {
     }
 
     if (count($element['#options']) == 1) {
-      debug('See if the curr_id comes though');
-      $element['#disabled'] = TRUE;
-      $element['#value'] = reset($element['#options']);
+      $element['#type'] = 'hidden';
+      $element['#value'] = key($element['#options']);
+      unset($element['#theme_wrappers']);
     }
     elseif ($element['#multiple']) {
       //have to do some of the checkbox processing manually coz we missed it
@@ -73,8 +73,9 @@ class Currency extends FormElement {
     return $element;
   }
 
-  public static function __valueCallback(&$element, $input, FormStateInterface $form_state) {
+  public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
     if ($input == NULL) return;
+    debug($input);
     return $input;
   }
 }
