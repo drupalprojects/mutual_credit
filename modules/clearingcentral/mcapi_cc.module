@@ -38,7 +38,7 @@ function mcapi_cc_form_wallet_form_alter(&$form, \Drupal\Core\Form\FormStateInte
       '#disabled' => $used,
       '#default_value' => $settings['curr_id']
     ],
-    'login' => [
+    'ex_id' => [
       '#type' => 'textfield',
       '#title' => t('Exchange ID'),
       '#description' => t(
@@ -49,9 +49,10 @@ function mcapi_cc_form_wallet_form_alter(&$form, \Drupal\Core\Form\FormStateInte
       '#maxlength' => 7,
       '#disabled' => $used,
       '#default_value' => $settings['login'],
+      '#element_validate' => ['ces_exchange_id_validate'],
       '#weight' => 2
     ],
-    'pass' => [
+    'ex_pass' => [
       '#title' => t('Password'),
       '#type' => 'textfield',
       '#description' => t('Password of the Community Exchange Network account for this exchange. Leave blank to keep the stored password.'),
@@ -66,11 +67,17 @@ function mcapi_cc_form_wallet_form_alter(&$form, \Drupal\Core\Form\FormStateInte
   }
 }
 
+function ces_exchange_id_validate(&$element, $form_state) {
+  if (!preg_match('/[a-zA-Z]{3}[0-9]{4}/', $element['#value'])) {
+    $form_state->setError($element, 'Badly formatted login: '.$element['#value']);
+  }
+}
+
 function mcapi_cc_save_wallet_settings($form, $form_state) {
   $settings = [
     'curr_id' => $form_state->getValue('curr_id'),
-    'login' => $form_state->getValue('login'),
-    'pass' => $form_state->getValue('pass')
+    'login' => $form_state->getValue('ex_id'),
+    'pass' => $form_state->getValue('ex_pass')
   ];
   \Drupal::keyValue('clearingcentral')
     ->set($form_state->getFormObject()->getEntity()->id(), $settings);
