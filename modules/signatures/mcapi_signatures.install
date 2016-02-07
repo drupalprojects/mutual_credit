@@ -10,11 +10,6 @@ use \Drupal\mcapi\Entity\Type;
 function mcapi_signatures_install() {
   module_set_weight('mcapi_signatures', 2);
   mcapi_signatures_configure_types();
-  $settings = \Drupal::configFactory()->getEditable('mcapi.settings');
-  $rels = $settings->get('active_relatives');
-  $rels['signatory'] = 'signatory';
-  $rels['pending_signatory'] = 'pending_signatory';
-  $settings->set('active_relatives', $rels)->save();
 }
 
 /**

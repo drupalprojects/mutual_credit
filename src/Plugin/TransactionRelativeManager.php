@@ -15,10 +15,16 @@ use Drupal\mcapi\Entity\TransactionInterface;
 
 class TransactionRelativeManager extends DefaultPluginManager {
 
-    private $plugins = [];
-    private $active = [];
+  private $plugins = [];
+  private $active = [];
 
-  public function __construct($namespaces, $cache_backend, $module_handler, $config_factory) {
+  /**
+   *
+   * @param type $namespaces
+   * @param type $cache_backend
+   * @param type $module_handler
+   */
+  public function __construct($namespaces, $cache_backend, $module_handler) {
     parent::__construct(
       'Plugin/TransactionRelative',
       $namespaces,
@@ -27,50 +33,69 @@ class TransactionRelativeManager extends DefaultPluginManager {
       '\Drupal\mcapi\Annotation\TransactionRelative'
     );
     $this->setCacheBackend($cache_backend, 'transaction_relatives');//don't know if this is important
-    $this->active = $config_factory->get('mcapi.settings')->get('active_relatives');
+  }
+
+  /**
+   * sets this active
+   * @param type $names
+   */
+  public function activatePlugins($names = []) {
+    $active = $names ? : array_keys($this->getDefinitions());
+    $this->active = array_filter($active);
+    return $this;
   }
 
   /*
-   * retrieve the plugins which are not disabled in Config mcapi.settings
-   *
-   * @todo would a collection be the proper way to do this?
+   * @todo work out how to use a Collection
    */
-  public function activePlugins() {
-    if (empty($this->plugins) && $this->active) {
-      foreach ($this->getDefinitions() as $id => $definition) {
-        if (in_array($id, $this->active)) {
-          $this->plugins[$id] = $this->createInstance($id);
-        }
-      }
-      //hacky way to ensure anon and authenticated come first using alphabetical order!
-      ksort($this->active);
+  public function getActivePlugins() {
+    if (!$this->active) {
+      $this->activatePlugins();
     }
-    return $this->plugins;
+    $plugins = [];
+    print_r($this->active);
+    foreach ($this->active as $id) {
+      if (empty($this->plugins[$id])) {
+        $this->plugins[$id] = $this->createInstance($id);
+      }
+      $plugins[$id] = $this->plugins[$id];
+      //hacky way to ensure anon and authenticated come first using alphabetical order!
+    }
+    ksort($plugins);
+    return $plugins;
   }
 
   //return the names of the config items
-  public function options($include_anon = FALSE) {
-    foreach ($this->activePlugins() as $id => $info) {
-      $names[$id] = $info->getPluginDefinition()['label'];//is this translated?
-    }
-    if (!$include_anon) {
-      unset($names['anon']);
+  public function options() {
+    foreach ($this->getDefinitions() as $id => $def) {
+       $names[$id] = $def['label'];//is this translated?
     }
     return $names;
   }
 
   /**
-   *
+   * get the users who are related to a transaction
+   * @param TransactionInterface $transaction
    * @param array $plugin_names
+   * @return integer[]
+   *   ids of user entities
    */
   public function getUsers(TransactionInterface $transaction, array $plugin_names) {
     //get the plugins
     $user_ids = [];
-    $plugin_ids = array_intersect_key($plugin_names, $this->activePlugins());
+    $plugin_ids = array_intersect_key($plugin_names, $this->getActivePlugins());
     foreach ($plugin_ids as $plugin_id) {
-      $user_ids = array_merge($user_ids, $this->activePlugins()[$plugin_id]->getUsers($transaction));
+      $user_ids = array_merge($user_ids, $this->getActivePlugins()[$plugin_id]->getUsers($transaction));
     }
     return $user_ids;
+  }
+
+  public function isRelative($transaction, $account) {
+    foreach ($this->getActivePlugins() as $plugin) {
+      if ($plugin->isRelative($transaction, $account)) {
+        return TRUE;
+      }
+    }
   }
 
 }

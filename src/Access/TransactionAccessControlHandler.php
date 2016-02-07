@@ -32,34 +32,25 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
    * {@inheritdoc}
    */
   public function access(EntityInterface $transaction, $operation, AccountInterface $account = NULL, $return_as_object = false) {
-    if ($operation == 'view') {
-      //you can view a transaction if you can view all transactions or if you own either wallet
+    //note at the moment the update permission is not supported
+    if ($operation === 'view' or $operation === 'update') {
+      $bool = FALSE;
       //@todo URGENT. Also if you are named as a payee or payer on the wallet
-      $bool = $account->hasPermission('view all transactions') ||
-          $account->id() == $transaction->payer->entity->getOwnerId() ||
-          $account->id() == $transaction->payee->entity->getOwnerId();
-
-      if ($return_as_object) {
-        return $bool ?
-          AccessResult::allowed()->cachePerUser() :
-          AccessResult::forbidden()->cachePerUser();
+      if ($operation === 'view' and $account->hasPermission('view all transactions')) {
+         $bool = TRUE;
       }
       else {
-        return $bool;
-      }
-    }
-    elseif ($operation == 'update') {
-      $allRelatives = Mcapi::transactionRelatives()->activePlugins();
-      foreach ($transaction->type->entity->edit as $relative) {
         if (is_null($account)) {
           $account = \Drupal::currentUser();
         }
-        //check if the $account is this relative to the transaction
-        if ($allRelatives[$relative]->isRelative($transaction, $account)) {
-          return $return_as_object ? AccessResult::allowed()->cachePerUser() : TRUE;
-        }
+        $bool = Mcapi::transactionRelatives(\Drupal::config('mcapi.settings')->get($operation))
+          ->isRelative($transaction, $account);
       }
-      return $return_as_object ? AccessResult::forbidden()->cachePerUser() : FALSE;
+      if (!$return_as_object) {
+        return $bool;
+      }
+      return $bool ? AccessResult::allowed()->cachePerUser() :
+        AccessResult::forbidden()->cachePerUser();
     }
     return Mcapi::transactionActionLoad($operation)
       ->getPlugin()

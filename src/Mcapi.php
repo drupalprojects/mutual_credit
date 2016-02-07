@@ -217,8 +217,8 @@ class Mcapi {
    * Service container
    * @return type
    */
-  public static function transactionRelatives() {
-    return \Drupal::service('mcapi.transaction_relative_manager');
+  public static function transactionRelatives($plugin_names = []) {
+    return \Drupal::service('mcapi.transaction_relative_manager')->activatePlugins($plugin_names);
   }
 
   public static function twigHelp(array $exclude = []) {

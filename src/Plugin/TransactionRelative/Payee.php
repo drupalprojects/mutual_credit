@@ -18,7 +18,7 @@ use Drupal\Core\Plugin\PluginBase;
  *
  * @TransactionRelative(
  *   id = "payee",
- *   label = @Translation("Payee"),
+ *   label = @Translation("Owner of payee wallet"),
  *   description = @Translation("The owner of the payee wallet")
  * )
  */

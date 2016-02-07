@@ -25,7 +25,6 @@ class Relatives extends Checkboxes {
   public function getInfo() {
     $info = parent::getInfo();
     $info['#description'] = t('Check whichever relatives apply');
-    $info['#anon'] = FALSE;
     return $info;
   }
 
@@ -33,8 +32,7 @@ class Relatives extends Checkboxes {
    * {@inheritdoc}
    */
   public static function processCheckboxes(&$element, FormStateInterface $form_state, &$complete_form) {
-    $element['#options'] = Mcapi::transactionRelatives()->options($element['#anon']);
-
+    $element['#options'] = Mcapi::transactionRelatives()->options();
     return parent::processCheckboxes($element, $form_state, $complete_form);
   }
 

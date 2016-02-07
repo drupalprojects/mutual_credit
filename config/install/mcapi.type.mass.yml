@@ -4,10 +4,7 @@ description: Between one wallet and many
 start_state: done
 status: true
 provider: mcapi
-view:
-  authenticated: authenticated
-edit: { }
-dependencies: 
+dependencies:
   module:
     - mcapi
 third_party_settings: { }

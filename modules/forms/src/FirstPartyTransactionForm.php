@@ -13,7 +13,6 @@ use Drupal\mcapi\Form\TransactionForm;
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Form\FormStateInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
 class FirstPartyTransactionForm extends TransactionForm {
@@ -46,11 +45,6 @@ class FirstPartyTransactionForm extends TransactionForm {
     $config = $this->configEntity;
     $form['#incoming'] = $config->get('incoming');//@todo do we still need this in the $form? should at least be in $form_state
 
-    //handle the description
-    if (isset($config->fieldapi_presets['description']['placeholder'])) {
-      $form['description']['#placeholder'] = $config->fieldapi_presets['description']['placeholder'];
-    }
-
     //hide the state & type
     $form['type']['#type'] = 'value';
     $form['type']['#default_value'] = $config->type;
@@ -81,7 +75,7 @@ class FirstPartyTransactionForm extends TransactionForm {
           'data-dialog-options' => Json::encode(['width' => 500])
         ];
       }
-      elseif($display == TransactionActionBase::CONFIRM_AJAX) {
+      elseif($preview_mode == TransactionActionBase::CONFIRM_AJAX) {
         //curious how, to make a ajax link it seems necessary to put the url in 2 places
         $actions['submit']['#ajax'] = [
           'wrapper' => 'mcapi-transaction-1stparty-form',

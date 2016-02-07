@@ -97,4 +97,7 @@ Direction: [mcapiform:direction]
     return \Drupal\mcapi\Entity\Transaction::create($vars);
   }
 
+  public function walletLinkTitle(\Drupal\mcapi\Entity\WalletInterface $wallet) {
+    return str_replace('[mcapi_wallet:name]', $wallet->label(), $this->wallet_link_title);
+  }
 }

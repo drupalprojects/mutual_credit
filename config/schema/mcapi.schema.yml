@@ -12,19 +12,19 @@ mcapi.settings:
       type: mapping
       label: Fields
       mapping:
-        participants: 
+        participants:
           type: boolean
           label: Participants
-        description: 
+        description:
           type: boolean
           label: Description
-        worth: 
+        worth:
           type: boolean
           label: Worth
-        type: 
+        type:
           type: boolean
           label: Type
-        fieldapi: 
+        fieldapi:
           type: boolean
           label: Field API
     worths_delimiter:
@@ -39,10 +39,13 @@ mcapi.settings:
     mail_errors:
       type: string
       label: Send diagnostics to user 1 by mail
-    active_relatives: 
-      type: sequence
-      label: Transaction relatives
-    payways: 
+    view:
+      type: transaction_relatives
+      label: Relatives with view access
+    update:
+      type: transaction_relatives
+      label: Relatives with update access
+    payways:
       type: string
       label: Payment direction
     entity_types:
@@ -112,7 +115,7 @@ mcapi.currency.*:
     weight:
       type: integer
       label: 'Weight'
-        
+
 mcapi.state.*:
   type: config_entity
   label: Transaction workflow state
@@ -149,22 +152,16 @@ mcapi.type.*:
     provider:
       type: string
       label: Module
-    view:
-      type: transaction_relatives
-      label: View access
-    edit:
-      type: transaction_relatives
-      label: Edit access
 
 transaction_relatives:
   type: sequence
   label: Relatives
   sequence: { }
-  
+
 action.configuration.mcapi_transaction.*:
   type: mapping
   label: Transition action settings
-  mapping: 
+  mapping:
     title:
       'type': label
       'label': Title
@@ -200,5 +197,4 @@ action.configuration.mcapi_transaction.*:
       'label': Weight
     #this is transaction_relatives by default
     access: { }
-  
-  
+

@@ -22,7 +22,7 @@ use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
  */
 abstract class TransactionActionBase extends ConfigurableActionBase implements ContainerFactoryPluginInterface {
 
-  private $relatives;
+  protected $transactionRelatives;
   protected $entityFormBuilder;
   protected $moduleHandler;
   protected $entityTypeManager;
@@ -32,13 +32,13 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
   const CONFIRM_AJAX = 1;
   const CONFIRM_MODAL = 2;
 
-  function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_type_manager, $entity_display_respository) {
+  function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_form_builder, $module_handler, $transaction_relative_manager, $entity_type_manager, $entity_display_respository) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->entityFormBuilder = $entity_form_builder;
     $this->moduleHandler = $module_handler;
-    $this->relatives = $relative_active_plugins;
+    $this->transactionRelatives = $transaction_relative_manager;
     $this->entityTypeManager = $entity_type_manager;
-    $this->entityDisplayRespository = $entity_display_respository;
+    $this->entityDisplayRepository = $entity_display_respository;
   }
 
   /**
@@ -51,7 +51,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
       $plugin_definition,
       $container->get('entity.form_builder'),
       $container->get('module_handler'),
-      $container->get('mcapi.transaction_relative_manager')->activePlugins(),
+      $container->get('mcapi.transaction_relative_manager'),
       $container->get('entity_type.manager'),
       $container->get('entity_display.repository')
     );
@@ -96,16 +96,9 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
   protected function accessOp(TransactionInterface $transaction, AccountInterface $account = NULL) {
     if (!$transaction->parent->value) {
       //children can't be edited that would be too messy
-      foreach (array_filter($this->configuration['access']) as $relative) {
-        //check if the $account is this relative to the transaction
-        $plugin = $this->relatives[$relative];
-        if (is_null($account)) {
-          $account = \Drupal::currentUser();
-        }
-        if ($plugin->isRelative($transaction, $account)) {
-          return TRUE;
-        }
-      }
+      return $this->relativeManager
+        ->activatePlugins($this->configuration['access'])
+        ->isRelative($transaction, $account);
     }
     return FALSE;
   }
@@ -170,7 +163,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
       '#required' => TRUE,
       '#weight' => 6
     ];
-    foreach ($this->entityDisplayRespository->getViewModes('mcapi_transaction') as $id => $def) {
+    foreach ($this->entityDisplayRepository->getViewModes('mcapi_transaction') as $id => $def) {
       $elements['sure']['format']['#options'][$id] = $def['label'];
     }
 

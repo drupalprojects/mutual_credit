@@ -60,14 +60,14 @@ class Type extends ConfigEntityBase {
    * @var integer
    */
   public $view;
-  
+
   /**
    * transaction relatives who can edit transactions of this type
    *
    * @var integer
    */
-  public $edit;
-  
+  public $update;
+
   /**
    * {@inheritdoc}
    */
@@ -76,5 +76,5 @@ class Type extends ConfigEntityBase {
     $this->addDependency('module', $this->provider);
     return $this->dependencies;
   }
-  
+
 }

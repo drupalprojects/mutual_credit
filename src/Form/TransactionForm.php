@@ -20,15 +20,10 @@ class TransactionForm extends ContentEntityForm {
   private $tempstore;
 
   /**
-   * @var \Drupal\
+   * @var \Symfony\Component\HttpFoundation\Request
    */
   protected $request;
 
-  /**
-   *
-   * @param Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
-   * @param \Drupal\user\PrivateTempStore $tempstore
-   */
   public function __construct($entity_type_manager, $tempstore, $current_request) {
     parent::__construct($entity_type_manager);
     $this->tempStore = $tempstore;

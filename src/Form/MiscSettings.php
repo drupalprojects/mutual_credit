@@ -104,24 +104,26 @@ class MiscSettings extends ConfigFormBase {
     foreach ($this->transactionRelativeManager->getDefinitions() as $id => $definition) {
       $options[$id] = $definition['label'];
     }
-    $form['relatives_details'] = [
-      '#title' => $this->t('Transaction relatives'),
-      '#description' => $this->t(
-        'Check those needed to determine access to transaction operations'
-      ),
-      '#type' => 'details',
-      '#collapsible' => TRUE,
-      '#weight' => 16,
-      'active_relatives' => [
-        '#type' => 'checkboxes',
-        '#description' => $this->t(
-          'Warning: Unchecking these may make other settings unviable.'
-        ),
-        '#options' => $options,
-        '#default_value' => $config->get('active_relatives'),
-      ],
-    ];
 
+    $form['access'] = [
+      '#title' => $this->t('Transaction access control'),
+      '#description' => $this->t("N.B. there is also a permission @name", ['@name' => $this->t('View all transactions')]),
+      '#type' => 'details',
+      'view' => [
+        '#title' => t('Who can view transactions'),
+        '#description' => t('Check whichever relatives apply'),
+        '#type' => 'transaction_relatives',
+        '#default_value' => $config->get('view')
+      ],
+      //this isn't used
+      'update' => [
+        '#title' => t('Who can edit transactions'),
+        '#description' => t('Check whichever relatives apply'),
+        '#type' => 'transaction_relatives',
+        '#access' => FALSE,
+        '#default_value' => $config->get('update'),
+      ]
+    ];
 
     $form['rebuild_mcapi_index'] = [
       '#title' => $this->t('Rebuild index'),
@@ -156,7 +158,8 @@ class MiscSettings extends ConfigFormBase {
       ->set('worths_delimiter', $values['worths_delimiter'])
       ->set('mail_errors', $values['mail_errors'])
       ->set('counted', $values['counted'])
-      ->set('active_relatives', $values['active_relatives'])
+      ->set('view', $values['view'])
+      ->set('update', $values['update'])
       ->save();
 
     parent::submitForm($form, $form_state);

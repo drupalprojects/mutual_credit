@@ -51,26 +51,12 @@ mcapi.admin.transactions.default_tab:
   base_route: view.mcapi_transactions.admin
   weight: 0
 
-#default tab
-mcapi.misc_settings.tab:
-  route_name: mcapi.admin_misc
-  title: Miscellaneous
-  base_route: mcapi.admin_misc
-  weight: 0
-mcapi.admin.workflow.view_tab:
-  title: Transaction Viewing
-  route_name: mcapi.admin.access.op
-  route_parameters:
-    op: view
-  base_route: mcapi.admin_misc
-  weight: 1
-mcapi.admin.workflow.edit_tab:
-  title: Transaction Editing
-  route_name: mcapi.admin.access.op
-  route_parameters:
-    op: edit
-  base_route: mcapi.admin_misc
-  weight: 2
+#default tab unused
+#mcapi.misc_settings.tab:
+#  route_name: mcapi.admin_misc
+#  title: Miscellaneous
+#  base_route: mcapi.admin_misc
+#  weight: 0
 
 mcapi.tasks:
   class: \Drupal\Core\Menu\LocalTaskDefault

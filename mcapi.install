@@ -15,7 +15,7 @@ use Drupal\mcapi\Mcapi;
 function mcapi_install() {
   module_set_weight('field_ui', -1);//mcapi has to be after field_ui for mcapi_local_tasks_alter
 
-  //create an intertrading wallet (on user 1)
+  //create an intertrading wallet (on user 1 if not stated)
   Wallet::create([
     'payways' => Wallet::PAYWAY_AUTO
   ])->save();
@@ -30,6 +30,7 @@ function mcapi_install() {
     }
     //give every existing user a wallet
      Wallet::create([
+      'payways' => Wallet::PAYWAY_ANYONE_BI,
       'holder' => $account
     ])->save();
   }
@@ -43,20 +44,6 @@ function mcapi_install() {
     ->set('zero_snippet', $snippet)
     ->save();
 
-}
-
-function mcapi_modules_installed() {
-  //ensure all new transactionRelatives are enabled by default
-  $conf = \Drupal::configFactory()->getEditable('mcapi.settings');
-  $active = $conf->get('active_relatives');
-  foreach (Mcapi::transactionRelatives()->getDefinitions() as $id => $definition) {
-    if (!array_key_exists($id, $active)) {
-      $active[$id] = $id;
-    }
-    //this may result in more than one save, but it won't result in saving unchanged values
-    $conf->set('active_relatives', $active)->save();
-  }
-  //might need to clear some cache
 }
 
 

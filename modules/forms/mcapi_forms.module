@@ -139,6 +139,9 @@ function mcapi_forms_entity_extra_field_info() {
   return $extra;
 }
 
+/**
+ * Implements hook_ENTITY_TYPE_view().
+ */
 function mcapi_forms_mcapi_wallet_view(array &$build, $entity, $display) {
   if ($display->getComponent('trade_with')) {
     $ids = \Drupal::entityQuery('firstparty_editform')
@@ -146,16 +149,17 @@ function mcapi_forms_mcapi_wallet_view(array &$build, $entity, $display) {
       ->execute();
     foreach (FirstPartyFormDesign::loadMultiple($ids) as $id => $configEntity) {
       //I'm presuming the loaded config entity is translated
-      $query = [];
       if ($configEntity->incoming) {
-        $query['payer'] = $entity->id();
+        $query = ['payer' => $entity->id()];
       }
       else {
-        $query['payee'] = $entity->id();
+        $query = ['payee' => $entity->id()];
       }
+
+      dsm($id);
       $build['wallet_link_'.$id] = [
         '#type' => 'link',
-        '#title' => $configEntity->wallet_link_title,
+        '#title' => $configEntity->walletLinkTitle($entity),
         '#url' => Drupal\Core\Url::fromUserInput($configEntity->path, ['query' => $query]),
         '#attributes' => ['class' => 'wallet-link'],
       ];

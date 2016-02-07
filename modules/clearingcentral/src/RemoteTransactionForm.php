@@ -10,7 +10,6 @@ namespace Drupal\mcapi_cc;
 use Drupal\mcapi\Form\TransactionForm;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Core\Entity\EntityInterface;
 
 class RemoteTransactionForm extends TransactionForm {
 
@@ -22,12 +21,12 @@ class RemoteTransactionForm extends TransactionForm {
    * @param Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    * @param \Drupal\user\PrivateTempStore $tempstore
    */
-  public function __construct($entity_type_manager, $tempstore, $http_client, $request) {
-    parent::__construct($entity_type_manager, $tempstore);
-    $this->httpClient = $http_client;
-    $this->direction = $request
+  public function __construct($entity_type_manager, $tempstore, $current_request, $http_client) {
+    parent::__construct($entity_type_manager, $tempstore, $current_request);
+    $this->direction = $current_request
       ->attributes->get('_route_object')
       ->getOptions()['parameters']['operation'];
+    $this->httpClient = $http_client;
   }
 
   /**
@@ -38,8 +37,8 @@ class RemoteTransactionForm extends TransactionForm {
     return new static(
       $container->get('entity.manager'),
       $container->get('user.private_tempstore'),
-      $container->get('http_client'),
-      $container->get('request_stack')->getCurrentRequest()
+      $container->get('request_stack')->getCurrentRequest(),
+      $container->get('http_client')
     );
   }
 

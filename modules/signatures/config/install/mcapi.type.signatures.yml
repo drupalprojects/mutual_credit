@@ -3,9 +3,6 @@ label: Needs signatures
 description: Requires signatures by default
 start_state: pending
 provider: mcapi
-view:
-  authenticated: authenticated
-edit: { }
 dependencies:
   module:
     - mcapi_signatures

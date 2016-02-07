@@ -18,7 +18,7 @@ use Drupal\Core\Plugin\PluginBase;
  *
  * @TransactionRelative(
  *   id = "payer",
- *   label = @Translation("Payer"),
+ *   label = @Translation("Owner of payer wallet"),
  *   description = @Translation("The owner of the payer wallet")
  * )
  */
@@ -37,11 +37,6 @@ class Payer extends PluginBase implements TransactionRelativeInterface {
   public function condition(QueryInterface $query) {
 
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function access(){}
 
 
   /**

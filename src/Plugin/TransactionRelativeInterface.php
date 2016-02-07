@@ -16,7 +16,7 @@ interface TransactionRelativeInterface {
    *
    * @param TransactionInterface $transaction
    * @param AccountInterface $account
-   * 
+   *
    * @return boolean
    *   TRUE if $account is related to the transaction with this plugin
    */
@@ -24,14 +24,16 @@ interface TransactionRelativeInterface {
 
   /**
    * Modify a database query on the transaction table to show only the relatives
-   * 
+   *
    * @param QueryInterface $query
+   *
+   * @note this is not yet implemeted, but should be used in all transaction views.
    */
   function condition(QueryInterface $query);
 
   /**
    * get the ids of users who are related to the transaction
-   * 
+   *
    * @param TransactionInterface $transaction
    *
    * @return integer[]

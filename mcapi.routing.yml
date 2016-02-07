@@ -38,15 +38,6 @@ mcapi.admin.workflow.actionedit:
   options:
     _admin_route: TRUE
 
-#these have tabs. not sure whether they can be one
-mcapi.admin.access.op:
-  path: /admin/accounting/misc/{op}
-  defaults:
-    _form: 'Drupal\mcapi\Form\AccessSettings'
-    _title: 'Transaction Access'
-  requirements:
-    _permission: 'configure mcapi'
-
 mcapi.admin_wallets:
   path: '/admin/accounting/wallets'
   defaults:
