@@ -32,29 +32,13 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
    * {@inheritdoc}
    */
   public function access(EntityInterface $transaction, $operation, AccountInterface $account = NULL, $return_as_object = false) {
-    //note at the moment the update permission is not supported
-    if ($operation === 'view' or $operation === 'update') {
-      $bool = FALSE;
-      //@todo URGENT. Also if you are named as a payee or payer on the wallet
-      if ($operation === 'view' and $account->hasPermission('view all transactions')) {
-         $bool = TRUE;
-      }
-      else {
-        if (is_null($account)) {
-          $account = \Drupal::currentUser();
-        }
-        $bool = Mcapi::transactionRelatives(\Drupal::config('mcapi.settings')->get($operation))
-          ->isRelative($transaction, $account);
-      }
-      if (!$return_as_object) {
-        return $bool;
-      }
-      return $bool ? AccessResult::allowed()->cachePerUser() :
-        AccessResult::forbidden()->cachePerUser();
+    if ($operation === 'view' and $account->hasPermission('view all transactions')) {
+      //@todo URGENT. Handle the named payees and payers
+      return $return_as_object ? AccessResult::allowed()->cachePerUser() :  AccessResult::forbidden()->cachePerUser();
     }
     return Mcapi::transactionActionLoad($operation)
       ->getPlugin()
-      ->access($transaction, $account, TRUE)
+      ->access($transaction, $account, $return_as_object)
       ->cachePerUser();
   }
 

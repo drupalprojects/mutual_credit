@@ -12,14 +12,9 @@
 * Implements hook_views_data_alter
 */
 function mcapi_views_data_alter(&$data) {
-  if (\Drupal::config('mcapi.wallet')->get('entity_types')['user:user'] == 1) {
-    $data['users']['trade_stats'] = array(
-      'title' => t('Transaction statistic'),
-      'help' => t('The balance, trading volume, or transaction count for each user.'),
-      'field' => array(
-        'id' => 'mcapi_userstat',
-      )
-    );
+  foreach (\Drupal\mcapi\Mcapi::walletableBundles() as $entity_type => $bundles) {
+    $table_name = \Drupal::entityTypeManager()->getDefinition($entity_type)->getBaseTable();
+    \Drupal\mcapi\Views\WalletViewsData::addWalletSummaries($data[$table_name]);
   }
 }
 

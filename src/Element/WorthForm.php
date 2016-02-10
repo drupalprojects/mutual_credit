@@ -38,7 +38,6 @@ class Worthform extends FormElement {
       '#min' => 0,
       '#max' => NULL,
       '#allowed_curr_ids' => [],
-      '#theme_wrappers' => ['form_element'],
       '#oneofmany' => TRUE
     ];
   }

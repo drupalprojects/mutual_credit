@@ -29,20 +29,16 @@ class TransactionListBuilder extends EntityListBuilder {
     );
     return $build;
   }
-  
-  
+
+
   /**
    * {@inheritdoc}
    */
   public function getOperations(EntityInterface $entity) {
-    module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');
     $operations = \Drupal::entityTypeManager()
       ->getviewBuilder('mcapi_transaction')
-      ->buildActionlinks($entity, TRUE);
-    $operations += $this->moduleHandler()->invokeAll('entity_operation', array($entity));
-    $this->moduleHandler->alter('entity_operation', $operations, $entity);
-    uasort($operations, '\Drupal\Component\Utility\SortArray::sortByWeightElement');
+      ->buildActionlinks($entity);
     return $operations;
   }
-  
+
 }

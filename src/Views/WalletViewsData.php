@@ -40,8 +40,36 @@ class WalletViewsData extends EntityViewsData {
     ];
     $data['mcapi_wallet']['holder_entity_type']['field']['id'] = 'mcapi_holder_type';
     $data['mcapi_wallet']['holder_entity_type']['field']['help'] = $this->t("The wallet holder's translated EntityType name");
-    
-    
+
+    $this->addWalletSummaries($data['mcapi_wallet']);
+
+    //other stats are available, total expenditure, total income, number of trading partners.
+
     return $data;
   }
+
+  static function addWalletSummaries(array &$table) {
+    $table['summary_balance'] = [
+      'title' => t('Wallet current balance'),
+      'field' => [
+        'id' =>'wallet_summary',
+        'stat' => 'balance'
+      ]
+    ];
+    $table['summary_trades'] = [
+      'title' => t('Wallet transaction count'),
+      'field' => [
+        'id' =>'wallet_summary',
+        'stat' => 'trades'
+      ]
+    ];
+    $table['summary_volume'] = [
+      'title' => t('Wallet trading volume'),
+      'field' => [
+        'id' =>'wallet_summary',
+        'stat' => 'volume'
+      ]
+    ];
+  }
 }
+

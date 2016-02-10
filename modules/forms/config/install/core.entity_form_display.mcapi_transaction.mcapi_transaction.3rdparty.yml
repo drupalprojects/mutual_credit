@@ -10,6 +10,7 @@ dependencies:
 id: mcapi_transaction.mcapi_transaction.3rdparty
 targetEntityType: mcapi_transaction
 bundle: mcapi_transaction
+provider: mcapi_forms
 mode: 3rdparty
 content:
   description:

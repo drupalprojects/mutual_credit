@@ -39,12 +39,6 @@ mcapi.settings:
     mail_errors:
       type: string
       label: Send diagnostics to user 1 by mail
-    view:
-      type: transaction_relatives
-      label: Relatives with view access
-    update:
-      type: transaction_relatives
-      label: Relatives with update access
     payways:
       type: string
       label: Payment direction
@@ -123,6 +117,9 @@ mcapi.state.*:
     id:
       type: string
       label: State ID
+    provider:
+      type: string
+      label: 'Provider'
     label:
       type: label
       label: Label
@@ -140,6 +137,9 @@ mcapi.type.*:
     id:
       type: string
       label: Type ID
+    provider:
+      type: string
+      label: 'Provider'
     label:
       type: label
       label: Label
@@ -162,9 +162,15 @@ action.configuration.mcapi_transaction.*:
   type: mapping
   label: Transition action settings
   mapping:
+    provider:
+      type: string
+      label: 'Provider'
     title:
       'type': label
       'label': Title
+    provider:
+      type: string
+      label: 'Provider'
     tooltip:
       'type': text
       'label': Tooltip

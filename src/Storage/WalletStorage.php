@@ -42,12 +42,12 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
     if ($operation) {
       $users = $query->orConditionGroup();
       if ($operation == 'payin') {
-        $users->condition('w.payways', [Wallet::PAYWAY_ANYONE_OUT, Wallet::PAYWAY_ANYONE_BI], 'IN');
+        $users->condition('w.payways', [Wallet::PAYWAY_ANYONE_IN, Wallet::PAYWAY_ANYONE_BI], 'IN');
         $query->leftjoin('mcapi_wallet__payers', 'payers', "payers.payers_target_id = w.holder_entity_id");
         $users->condition('payers.payers_target_id', $uid);
       }
       elseif ($operation == 'payout') {
-        $users->condition('w.payways', [Wallet::PAYWAY_ANYONE_IN, Wallet::PAYWAY_ANYONE_BI], 'IN');
+        $users->condition('w.payways', [Wallet::PAYWAY_ANYONE_OUT, Wallet::PAYWAY_ANYONE_BI], 'IN');
         $query->leftjoin('mcapi_wallet__payees', 'payees', "payees.payees_target_id = w.holder_entity_id");
         $users->condition('payees.payees_target_id', $uid);
       }

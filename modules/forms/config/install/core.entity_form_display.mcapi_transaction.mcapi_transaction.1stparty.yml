@@ -11,6 +11,7 @@ id: mcapi_transaction.mcapi_transaction.1stparty
 targetEntityType: mcapi_transaction
 bundle: mcapi_transaction
 mode: 1stparty
+provider: mcapi_forms
 content:
   created:
     type: datetime_timestamp

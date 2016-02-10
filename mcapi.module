@@ -148,16 +148,16 @@ function mcapi_entity_insert($entity) {
   }
 }
 
-
 /**
  * Implements hook_entity_predelete().
  *
  * orphan any wallets owned by the deleted entity.
  */
 function mcapi_entity_predelete($entity) {
-  if ($entity instanceOf ContentEntityInterface)
-  if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())) {
-    Drupal\mcapi\Exchange::orphan($entity);
+  if ($entity instanceOf ContentEntityInterface) {
+    if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())) {
+      \Drupal\mcapi\Exchange::orphan($entity);
+    }
   }
 }
 
@@ -299,7 +299,7 @@ function mcapi_entity_extra_field_info() {
 /**
  * Implements hook_theme().
  */
-function mcapi_theme() {
+function mcapi_theme($existing, $type, $theme, $path) {
   $file = ['file' => 'templates/theme.inc'];
   $items['worths'] = [
     'variables' => [
@@ -320,6 +320,11 @@ function mcapi_theme() {
     'render element' => 'transaction',
     'template' => 'certificate',
     'pattern' => 'certificate__'
+  ] + $file;
+  $items['mcapi_transaction_twig'] = [//experimental
+    //when we call this we have to set the $transaction->twig property first
+    'render element' => 'transaction',
+    'function' => 'theme_mcapi_transaction_twig',
   ] + $file;
   $items['sentence'] = [
     'render element' => 'transaction'
@@ -386,15 +391,11 @@ function mcapi_forms_help($route_name) {
 function mcapi_mcapi_form_list() {
   //@todo get the title from the route.
   $forms['12many'] = [
-    'title' => t('One to many'),
-    'route' => 'mcapi.masspay.12many',
-    'route_parameters' => [],
+    'link' => \Drupal::l(t('One to many'), \Drupal\Core\Url::fromRoute('mcapi.masspay.12many', [])),
     'operations' => []
   ];
   $forms['many21'] = [
-    'title' => t('Many to one'),
-    'route' => 'mcapi.masspay.many21',
-    'route_parameters' => [],
+    'link' => \Drupal::l(t('Many to one'), \Drupal\Core\Url::fromRoute('mcapi.masspay.many21', [])),
     'operations' => []
   ];
   //add
@@ -412,17 +413,21 @@ function mcapi_entity_query_transaction_query_alter($query)  {
  */
 function mcapi_entity_form_display_alter($display, $display_context){
   if ($display_context['bundle'] == 'mcapi_transaction') {
-    $display->setComponent('worth', ['type' =>'worth']);
+    $settings = $display->getComponent('worth');
+    $settings['visible'] = TRUE;
+    $display->setComponent('worth', $settings);
   }
 }
 function mcapi_entity_view_display_alter($display, $display_context){
   if ($display_context['bundle'] == 'mcapi_transaction') {
-    $display->setComponent('worth', ['type' =>'worth']);
+    $settings = $display->getComponent('worth');
+    $settings['visible'] = TRUE;
+    $display->setComponent('worth', $settings);
   }
 }
 
 /*
- * utility retrieve any enabled views embed displays which takes a wallet id as its first argument
+ * utility to retrieve any enabled views 'embed' displays which takes a wallet id as its first argument
  * @todo make some settings here, or some responsivness to the actual views, then cache it
  */
 function mcapi_one_wallet_entity_views_displays() {

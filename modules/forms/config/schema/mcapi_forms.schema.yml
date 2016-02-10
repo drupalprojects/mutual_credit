@@ -5,6 +5,9 @@ mcapi_forms.firstpartyform.*:
     id:
       type: string
       label: 'Mcapiform identifier'
+    provider:
+      type: string
+      label: 'Provider'
     title:
       type: label
       label: 'Form title'

@@ -50,6 +50,8 @@ class FirstPartyFormDesigner extends EntityForm {
 
     $configEntity = $this->entity;
 
+    //$form['#title'] = $configEntity->title ? $this->t('Designing transaction form') : $this->t('New transaction form');
+
     $form['#tree'] = TRUE;
     $w = 0;
     $form['title'] = [

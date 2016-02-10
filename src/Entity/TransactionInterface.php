@@ -11,13 +11,12 @@ interface TransactionInterface extends \Drupal\Core\Entity\ContentEntityInterfac
 
   /**
    * load many transactions and key them by serial number instead of xid
-   * @param mixed
-   *   a serial number or array of serial numbers
+   * @param integer
+   *   a serial number
    *
-   * @return mixed
-   *   an array of transaction entities or one transaction entity, depending on the input
+   * @return \Drupal\mcapi\Entity\TransactionInterface
    */
-  static function loadBySerials($serials);
+  static function loadBySerial($serial);
 
   /**
    * returns a clone of the transaction as an array with the children next to the parent

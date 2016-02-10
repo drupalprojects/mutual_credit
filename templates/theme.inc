@@ -7,8 +7,6 @@
  */
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Currency;
-use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\mcapi\Entity\State;
 use Drupal\Core\Render\Element;
 
 
@@ -30,11 +28,6 @@ function template_preprocess_wallet_stats(&$vars) {
       $vars['currencies'][$curr_id]['trades'] = $data['trades'];
     }
   }
-}
-
-//not currently used
-function __template_preprocess_worth(&$vars) {
-  print_r(array_keys($vars));
 }
 
 /**
@@ -155,43 +148,6 @@ function template_preprocess_mcapi_transaction(&$vars, $hook, $info) {
   $vars['links'] = render($element['links']);
 }
 
-/**
- * Implements template_preprocess_THEMEHOOK for theme callback 'certificate'
- *
- * @param array $vars
- */
-function template_preprocess_certificate(&$vars) {
-  $element = $vars['transaction'];
-  $transaction = $element['#mcapi_transaction'];
-
-  //simplify the description, coz I can't find where it is themed
-  //can't see how to remove the <div> around it
-  //don't know why, inside the #field it is an inline-template
-  $vars['description'] = $element['description'][0]['#context']['value'];
-  unset($element['description']);
-
-  $vars['created'] = $element['created'][0]['#markup'];
-  unset($element['created']);
-
-  //for any remaining fields, hide the field api label and remove the surrounding <div>
-  foreach (Element::children($element) as $sub) {
-    if (array_key_exists('#theme', $element[$sub]) && $element[$sub]['#theme'] == 'field') {
-      //unset($element['#theme_wrappers']);//this should be much more elegant
-      $element[$sub]['#label_display'] = 'hidden';
-    }
-    $vars[$sub] = $element[$sub];
-  }
-  $vars['children'] = [];
-  if (isset($transaction->children)) {
-    foreach ($transaction->children as $child) {
-      $vars['children'][$child->id()] = entity_view($child, 'sentence');
-      //@todo there's something nasty happening with #pre_render being added here
-      //pre_render connects to the display modes, which we don't want
-      unset($vars['children'][$child->id()]['#pre_render']);
-    }
-  }
-  $vars['serial'] = $transaction->serial->value;
-}
 
 /**
  * Implements template_preprocess_THEMEHOOK for theme callback 'mcapi_currency'
@@ -211,33 +167,28 @@ function template_preprocess_mcapi_currency(&$vars) {
   $vars['wallets'] = count($storage->wallets($currency->id));
 }
 
-/**
- * gets all the vars which we know are in the transaction
- * @todotim refactor this into mcapi.tokens.inc
- */
-function get_transaction_vars(TransactionInterface $transaction) {
-  $vars['state'] = State::load($transaction->type->entity->start_state)->label;
-  $vars['type'] = $transaction->type->entity->label;
-  //@todo find a better way to do these
-  foreach (['payer', 'payee'] as $trader) {
-    $holder = $transaction->{$trader}->entity->getHolder();
-    if ($holder->hasLinkTemplate('canonical')) {
-      $vars[$trader] = $holder->link();
-    }
-    //if there is no canonical link to this entity just link to the wallet itself
-    else {
-      $vars[$trader] = $transaction->{$trader}->entity->link();
-    }
+function template_preprocess_mcapi_transaction_twig(&$vars) {
+  $elements = $vars['transaction'];
+  foreach (Element::children($elements) as $key) {
+    $vars[$key] = $elements[$key];
   }
+  $transaction = $elements['#mcapi_transaction'];
+  $vars['state'] = $transaction->state->entity->label();
+  $vars['type'] = $transaction->type->entity->label();
   $vars['creator'] = $transaction->creator->entity->link();
-  //@todo do we need to sanitise this or does the theme engine do it? Test with a transaction
-  $vars['description'] = $transaction->description->getString();
+  if (!$transaction->isNew()) {
+    $vars['url'] = $transaction->link();
+  }
+}
 
-  $vars['created'] = format_date($transaction->created->value, 'medium');
-
-  //the token service lets you pass url options, but this function doesn't
-  $vars['url'] = $transaction->url('canonical');
-  return $vars;
+//experimental
+function theme_mcapi_transaction_twig($vars) {
+  $renderable = [
+    '#type' => 'inline_template',
+    '#template' => $vars['transaction']['#mcapi_transaction']->twig,
+    '#context' => $vars
+  ];
+  return \Drupal::service('renderer')->render($renderable);
 }
 
 

@@ -25,7 +25,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
   protected $entityTypeManager;//see parent
 
   /**
-   * 
+   *
    * @param \Drupal\Core\Routing\RouteMatch $route_match
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    * @param \Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher $event_dispatcher
@@ -94,15 +94,18 @@ class OperationForm extends ContentEntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getDescription() {
-    $this->entity->noLinks = TRUE;
     //this provides the transaction_view part of the form as defined in the action settings
     $format = $this->config['format'];
     if ($format == 'twig') {
-      module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');
+      //module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');
       $renderable = [
         '#type' => 'inline_template',
         '#template' => $this->config['twig'],
-        '#context' => get_transaction_vars($this->entity),
+        '#context' => \Drupal::Token()->replace(
+          $this->config['twig'],
+          ['mcapi_transaction' => $this->entity],
+          ['sanitize' => TRUE]
+        )
       ];
     }
     else {
@@ -137,7 +140,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
     try {
       //the op might have injected values into the form, so it needs to be able to access them
       $this->plugin->execute($this->entity);
-      if ($this->action->id() == 'transaction_delete') { 
+      if ($this->action->id() == 'transaction_delete') {
         if (!$this->destination) {
           $this->destination = '/';//front page
         }
@@ -162,7 +165,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
       drupal_set_message($this->t(
         "Error performing @action action: @error",
         [
-          '@action' => $this->config['title'], 
+          '@action' => $this->config['title'],
           '@error' => $e->getMessage()
         ]
       ), 'error');
@@ -171,7 +174,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
     if ($message = $events->getMessage()) {
       drupal_set_message($message);
     }
-        
+
     if ($this->destination) {
       $path = $this->destination;
     }

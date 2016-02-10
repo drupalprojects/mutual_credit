@@ -96,7 +96,6 @@ class WorthItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public function isEmpty() {
-
     if ($this->currency->zero) {
       return FALSE;
     }
@@ -123,9 +122,11 @@ class WorthItem extends FieldItemBase {
   public function onChange($property_name, $notify = TRUE) {
     if ($property_name == 'currency') {
       $this->curr_id = $this->currency->id;
-
-    mtrace();
     }
     parent::onChange($property_name, $notify);
+  }
+
+  public function __toString() {
+    return $this->currency->format($this->value, 'normal');
   }
 }

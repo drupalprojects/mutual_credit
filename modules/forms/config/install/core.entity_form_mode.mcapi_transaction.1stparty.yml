@@ -1,9 +1,8 @@
+uuid: 48aa7255-8567-4383-8736-54c3287c48d4
 langcode: en
 status: true
-dependencies:
-  module:
-    - mcapi_forms
 id: mcapi_transaction.1stparty
+provider: mcapi_forms
 label: '1st Party'
 targetEntityType: mcapi_transaction
 cache: true

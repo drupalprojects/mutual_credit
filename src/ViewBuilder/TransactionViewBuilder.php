@@ -42,7 +42,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
   }
 
   /**
-   * Provides entity-specific defaults to the build process.\
+   * Provides entity-specific defaults to the build process.
    * 3 reasons for NOT caching transactions:
    * - it was caching twice with different contexts I couldn't find out why
    * - it was tricky separating the certificate caching from the links in the #theme_wrapper
@@ -62,35 +62,24 @@ class TransactionViewBuilder extends EntityViewBuilder {
     //if the view_mode is 'full' that means nothing was specified, which is the norm.
     //so we turn to the 'view' transition where the view mode is a configuration.
     $build = parent::getBuildDefaults($entity, $view_mode);
-    $build['#theme_wrappers'][] = $build['#theme'];
-    unset($build['#theme']);
     switch($view_mode) {
       case 'full':
       case 'certificate':
-        $build['#theme'] = 'certificate';
-        if ($entity->state->target_id == 'erased') {
-          $build['stamp']['#markup'] = $entity->state->entity->label;//this is translated
-        }
+        $build['#theme'] = 'mcapi_transaction_twig';
+        $build['#mcapi_transaction']->twig = \Drupal\system\Entity\Action::load('transaction_view')
+          ->getPlugin()
+          ->getConfiguration()['twig'];
+        $build['#theme_wrappers'][] = 'mcapi_transaction';
         break;
       case 'sentence':
-        $template = $this->settings->get('sentence_template');
-        $build['transaction']['#markup'] = \Drupal::Token()->replace(
-          $template,
-          ['mcapi' => $entity],
-          ['sanitize' => TRUE]
+        $build['#markup'] = \Drupal::token()->replace(
+          $this->settings->get('sentence_template'),
+          ['xaction' => $entity]
         );
+        unset($build['#theme']);
         break;
       default:
-        die('where do we get twig settings from?');
-      /*
-        module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');
-        $build['transaction'] = [
-          '#type' => 'inline_template',
-          '#template' => _filter_autop($this->settings->get('twig')),
-          '#context' => get_transaction_vars($entity)
-        ];
-       *
-       */
+        throw new Exception('unknown view mode');
     }
     $build += [
       '#attributes' => [
@@ -117,9 +106,10 @@ class TransactionViewBuilder extends EntityViewBuilder {
   public function buildComponents(array &$build, array $entities, array $displays, $view_mode) {
     parent::buildComponents($build, $entities, $displays, $view_mode);
     foreach ($entities as $id => $transaction) {
-      if (!$transaction->noLinks) {
-        $view_link = \Drupal::routeMatch()->getRouteName() != 'entity.mcapi_transaction.canonical';
-        $links = $this->buildActionlinks($transaction, $view_link);
+      //no action links on the action page itself
+      //todo inject routeMatch
+      if (\Drupal::routeMatch()->getRouteName() != 'mcapi.transaction.operation') {
+        $links = $this->buildActionlinks($transaction);
         if ($links) {
           foreach ($links as $op) {
             $items[] = [
@@ -143,28 +133,16 @@ class TransactionViewBuilder extends EntityViewBuilder {
   /**
    *
    * @param TransactionInterface $transaction
-   * @param boolean $show_view
-   *   whether to include the 'view' link
    *
    * @return array
    *   A renderable array of links
-   *
-   * @todo what's going on with $show_view here?
    */
-  function buildActionlinks(TransactionInterface $transaction, $show_view = TRUE) {
+  function buildActionlinks(TransactionInterface $transaction) {
     $operations = [];
-    //edit is not an action entity, but it does belong with these links.
-    if ($transaction->access('update')) {
-      $operations['edit'] = [
-        'title' => t('Edit'),
-        'weight' => 3,
-        'url' => $transaction->urlInfo('edit-form'),
-      ];
-    }
 
     foreach (Mcapi::transactionActionsLoad() as $action_name => $action) {
       $plugin = $action->getPlugin();
-      if ($plugin->access($transaction)) {
+      if ($plugin->access($transaction, \Drupal::currentUser())) {
         $route_params = ['mcapi_transaction' => $transaction->serial->value];
         if ($action_name == 'transaction_view') {
           $route_name = 'entity.mcapi_transaction.canonical';
@@ -214,7 +192,6 @@ class TransactionViewBuilder extends EntityViewBuilder {
         }
       }
     }
-
     $operations += \Drupal::moduleHandler()->invokeAll('entity_operation', [$transaction]);
     \Drupal::moduleHandler()->alter('entity_operation', $operations, $transaction);
     //@todo check the order is sensible

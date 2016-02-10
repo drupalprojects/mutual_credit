@@ -32,11 +32,17 @@ function theme_first_party_transaction_form($vars) {
   //append everything not rendered onto the last rendered thing.
   $vars['twig_template'] .= '{{ hidden_elements }}';
   $hidden = '';
-  foreach (Element::children($form) as $fieldname) {
+  foreach (Element::children($form) as $fieldname) {echo $fieldname;
     if($form[$fieldname]['#type'] == 'actions') {
       $tokens[$fieldname] = $renderer->render($form[$fieldname]);
     }
     //if it is in the template, render the token
+    elseif ($fieldname === 'worth') {
+      unset($form[$fieldname]['widget']['#title']);
+      unset($form[$fieldname]['widget']['#description']);
+      // don't want to strip the wrappers
+      $tokens[$fieldname] = $renderer->render($form['worth']);
+    }
     elseif (strpos($vars['twig_template'], '{ '.$fieldname.' }}')) {
       mcapi_strip_wrappers_recursive($form[$fieldname]);
       $tokens[$fieldname] = $renderer->render($form[$fieldname]);
@@ -73,7 +79,7 @@ function theme_first_party_transaction_form($vars) {
  * helper function
  */
 function mcapi_strip_wrappers_recursive(&$element) {
-  if (isset($element['#type']) && in_array($element['#type'], ['checkbox', 'checkboxes', 'radios'])) {
+  if (isset($element['#type']) && in_array($element['#type'], ['checkbox', 'checkboxes', 'radios', 'worths_form'])) {
     return;
   }
   unset($element['#theme_wrappers'], $element['#title'], $element['#description']);

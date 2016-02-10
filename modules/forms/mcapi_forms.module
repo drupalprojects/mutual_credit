@@ -90,24 +90,18 @@ function mcapi_forms_theme() {
  * implement mcapi hook_mcapi_form_list().
  * return a list of transaction forms declared in this module.
  * each item must e an array with the following keys
- * - 'title' => 'Blah'
- * - 'route' => 'mcapi.transaction_form'
- * - 'route_parameters' => []
+ * - 'link' => \Drupal::l()
  * - 'operations' => [Url::fromPath('blah')] an array of items, each with title and path
  */
 function mcapi_forms_mcapi_form_list() {
   $forms = [];
 
   $forms['default'] = [
-    'title' => t('Administration'),
-    'route' => 'mcapi.transaction.admin',
+    'link' => \Drupal::l(t('Administration'), \Drupal\Core\Url::fromRoute('mcapi.transaction.admin')),
+    'operations' => [],
   ];
   foreach (FirstPartyFormDesign::loadMultiple() as $id => $entity) {
-    $forms[$id] = [
-      'title' => $entity->title,
-      'route' => 'mcapi.1stparty.'.$id,
-      'route_parameters' => [],
-    ];
+    $forms[$id]['link'] = \Drupal::l($entity->title, \Drupal\Core\Url::fromRoute('mcapi.1stparty.'.$id));
 
     if ($entity->access('update') && $entity->hasLinkTemplate('edit-form')) {
       $forms[$id]['operations']['edit'] = [

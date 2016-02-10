@@ -53,7 +53,6 @@ class TransactionRelativeManager extends DefaultPluginManager {
       $this->activatePlugins();
     }
     $plugins = [];
-    print_r($this->active);
     foreach ($this->active as $id) {
       if (empty($this->plugins[$id])) {
         $this->plugins[$id] = $this->createInstance($id);
@@ -91,6 +90,9 @@ class TransactionRelativeManager extends DefaultPluginManager {
   }
 
   public function isRelative($transaction, $account) {
+    if (!$account) {
+      $account = \Drupal::currentUser();
+    }
     foreach ($this->getActivePlugins() as $plugin) {
       if ($plugin->isRelative($transaction, $account)) {
         return TRUE;

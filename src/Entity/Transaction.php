@@ -82,31 +82,23 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
   /**
    * {@inheritdoc}
    */
-  public static function loadBySerials($serials) {
-    $transactions = [];
-    if ($serials) {
-      //not sure which is best, this or entityQuery. This is shorter and faster.
-      $results = \Drupal::entityTypeManager()
-        ->getStorage('mcapi_transaction')
-        ->loadByProperties(['serial' => (array)$serials]);
-      //put all the transaction children under the parents
-      foreach ($results as $xid => $transaction) {
-        if ($pxid = $transaction->get('parent')->value) {
-          $results[$pxid]->children[] = $transaction;
-          unset($results[$xid]);
-        }
+  public static function loadBySerial($serial) {
+    $children = [];
+    //not sure which is best, this or entityQuery. This is shorter and faster.
+    $results = \Drupal::entityTypeManager()
+      ->getStorage('mcapi_transaction')
+      ->loadByProperties(['serial' => $serial]);
+    //put all the transaction children under the parents
+    foreach ($results as $xid => $entity) {
+      if ($entity->get('parent')->value) {
+        $children[] = $entity;
       }
-      //I had a problem on uninstalling the tester module that all the parents were somehow deleted already
-      //which rather screwed up this function.
-      //change the array keys for the serial numbers
-      foreach ($results as $transaction) {
-        $transactions[$transaction->serial->value] = $transaction;
+      else{
+        $transaction = $entity;
       }
     }
-    if (is_array($serials)) {
-      return $transactions;
-    }
-    return reset($transactions);
+    $transaction->children = $children;
+    return $transaction;
   }
 
   /**
@@ -357,6 +349,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
     foreach ($this->flatten(FALSE) as $transaction) {
       foreach (['payer', 'payee'] as $actor) {
         $wallet = $transaction->{$actor}->entity;
+        if (!$wallet) continue;//this should never happen, but does
         $wallets[$wallet->id()] = $wallet;//prevent duplicates
       }
     }

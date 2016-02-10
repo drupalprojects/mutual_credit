@@ -33,13 +33,13 @@ class RunningBalance extends Worth {
     if ($arg_pos === FALSE) {
       $arg_pos = array_search('wallet_id', $arg_names);
     }
-    
+
     if ($arg_pos !== FALSE) {
       $this->wallet_id = $this->view->args[$arg_pos];
     }
     else {
       $arg_pos = array_search('wallet_id', array_keys($this->view->filter));
-      if ($arg_pos !== FALSE) 
+      if ($arg_pos !== FALSE)
         {$this->wallet_id = $this->view->filter['wallet_id']->value['value'];
       }
       else {
@@ -54,7 +54,7 @@ class RunningBalance extends Worth {
   public function render(ResultRow $values) {
     $worth_field = $this->getEntity($values)->worth;
     //something bizarre is happening here. sometimes the entity associated with
-    //this row has and empty worth value. but it works if we reload it
+    //this row has an empty worth value. but it works if we reload it
     if (!$worth_field->getValue()) {
       drupal_set_message('reloading transaction '.$values->serial, 'warning');
       $worth_field = \Drupal\mcapi\Entity\Transaction::load($values->serial)

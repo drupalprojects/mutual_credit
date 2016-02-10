@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\Controller\WorkflowListBuilder.
+ * Contains \Drupal\mcapi\ListBuilder\WorkflowListBuilder.
  * NB this isn't an entity list
  */
 

@@ -314,7 +314,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * @param string $stat
    * @return array
    */
-  public function getWorths($stat = 'balance') {
+  public function getStatAll($stat = 'balance') {
     foreach ($this->getSummaries() as $curr_id => $stats) {
       $worth[] = [
         'curr_id' => $curr_id,

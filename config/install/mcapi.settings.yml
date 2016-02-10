@@ -1,4 +1,4 @@
-sentence_template: '[mcapi:payer] paid [mcapi:payee] [mcapi:worth] for [mcapi:description].'
+sentence_template: '[xaction:payer] paid [xaction:payee] [xaction:worth] for [xaction:description].'
 editable: false
 fields:
   description: true
@@ -9,11 +9,6 @@ counted:
   done: true
   undone: false
 mail_errors: true
-view:
-  payer: payer
-  payee: payee
-  creator: creator
-edit: { }
 entity_types:
   'user:user': 1
 payways: I

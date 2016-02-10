@@ -49,10 +49,7 @@ class MiscSettings extends ConfigFormBase {
     $config = $this->config('mcapi.settings');
     $form['sentence_template'] = [
       '#title' => $this->t('Sentence view mode.'),
-      '#description' => $this->t(
-        'Use the following tokens to define how the transaction will read when displayed in sentence view mode: @tokens',
-        ['@tokens' => Mcapi::twigHelp()]
-      ),
+      '#description' => $this->t('The following tokens are available: @tokens', ['@tokens' => Mcapi::tokenHelp()]),
       '#type' => 'textfield',
       '#default_value' => $config->get('sentence_template'),
       '#weight' => 2
@@ -105,26 +102,6 @@ class MiscSettings extends ConfigFormBase {
       $options[$id] = $definition['label'];
     }
 
-    $form['access'] = [
-      '#title' => $this->t('Transaction access control'),
-      '#description' => $this->t("N.B. there is also a permission @name", ['@name' => $this->t('View all transactions')]),
-      '#type' => 'details',
-      'view' => [
-        '#title' => t('Who can view transactions'),
-        '#description' => t('Check whichever relatives apply'),
-        '#type' => 'transaction_relatives',
-        '#default_value' => $config->get('view')
-      ],
-      //this isn't used
-      'update' => [
-        '#title' => t('Who can edit transactions'),
-        '#description' => t('Check whichever relatives apply'),
-        '#type' => 'transaction_relatives',
-        '#access' => FALSE,
-        '#default_value' => $config->get('update'),
-      ]
-    ];
-
     $form['rebuild_mcapi_index'] = [
       '#title' => $this->t('Rebuild index'),
       '#description' => $this->t('The index table stores the transactions in an views-friendly format. It should never need rebuilding on a working system.'),
@@ -158,8 +135,6 @@ class MiscSettings extends ConfigFormBase {
       ->set('worths_delimiter', $values['worths_delimiter'])
       ->set('mail_errors', $values['mail_errors'])
       ->set('counted', $values['counted'])
-      ->set('view', $values['view'])
-      ->set('update', $values['update'])
       ->save();
 
     parent::submitForm($form, $form_state);

@@ -49,6 +49,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
 class FirstPartyFormDesign extends ConfigEntityBase {
 
   public $id;
+  public $provider;
   public $path;
   public $wallet_link_title;
   public $menu;
@@ -67,7 +68,11 @@ class FirstPartyFormDesign extends ConfigEntityBase {
       'id' => '',
       'path' => '',
       'wallet_link_title' => 1,
-      'menu' => [],
+      'menu' => [
+        'title' => '',
+        'weight' => '',
+        'menu_name' => ''
+      ],
       'title' => '',
       'status' => 1,
       'type' => 'default',

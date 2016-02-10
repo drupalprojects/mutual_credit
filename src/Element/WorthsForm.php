@@ -39,7 +39,8 @@ class Worthsform extends FormElement {
       //'#theme_wrappers' => ['form_element'],
       '#attributes' => ['class' => ['worth-element']],
       '#config' => FALSE,
-      '#allowed_curr_ids' => []
+      '#allowed_curr_ids' => [],
+      '#theme_wrappers' => ['form_element'],
     ];
   }
 
@@ -48,7 +49,6 @@ class Worthsform extends FormElement {
    * the #default_value is then used to build the widget
    */
   public static function processDefaults($element, FormStateInterface $form_state, $form) {
-//    print_r($element['#default_value']);mtrace();
     if (empty($element['#default_value'])) {
       if (empty($element['#allowed_curr_ids'])) {
         $element['#allowed_curr_ids'] = array_keys(Exchange::currenciesAvailableToUser());

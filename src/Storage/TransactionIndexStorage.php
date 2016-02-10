@@ -375,21 +375,6 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
 
   /**
    * {@inheritdoc}
-   * @todo this function should be deleted
-   */
-  public function __loadUnchanged($id) {
-    $this->resetCache(array($id));
-    $serial = $this->database
-      ->select('mcapi_transactions_index', 'i')
-      ->fields('i', ['serial'])->condition('xid', $id)
-      ->execute()
-      ->fetchField();
-    $transactions = Transaction::loadBySerials([$serial]);
-    return reset($transactions);
-  }
-
-  /**
-   * {@inheritdoc}
    */
   function getQueryServiceName() {
     return 'mcapi.query.sql';

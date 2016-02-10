@@ -22,7 +22,7 @@ use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
  */
 abstract class TransactionActionBase extends ConfigurableActionBase implements ContainerFactoryPluginInterface {
 
-  protected $transactionRelatives;
+  protected $transactionRelativeManager;
   protected $entityFormBuilder;
   protected $moduleHandler;
   protected $entityTypeManager;
@@ -36,7 +36,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->entityFormBuilder = $entity_form_builder;
     $this->moduleHandler = $module_handler;
-    $this->transactionRelatives = $transaction_relative_manager;
+    $this->transactionRelativeManager = $transaction_relative_manager;
     $this->entityTypeManager = $entity_type_manager;
     $this->entityDisplayRepository = $entity_display_respository;
   }
@@ -61,6 +61,9 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
    * {@inheritdoc}
    */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
+    if (!$account) {
+      $account = \Drupal::currentUser();
+    }
     $result = $this->accessOp($object, $account) && $this->accessState($object, $account);
 
     if (!$return_as_object) {
@@ -96,7 +99,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
   protected function accessOp(TransactionInterface $transaction, AccountInterface $account = NULL) {
     if (!$transaction->parent->value) {
       //children can't be edited that would be too messy
-      return $this->relativeManager
+      return $this->transactionRelativeManager
         ->activatePlugins($this->configuration['access'])
         ->isRelative($transaction, $account);
     }
@@ -141,7 +144,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
       '#weight' => 8,
     ];
 
-    $elements['sure']= [
+    $elements['sure'] = [
       '#title' => t('Are you sure page'),
       '#type' => 'fieldset',
       '#weight' => 3
@@ -194,7 +197,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
       '#weight' => 10
     ];
 
-    $elements['sure']['button']= [
+    $elements['sure']['button'] = [
       '#title' => $this->t('Button text'),
       '#description' => $this->t('The text that appears on the button'),
       '#type' => 'textfield',
@@ -206,19 +209,19 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
       '#required' => TRUE
     ];
 
-    $elements['sure']['cancel_link']= [
+    $elements['sure']['cancel_link'] = [
       '#title' => $this->t('Cancel link text'),
       '#description' => $this->t('The text that appears on the cancel button'),
       '#type' => 'textfield',
       '#default_value' => $this->configuration['cancel_link'],
-      '#placeholder' => t('Cancel-o'),
+      '#placeholder' => t('Cancel'),
       '#weight' => 12,
       '#size' => 15,
       '#maxlength' => 15,
       '#required' => TRUE
     ];
 
-    $elements['message']= [
+    $elements['message'] = [
       '#title' => $this->t('Success message'),
       '#description' => $this->t('Appears in the message box along with the reloaded transaction certificate.') . 'TODO: put help for user and mcapi_transaction tokens, which should be working',
       '#type' => 'textfield',
@@ -226,13 +229,15 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
       '#placeholder' => $this->t('The operation was successful'),
       '#weight' => 18
     ];
-
-
     return $elements;
   }
 
-  //from PluginFormInterface
+
+  /**
+   * {@inheritdoc}
+   */
   public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
+    //this was required by PluginFormInterface
   }
 
   /**

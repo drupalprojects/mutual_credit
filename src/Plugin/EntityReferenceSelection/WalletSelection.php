@@ -69,7 +69,6 @@ class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelectio
    *   wallet ids
    */
   private function queryEntities($match = NULL) {
-    //print_r($this->configuration);die();
     return \Drupal::entityTypeManager()->getStorage('mcapi_wallet')
       ->whichWalletsQuery(
         $this->configuration['handler_settings']['op'],

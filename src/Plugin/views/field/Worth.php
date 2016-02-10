@@ -53,14 +53,12 @@ class Worth extends FieldPluginBase {
 
   /**
    * @note aggregation may cause problems with formatting
-   * @todo if there is a currency filter on this view, we would want to only show that currency
+   * @todo if there is a currency filter on this view, we would want to only show that currency part of each worth value
    */
   public function render(ResultRow $values) {
     $settings = [
       'format' => $this->options['format']
     ];
-    return 'temp';
-    mdump($this);die();
     $worth_items = $this->getEntity($values)->worth;
     if (property_exists($values, 'curr_id')) {
       $val = [

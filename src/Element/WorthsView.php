@@ -16,10 +16,10 @@ class WorthsView extends \Drupal\Core\Render\Element\RenderElement {
 
   public function getInfo() {
     return [
-      //'#theme' => 'worths',
       '#pre_render' => [
         get_class() . '::preRender',
       ],
+      '#format' => \Drupal\mcapi\Entity\Currency::DISPLAY_NORMAL
     ];
   }
 
@@ -32,8 +32,8 @@ class WorthsView extends \Drupal\Core\Render\Element\RenderElement {
    * which is a problem because it means we can't have html in the currency formatting strings
    */
   public static function preRender(array $element) {
-    $delimiter = \Drupal::config('mcapi.settings')->get('delimiter');
-
+    $delimiter = \Drupal::config('mcapi.settings')->get('worths_delimiter');
+    $w = 0;
     foreach ($element['#worths'] as  $worth) {
       //we only render zero value worths if there is only one
       if (count($element['#worths'] > 1) and $worth['value'] == 0) {
@@ -45,15 +45,19 @@ class WorthsView extends \Drupal\Core\Render\Element\RenderElement {
         '#currency' => $currency,
         '#format' => $element['#format'],
         '#value' => $worth['value'],
+        '#weight' => $w++,
         '#attributes' => [
           'title' => $currency->name,
           'class' => ['worth-'.$currency->id]
         ]
+
       ];
       $element[] = $subelement;
-      $element[] = $delimiter;
+      $element[] = [
+        '#markup' => $delimiter,
+        '#weight' => $w++
+      ];
     }
-
     array_pop($element);//remove the last delimiter
     return $element;
   }

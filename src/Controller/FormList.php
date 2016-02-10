@@ -25,10 +25,7 @@ class FormList extends ControllerBase {
         Url::fromRoute($row['route'], $row['route_parameters']) :
         NULL;
       $rows[$rowname] = [
-        'title' => $url ?
-          \Drupal::l($row['title'] , $url) :
-          $row['title'],
-
+        'title' => $row['link'],
         //@todo getInternalPath is deprecated but I can't see the proper way to do it.
         'operations' => [
           'data' => [
@@ -51,16 +48,17 @@ class FormList extends ControllerBase {
 
   private function getForms() {
     $items = $this->moduleHandler()->invokeAll('mcapi_form_list');
+    //add forms for which entityFormDisplays exist
     foreach (\Drupal\Core\Entity\Entity\EntityFormDisplay::loadMultiple() as $form_display) {
       if ($form_display->getTargetEntityTypeId() == 'mcapi_transaction') {
         $mode_id = $form_display->getMode();
         if (isset($items[$mode_id])) continue;
-        if ($mode_id == '1stparty')continue;
-
+        if ($mode_id == '1stparty') continue; //inelegant way to exclude all forms from mcapi_forms
+        if ($mode_id == '3rdparty') continue; //this display is also provided my mcapi_forms
         //the 'default' form mode may not have been saved
         $form_mode = \Drupal\Core\Entity\Entity\EntityFormMode::load('mcapi_transaction.'.$mode_id);
         $items[$mode_id] = [
-          'title' => $form_mode->label(),
+          'link' => $form_mode ? $form_mode->label() : $this->t('Default'),
           'operations' => [
             'edit' => [
               'title' => $this->t('Edit'),
@@ -75,7 +73,7 @@ class FormList extends ControllerBase {
     }
 
     //@todo document this hook in mcapi.api.php
-    $items = $this->moduleHandler()->invokeAll('mcapi_form_list')+ $items;
+    $items = $this->moduleHandler()->invokeAll('mcapi_form_list') + $items;
     return $items;
   }
 }

@@ -20,6 +20,9 @@ use Drupal\mcapi\Mcapi;
 class FirstWallet extends ArgumentPluginBase {
 
 
+  /**
+   * {@inheritdoc}
+   */
   public function query($group_by = FALSE) {
     $this->ensureMyTable();
     $wids = Mcapi::walletsOf(User::load($this->argument));

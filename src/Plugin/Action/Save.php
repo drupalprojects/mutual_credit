@@ -27,6 +27,9 @@ class Save extends \Drupal\mcapi\Plugin\TransactionActionBase {
    * {@inheritdoc}
    */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
+    if (!$account) {
+      $account = \Drupal::currentUser();
+    }
     if ($object->id()) {
       $result = FALSE;
     }

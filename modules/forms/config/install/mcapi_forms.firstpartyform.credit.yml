@@ -1,5 +1,6 @@
 uuid: 748b2d03-1268-4b62-b302-2b829b06a7d1
 id: credit
+provider: mcapi_forms
 path: '/transact/credit'
 wallet_link_title: Credit [mcapi_wallet:name]
 menu:

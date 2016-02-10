@@ -8,7 +8,6 @@
 namespace Drupal\mcapi;
 
 use Symfony\Component\Routing\Route;
-use Drupal\mcapi\Entity\Transaction;
 
 /**
  * Provides upcasting for a transaction entity to be used in the Views UI.
@@ -32,7 +31,7 @@ class TransactionSerialConverter extends \Drupal\Core\ParamConverter\EntityConve
    * don't bother injecting EntityTypeManager as the parent expects
    */
   function __construct(){}
-  
+
   /**
    * {@inheritdoc}
    */
@@ -40,7 +39,7 @@ class TransactionSerialConverter extends \Drupal\Core\ParamConverter\EntityConve
     //a $value of zero means that this is the are-you-sure page before the transaction has been saved
     //the transaction is retrieved therefore not in the normal way from the database but from the tempstore
     if ($value) {
-      return Transaction::loadBySerials($value);
+      return \Drupal\mcapi\Entity\Transaction::loadBySerial($value);
     }
     return \Drupal::service('user.private_tempstore')
       ->get('TransactionForm')

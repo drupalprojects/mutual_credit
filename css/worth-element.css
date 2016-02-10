@@ -2,8 +2,8 @@
  * Styling for the Worth Element
  */
 
-fieldset.worth-element div.fieldset-wrapper {
-  float:left;
+div#edit-worth-wrapper{
+  display: inline-block;
 }
 fieldset.worth-element span.multiple{
   text-align: right;

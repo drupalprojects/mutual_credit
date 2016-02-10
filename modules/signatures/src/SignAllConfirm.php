@@ -37,10 +37,13 @@ class SignAllConfirm extends ConfirmFormBase {
 
   public function form() {
     debug('this page is untested');
-    $serials = Signatures::transactionsNeedingSigOfUser($account);
+    foreach (Signatures::transactionsNeedingSigOfUser($account) as $serial) {
+      $unsigned[] = Transaction::loadBySerial($serial);
+    }
+
     $form['preview'][] = \Drupal::entityTypeManager()
       ->getViewBuilder('mcapi_transaction')
-      ->viewMultiple(Transaction::loadBySerials($serials), 'sentence');
+      ->viewMultiple($unsigned, 'sentence');
 
     $form['account'] = array(
       '#type' => 'value',
@@ -58,7 +61,7 @@ class SignAllConfirm extends ConfirmFormBase {
   public function submitForm(array &$form, \Drupal\Core\Form\FormStateInterface $form_state) {
     $values = $form_state->getValues();
     foreach (Signatures::transactionsNeedingSigOfUser($values['account']) as $serial) {
-      $transaction = current(Transaction::loadBySerials(array($serial)));
+      $transaction = current(Transaction::loadBySerial($serial));
       Self::sign($transaction, $values['account']);
     }
     $transaction->save();

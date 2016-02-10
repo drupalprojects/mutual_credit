@@ -212,7 +212,6 @@ class Mcapi {
     return (count(array_unique(array_merge($payin, $payout))) > 1);
   }
 
-
   /**
    * Service container
    * @return type
@@ -221,15 +220,20 @@ class Mcapi {
     return \Drupal::service('mcapi.transaction_relative_manager')->activatePlugins($plugin_names);
   }
 
-  public static function twigHelp(array $exclude = []) {
+  //this really needs replacing with a core function
+  public static function tokenHelp() {
     foreach (array_keys(\Drupal::Token()->getInfo()['tokens']['xaction']) as $token) {
-      if (!in_array($token, $exclude)) {
-        $tokens[] = "[xaction:$token]";
-      }
+      $tokens[] = "[xaction:$token]";
     }
-    return ' {{ ' .
-      implode(' }}, {{ ', $tokens) .
-      ' }} ' .
+    return implode(', ', $tokens);
+  }
+
+  public static function twigHelp() {
+    foreach (array_keys(\Drupal::Token()->getInfo()['tokens']['xaction']) as $token) {
+      $tokens[] = '{{ '.$token . '}}';
+    }
+    //@todo how to place links in $element['#description']?
+    return implode(', ', $tokens) . '. '.
       \Drupal::l(t('What is twig?'), \Drupal\Core\Url::fromUri('http://twig.sensiolabs.org/doc/templates.html'));
   }
 
