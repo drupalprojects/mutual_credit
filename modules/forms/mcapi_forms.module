@@ -2,13 +2,16 @@
 
 use Drupal\mcapi_forms\Entity\FirstPartyFormDesign;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Link;
 
 /**
  * Implements hook_entity_type_build().
  */
 function mcapi_forms_entity_type_build(array &$entity_types) {
-  $entity_types['mcapi_transaction']->setFormClass('1stparty', 'Drupal\mcapi_forms\FirstPartyTransactionForm');
-  $entity_types['mcapi_transaction']->setFormClass("3rdparty", "Drupal\mcapi\Form\TransactionForm");
+  if (isset($entity_types['mcapi_transaction'])) {
+    $entity_types['mcapi_transaction']->setFormClass('1stparty', 'Drupal\mcapi_forms\FirstPartyTransactionForm');
+    $entity_types['mcapi_transaction']->setFormClass("3rdparty", "Drupal\mcapi\Form\TransactionForm");
+  }
 }
 
 /*
@@ -90,18 +93,18 @@ function mcapi_forms_theme() {
  * implement mcapi hook_mcapi_form_list().
  * return a list of transaction forms declared in this module.
  * each item must e an array with the following keys
- * - 'link' => \Drupal::l()
+ * - 'link' => \Drupal\Core\Link::()
  * - 'operations' => [Url::fromPath('blah')] an array of items, each with title and path
  */
 function mcapi_forms_mcapi_form_list() {
   $forms = [];
 
   $forms['default'] = [
-    'link' => \Drupal::l(t('Administration'), \Drupal\Core\Url::fromRoute('mcapi.transaction.admin')),
+    'link' => Link::fromTextAndUrl(t('Administration'), \Drupal\Core\Url::fromRoute('mcapi.transaction.admin')),
     'operations' => [],
   ];
   foreach (FirstPartyFormDesign::loadMultiple() as $id => $entity) {
-    $forms[$id]['link'] = \Drupal::l($entity->title, \Drupal\Core\Url::fromRoute('mcapi.1stparty.'.$id));
+    $forms[$id]['link'] = Link::fromTextAndUrl($entity->title, \Drupal\Core\Url::fromRoute('mcapi.1stparty.'.$id));
 
     if ($entity->access('update') && $entity->hasLinkTemplate('edit-form')) {
       $forms[$id]['operations']['edit'] = [
@@ -150,7 +153,6 @@ function mcapi_forms_mcapi_wallet_view(array &$build, $entity, $display) {
         $query = ['payee' => $entity->id()];
       }
 
-      dsm($id);
       $build['wallet_link_'.$id] = [
         '#type' => 'link',
         '#title' => $configEntity->walletLinkTitle($entity),

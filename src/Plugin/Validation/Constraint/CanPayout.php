@@ -31,13 +31,15 @@ class CanPayout extends CanPay {
    * {@inheritdoc}
    */
   public function validate($items, Constraint $constraint) {
-    //$items is the payer wallet listfield
-    $eligible = \Drupal::entityTypeManager()
-      ->getStorage('mcapi_wallet')
-      ->whichWalletsQuery('payout', \Drupal::currentUser()->id());
+    if ($items->restriction) {
+      //$items is the payer wallet listfield
+      $eligible = \Drupal::entityTypeManager()
+        ->getStorage('mcapi_wallet')
+        ->whichWalletsQuery('payout', \Drupal::currentUser()->id());
 
-    if (!in_array($items->target_id, $eligible)) {
-      $this->context->addViolation($this->message, ['@uid' => $items->target_id]);
+      if (!in_array($items->target_id, $eligible)) {
+        $this->context->addViolation($this->message, ['@uid' => $items->target_id]);
+      }
     }
   }
 }

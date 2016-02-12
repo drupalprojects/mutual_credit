@@ -1,0 +1,10 @@
+#this is the ces setting
+curr_id: cc
+rate: 2
+types:
+ - default
+round_up: true
+payer: true
+payee: true
+target: 0
+reason: 'Transaction charge'

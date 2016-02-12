@@ -8,7 +8,7 @@
 namespace Drupal\mcapi;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Drupal\mcapi\TransactionSaveEvents;
+use Drupal\mcapi\Event\TransactionSaveEvents;
 use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher ;
 
 /**
@@ -40,8 +40,8 @@ class TransactionSubscriber implements EventSubscriberInterface {
    */
   function onMakeChildren(TransactionSaveEvents $events, $eventName, ContainerAwareEventDispatcher $container) {
     //could $eventName be anything but 'mcapi.transaction.children' a.k.a. McapiEvents::CHILDREN
-    //what to do with the $container?
-    $transaction = $events->getSubject();
+    dsm('onmakechildren: '.$eventName);
+
   }
 
   /**

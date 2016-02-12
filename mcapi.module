@@ -8,6 +8,7 @@
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Url;
+use Drupal\Core\Link;
 use Drupal\Core\Entity\ContentEntityInterface;
 
 
@@ -32,7 +33,7 @@ function mcapi_requirements($phase) {
       $result['severity'] = REQUIREMENT_ERROR;
       $result['description'] = t(
         'Index table does not add up. Try rebuilding it at %link',
-        ['%link' => \Drupal::l('admin/accounting/misc', Url::fromRoute('mcapi.admin_misc'))]
+        ['%link' => Link::fromTextAndUrl('admin/accounting/misc', Url::fromRoute('mcapi.admin_misc'))]
       );
     }
     return array($result);
@@ -67,11 +68,11 @@ function mcapi_help($route_name) {
         t('To configure the certificate, override certificate.html.twig in your theme'),
         t(
           'To configure the sentence, see the Accounting settings: %link.',
-          ['%link' => \Drupal::l($settings_url->toString(), $settings_url)]
+          ['%link' => Link::fromTextAndUrl($settings_url->toString(), $settings_url)]
         ),
         t(
           'Custom Twig can be used for display on the action settings pages: %link.',
-          ['%link' => \Drupal::l($action_url->toString(), $action_url)]
+          ['%link' => Link::fromTextAndUrl($action_url->toString(), $action_url)]
         ),
       ];
       return implode(' ', $message);
@@ -383,22 +384,19 @@ function mcapi_forms_help($route_name) {
  * implement mcapi hook_mcapi_form_list().
  * return a list of transaction forms declared in this module.
  * each item must e an array with the following keys
- * - 'title' => 'Blah'
- * - 'route' => 'mcapi.transaction_form'
- * - 'route_parameters' => []
+ * - 'link' => <a href="">whatever</a>
  * - 'operations' => [Url::fromPath('blah')] an array of items, each with title and path
  */
 function mcapi_mcapi_form_list() {
   //@todo get the title from the route.
   $forms['12many'] = [
-    'link' => \Drupal::l(t('One to many'), \Drupal\Core\Url::fromRoute('mcapi.masspay.12many', [])),
+    'link' => Link::fromTextAndUrl(t('One to many'), \Drupal\Core\Url::fromRoute('mcapi.masspay.12many', [])),
     'operations' => []
   ];
   $forms['many21'] = [
-    'link' => \Drupal::l(t('Many to one'), \Drupal\Core\Url::fromRoute('mcapi.masspay.many21', [])),
+    'link' => Link::fromTextAndUrl(t('Many to one'), \Drupal\Core\Url::fromRoute('mcapi.masspay.many21', [])),
     'operations' => []
   ];
-  //add
   return $forms;
 }
 

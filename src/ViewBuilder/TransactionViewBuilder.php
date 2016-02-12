@@ -72,11 +72,10 @@ class TransactionViewBuilder extends EntityViewBuilder {
         $build['#theme_wrappers'][] = 'mcapi_transaction';
         break;
       case 'sentence':
-        $build['#markup'] = \Drupal::token()->replace(
-          $this->settings->get('sentence_template'),
-          ['xaction' => $entity]
-        );
-        unset($build['#theme']);
+        //this way of doing it we can't quite use the parent theme callback mcapi_transaction
+        //so we'll just add this div by hand
+        $template = '<div class = "mcapi_transaction-sentence">'.$this->settings->get('sentence_template').'</div>';
+        $build = ['#markup' => \Drupal::token()->replace($template, ['xaction' => $entity])];
         break;
       default:
         throw new Exception('unknown view mode');

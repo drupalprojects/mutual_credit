@@ -33,21 +33,7 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
   public function settingsForm(array $form, FormStateInterface $form_state) {
     $element = parent::settingsForm($form, $form_state);
     unset($element['size']);
-    $element['restrict'] = [
-      '#title' => 'Restrict available wallets',
-      '#type' => 'checkbox',
-      '#default_value' => $this->getSetting('restrict')
-    ];
     return $element;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function defaultSettings() {
-    return array(
-      'restrict' => TRUE
-    ) + parent::defaultSettings();
   }
 
 
@@ -57,7 +43,6 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
   public function settingsSummary() {
     $summary = parent::settingsSummary();
     unset($summary[1]);//size
-    $summary[] = $this->getSetting('restrict')  ? $this->t('Restricted') : $this->t('Any wallets');
     return $summary;
   }
 
@@ -67,20 +52,16 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $referenced_entities = $items->referencedEntities();
     $default_value = isset($referenced_entities[$delta]) ? $referenced_entities[$delta] : NULL;
+    if ($form_state->getFormObject()->restrict) {
+      $items->restriction = $this->fieldDefinition->getName() == 'payer' ? 'payout' : 'payin';
+    }
+    //$items restriction is needed for validation
+    else $items->restriction = '';
     if ($default_value && $default_value->isIntertrading()) {
       $wids = [$default_value->id()];
     }
     else {
-      $walletStorage = \Drupal::entityTypeManager()->getStorage('mcapi_wallet');
-      if ($this->getSetting('restrict')) {
-        $operation = ($this->fieldDefinition->getName() == 'payer' ? 'payout' : 'payin');
-        $wids = $walletStorage->whichWalletsQuery($operation, \Drupal::currentUser()->id());
-      }
-      else {
-        $operation = '';
-        //what conditions needed on here?
-        $wids = $walletStorage->getQuery()->execute();
-      }
+      $wids = Mcapi::getWalletSelection('', $items->restriction);
     }
 
     $count = count($wids);
@@ -101,7 +82,7 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
         '#type' => 'wallet_entity_auto',
         //assuming that the field item name IS the role
         '#selection_handler' => 'default:mcapi_wallet',//this should be implicit because of the $type
-        '#selection_settings' => ['op' => $operation],
+        '#selection_settings' => ['restrict' => $items->restriction],
         '#default_value' => $default_value,
         '#placeholder' => $this->getSetting('placeholder'),
         '#size' => 60,//appearance should be managed with css

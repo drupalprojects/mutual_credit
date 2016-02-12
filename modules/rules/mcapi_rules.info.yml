@@ -1,0 +1,9 @@
+name: Rules (temp until rules module is ready)
+description: Transaction fees, notifications
+package: Community Accounting
+configure: mcapi.admin.rules
+core: 8.x
+type: module
+
+dependencies:
+  - mcapi

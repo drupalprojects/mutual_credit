@@ -24,6 +24,15 @@ class TransactionForm extends ContentEntityForm {
    */
   protected $request;
 
+  /**
+   * @var boolean
+   * whether the wallet widgets should be restricted by directionality
+   * @todo move this to the mcapi_forms module? probably not while the payin/payout
+   * constraints must be defined in BaseFieldDefinitions
+   */
+  protected $restrict = FALSE;
+
+
   public function __construct($entity_type_manager, $tempstore, $current_request) {
     parent::__construct($entity_type_manager);
     $this->tempStore = $tempstore;
@@ -85,6 +94,7 @@ class TransactionForm extends ContentEntityForm {
     ];
   }
 
+
   /**
    * {@inheritdoc}
    */
@@ -106,12 +116,12 @@ class TransactionForm extends ContentEntityForm {
    * {@inheritdoc}
    * @todo test creating a transaction with and without specifying the creator
    */
-  public function ______buildEntity(array $form, FormStateInterface $form_state) {
+  public function buildEntity(array $form, FormStateInterface $form_state) {
     $entity = parent::buildEntity($form, $form_state);
-    //if a valid creator uid was submitted then use that
-    //is this the best place to be putting defaults? not in Transaction::precreate?
-    $uid = $form_state->getValue('creator') ? : \Drupal::currentUser()->id();
-    $entity->creator->entity = \Drupal\user\Entity\User::load($uid);
+    if ($entity->isNew()) {
+      $entity->assemble();
+    }
+
     return $entity;
   }
 

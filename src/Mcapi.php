@@ -234,7 +234,36 @@ class Mcapi {
     }
     //@todo how to place links in $element['#description']?
     return implode(', ', $tokens) . '. '.
-      \Drupal::l(t('What is twig?'), \Drupal\Core\Url::fromUri('http://twig.sensiolabs.org/doc/templates.html'));
+      \Drupal\Core\Link::fromTextAndUrl(t('What is twig?'), \Drupal\Core\Url::fromUri('http://twig.sensiolabs.org/doc/templates.html'));
+  }
+
+  /**
+   *
+   * @param string $match
+   *   a string to be matched against the wallet name
+   * @param string $restrict
+   *   'payin', 'payout' or empty
+   * @return integer[]
+   *   a list of wallet ids
+   */
+  public static function getWalletSelection($match = '', $restrict = '') {
+    $walletStorage = \Drupal::entityTypeManager()->getStorage('mcapi_wallet');
+    if ($restrict) {
+      $wids = $walletStorage->whichWalletsQuery($restrict, \Drupal::currentUser()->id(), $match);
+    }
+    else {
+      $operation = '';
+      $query = \Drupal::entityQuery('mcapi_wallet')
+        ->condition('payways', \Drupal\mcapi\Entity\Wallet::PAYWAY_AUTO, '<>')
+        ->condition('orphaned', 0);
+      if ($match) {
+        //@todo inject database
+        $query->condition('name', '%'.\Drupal::database()->escapeLike($match).'%', 'LIKE');
+      }
+      $wids = $query->execute();
+    }
+
+    return $wids;
   }
 
 }

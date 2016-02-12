@@ -22,7 +22,7 @@ function mcapi_signatures_modules_installed($modules) {
   if (in_array('mcapi_signatures', $modules) && !in_array('mcapi', $modules)) {
     drupal_set_message(t(
       "Workflow settings should be reviewed to take account of transaction signing. @link",
-      ['@link' => \Drupal::l(
+      ['@link' => \Drupal\Core\Link::fromTextAndUrl(
         'admin/accounting/workflow',
         Url::fromRoute('mcapi.admin.workflow')
       )]

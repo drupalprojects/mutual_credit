@@ -16,7 +16,6 @@ content:
     type: wallet_reference_autocomplete
     weight: 1
     settings:
-      restrict: true
       match_operator: CONTAINS
       size: '60'
       placeholder: ''
@@ -25,7 +24,6 @@ content:
     type: wallet_reference_autocomplete
     weight: 2
     settings:
-      restrict: true
       match_operator: CONTAINS
       size: '60'
       placeholder: ''

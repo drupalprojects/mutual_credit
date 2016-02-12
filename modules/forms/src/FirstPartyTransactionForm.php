@@ -33,6 +33,7 @@ class FirstPartyTransactionForm extends TransactionForm {
   public function init(FormStateInterface $form_state) {
     parent::init($form_state);
     $this->entity = $this->configEntity->makeDefaultTransaction($this->request->query->all());
+    $this->restrict = TRUE;//@todo control this via a configEntity property
   }
 
   /**
@@ -40,18 +41,15 @@ class FirstPartyTransactionForm extends TransactionForm {
    * the 1stparty form settings saved in $this->configEntity.
    */
   public function form(array $form, FormStateInterface $form_state) {
-
     $form = parent::form($form, $form_state);
-    $config = $this->configEntity;
-    $form['#incoming'] = $config->get('incoming');//@todo do we still need this in the $form? should at least be in $form_state
-
+    
     //hide the state & type
     $form['type']['#type'] = 'value';
-    $form['type']['#default_value'] = $config->type;
+    $form['type']['#default_value'] = $this->configEntity->type;
     $form['state']['#type'] = 'value';
-    $form['state']['#value'] = Type::load($config->type)->start_state;
+    $form['state']['#value'] = Type::load($this->configEntity->type)->start_state;
     unset($form['creator']);
-    $form_state->set('config', $config);//not sure if this is ever used.
+    $form_state->set('config', $this->configEntity);//not sure if this is ever used.
 
     $form['#twig_template'] = $this->configEntity->experience['twig'];
     return $form;

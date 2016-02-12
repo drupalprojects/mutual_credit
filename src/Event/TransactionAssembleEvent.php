@@ -2,29 +2,28 @@
 
 /**
  * @file
- * Contains \Drupal\mcapi\TransactionSaveEvents.
- *
- * Seems to be used for two completely different things
+ * Contains \Drupal\mcapi\Event\TransactionAssembleEvent.
  */
 
-namespace Drupal\mcapi;
+namespace Drupal\mcapi\Event;
 
 use Symfony\Component\EventDispatcher\GenericEvent;
-use Drupal\mcapi\Entity\Transaction;
 
 /**
- * Defines a base class for all entity type events.
+ * Event that is fired before a new transaction is validated.
+ *
+ * @see mcapi_transaction_assemble()
  */
-class TransactionSaveEvents extends GenericEvent {
+class TransactionAssembleEvent extends GenericEvent {
 
-  private $children = [];
-  private $messages = [];
+  const EVENT_NAME = 'mcapi_transaction_assemble';
 
   /**
    *
    * @param Transaction $transaction
    */
   public function addChild(Transaction $transaction) {
+    dsm('TransactionAssembleEvent::addChild');
     $this->getSubject()->children[] = $transaction;
   }
 
@@ -33,6 +32,7 @@ class TransactionSaveEvents extends GenericEvent {
    * @param string $markup
    */
   public function addMessage($string) {
+    dsm('TransactionAssembleEvent::addMessage');
     $this->messages[] = $string;
   }
 
@@ -42,7 +42,8 @@ class TransactionSaveEvents extends GenericEvent {
    *   renderable array
    */
   public function getMessage() {
+    dsm('TransactionAssembleEvent::getMessage');
     return implode(' ', $this->messages);
   }
-
+  
 }

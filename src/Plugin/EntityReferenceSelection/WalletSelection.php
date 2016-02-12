@@ -61,7 +61,6 @@ class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelectio
   }
 
   /**
-   *
    * @param type $match
    * @param type $match_operator
    *
@@ -69,14 +68,11 @@ class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelectio
    *   wallet ids
    */
   private function queryEntities($match = NULL) {
-    return \Drupal::entityTypeManager()->getStorage('mcapi_wallet')
-      ->whichWalletsQuery(
-        $this->configuration['handler_settings']['op'],
-        \Drupal::currentUser()->id(),
-        $match
-      );
+    return \Drupal\mcapi\Mcapi::getWalletSelection(
+      $match,
+      $this->configuration['handler_settings']['restrict']
+    );
   }
-
 
 }
 

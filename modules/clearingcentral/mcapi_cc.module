@@ -8,6 +8,7 @@ const CEN_SUCCESS = 1;//response code
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\Core\Link;
 
 /**
  * Implements hook_form_wallet_form_alter().
@@ -43,7 +44,7 @@ function mcapi_cc_form_wallet_form_alter(&$form, \Drupal\Core\Form\FormStateInte
       '#title' => t('Exchange ID'),
       '#description' => t(
         'Network Identifier in the Community Exchange Network. For example: cen0123. You can check your account at %link.',
-        ['%link' => \Drupal::l(t('Clearing Central'), \Drupal\Core\Url::fromUri(CLEARING_CENTRAL_URL))]
+        ['%link' => Link::fromTextAndUrl(t('Clearing Central'), \Drupal\Core\Url::fromUri(CLEARING_CENTRAL_URL))]
       ),
       '#size' => 15,
       '#maxlength' => 7,
@@ -87,8 +88,10 @@ function mcapi_cc_save_wallet_settings($form, $form_state) {
  * Implements hook_entity_type_build().
  */
 function mcapi_cc_entity_type_build(array &$entity_types) {
-  $entity_types['mcapi_transaction']
-    ->setFormClass('intertrading', 'Drupal\mcapi_cc\RemoteTransactionForm');
+  if (isset($entity_types['mcapi_transaction'])) {
+    $entity_types['mcapi_transaction']
+      ->setFormClass('intertrading', 'Drupal\mcapi_cc\RemoteTransactionForm');
+  }
 }
 
 /**
@@ -96,7 +99,7 @@ function mcapi_cc_entity_type_build(array &$entity_types) {
  */
 function mcapi_cc_mcapi_form_list() {
   $forms['remotecredit'] = [
-    'link' => \Drupal::l(t('Buy from a remote account'), \Drupal\Core\Url::fromRoute('mcapi_cc.remote.credit', [])),
+    'link' => Link::fromTextAndUrl(t('Buy from a remote account'), \Drupal\Core\Url::fromRoute('mcapi_cc.remote.credit', [])),
     'operations' => []
   ];
   return $forms;
@@ -145,7 +148,7 @@ function mcapi_cc_convert_outwards(TransactionInterface $transaction) {
       'seller_nid' => $settings['login'],
       'password' => $settings['pass'],
       'seller_id' => $payee->id(),
-      'seller_name' => $payee->getDisplayName(),
+      'seller_name' => $payee->label(),
       'buyer_nid' => $transaction->remote_exchange_id,//this is the remote id
       'buyer_id' => $transaction->remote_user_id,//this is the remote id
       'outgoing' => 0,//@deprecated
@@ -158,7 +161,7 @@ function mcapi_cc_convert_outwards(TransactionInterface $transaction) {
       'buyer_nid' => $settings['login'],
       'password' => $settings['pass'],
       'buyer_id' => $payer->id(),
-      'buyer_name' => $payer->getDisplayName(),
+      'buyer_name' => $payer->label(),
       'seller_nid' => $transaction->remote_exchange_id,//this is the remote id
       'seller_id' => $transaction->remote_user_id,//this is the remote id
       'outgoing' => 1,//@deprecated

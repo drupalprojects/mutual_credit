@@ -1,11 +1,11 @@
 <?php
 use Drupal\field\Entity\FieldConfig;
-use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\user\Entity\User;
 use Drupal\mcapi_exchanges\Entity\Exchange;
 use Drupal\og\OgGroupAudienceHelper;
 use Drupal\mcapi\Mcapi;
+use Drupal\Core\Link;
 
 /**
  * Implements hook_install()
@@ -60,7 +60,7 @@ function mcapi_exchanges_install() {
   drupal_set_message(
     t(
       'Now show the fields on the entity displays: %link',
-      ['%link' => \Drupal::l($path, Drupal\Core\Url::fromUserInput($path))]
+      ['%link' => Link::fromTextAndUrl($path, Drupal\Core\Url::fromUserInput($path))]
     ),
     'warning'
   );

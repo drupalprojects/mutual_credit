@@ -8,10 +8,8 @@
 
 namespace Drupal\mcapi\Element;
 
-use Drupal\mcapi\Mcapi;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\Radios;
-use Drupal\Core\Render\Element\Checkboxes;
 
 /**
  * Provides a form element which returns the appropriate intertrading wallets as a hidden field

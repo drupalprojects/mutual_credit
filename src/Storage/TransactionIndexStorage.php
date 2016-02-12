@@ -174,9 +174,11 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * {@inheritdoc}
    */
   public function indexDrop(array $serials) {
-    $this->database->delete('mcapi_transactions_index')
-      ->condition('serial', $serials, 'IN')
-      ->execute();
+    if ($serials) {
+      $this->database->delete('mcapi_transactions_index')
+        ->condition('serial', $serials, 'IN')
+        ->execute();
+    }
   }
 
   /**
@@ -214,7 +216,6 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * {@inheritdoc}
    */
   public function timesBalances(WalletInterface $wallet, $curr_id, $since = 0) {
-
     $history = [$wallet->created->value => 0];
     //this is a way to add up the results as we go along
     $this->database->query("SET @csum := 0");
@@ -288,6 +289,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         case 'type':
         case 'state':
         case 'curr_id':
+          //@todo is this [] syntax working? I think not
             $query->condition($field.'[]', (array)$value);
           break;
         case 'involving':

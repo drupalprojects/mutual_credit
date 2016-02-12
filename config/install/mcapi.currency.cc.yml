@@ -7,9 +7,9 @@ description: 'A measure of value and unit of exchange worth whatever the communi
 uid: 1
 issuance: 0
 format:
-  - CC
+  - <strong>CC</strong>
   - '0000'
-zero: 1
+zero: 0
 color: '#ff00ff'
 weight: '1'
 

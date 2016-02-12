@@ -13,7 +13,6 @@ use Drupal\mcapi\Entity\TransactionInterface;
 
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\McapiEvents;
-use Drupal\mcapi\TransactionSaveEvents;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityChangedInterface;
@@ -118,23 +117,31 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
   }
 
   /**
-   * work on the transaction prior to validation
+   * Add children to the transaction or make other changes
+   * note this must be called explicitly, and PRIOR to validation
    *
    * @return NULL
    */
-  public function preInsert() {
-
+  public function assemble() {
+    //prevent assembly of child transactions, which could cause infinite recursion
+    if ($this->parent->value) return;
     //pass the transaction round to add children, but prevent the transaction from being modified.
     $clone = clone($this);
     $clone->children = [];
+    //this hook prevents altering the original transaction but only allows adding of children
+    //would be good to have a hook that returned transactions to be added here as children
+    //instead this hook requires that children be added to a clone
     \Drupal::service('event_dispatcher')->dispatch(
       McapiEvents::CHILDREN,
-      new TransactionSaveEvents($clone)
+      new \Drupal\mcapi\Event\TransactionSaveEvents($clone)
     );
     $this->children = $clone->children;
-
     //allow any module to alter the transaction, with children, before validation.
-    \Drupal::moduleHandler()->alter('mcapi_transaction', $this);
+    \Drupal::moduleHandler()->alter('mcapi_transaction_assemble', $this);
+
+    foreach ($this->children as $child) {
+      $child->parent->value = 1;//temp value because parent has no xid yet
+    }
   }
 
   /**
@@ -147,13 +154,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    */
   function validate() {
     $violationList = parent::validate();
-    if ($this->parent->value == 0) {//just to be sure
-      if (!$this->serial->value) {
-        $this->preInsert();
-      }
+    //only act on the parent just to be sure.
+    if ($this->parent->value == 0) {
       foreach ($this->children as $entity) {
         foreach ($entity->validate() as $violation) {
-          $violationList->add($violation);
+          throw new \Exception ('Violation in child transaction, '.$violation->getPropertyPath() .': '.$violation->getMessage());
         }
       }
     }
@@ -237,6 +242,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setDescription(t('Grouping of related transactions.'))
       ->setReadOnly(TRUE);
 
+    //this is really an entity reference
     $fields['parent'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Parent xid'))
       ->setDescription(t('Parent transaction that created this transaction.'))
@@ -244,29 +250,34 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 
+    //I wanted to add the CanPayout and CanPayin constraints in the widget builder
+    //but I couldn't see how. So at the moment they apply to all entity forms, but
+    //they only run code when $items->restriction is TRUE
     $fields['payer'] = BaseFieldDefinition::create('wallet_reference')
       ->setLabel(t('Payer'))
       ->setDescription(t('The giving wallet'))
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
+      ->addConstraint('CanPayout')
       ->setCardinality(1)
+      ->setSetting('handler_settings', ['op' => 'payout'])
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayOptions('form', ['type' => 'wallet_reference_autocomplete', 'weight' => 1])
       ->setDisplayConfigurable('view', TRUE)
-      ->setDisplayOptions('view', ['type' => 'wallet_name', 'weight' => 1])
-      ->addConstraint('CanPayout');
+      ->setDisplayOptions('view', ['type' => 'wallet_name', 'weight' => 1]);
 
     $fields['payee'] = BaseFieldDefinition::create('wallet_reference')
       ->setLabel(t('Payee'))
       ->setDescription(t('The receiving wallet'))
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
+      ->addConstraint('CanPayin')
       ->setCardinality(1)
+      ->setSetting('handler_settings', ['op' => 'payin'])
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayOptions('form', ['type' => 'wallet_reference_autocomplete', 'weight' => 2])
       ->setDisplayConfigurable('view', TRUE)
-      ->setDisplayOptions('view', ['type' => 'wallet_name', 'weight' => 2])
-      ->addConstraint('CanPayin');
+      ->setDisplayOptions('view', ['type' => 'wallet_name', 'weight' => 2]);
 
     $fields['creator'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Creator'))

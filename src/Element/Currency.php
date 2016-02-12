@@ -74,8 +74,9 @@ class Currency extends FormElement {
   }
 
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
-    if ($input == NULL) return;
-    debug($input);
-    return $input;
+    if ($input !== NULL) {
+      dsm('\Drupal\mcapi\Element\Currency::valueCallback'.$input);
+      return $input;
+    }
   }
 }

@@ -27,7 +27,6 @@ content:
       match_operator: CONTAINS
       size: '60'
       placeholder: ''
-      restrict: false
     third_party_settings: {  }
   payer:
     type: wallet_reference_autocomplete
@@ -36,7 +35,6 @@ content:
       match_operator: CONTAINS
       placeholder: ''
       size: '60'
-      restrict: false
     third_party_settings: {  }
   worth:
     type: worth

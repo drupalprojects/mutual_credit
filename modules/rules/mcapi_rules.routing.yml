@@ -1,0 +1,9 @@
+mcapi.admin_misc.fee:
+  path: '/admin/accounting/misc/fee'
+  defaults:
+    _form: 'Drupal\mcapi_rules\Forms\Fees'
+    _title: 'Per transaction charge'
+  requirements:
+    _permission: 'configure mcapi'
+  options:
+    _admin_route: TRUE

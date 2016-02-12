@@ -2,9 +2,5 @@ id: default
 label: Default
 description: Simplest transaction type
 start_state: done
-status: true
 provider: mcapi
-dependencies:
-  module:
-    - mcapi
 third_party_settings: { }

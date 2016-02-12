@@ -34,7 +34,6 @@ content:
     settings:
       match_operator: CONTAINS
       placeholder: 'Any wallet name or (id)'
-      restrict: 0
       size: '30'
     third_party_settings: {  }
   payer:
@@ -43,7 +42,6 @@ content:
     settings:
       match_operator: CONTAINS
       placeholder: 'Any wallet name or (id)'
-      restrict: 0
       size: '30'
     third_party_settings: {  }
   type:

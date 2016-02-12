@@ -8,7 +8,7 @@ namespace Drupal\mcapi\Form;
 
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\McapiEvents;
-use Drupal\mcapi\TransactionSaveEvents;
+use Drupal\mcapi\Event\TransactionSaveEvents;
 use Drupal\Core\Entity\ContentEntityConfirmFormBase;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
@@ -144,9 +144,6 @@ class OperationForm extends ContentEntityConfirmFormBase {
         if (!$this->destination) {
           $this->destination = '/';//front page
         }
-      }
-      else {
-        $this->entity->save();
       }
       $events = new TransactionSaveEvents(
         clone($this->entity),

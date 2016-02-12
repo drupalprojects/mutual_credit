@@ -32,7 +32,7 @@ function theme_first_party_transaction_form($vars) {
   //append everything not rendered onto the last rendered thing.
   $vars['twig_template'] .= '{{ hidden_elements }}';
   $hidden = '';
-  foreach (Element::children($form) as $fieldname) {echo $fieldname;
+  foreach (Element::children($form) as $fieldname) {
     if($form[$fieldname]['#type'] == 'actions') {
       $tokens[$fieldname] = $renderer->render($form[$fieldname]);
     }

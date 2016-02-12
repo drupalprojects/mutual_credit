@@ -2,9 +2,5 @@ id: auto
 label: Automated
 description: 'Created automatically'
 start_state: done
-status: true
 provider: mcapi
-dependencies:
-  module:
-    - mcapi
 third_party_settings: { }

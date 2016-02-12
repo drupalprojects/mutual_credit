@@ -10,6 +10,7 @@ namespace Drupal\mcapi\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
+use Drupal\Core\Link;
 
 /**
  * Returns responses for Wallet routes.
@@ -57,8 +58,9 @@ class FormList extends ControllerBase {
         if ($mode_id == '3rdparty') continue; //this display is also provided my mcapi_forms
         //the 'default' form mode may not have been saved
         $form_mode = \Drupal\Core\Entity\Entity\EntityFormMode::load('mcapi_transaction.'.$mode_id);
+        $link = $form_mode ?  $form_mode->label() : Link::fromTextAndUrl($this->t('Default'), Url::fromRoute('mcapi.transaction.admin'));
         $items[$mode_id] = [
-          'link' => $form_mode ? $form_mode->label() : $this->t('Default'),
+          'link' => $link,
           'operations' => [
             'edit' => [
               'title' => $this->t('Edit'),

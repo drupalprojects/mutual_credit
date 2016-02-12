@@ -41,24 +41,6 @@ class WorthFieldItemList extends FieldItemList {
     return TRUE;
   }
 
-  /**
-   * get the raw value for a given currency
-   *
-   * @param string $curr_id
-   *
-   * @return integer
-   *   0 if the currency isn't known
-   *
-   */
-  public function val($curr_id) {
-    foreach ($this->list as $item) {
-      if ($item->curr_id == $curr_id) {
-        return $item->value;
-      }
-    }
-    return 0;
-  }
-
   public function currencies($full = FALSE) {
     $c = [];
     foreach ($this->list as $item) {
@@ -102,4 +84,17 @@ class WorthFieldItemList extends FieldItemList {
     $this->setValue($values);
   }
 
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __get($currency_name) {
+    $val = 0;
+    foreach ($this->list as $item) {
+      if ($item->curr_id == $currency_name) {
+        $val = $item->value;
+      }
+    }
+    return $val;
+  }
 }

@@ -36,7 +36,7 @@ class FirstPartyEditFormListBuilder extends ConfigEntityListBuilder{
       $route_name = 'mcapi.1stparty.'.$entity->id;
       $accessManager = \Drupal::service('access_manager');
       $name = $accessManager->checkNamedRoute($route_name) ?
-        \Drupal::l($entity->label(), Url::fromRoute($route_name)) :
+        \Drupal\Core\Link::fromTextAndUrl($entity->label(), Url::fromRoute($route_name)) :
         $entity->label();
       $row['title'] = $style + array(
         'data' => $name

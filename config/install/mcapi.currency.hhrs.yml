@@ -7,11 +7,11 @@ description: 'An hour of the full presence of one human being'
 uid: 1
 issuance: 2
 format:
-  - Hrs
+  - <strong>Hrs</strong>
   - '00'
   - ':'
   - 59/4
-  - mins
+  - m
 zero: 0
 color: '#008888'
 weight: '3'

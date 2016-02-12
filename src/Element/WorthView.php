@@ -57,7 +57,7 @@ class WorthView extends \Drupal\Core\Render\Element\RenderElement {
       $markup = '-'.$markup;
     }
     return [
-      '#markup' => $markup,
+      '#markup' => \Drupal\Core\Render\Markup::create($markup),
     ];
   }
 

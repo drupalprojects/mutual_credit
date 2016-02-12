@@ -8,9 +8,7 @@
 namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\user\RoleInterface;
-use Drupal\mcapi\Entity\State;
+
 /**
  * Defines the transaction state entity class.
  *
@@ -55,18 +53,12 @@ class Type extends ConfigEntityBase {
   public $start_state;
 
   /**
-   * transaction relatives who can view transactions of this type
+   * the module providing this Type
    *
-   * @var integer
+   * @var string
    */
-  public $view;
+  public $provider;
 
-  /**
-   * transaction relatives who can edit transactions of this type
-   *
-   * @var integer
-   */
-  public $update;
 
   /**
    * {@inheritdoc}

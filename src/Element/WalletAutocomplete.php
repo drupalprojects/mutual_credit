@@ -11,7 +11,6 @@
 namespace Drupal\mcapi\Element;
 
 use Drupal\Core\Entity\Element\EntityAutocomplete;
-use Drupal\Component\Utility\Tags;
 
 /**
  * Provides a widget to select wallet references by name, using autocomplete
@@ -27,35 +26,9 @@ class WalletAutocomplete extends EntityAutocomplete {
   public function getInfo() {
     $info = parent::getInfo();
     $info['#target_type'] = 'mcapi_wallet';
+    $info['#restrict'] = '';
     $info['#exclude'] = [];
     return $info;
   }
-
-  /**
-   * {@inheritdoc}
-   *
-   */
-  public static function __extractEntityIdFromAutocompleteInput($input) {
-    $match = NULL;
-    // Take "label #entity id', match the ID from number after #
-    if (preg_match("/.*\#(\d+)/", $input, $matches)) {
-      $match = $matches[1];
-    }
-    return $match;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function __getEntityLabels(array $entities) {
-    $wallet_labels = [];
-    foreach ($entities as $wallet) {
-      // Labels containing commas or quotes must be wrapped in quotes.
-      $wallet_labels[] = Tags::encode($wallet->label())  . ' #' . $wallet->wid->value;
-    }
-    return implode(', ', $wallet_labels);
-  }
-
-
 
 }

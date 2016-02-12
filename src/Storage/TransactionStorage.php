@@ -30,7 +30,6 @@ class TransactionStorage extends TransactionIndexStorage {
    *
    */
   public function save(EntityInterface $transaction) {
-
     //determine the serial number
     if ($transaction->isNew()) {
       $last = $this->database->query(

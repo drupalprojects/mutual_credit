@@ -179,6 +179,13 @@ function template_preprocess_mcapi_transaction_twig(&$vars) {
   if (!$transaction->isNew()) {
     $vars['url'] = $transaction->link();
   }
+  if ($transaction->children) {
+    $children = \Drupal::entityTypeManager()
+      ->getViewBuilder('mcapi_transaction')
+      ->viewMultiple($transaction->children, 'sentence');
+    $vars['children'] = render($children);
+  }
+  else $vars['children']  = '';
 }
 
 //experimental

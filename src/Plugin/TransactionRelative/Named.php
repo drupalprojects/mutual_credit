@@ -29,7 +29,6 @@ class Named extends PluginBase implements TransactionRelativeInterface {
    */
   public function isRelative(TransactionInterface $transaction, AccountInterface $account) {
     $targets = getUsers($transaction);
-    dsm($targets);
     $id = $account->id();
     foreach ($targets as $target) {
       if ($id == $target['target_id']) return TRUE;

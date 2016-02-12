@@ -52,11 +52,11 @@ mcapi.admin.transactions.default_tab:
   weight: 0
 
 #default tab unused
-#mcapi.misc_settings.tab:
-#  route_name: mcapi.admin_misc
-#  title: Miscellaneous
-#  base_route: mcapi.admin_misc
-#  weight: 0
+mcapi.misc_settings.tab:
+  route_name: mcapi.admin_misc
+  title: Miscellaneous
+  base_route: mcapi.admin_misc
+  weight: 0
 
 mcapi.tasks:
   class: \Drupal\Core\Menu\LocalTaskDefault

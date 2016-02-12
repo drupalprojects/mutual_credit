@@ -35,7 +35,7 @@ function mcapi_import_help($path) {
       $help[] = t('Prepare a csv file and paste as text into the box below.');
       $help[] = t('Payer and Payee should be user IDs or email addresses.');
       $help[] = t('Category names should be comma separated in the same field.');
-      $help[] = t("'created' is optional, but will be converted to unixtime using php function !strtotime.", array('%strtotime' => \Drupal::l('strtotime', 'http://php.net/strtotime', array('absolute' => TRUE))));
+      $help[] = t("'created' is optional, but will be converted to unixtime using php function !strtotime.", array('%strtotime' => \Drupal\Core\Link::fromTextAndUrl('strtotime', 'http://php.net/strtotime', array('absolute' => TRUE))));
       $help[] = t("Other field API fields must have the same name; a cardinality of 1 will be assumed and the value will be put in the 'value' column.");
       break;
     case 'admin/accounting/import/balances':
@@ -85,7 +85,7 @@ function import_transactions_form($form, $form_state) {
     '"payer*"' => t('uid or email of a user'),
     '"payee*"' => t('uid or email of a user'),
     '"quantity*"' => t('floating point number, consistent with the currency settings'),
-    '"created"' => t("a string which can be parsed by php's !strtotime", array('%strtotime' => \Drupal::l('strtotime()', 'http://php.net/strtotime'))),
+    '"created"' => t("a string which can be parsed by php's !strtotime", array('%strtotime' => \Drupal\Core\Link::fromTextAndUrl('strtotime()', 'http://php.net/strtotime'))),
     '"state"' => t('integer transaction state'),
     '"type"' => t('machine name of transaction type'),
     '"description"' => t('one line describing what was exchanged')

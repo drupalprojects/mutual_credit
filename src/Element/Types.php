@@ -33,6 +33,7 @@ class Types extends Radios {
       '#pre_render' => [
         [$class, 'preRenderCompositeFormElement'],
       ],
+      '#exclude' => [],
       '#multiple' => FALSE,
     ];
   }
@@ -45,6 +46,9 @@ class Types extends Radios {
    */
   static function processTypes($element, $form_state) {
     $element['#options'] = Mcapi::entityLabelList('mcapi_type');
+    foreach ((array)$element['#exclude'] as $type) {
+      unset($element['#options'][$type]);
+    }
     if ($element['#multiple']) {
       $element['#theme_wrappers'] = ['checkboxes'];
       return Checkboxes::processCheckboxes($element, $form_state, $complete_form);
