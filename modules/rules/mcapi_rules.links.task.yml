@@ -1,7 +1,7 @@
 #default tab
 mcapi.config.rules_tab:
   route_name: mcapi.admin_misc.fee
-  title: 'Transaction fees'
+  title: 'Per-transaction fees'
   base_route: mcapi.admin_misc
   weight: 2
 

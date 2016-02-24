@@ -9,7 +9,6 @@
 namespace Drupal\mcapi\Entity;
 
 use Drupal\mcapi\Mcapi;
-use Drupal\mcapi\Exchange;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;

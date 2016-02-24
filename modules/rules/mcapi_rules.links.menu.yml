@@ -1,0 +1,5 @@
+mcapi.config.rules_link:
+  title: Per-transaction fees
+  route_name: mcapi.admin_misc.fee
+  parent: mcapi.admin_misc
+  weight: 4

@@ -3,6 +3,7 @@
 /**
  * @file
  * Contains \Drupal\mcapi\listBuilder\TransactionListBuilder.
+ * @todo @deprecated I think
  */
 
 namespace Drupal\mcapi\ListBuilder;
@@ -20,7 +21,7 @@ class TransactionListBuilder extends EntityListBuilder {
   /**
    * {@inheritdoc}
    */
-  public function buildOperations(EntityInterface $entity) {die('buildOperations');
+  public function buildOperations(EntityInterface $entity) {
     $build = array(
       '#type' => 'operations',
       '#links' => $this->getOperations($entity),

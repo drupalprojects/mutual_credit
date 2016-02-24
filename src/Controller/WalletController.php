@@ -37,7 +37,7 @@ class WalletController {
    *   a renderable array
    */
   function entityWallets(EntityInterface $entity) {
-    die('WalletController::entityWallets');
+    die('WalletController::entityWallets'); //yet to be developed or deleted
   }
 
 }

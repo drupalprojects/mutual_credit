@@ -15,12 +15,11 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Action\ConfigurableActionBase;
 use Drupal\Core\Access\AccessResult;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 
 /**
  * Base class for transaction actions
  */
-abstract class TransactionActionBase extends ConfigurableActionBase implements ContainerFactoryPluginInterface {
+abstract class TransactionActionBase extends ConfigurableActionBase implements TransactionActionInterface {
 
   protected $transactionRelativeManager;
   protected $entityFormBuilder;
@@ -271,9 +270,6 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements C
       'module' => ['mcapi']
     ];
   }
-
-
-  //the following are from ConfigurablePluginInterface
 
   /**
    * {@inheritdoc}

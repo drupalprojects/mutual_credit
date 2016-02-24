@@ -34,7 +34,7 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
   public function access(EntityInterface $transaction, $operation, AccountInterface $account = NULL, $return_as_object = false) {
     if ($operation === 'view' and $account->hasPermission('view all transactions')) {
       //@todo URGENT. Handle the named payees and payers
-      return $return_as_object ? AccessResult::allowed()->cachePerUser() :  AccessResult::forbidden()->cachePerUser();
+      return $return_as_object ? AccessResult::allowed()->cachePerUser() : TRUE;
     }
     return Mcapi::transactionActionLoad($operation)
       ->getPlugin()

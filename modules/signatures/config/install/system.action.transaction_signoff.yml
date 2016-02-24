@@ -1,26 +1,37 @@
+uuid: 28d22ef4-b2f9-48a0-b34b-754af3c728df
 langcode: en
 status: true
 dependencies:
   module:
+    - mcapi
     - mcapi_signatures
+_core:
+  default_config_hash: Ru72lrxWBoVmWljEw9AQgfVNpTnyzBsY9qHYixpkBPk
 id: transaction_signoff
 label: 'Sign off transaction'
 type: mcapi_transaction
 plugin: mcapi_transaction.signoff_action
 configuration:
   type: mcapi_transaction
-  title: Sign Off
-  tooltip: Add all remaining signatures to this transaction
+  title: 'Sign Off'
+  tooltip: 'Add all remaining signatures to this transaction'
   states:
-    done: 0
     pending: pending
-    erased: 0
-  access: { }
+  access:
+    manager: manager
+    named: 0
+    payer: 0
+    payee: 0
+    creator: 0
+    authenticated: 0
+    pending_signatory: 0
+    signatory: 0
   page_title: 'Are you sure you want to sign this transaction off?'
   format: certificate
   twig: ''
   display: 2
-  button: I''m sure!
+  button: 'I''''m sure!'
   cancel_link: Cancel
   message: ''
+  weight: 0
 

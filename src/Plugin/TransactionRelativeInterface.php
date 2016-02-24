@@ -9,7 +9,7 @@ namespace Drupal\mcapi\Plugin;
 
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Entity\Query\QueryInterface;
+use Drupal\Core\Database\Query\AlterableInterface;
 
 interface TransactionRelativeInterface {
   /**
@@ -25,11 +25,21 @@ interface TransactionRelativeInterface {
   /**
    * Modify a database query on the transaction table to show only the relatives
    *
-   * @param QueryInterface $query
-   *
-   * @note this is not yet implemeted, but should be used in all transaction views.
+   * @param \Drupal\Core\Database\Query\AlterableInterface $query
+   * @param \Drupal\Core\Database\Query\Condition $or_group
+   * @param integer $uid
    */
-  function condition(QueryInterface $query);
+  public function entityViewsCondition(AlterableInterface $query, $or_group, $uid);
+
+
+  /**
+   * Modify a database query on the transaction index table to show only the relatives
+   *
+   * @param \Drupal\Core\Database\Query\AlterableInterface $query
+   * @param \Drupal\Core\Database\Query\Condition $or_group
+   * @param integer $uid
+   */
+  public function indexViewsCondition(\AlterableInterface $query, $or_group, $uid);
 
   /**
    * get the ids of users who are related to the transaction

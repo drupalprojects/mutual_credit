@@ -264,7 +264,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayOptions('form', ['type' => 'wallet_reference_autocomplete', 'weight' => 1])
       ->setDisplayConfigurable('view', TRUE)
-      ->setDisplayOptions('view', ['type' => 'wallet_name', 'weight' => 1]);
+      ->setDisplayOptions('view', ['type' => 'entity_reference_label', 'weight' => 1]);
 
     $fields['payee'] = BaseFieldDefinition::create('wallet_reference')
       ->setLabel(t('Payee'))
@@ -277,7 +277,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayOptions('form', ['type' => 'wallet_reference_autocomplete', 'weight' => 2])
       ->setDisplayConfigurable('view', TRUE)
-      ->setDisplayOptions('view', ['type' => 'wallet_name', 'weight' => 2]);
+      ->setDisplayOptions('view', ['type' => 'entity_reference_label', 'weight' => 2]);
 
     $fields['creator'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Creator'))

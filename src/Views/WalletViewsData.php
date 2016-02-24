@@ -26,7 +26,7 @@ class WalletViewsData extends EntityViewsData {
       'real field' => 'wid',
       'field' => [
         //@todo waiting for entity_label to abandon the 'entity type field' in its definition
-        'id' => 'wallet_label',
+        'id' => 'entity_label',
         'entity type field' => 'holder_entity_type',
       ],
     ];

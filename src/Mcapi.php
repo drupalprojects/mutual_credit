@@ -157,6 +157,8 @@ class Mcapi {
    *
    * @return \Drupal\mcapi\Entity\WalletInterface[]
    *   or just the wallet ids if $load is false
+   *
+   * @todo change this to take the entityTypeId and the EntityId instead of the Entity
    */
   public static function walletsOf(ContentEntityInterface $entity, $load = FALSE) {
     $wids = \Drupal::entityQuery('mcapi_wallet')
@@ -233,11 +235,16 @@ class Mcapi {
       $tokens[] = '{{ '.$token . '}}';
     }
     //@todo how to place links in $element['#description']?
-    return implode(', ', $tokens) . '. '.
-      \Drupal\Core\Link::fromTextAndUrl(t('What is twig?'), \Drupal\Core\Url::fromUri('http://twig.sensiolabs.org/doc/templates.html'));
+    $link = \Drupal\Core\Link::fromTextAndUrl(
+        t('What is twig?'),
+        \Drupal\Core\Url::fromUri('http://twig.sensiolabs.org/doc/templates.html')
+      );
+    return implode(', ', $tokens) . '. '.$link->toString();
+
   }
 
   /**
+   *
    *
    * @param string $match
    *   a string to be matched against the wallet name
@@ -252,7 +259,6 @@ class Mcapi {
       $wids = $walletStorage->whichWalletsQuery($restrict, \Drupal::currentUser()->id(), $match);
     }
     else {
-      $operation = '';
       $query = \Drupal::entityQuery('mcapi_wallet')
         ->condition('payways', \Drupal\mcapi\Entity\Wallet::PAYWAY_AUTO, '<>')
         ->condition('orphaned', 0);

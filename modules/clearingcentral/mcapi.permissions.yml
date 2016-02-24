@@ -1,0 +1,4 @@
+create remote transactions:
+  title: 'Create remote transactions'
+  description: 'Trade via the intertrading wallet and the Clearing Central service'
+

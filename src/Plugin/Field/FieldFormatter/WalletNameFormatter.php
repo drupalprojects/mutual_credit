@@ -28,13 +28,11 @@ class WalletNameFormatter extends \Drupal\Core\Field\Plugin\Field\FieldFormatter
   /**
    * {@inheritdoc}
    *
-   * Grants everyone with access to see the main entity permission to view the
-   * wallet name, if not the wallet. By granting access here, a link is created
-   * to the destination wallet canonical page, even if the user can't see that page.
+   * Wallet names can always be seen. Usually this is in the context of viewing
+   * a transaction which has its own more detailed access control
    */
   protected function checkAccess(EntityInterface $entity) {
-    return parent::checkAccess($entity);
-    //return \Drupal\Core\Access\AccessResult::allowed()->cachePerPermissions('view user profile');
+    return \Drupal\Core\Access\AccessResult::allowed();
   }
 
 }

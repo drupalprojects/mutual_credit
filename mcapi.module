@@ -163,32 +163,6 @@ function mcapi_entity_predelete($entity) {
 }
 
 /**
- * Implements hook_module_implements_alter().
- *
- * Ensures that mcapi_local_tasks_alter runs after field_ui_local_tasks_alter
- */
-function mcapi_module_implements_alter(&$implementations, $hook) {
-  if ($hook == 'local_tasks_alter') {
-    $group = $implementations ['mcapi'];
-    unset($implementations ['mcapi']);
-    $implementations ['mcapi'] = $group;
-  }
-}
-
-/**
- * Implements hook_local_tasks_alter().
- *
- * prevent the three fixed transaction display modes from being edited
- * Remove any unneeded wallet tabs
- */
-function mcapi_local_tasks_alter(&$tasks) {
-  foreach (['default', 'certificate', 'twig', 'sentence'] as $mode) {
-    //unset($tasks["field_ui.fields:field_display_{$mode}_mcapi_transaction"]);
-  }
-}
-
-
-/**
  * Implements hook_entity_type_alter().
  * @param \Drupal\Core\Entity\EntityTypeInterface[] $entity_types
  * Change the action list controller to a wrapper which hides this modules operation actions
@@ -202,9 +176,10 @@ function mcapi_entity_type_alter(array &$entity_types) {
 /**
  * Implements hook_entity_operation_alter().
  * prevent the transaction view modes from being tampered with
+ * @todo check these view modes all still exist
  */
 function mcapi_entity_operation_alter(&$operations, $entity) {
-  if (in_array('mcapi_transaction.'.$entity->id(), ['certificate', 'twig', 'sentence'])) {
+  if (in_array('mcapi_transaction.'.$entity->id(), ['certificate', 'sentence'])) {
     $operations = [];
   }
 }
@@ -445,3 +420,40 @@ function mcapi_one_wallet_entity_views_displays() {
   ];
 }
 
+/**
+ * Implements hook_query_tag_alter().
+ * Per-transaction access control on transaction views
+ * on the basis of only relatives being able to see it
+ * relatives are defined in the transaction_view action configuration
+ *
+ * @param Drupal\views\ViewExecutable $view
+ * @param Drupal\views\Plugin\views\query\QueryPluginBase $query
+ *
+ * @note this wasn't firing sometimes in mcapi.views_execution.inc
+ *
+ */
+function mcapi_query_mcapi_transaction_access_alter(Drupal\Core\Database\Query\AlterableInterface $query) {
+  if (\Drupal::currentUser()->hasPermission('view all transactions')) {
+    return;
+  }
+  $tables = $query->getTables();
+  $table = reset($tables)['table'];
+
+  $relatives_plugins = \Drupal\system\Entity\Action::load('transaction_view')->getPlugin()->getConfiguration()['access'];
+  $relative_plugins = \Drupal\mcapi\Mcapi::transactionRelatives($relatives_plugins)->getActivePlugins();
+  //we filter transactions using one relative OR another
+  $or_group = $query->orConditionGroup();
+
+  foreach ($relative_plugins as $plugin) {
+    if ($table == 'mcapi_transaction') {
+      $plugin->entityViewsCondition($query, $or_group, \Drupal::currentUser()->id());
+    }
+    elseif ($table = 'mcapi_transactions_index') {
+      dsm('check whether per-transaction access contrtol is desirable on the index table');
+      $plugin->indexViewsCondition($query, $or_group, \Drupal::currentUser()->id());
+    }
+  }
+  if ($plugin) {//this should always be the case
+    $query->condition($or_group);
+  }
+}

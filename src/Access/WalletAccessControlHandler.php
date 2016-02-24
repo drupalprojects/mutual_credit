@@ -67,7 +67,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
     }
     elseif ($op == 'view'){
       //there might need to be an intermediate option, for groups
-      return AccessResult::allowedIfhasPermission($account, 'view all wallets')
+      return AccessResult::allowedIfhasPermission($account, 'view all transactions')
         ->orif(
           AccessResult::allowedIf($entity->getOwnerId() == $account->id())
         )
@@ -75,7 +75,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
     }
     elseif($op == 'delete') {
       return AccessResult::allowedIf(!$entity->isUsed())->addCacheTags(['mcapi_wallet:'.$entity->id()]);
-      //can only delete if there are no transactions.
+      //can only delete wallet if there are no transactions.
       //@todo maybe create a basefield unused flag rather than reading ledger
     }
     elseif($op == 'transactions') {

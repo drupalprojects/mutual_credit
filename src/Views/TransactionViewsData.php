@@ -81,6 +81,8 @@ class TransactionViewsData extends EntityViewsData {
       'title' => 'Debited wallet',
       'id' => 'standard'
     ];
+    $data['mcapi_transaction']['payer']['field']['default_formatter'] = 'entity_reference_label';
+
     $data['mcapi_transaction']['payee']['help'] = $this->t('The wallet which was credited');
     $data['mcapi_transaction']['payee']['relationship'] = [
       'base' => 'mcapi_wallet',
@@ -89,6 +91,7 @@ class TransactionViewsData extends EntityViewsData {
       'title' => 'Credited wallet',
       'id' => 'standard'
     ];
+    $data['mcapi_transaction']['payee']['field']['default_formatter'] = 'entity_reference_label';
     $data['mcapi_transaction']['first_wallet'] = [
       'title' => $this->t('First wallet'),
       'help' => $this->t('Wallet held by the user'),

@@ -1,0 +1,11 @@
+uuid: b35e2853-fce3-416e-bc00-fed204aee2de
+langcode: en
+status: true
+dependencies:
+  module:
+    - mcapi
+id: mcapi_transaction.sentence
+label: Sentence
+targetEntityType: mcapi_transaction
+cache: true
+

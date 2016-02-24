@@ -9,9 +9,9 @@ namespace Drupal\mcapi\Plugin\TransactionRelative;
 
 use Drupal\mcapi\Plugin\TransactionRelativeInterface;
 use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Plugin\PluginBase;
+use Drupal\Core\Database\Query\AlterableInterface;
 
 /**
  * Defines a payer relative to a Transaction entity.
@@ -34,8 +34,14 @@ class Manager extends PluginBase implements TransactionRelativeInterface {
   /**
    * {@inheritdoc}
    */
-  public function condition(QueryInterface $query) {
+  public function indexViewsCondition(AlterableInterface $query, $or_group, $uid) {
 
+  }
+  /**
+   * {@inheritdoc}
+   */
+  public function entityViewsCondition(AlterableInterface $query, $or_group, $uid) {
+    //don't limit the view at all
   }
 
 

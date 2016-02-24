@@ -7,11 +7,12 @@
 
 namespace Drupal\mcapi\Plugin\TransactionRelative;
 
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Plugin\TransactionRelativeInterface;
 use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Plugin\PluginBase;
+use Drupal\Core\Database\Query\AlterableInterface;
 
 /**
  * Defines a nominated user relative to wallets in a transaction.
@@ -28,7 +29,7 @@ class Named extends PluginBase implements TransactionRelativeInterface {
    * {@inheritdoc}
    */
   public function isRelative(TransactionInterface $transaction, AccountInterface $account) {
-    $targets = getUsers($transaction);
+    $targets = $this->getUsers($transaction);
     $id = $account->id();
     foreach ($targets as $target) {
       if ($id == $target['target_id']) return TRUE;
@@ -38,18 +39,36 @@ class Named extends PluginBase implements TransactionRelativeInterface {
   /**
    * {@inheritdoc}
    */
-  public function condition(QueryInterface $query) {
+  public function indexViewsCondition(AlterableInterface $query, $or_group, $uid) {
 
+  }
+  /**
+   * {@inheritdoc}
+   */
+  public function entityViewsCondition(AlterableInterface $query, $or_group, $uid) {
+    dsm('@todo Drupal\mcapi\Plugin\TransactionRelative\Named::entityViewCondition');
   }
 
   /**
    * {@inheritdoc}
    */
   public function getUsers(TransactionInterface $transaction) {
-    return array_merge(
-      $transaction->payer->entity->getValue('payers'),
-      $transaction->payee->entity->getValue('payees')
-    );
+    $payer = $transaction->payer->entity;
+    $payee = $transaction->payee->entity;
+    $named = [];
+    //@todo would be nice to refactor this, considering how the payers and payees fields are used elsewhere
+    foreach ([$payer,$payee] as $wallet) {
+      if ($wallet->payways->value == Wallet::PAYWAY_ANYONE_IN) {
+        $named = array_merge($named, $wallet->payers->getValue());
+      }
+      elseif($wallet->payways->value == Wallet::PAYWAY_ANYONE_OUT) {
+        $named = array_merge($named, $wallet->payees->getValue());
+      }
+      elseif ($wallet->payways->value == Wallet::PAYWAY_ANYONE_BI){
+        //then theres no need to name users
+      }
+    }
+    return $named;
   }
 
 

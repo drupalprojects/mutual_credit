@@ -136,7 +136,7 @@ display:
           link_to_entity: 1
           link: 1
           entity_type: mcapi_wallet
-          plugin_id: mcapi_wallet_label
+          plugin_id: mcapi_entity_label
         holder:
           id: holder
           table: mcapi_wallet

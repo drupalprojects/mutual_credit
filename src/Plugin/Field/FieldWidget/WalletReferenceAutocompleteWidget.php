@@ -57,18 +57,19 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
     }
     //$items restriction is needed for validation
     else $items->restriction = '';
+
     if ($default_value && $default_value->isIntertrading()) {
       $wids = [$default_value->id()];
     }
     else {
       $wids = Mcapi::getWalletSelection('', $items->restriction);
     }
-
     $count = count($wids);
 
     if (!$count) {
       throw new \Exception('No wallets to show for '.$this->fieldDefinition->getName());
     }
+    //@todo inject this
     $config = \Drupal::config('mcapi.settings');
     //present different widgets according to the number of wallets to choose from, and settings
     if ($count == 1) {

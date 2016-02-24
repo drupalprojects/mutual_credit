@@ -9,7 +9,7 @@ namespace Drupal\mcapi\Plugin\TransactionRelative;
 
 use Drupal\mcapi\Plugin\TransactionRelativeInterface;
 use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\Core\Entity\Query\QueryInterface;
+use Drupal\Core\Database\Query\AlterableInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Plugin\PluginBase;
 
@@ -35,8 +35,18 @@ class Authenticated extends PluginBase implements TransactionRelativeInterface {
   /**
    * {@inheritdoc}
    */
-  public function condition(QueryInterface $query) {
-
+  public function indexViewsCondition(AlterableInterface $query, $or_group, $uid) {
+    if (!$uid) {
+      $query->condition('xid = 0');
+    }
+  }
+  /**
+   * {@inheritdoc}
+   */
+  public function entityViewsCondition(AlterableInterface $query, $or_group, $uid) {
+    if (!$uid) {
+      $query->condition('xid = 0');
+    }
   }
 
   /**

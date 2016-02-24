@@ -1,11 +1,2 @@
-mcapi_cc.remote.credit:
-  title: Credit a remote account
-  route_name: mcapi_cc.remote.credit
-  menu_name: account
-  weight: 6
 
-mcapi_cc.remote.bill:
-  title: Bill a remote account
-  route_name: mcapi_cc.remote.bill
-  menu_name: account
-  weight: 6
+

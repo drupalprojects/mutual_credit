@@ -9,9 +9,9 @@ namespace Drupal\mcapi\Plugin\TransactionRelative;
 
 use Drupal\mcapi\Plugin\TransactionRelativeInterface;
 use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Plugin\PluginBase;
+use Drupal\Core\Database\Query\AlterableInterface;
 
 /**
  * Defines a payee relative to a Transaction entity.
@@ -34,8 +34,19 @@ class Payee extends PluginBase implements TransactionRelativeInterface {//does i
   /**
    * {@inheritdoc}
    */
-  public function condition(QueryInterface $query) {
+  public function indexViewsCondition(AlterableInterface $query, $or_group, $uid) {
+    $query->join('mcapi_wallet', 'u1_wallet', 'mcapi_transactions_index.wallet_id = u1_wallet.wid AND mcapi_transactions_index.outgoing = 0');
+    $query->join('users', 'u1_user', "u1_wallet.holder_entity_type = 'user' AND u1_wallet.holder_entity_id = u1_user.uid");
+    $or_group->condition('u1_user.uid', $uid);
+  }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function entityViewsCondition(AlterableInterface $query, $or_group, $uid) {
+    $query->join('mcapi_wallet', 'payee_wallet', 'mcapi_transaction.payee = payee_wallet.wid');
+    $query->join('users', 'payee_user', "payee_wallet.holder_entity_type = 'user' AND payee_wallet.holder_entity_id = payee_user.uid");
+    $or_group->condition('payee_user.uid', $uid);
   }
 
   /**

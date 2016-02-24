@@ -1,8 +1,12 @@
+uuid: 65bd7e15-cc59-49dc-9400-afd5fa6d5513
 langcode: en
 status: true
 dependencies:
   module:
     - mcapi
+    - mcapi_signatures
+_core:
+  default_config_hash: 3LJHFM-NnGvqmztkrGVaYoSJHxgKYhmrzxHHBoYptsM
 id: transaction_sign
 label: 'Sign transaction'
 type: mcapi_transaction
@@ -10,17 +14,24 @@ plugin: mcapi_transaction.sign_action
 configuration:
   type: mcapi_transaction
   title: Sign
-  tooltip: Add your signature to this transaction
+  tooltip: 'Add your signature to this transaction'
   states:
-    done: done
     pending: pending
-    erased: 0
-  access: { }
+  access:
+    pending_signatory: pending_signatory
+    named: 0
+    manager: 0
+    payer: 0
+    payee: 0
+    creator: 0
+    authenticated: 0
+    signatory: 0
   page_title: 'Are you sure you want to sign?'
   format: certificate
   twig: ''
   display: 2
-  button: I''m sure!
+  button: 'I''''m sure!'
   cancel_link: Cancel
   message: ''
+  weight: 0
 

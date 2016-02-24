@@ -3,7 +3,6 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\DevelGenerate\TransactionDevelGenerate.
- * @see https://www.drupal.org/node/2503429 for possible reason why batching doesn't work
  */
 
 namespace Drupal\mcapi\Plugin\DevelGenerate;
@@ -11,7 +10,6 @@ namespace Drupal\mcapi\Plugin\DevelGenerate;
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\devel_generate\DevelGenerateBase;
@@ -41,12 +39,6 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   protected $transactionStorage;
 
   /**
-   * The module handler.
-   *
-   * @var \Drupal\Core\Extension\ModuleHandlerInterface
-   */
-  protected $moduleHandler;
-  /**
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.
    * @param string $plugin_id
@@ -54,12 +46,10 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * @param array $plugin_definition
    * @param \Drupal\Core\Entity\EntityStorageInterface $transaction_storage
    *   The transaction storage.
-   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
-   *   The module handler.
    */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityStorageInterface $transaction_storage, ModuleHandlerInterface $module_handler) {
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityStorageInterface $transaction_storage) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->moduleHandler = $module_handler;
+
     $this->transactionStorage = $transaction_storage;
   }
 
@@ -71,7 +61,6 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     return new static(
       $configuration, $plugin_id, $plugin_definition,
       $entity_manager->getStorage('mcapi_transaction'),
-      $container->get('module_handler'),
       $container->get('date.formatter')
     );
   }
@@ -188,16 +177,18 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     if ($values['kill']) {
       $operations[] = array('devel_generate_operation', array($this, 'batchContentKill', $values));
     }
-
-
+    $total = $values['num'];
+    $values['num'] = 100;
     // Add the operations to create the transactions.
-    for ($num = 0; $num < $values['num']; $num ++) {
-      $operations[] = array('devel_generate_operation', array($this, 'batchContentAddTransaction', $values));
+    for ($num = 0; $num < floor($total/100); $num ++) {
+      $operations[] = ['devel_generate_operation', [$this, 'batchContentAddTransaction', $values]];
     }
+    $values['num'] = $total%100;
+    $operations[] = ['devel_generate_operation', [$this, 'batchContentAddTransaction', $values]];
 
     // Start the batch.
     $batch = array(
-      'title' => $this->t('Generating Content'),
+      'title' => $this->t('Generating Transactions'),
       'operations' => $operations,
       'finished' => 'devel_generate_batch_finished',
       'file' => drupal_get_path('module', 'devel_generate') . '/devel_generate.batch.inc',

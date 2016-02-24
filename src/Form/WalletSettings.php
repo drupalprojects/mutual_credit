@@ -45,7 +45,7 @@ class WalletSettings extends ConfigFormBase {
     //display a warning message
     $display = \Drupal\Core\Entity\Entity\EntityFormDisplay::load('mcapi_wallet.mcapi_wallet.default');
     if (!$display or !$display->getComponent('payees') or !$display->getComponent('payers')) {
-      drupal_set_message($this->t('Field payers and payees needs to be visible in the wallet form display.'), 'warning');
+      drupal_set_message($this->t('Field payers OR payees needs to be visible in the wallet form display.'), 'warning');
       if (!\Drupal::moduleHandler()->moduleExists('field_ui')) {
         //todo improve this message
         drupal_set_message($this->t('Enable the Field UI module edit the form display.'), 'warning');

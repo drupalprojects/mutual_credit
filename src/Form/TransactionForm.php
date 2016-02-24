@@ -30,7 +30,7 @@ class TransactionForm extends ContentEntityForm {
    * @todo move this to the mcapi_forms module? probably not while the payin/payout
    * constraints must be defined in BaseFieldDefinitions
    */
-  protected $restrict = FALSE;
+  public $restrict = FALSE;
 
 
   public function __construct($entity_type_manager, $tempstore, $current_request) {

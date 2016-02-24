@@ -115,7 +115,7 @@ display:
           hide_alter_empty: true
           link_to_entity: 1
           entity_type: mcapi_wallet
-          plugin_id: wallet_label
+          plugin_id: entity_label
       filters: {  }
       sorts: {  }
       header:
@@ -288,7 +288,7 @@ display:
           hide_alter_empty: true
           link_to_entity: 1
           entity_type: mcapi_wallet
-          plugin_id: wallet_label
+          plugin_id: entity_label
         outgoing:
           id: outgoing
           table: mcapi_transactions_index
@@ -429,7 +429,7 @@ display:
           hide_alter_empty: true
           link_to_entity: 1
           entity_type: mcapi_wallet
-          plugin_id: wallet_label
+          plugin_id: entity_label
         incoming:
           id: incoming
           table: mcapi_transactions_index
@@ -579,7 +579,7 @@ display:
           hide_alter_empty: true
           link_to_entity: 1
           entity_type: mcapi_wallet
-          plugin_id: wallet_label
+          plugin_id: entity_label
         partner_id:
           id: partner_id
           table: mcapi_transactions_index
@@ -726,7 +726,7 @@ display:
           hide_alter_empty: true
           link_to_entity: 1
           entity_type: mcapi_wallet
-          plugin_id: wallet_label
+          plugin_id: entity_label
         partner_id:
           id: partner_id
           table: mcapi_transactions_index
@@ -901,7 +901,7 @@ display:
           hide_alter_empty: true
           link_to_entity: 1
           entity_type: mcapi_wallet
-          plugin_id: wallet_label
+          plugin_id: entity_label
         volume:
           id: volume
           table: mcapi_transactions_index
