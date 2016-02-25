@@ -36,8 +36,9 @@ function mcapi_requirements($phase) {
         ['%link' => Link::fromTextAndUrl('admin/accounting/misc', Url::fromRoute('mcapi.admin_misc'))]
       );
     }
-    return array($result);
+    return [$result];
   }
+  return [];
 }
 
 /**
