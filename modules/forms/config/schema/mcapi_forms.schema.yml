@@ -39,9 +39,6 @@ mcapi_forms.firstpartyform.*:
     incoming:
       type: boolean
       label: 'Direction of payment relative to the current user'
-    hide_one_wallet:
-      type: boolean
-      label: TRUE to hide wallet fields with no choice
     experience:
       type: mapping
       label: 'Experience'

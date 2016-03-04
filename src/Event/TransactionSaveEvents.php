@@ -31,7 +31,8 @@ class TransactionSaveEvents extends GenericEvent {
    * @param string $markup
    */
   public function addMessage($string) {
-    dsm('TransactionSaveEvents::addMessage');
+
+    if (\Drupal::moduleHandler()->moduleExists('devel')) dsm('TransactionSaveEvents::addMessage');
     $this->messages[] = $string;
   }
 
@@ -41,7 +42,7 @@ class TransactionSaveEvents extends GenericEvent {
    *   renderable array
    */
   public function getMessage() {
-    dsm('TransactionSaveEvents::getMessage');
+    if (\Drupal::moduleHandler()->moduleExists('devel')) dsm('TransactionSaveEvents::getMessage');
     return implode(' ', $this->messages);
   }
 

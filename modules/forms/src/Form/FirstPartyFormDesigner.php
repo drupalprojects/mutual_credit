@@ -154,15 +154,6 @@ class FirstPartyFormDesigner extends EntityForm {
       \Drupal::service('router.builder')->rebuild();
     }
 
-    //@todo make this work
-    $form['hide_one_wallet'] = [
-      '#title' => $this->t('One wallet'),
-      '#description' => $this->t('Hide the wallet field if there is only one.'),
-      '#type' => 'checkbox',
-      '#default_value' => intval($configEntity->hide_one_wallet),
-      '#weight' => $w++,
-    ];
-
     $moreInfo = $this->t(
       'Put any default values here.') .' '.
       $this->l(

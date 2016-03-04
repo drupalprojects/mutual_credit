@@ -40,8 +40,9 @@ class TransactionSubscriber implements EventSubscriberInterface {
    */
   function onMakeChildren(TransactionSaveEvents $events, $eventName, ContainerAwareEventDispatcher $container) {
     //could $eventName be anything but 'mcapi.transaction.children' a.k.a. McapiEvents::CHILDREN
-    dsm('onmakechildren: '.$eventName);
-
+    if (\Drupal::moduleHandler()->moduleExists('devel')) {
+      dsm('onmakechildren: '.$eventName);
+    }
   }
 
   /**

@@ -11,7 +11,6 @@ title: 'Credit another member'
 status: 1
 type: default
 incoming: 0
-hide_one_wallet: 0
 experience:
   twig: "I, {{ payer }}\r\nreceived {{ description }}\r\nfrom\r\n{{ payee }}\r\nand now credit them for\r\n{{ worth }}"
   button: Preview

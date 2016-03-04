@@ -33,6 +33,14 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
   public function settingsForm(array $form, FormStateInterface $form_state) {
     $element = parent::settingsForm($form, $form_state);
     unset($element['size']);
+
+    //@todo make this work
+    $form['hide_one_wallet'] = [
+      '#title' => $this->t('Hide the wallet field if there is only one.'),
+      '#type' => 'checkbox',
+      '#default_value' => $this->getSetting('hide_one_wallet'),
+      '#weight' => $w++,
+    ];
     return $element;
   }
 
@@ -73,10 +81,15 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
     $config = \Drupal::config('mcapi.settings');
     //present different widgets according to the number of wallets to choose from, and settings
     if ($count == 1) {
-      $element += [
-        '#type' => 'value',
-        '#value' => reset($wids)
-      ];
+      $wid = reset($wids);
+      $element['#value'] = $wid;
+     if ($this->getSetting('hide_one_wallet')) {
+        $element['#type'] = 'value';
+      }
+      else {
+        $element['#type'] = 'item';
+        $element['#markup'] = \Drupal\mcapi\Entity\Wallet::load($wid)->label();
+      }
     }
     elseif ($count > $config->get('wallet_widget_max_select')) {
       $element += [

@@ -102,6 +102,10 @@ function mcapi_cc_mcapi_form_list() {
     'link' => Link::fromTextAndUrl(t('Buy from a remote account'), \Drupal\Core\Url::fromRoute('mcapi_cc.remote.credit', [])),
     'operations' => []
   ];
+  $forms['remotebill'] = [
+    'link' => Link::fromTextAndUrl(t('Bill a remote account'), \Drupal\Core\Url::fromRoute('mcapi_cc.remote.bill', [])),
+    'operations' => []
+  ];
   return $forms;
 }
 

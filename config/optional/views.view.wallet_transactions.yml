@@ -186,7 +186,7 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          date_format: html_date
+          date_format: short
           custom_date_format: ''
           timezone: ''
           plugin_id: date
@@ -360,8 +360,8 @@ display:
           machine_name: 0
           plugin_id: worth
           provider: mcapi
-        balance_3:
-          id: balance_3
+        balance:
+          id: balance
           table: mcapi_transactions_index
           field: balance
           relationship: none

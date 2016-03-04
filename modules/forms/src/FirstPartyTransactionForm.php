@@ -42,14 +42,14 @@ class FirstPartyTransactionForm extends TransactionForm {
    */
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
-    
     //hide the state & type
     $form['type']['#type'] = 'value';
     $form['type']['#default_value'] = $this->configEntity->type;
     $form['state']['#type'] = 'value';
     $form['state']['#value'] = Type::load($this->configEntity->type)->start_state;
     unset($form['creator']);
-    $form_state->set('config', $this->configEntity);//not sure if this is ever used.
+    $form['payer']['widget'][0]['target_id']['#hidden'] = $this->configEntity->hide_one_wallet;
+    $form['payee']['widget'][0]['target_id']['#hidden'] = $this->configEntity->hide_one_wallet;
 
     $form['#twig_template'] = $this->configEntity->experience['twig'];
     return $form;
