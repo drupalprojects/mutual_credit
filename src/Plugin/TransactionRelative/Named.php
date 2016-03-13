@@ -40,13 +40,13 @@ class Named extends PluginBase implements TransactionRelativeInterface {
    * {@inheritdoc}
    */
   public function indexViewsCondition(AlterableInterface $query, $or_group, $uid) {
-
+    drupal_set_message('@todo Drupal\mcapi\Plugin\TransactionRelative\Named::IndexViewsCondition');
   }
   /**
    * {@inheritdoc}
    */
   public function entityViewsCondition(AlterableInterface $query, $or_group, $uid) {
-    dsm('@todo Drupal\mcapi\Plugin\TransactionRelative\Named::entityViewCondition');
+    drupal_set_message('@todo Drupal\mcapi\Plugin\TransactionRelative\Named::entityViewsCondition');
   }
 
   /**

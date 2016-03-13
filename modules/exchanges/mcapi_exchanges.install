@@ -35,7 +35,7 @@ function mcapi_exchanges_install() {
   mcapi_exchanges_check_og_fields([], []);
 
   //now make a default exchange
-  //Og should put the entityOwner IN the exchange automatically
+  //Og should put the entityOwner IN the exchange automatically,
   $exchange = Exchange::create([
     'name' => 'Default exchange',
     'uid' => 1,
@@ -43,11 +43,13 @@ function mcapi_exchanges_install() {
     'currencies' => \Drupal\mcapi\Entity\Currency::loadMultiple()
   ]);
   $exchange->save();
-  drupal_set_message('User 1 has joined the default exchange. @todo has this happened?');
 
-  //put all other users in the default exchanges
+  //put other users in the default exchanges
+  //note that user 1 was put in to the exchange using the wrong default fieldname
+  //@see og_entity_insert()
   foreach (User::loadMultiple() as $account) {
-    if ($account->id() <= 1){
+    if ($account->id()){
+      //exclude user 0
       continue;
     }
     //@todo there may be a way of doing this in og
@@ -60,7 +62,7 @@ function mcapi_exchanges_install() {
   drupal_set_message(
     t(
       'Now show the fields on the entity displays: %link',
-      ['%link' => Link::fromTextAndUrl($path, Drupal\Core\Url::fromUserInput($path))]
+      ['%link' => Link::fromTextAndUrl($path, Drupal\Core\Url::fromUserInput($path))->toString()]
     ),
     'warning'
   );

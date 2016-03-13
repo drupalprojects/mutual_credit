@@ -23,9 +23,13 @@ use Symfony\Component\Validator\Constraint;
  */
 class TransactionLimitsConstraint extends Constraint {
 
-  public $overLimit = "The transaction would take wallet '%wallet' !excess above the maximum limit of !limit.";
+  public $overLimitBlock = "The transaction would take wallet '%wallet' %excess above the maximum limit of %limit.";
 
-  public $underLimit = "The transaction would take wallet '%wallet' !excess below the minimum limit of !limit.";
+  public $underLimitBlock = "The transaction would take wallet '%wallet' %excess below the minimum limit of %limit.";
+
+  public $overLimitWarning = "The transaction took wallet '%wallet' %excess above the maximum limit of %limit.";
+
+  public $underLimitWarning = "The transaction took wallet '%wallet' %excess below the minimum limit of %limit.";
 
   /**
    * {@inheritdoc}

@@ -59,6 +59,7 @@ class WorthsView extends \Drupal\Core\Render\Element\RenderElement {
       ];
     }
     array_pop($element);//remove the last delimiter
+
     return $element;
   }
 

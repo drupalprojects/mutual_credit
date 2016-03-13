@@ -1,5 +1,6 @@
 <?php
 
+use Drupal\Core\Utility\Token;
 
 /**
  * Implements hook_entity_type_alter().
@@ -82,5 +83,88 @@ function mcapi_limits_mcapi_wallet_view(&$build, $wallet, $display, $view_mode) 
   if ($display->getComponent('balance_limits')) {
     module_load_include('inc', 'mcapi_limits');
     $build += mcapi_view_limits($wallet);
+  }
+}
+
+/**
+ * Implements hook_mail().
+ * params are currency, exceeded_wallet, partner_wallet, message
+ * token types are user current-user, recipient, exceeded-wallet
+ */
+function mcapi_limits_mail($key, &$message, $params) {
+  $data = [
+    'user' => $params['exceeded_wallet']->getOwner(),
+    'current-user' => \Drupal\user\Entity\User::load(\Drupal::currentUser()->id()),
+    'wallet' => $params['partner_wallet'],
+    'exceeded-wallet' => $params['exceeded_wallet']
+  ];
+  $message['subject'] = \Drupal::token()->replace($params['subject'], $data);
+  $message['body'][] = str_replace('[user:name]', $params['exceeded_wallet']->getOwner()->getDisplayName(), "Hi [user:name]");
+  $message['body'][] = \Drupal::token()->replace($params['body'], $data);
+}
+
+/**
+ * implement hook_ENTITY_TYPE_insert
+ * A transaction is inserted but with balance limit warnings
+ * Print them to screen and notify the holder of the 'other' wallet(s) by email
+ * @todo make a rules condition BalanceLimitsExceeded
+ */
+function mcapi_limits_mcapi_transaction_insert($transaction) {
+  if (isset($transaction->mailLimitsWarning)) {
+    //FIRE A RULES EVENT INSTEAD oF THE BELOW
+    foreach ($transaction->mailLimitsWarning as $wid => $warnings) {
+      foreach ($warnings as $curr_id => $warning_message) {
+        drupal_set_message(\Drupal\Core\Render\Markup::create($warning_message), 'warning');
+      }
+      $owner = \Drupal\mcapi\Entity\Wallet::load($wid)->getOwner();
+      if ($owner->id() != \Drupal::currentUser()->id()) {
+        $currency = \Drupal\mcapi\Entity\Currency::load($curr_id);
+        \Drupal::service('plugin.manager.mail')->mail(
+          'mcapi_limits',
+          'warning',
+          $owner->getEmail(),
+          $owner->getPreferredLangcode(),
+          [
+            'subject' => $currency->getThirdPartySetting('mcapi_limits', 'warning_mail')['subject'],
+            'body' => str_replace('[message]', $warning_message, $body),
+            'exceeded_wallet' => $exceeded_wallet,
+            'partner_wallet' => $partner_wallet,
+            'message' => $message,
+          ]
+        );
+      }
+    }
+  }
+}
+
+/**
+ * implements hook_tokens().
+ * adds a new token enabling passing to 2 wallet params to the mail
+ */
+function mcapi_limits_token_info() {
+  return [
+    'types' => [
+      'exceeded-wallet' => [
+        'name' => t('Exceeded wallet'),
+        'description' => t('The wallet whose limits were exceeded'),
+        'type' => 'mcapi_wallet',
+      ]
+    ]
+  ];
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function mcapi_limits_tokens($type, $tokens, array $data, array $options, Drupal\Core\Render\BubbleableMetadata $bubbleable_metadata) {
+  if ($type == 'exceeded-wallet') {
+    $bubbleable_metadata->addCacheContexts(['mcapi_wallet']);
+    return \Drupal::token()->generate(
+      'wallet',
+      $tokens,
+      ['wallet' => $data['exceeded-wallet']],
+      $options,
+      $bubbleable_metadata
+    );
   }
 }

@@ -63,18 +63,17 @@ class WalletSettings extends ConfigFormBase {
     $form['entity_types'] = [
       '#title' => $this->t('Max number of wallets'),
       '#description' => $this->t(
-        "Wallets can be owned by any entity type which implements !interface and has an entity_references field to 'exchange' entities.",
-        ['%interface' => $link]
+        "Wallets can be owned by any entity type which implements %interface and has an entity_reference field to 'exchange' entities.",
+        ['%interface' => $link->toString()]
       ),
       '#type' => 'fieldset',
       '#weight' => 2,
       '#tree' => TRUE
     ];
 
+    //@todo alter this in the exchanges module so that only bundles with an entity reference to an exchange are listed
     foreach ($this->entityTypeManager->getDefinitions() as $entity_type_id => $entity_type) {
-      //tricky to know which entities to show here.
-      if ($entity_type->isSubclassOf('\Drupal\Core\Entity\FieldableEntityInterface')
-        && ($entity_type->isSubclassOf('\Drupal\User\EntityOwnerInterface') || $entity_type_id == 'user')
+      if (($entity_type->isSubclassOf('\Drupal\User\EntityOwnerInterface') || $entity_type_id == 'user')
         && $entity_type->getLinkTemplate('canonical')//otherwise where to put the wallet!
         ) {
         $bundles = $this->entityTypeBundleInfo->getBundleInfo($entity_type_id);

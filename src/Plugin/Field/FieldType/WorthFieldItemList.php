@@ -17,28 +17,38 @@ class WorthFieldItemList extends FieldItemList {
   /**
    * {@inheritdoc}
    */
-  public function filterEmptyItems() {
+  public function isEmpty() {
+    $empties= [];
     foreach ($this->list as $key => $item) {
-      $val = $item->getValue();
-      //@todo this might be the place to filter or not filter zero values
-      if (!isset($val['value'])) {
-        unset($this->list[$key]);
+      if (!$item->value && !$item->currency->zero) {
+        $empties[$key] = $item->currcode;
       }
     }
-    $this->list = array_values($this->list);
-    return $this;
+    return count($empties) == count($this->list);
+  }
+
+
+  /**
+   * {@inheritdoc}
+   * @todo Revisit the need when all entity types are converted to NG entities.
+   */
+  public function getValue($include_computed = FALSE) {
+    $values = array();
+    foreach ($this->list as $delta => $item) {
+      $val = $item->value;
+      if (strlen($val)) {
+        $values[$delta] = $item->getValue();
+      }
+    }
+    return $values;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function isEmpty() {
-    foreach ($this->list as $item) {
-      if ($item->getValue()['value']) {
-        return FALSE;
-      }
-    }
-    return TRUE;
+  public function setValue($values, $notify = TRUE) {
+    parent::setValue($values, $notify);
+    $this->filterEmptyItems($values);
   }
 
   public function currencies($full = FALSE) {

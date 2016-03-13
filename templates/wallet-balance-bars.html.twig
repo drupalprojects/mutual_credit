@@ -21,10 +21,10 @@
  * - vaxislabels
  */
 #}
-{{ attach_library('mcapi/mcapi.gchart') }}
-<script type="text/javascript">google.load('visualization', '1.0', {'packages':['corechart']});
+{{ attach_library('mcapi/mcapi.gcharts') }}
+<script type="text/javascript">
 {% for chart in currencies %}
-google.setOnLoadCallback({{ chart.functionname }});
+google.charts.setOnLoadCallback({{ chart.functionname }});
 function {{ chart.functionname }}() {
   var data = google.visualization.arrayToDataTable([
     ['', 'Given', 'Received'],

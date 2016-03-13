@@ -4,6 +4,8 @@ status: true
 dependencies:
   module:
     - mcapi
+_core:
+  default_config_hash: ajsUUxTthY1AI-VrTjxNTlrkwMoBXihyTcDkmkNlcSc
 id: wallet_transactions
 label: 'Transactions in a wallet'
 module: views
@@ -191,13 +193,14 @@ display:
           timezone: ''
           plugin_id: date
           provider: views
-        label:
-          id: label
+        name:
+          id: name
           table: mcapi_wallet
-          field: label
+          field: name
           relationship: partner_id
+          group_type: group
           admin_label: ''
-          label: Partner
+          label: 'Wallet name'
           exclude: false
           alter:
             alter_text: false
@@ -238,9 +241,23 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          link_to_entity: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
           entity_type: mcapi_wallet
-          plugin_id: entity_label
+          entity_field: name
+          plugin_id: field
         incoming:
           id: incoming
           table: mcapi_transactions_index
@@ -622,6 +639,7 @@ display:
     cache_metadata:
       max-age: 0
       contexts:
+        - 'languages:language_content'
         - 'languages:language_interface'
         - url
         - url.query_args
@@ -647,6 +665,7 @@ display:
     cache_metadata:
       max-age: 0
       contexts:
+        - 'languages:language_content'
         - 'languages:language_interface'
         - url
         - url.query_args
@@ -715,6 +734,7 @@ display:
     cache_metadata:
       max-age: 0
       contexts:
+        - 'languages:language_content'
         - 'languages:language_interface'
         - url
         - url.query_args

@@ -15,7 +15,7 @@ interface McapiLimitsInterface extends ConfigurablePluginInterface, PluginFormIn
 
   /*
    * get the limits according to the plugin settings
-   * 
+   *
    * @param WalletInterface $wallet
    *
    * @return array

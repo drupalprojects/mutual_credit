@@ -8,32 +8,28 @@
 namespace Drupal\mcapi\Event;
 
 use Symfony\Component\EventDispatcher\GenericEvent;
-use Drupal\mcapi\Entity\Transaction;
 
+/**
+ * Event which is fired on any transaction operation
+ *
+ * @see \Drupal\mcapi\Entity\Transaction::assemble()
+ */
 class TransactionSaveEvents extends GenericEvent {
 
-  private $children = [];
+  const EVENT_NAME = 'mcapi_transaction_save';//I think this is used by rules module
+
   private $messages = [];
-
-  const EVENT_NAME = 'mcapi_transaction_save';
-
-  /**
-   *
-   * @param Transaction $transaction
-   */
-  public function addChild(Transaction $transaction) {
-    dsm('TransactionSaveEvents::addChild');
-    $this->getSubject()->children[] = $transaction;
-  }
 
   /**
    *
    * @param string $markup
+   * @param string $type
+   *   the type of message i.e. status, warning or error
    */
-  public function addMessage($string) {
-
-    if (\Drupal::moduleHandler()->moduleExists('devel')) dsm('TransactionSaveEvents::addMessage');
-    $this->messages[] = $string;
+  public function setMessage($string, $type = 'status') {
+    if (strlen($string)) {
+      $this->messages[$type][] = $string;
+    }
   }
 
   /**
@@ -41,9 +37,8 @@ class TransactionSaveEvents extends GenericEvent {
    * @return array
    *   renderable array
    */
-  public function getMessage() {
-    if (\Drupal::moduleHandler()->moduleExists('devel')) dsm('TransactionSaveEvents::getMessage');
-    return implode(' ', $this->messages);
+  public function getMessages() {
+    return $this->messages;
   }
 
 }

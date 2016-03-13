@@ -9,6 +9,7 @@ namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\mcapi\Mcapi;
@@ -25,9 +26,9 @@ class WalletRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRoutePr
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_manager
    *   The entity manager.
    */
-  public function  __construct(EntityTypeManagerInterface $entity_type_manager, $config, $entity_manager) {
+  public function  __construct(EntityTypeManagerInterface $entity_type_manager, EntityFieldManagerInterface $entity_field_manager, $config) {
     $this->entityTypeManager = $entity_type_manager;
-    $this->entityManager = $entity_manager;
+    $this->entityFieldManager = $entity_field_manager;
     $this->config = $config;
   }
 
@@ -37,8 +38,8 @@ class WalletRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRoutePr
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
     return new static(
       $container->get('entity_type.manager'),
-      $container->get('config.factory')->get('mcapi.settings'),
-      $container->get('entity.manager')//deprecated
+      $container->get('entity_field.manager'),
+      $container->get('config.factory')->get('mcapi.settings')
     );
   }
 
@@ -78,28 +79,21 @@ class WalletRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRoutePr
 
       //route for viewing all wallets for one entity
       //@see \Drupal::config('mcapi.settings')->get('wallet_tab')
-      //@todo is this path in use?
-      //@todo clear up the injections too
-      /**
       $route = new Route("$canonical_path/wallets");
       $route->setDefaults([
         '_controller' => 'Drupal\mcapi\Controller\WalletController::entityWallets',
         '_title_callback' => 'Drupal\mcapi\Controller\WalletController::entityWalletsTitle'
       ])
-      ->setRequirement('_entity_access', 'mcapi_wallet.viewlog')
+      ->setRequirement('_custom_access', "\Drupal\mcapi\Access\EntityWalletsAccess::view")
       ->setOptions([
         'parameters' => [
           'entity' => [
-            'type' => 'entity:$entity_type_id',
+            'type' => "entity:$entity_type_id",
           ]
-        ],
-        '_route_enhancers' => [
-          'route_enhancer.param_conversion', 'route_enhancer.entity'
         ]
       ]);
       $route_collection->add("entity.{$entity_type_id}.wallets", $route);
-       *
-       */
+
     }
 
     $route_collection

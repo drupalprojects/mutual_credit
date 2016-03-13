@@ -56,10 +56,25 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
    * {@inheritdoc}
    */
   public function defaultConfiguration() {
+    $site_name= \Drupal::config('system.site')->get('name');
     return [
       'override' => 0,
-      'skip' => [],
-      'display_relative' => FALSE
+      'skip' => ['auto', 'mass'],
+      'display_relative' => FALSE,
+      'prevent' => TRUE,
+      //@todo move these to rules actions
+      'warning_mail' => [
+        'subject' => $this->t('Your are trading beyond your limits!'),
+        'body' => $this->t("[current-user:name] registered a transaction with you, which produced the following warning:\n[warning]") ."\n".
+          $this->t("Please take steps to trade back with in your limits.") . "\n" .
+          $this->t("The team at %site", ['%site' =>$site_name])
+      ],
+      'prevented_mail' => [
+        'subject' => $this->t('Transaction prevented on %site', ['%site' => $site_name]),
+        'body' => $this->t("[current-user:name] tried to register a transaction with you, but it was prevented with the following warning:\n[warning]") ."\n".
+          $this->t("Please take steps to trade back with in your limits.") . "\n" .
+          $this->t("The team at %site", ['%site' =>$site_name])
+      ]
     ];
   }
 
@@ -111,6 +126,68 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       '#default_value' => intval($this->configuration['display_relative']),
       '#weight' => 10,
     ];
+    $subform['prevent'] = [
+      '#title' => t('Action to take'),
+      '#type' => 'radios',
+      '#options' => [
+        '1' => $this->t('Prevent'),
+        '0' => $this->t('Notify')
+      ],
+      '#default_value' => $this->configuration['prevent'],
+      '#weight' => 12,
+    ];
+    $subform['warning_mail'] = [
+      '#title' => t('Mail notification'),
+      '#description' => t('Notify user when the balance limit has been crossed.'),
+      '#type' => 'details',
+      '#open' => FALSE,
+      '#weight' => 15,
+      '#states' => [
+        'invisible' => [
+          ':input[name="limits_settings[prevent]"]' => ['value' => '0']
+        ]
+      ]
+    ];
+    $subform['warning_mail']['subject'] = [
+      '#title' => t('Subject'),
+      '#type' => 'textfield',
+      '#default_value' => $this->configuration['warning_mail']['subject'],
+      '#maxlength' => 180,
+    ];
+    $subform['warning_mail']['body'] = [
+      '#title' => t('Body'),
+      '#description' => $this->t('The following tokens are available: @tokens', ['@tokens' => $this->getMailTokens()]),
+      '#field_prefix' => $this->t("Hi [user:name]"),
+      '#type' => 'textarea',
+      '#default_value' =>  $this->configuration['warning_mail']['body'],
+      '#rows' => 8,
+    ];
+    $subform['prevented_mail'] = [
+      '#title' => t('Mail notification'),
+      '#description' => t('Notify user when the balance limit would have been crossed.'),
+      '#type' => 'details',
+      '#open' => FALSE,
+      '#weight' => 15,
+      '#states' => [
+        'invisible' => [
+          ':input[name="limits_settings[prevent]"]' => ['value' => '1']
+        ]
+      ]
+    ];
+    $subform['prevented_mail']['subject'] = [
+      '#title' => t('Subject'),
+      '#type' => 'textfield',
+      '#default_value' => $this->configuration['prevented_mail']['subject'],
+      '#maxlength' => 180,
+    ];
+    $subform['prevented_mail']['body'] = [
+      '#title' => t('Body'),
+      '#description' => $this->t('The following tokens are available: @tokens', ['@tokens' => $this->getMailTokens()]),
+      '#field_prefix' => $this->t("Hi [user:name]"),
+      '#type' => 'textarea',
+      '#default_value' =>  $this->configuration['prevented_mail']['body'],
+      '#rows' => 8,
+    ];
     return $subform;
   }
 
@@ -129,9 +206,18 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
     $config = [];
     if ($values['plugin'] != 'none') {
       foreach ($values['limits_settings'] as $key => $value) {
-        $config[$key] = $value;
+        if ($key == 'warning_mail_subject') {
+          $config['warning_mail']['subject'] = $value;
+        }
+        elseif ($key == 'warning_mail_body') {
+          $config['warning_mail']['body'] = $value;
+        }
+        else {
+          $config[$key] = $value;
+        }
       }
     }
+
     $this->setConfiguration($config);
   }
 
@@ -141,5 +227,19 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
   public function calculateDependencies() {
     return ['module' => 'mcapi_limits'];
   }
-}
 
+  private function getMailTokens() {
+    $tokens = [
+      'current-user' => ['name', 'link'],
+      'exceeded-wallet' => ['name', 'link'],
+      'mcapi_wallet' => ['name', 'link']
+    ];
+    foreach($tokens as $type => $toks) {
+      foreach ($toks as $tok) {
+        $strings[] = '['.$type.':'.$tok.']';
+      }
+    }
+    return '[message]'. implode(', ', $strings);
+  }
+
+}

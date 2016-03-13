@@ -145,18 +145,14 @@ class OperationForm extends ContentEntityConfirmFormBase {
           $this->destination = '/';//front page
         }
       }
-      $events = new TransactionSaveEvents(
-        clone($this->entity),
-        [
-          'values' => $form_state->getValues(),
-          'old_state' => $this->entity->state->value,
-          'action' => $this->action
-        ]
-      );
+      $args = [
+        'values' => $form_state->getValues(),
+        'old_state' => $this->entity->state->value,
+        'action' => $this->action
+      ];
+      $events = new TransactionSaveEvents(clone($this->entity), $args);
+      $events->setMessage($this->config['message']);
       $this->eventDispatcher->dispatch(McapiEvents::ACTION, $events);
-      if ($message = $this->config['message']) {
-        drupal_set_message($message);
-      }
     }
     catch (\Exception $e) {
       drupal_set_message($this->t(
@@ -168,10 +164,11 @@ class OperationForm extends ContentEntityConfirmFormBase {
       ), 'error');
       return;
     }
-    if ($message = $events->getMessage()) {
-      drupal_set_message($message);
+    foreach ($events->getMessages() as $type => $messages) {
+      foreach ($messages as $message) {
+        drupal_set_message($message, $type);
+      }
     }
-
     if ($this->destination) {
       $path = $this->destination;
     }

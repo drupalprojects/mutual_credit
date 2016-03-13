@@ -16,7 +16,7 @@ configuration:
   states:
     done: done
     erased: erased
-  twig: "{% if mcapi_signatures %}{{ mcapi_signatures }}{% endif %}\r\n<div class = \"certificate\">\r\n  On {{ created }} <br />\r\n  {{ payer }} paid {{ payee }} <br />\r\n  the sum of <br />\r\n  <font size=6>{{ worth }}</font><br />\r\n  for: \"<em>{{ description }}</em>\"\r\n</div>\r\n<br />{% if children %}\r\n<br /><b>Child transactions: </b>\r\n<br />{{ children }}\r\n<br />{% endif %}"
+  twig: "{% if mcapi_signatures %}{{ mcapi_signatures }}{% endif %}\r\n<div class = \"certificate\">\r\n  On {{ created }} <br />\r\n  {{ payer }} paid {{ payee }} <br />\r\n  the sum of <br />\r\n  <div class = \"worth\">{{ worth }}</div><br />\r\n  for: \"<em>{{ description }}</em>\"\r\n</div>\r\n<br />{% if children %}\r\n<br /><b>Child transactions: </b>\r\n<br />{{ children }}\r\n<br />{% endif %}"
   display: 0
   weight: 0
   access:

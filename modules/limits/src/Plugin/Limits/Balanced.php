@@ -41,29 +41,27 @@ class Balanced extends McapiLimitsBase {
     return $subform;
   }
 
+
   /**
-   * @see \Drupal\mcapi_limits\McapiLimitsBase::getLimits($wallet)
-   * @return array
-   *   'min' and 'max' native values
+   * {@inheritdoc}
    */
   public function getLimits(WalletInterface $wallet){
     //the stored value is a 1 item array keyed by curr_id
     //we don't need to lookup the curr_id, we can just get the first value
-    $val = $this->configuration['liquidity'][0]['value'];
-    $limits = array(
+    $val = $this->configuration['liquidity']['value'];
+    $limits = [
       'min' => -$val,
       'max' => $val
-    );
+    ];
     return $limits;
   }
 
   /**
-   * (non-PHPdoc)
-   * @see \Drupal\mcapi_limits\Plugin\Limits\McapiLimitsBase::defaultConfiguration()
+   * {@inheritdoc}
    */
   public function defaultConfiguration() {
     $defaults = parent::defaultConfiguration();
-    return $defaults+ [
+    return $defaults + [
       //this is the format the worth widget expects
       'liquidity' => [
         'curr_id' => $this->currency->id(),

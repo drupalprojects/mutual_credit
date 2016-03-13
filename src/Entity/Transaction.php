@@ -3,8 +3,6 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Entity\Transaction.
- *
- * moduleHandler will surely be injected
  */
 
 namespace Drupal\mcapi\Entity;
@@ -71,11 +69,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
   use EntityChangedTrait;
 
   private $moduleHandler;
+  private $eventDispatcher;
 
-  //this is called from ContentEntityStorage::mapFromStorageRecords() so without create function
   public function __construct(array $values, $entity_type, $bundle = FALSE, $translations = array()) {
     parent::__construct($values, $entity_type, $bundle, $translations);
-    $this->moduleHandler = \Drupal::moduleHandler();//only used in transaction prevalidate alter hook
+    //there seems to be no way to inject anything here
+    $this->moduleHandler = \Drupal::moduleHandler();
+    $this->eventDispatcher = \Drupal::service('event_dispatcher');
   }
 
   /**
@@ -124,17 +124,15 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    */
   public function assemble() {
     //prevent assembly of child transactions, which could cause infinite recursion
-    if ($this->parent->value) return;
+    if ($this->parent->value) {
+      return;
+    }
     //pass the transaction round to add children, but prevent the transaction from being modified.
     $clone = clone($this);
     $clone->children = [];
     //this hook prevents altering the original transaction but only allows adding of children
-    //would be good to have a hook that returned transactions to be added here as children
-    //instead this hook requires that children be added to a clone
-    \Drupal::service('event_dispatcher')->dispatch(
-      McapiEvents::CHILDREN,
-      new \Drupal\mcapi\Event\TransactionSaveEvents($clone)
-    );
+    $event = new \Drupal\mcapi\Event\TransactionAssembleEvent($clone);
+    $this->eventDispatcher->dispatch(McapiEvents::ASSEMBLE, $event);
     $this->children = $clone->children;
     //allow any module to alter the transaction, with children, before validation.
     \Drupal::moduleHandler()->alter('mcapi_transaction_assemble', $this);
@@ -156,7 +154,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
     $violationList = parent::validate();
     //only act on the parent just to be sure.
     if ($this->parent->value == 0) {
-      foreach ($this->children as $entity) {
+      //if the transaction hasn't been assembled, it won't have a children property
+      foreach ((array)$this->children as $entity) {
         foreach ($entity->validate() as $violation) {
           throw new \Exception ('Violation in child transaction, '.$violation->getPropertyPath() .': '.$violation->getMessage());
         }

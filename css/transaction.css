@@ -2,7 +2,7 @@ div.mode-certificate {
   padding: 1em 3em 1em 3em;
   text-align: center;
 }
-div.certificate span.quantity {
+div.certificate div.worth {
   font-size: 250%;
   line-height: 1.1em;
 }
@@ -77,4 +77,12 @@ div.transaction div.certificate div.field {
 }
 form.transaction-operation-form div#edit-actions{
   text-align: center;
+}
+
+div.certificate div.worth-zero{
+  background-image: url("present.gif");/* free image from http::clipartpanda.com */
+  background-size: 100%;
+  display: inline-block;
+  width: 100px;
+  height: 90px;
 }

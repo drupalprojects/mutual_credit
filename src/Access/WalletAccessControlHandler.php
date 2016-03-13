@@ -56,7 +56,6 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
    * {@inheritdoc}
    */
   protected function checkAccess(EntityInterface $entity, $op, AccountInterface $account) {
-
     if ($account->hasPermission('manage mcapi')) {
       //includes user 1
       return AccessResult::allowed()->cachePerPermissions();
@@ -101,7 +100,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
           }
         }
       }
-      return AccessResult::denied()->addCacheableDependency($entity);
+      return AccessResult::forbidden()->addCacheableDependency($entity);
     }
   }
 

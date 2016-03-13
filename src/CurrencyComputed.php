@@ -45,10 +45,9 @@ class CurrencyComputed extends TypedData {
     if ($this->currency !== NULL) {
       return $this->currency;
     }
-    $curr_id = $this->definition->getSetting('currency source');
-    $value = $this->getParent()->{$curr_id};
+    $source_prop = $this->definition->getSetting('currency source');
+    $value = $this->getParent()->{$source_prop};
     $this->currency = \Drupal\mcapi\Entity\Currency::load($value);
-
     return $this->currency;
   }
 

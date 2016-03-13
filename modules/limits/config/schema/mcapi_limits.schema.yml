@@ -12,22 +12,27 @@ mcapi.limits.*:
       type: mapping
       label: When to skip balance checks
       mapping:
-        auto: 
+        auto:
           type: boolean
           label: Automated transactions
-        mass: 
+        mass:
           type: boolean
           label: Mass transactions
-        user1: 
+        user1:
           type: boolean
           label: User has permission to 'Configure community accounting'
-        owner: 
+        owner:
           type: boolean
           label: User is currency owner
-        reservoir: 
-          type: boolean
-          label: Reservoir account
     display_relative:
       type: boolean
       label: Display perspective
-
+    prevent:
+      type: boolean
+      label: Prevent transaction
+    warning_mail:
+      type: mail
+      label: Mail notification
+    prevented_mail:
+      type: mail
+      label: Mail notification

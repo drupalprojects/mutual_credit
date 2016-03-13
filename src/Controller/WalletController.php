@@ -3,7 +3,8 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Controller\WalletController.
- * @todo this might be deprecated @see \Drupal\mcapi\Entity\WalletRouteProvider
+ * @deprecated
+ * @see \Drupal\mcapi\Entity\WalletRouteProvider
  */
 
 namespace Drupal\mcapi\Controller;
@@ -16,6 +17,12 @@ use Drupal\Core\Entity\EntityInterface;
  */
 class WalletController {
 
+  function __construct() {
+    $params = \Drupal::routeMatch()->getParameters()->all();
+    list($entity_type_id, $entity_id) = each($params);
+    $this->holder = \Drupal::entityTypeManager()->getStorage($entity_type_id)->load($entity_id);
+  }
+
   /**
    * router title callback
    *
@@ -23,21 +30,25 @@ class WalletController {
    *
    * @return string
    */
-  public function entityWalletsTitle(EntityInterface $entity) {
-    return $wallet->label();
+  public function entityWalletsTitle() {
+    return $this->holder->label();
   }
 
   /**
    * router callback
    * Show all an entities wallets in summary mode
+   * this is rather tricky because we don't know what arguments would be passed
+   * from the url, so we have to load them from scratch
    *
    * @param EntityInterface $entity
    *
    * @return array
    *   a renderable array
    */
-  function entityWallets(EntityInterface $entity) {
-    die('WalletController::entityWallets'); //yet to be developed or deleted
+  function entityWallets() {
+
+    $wallets = \Drupal\mcapi\Mcapi::walletsOf($this->holder, TRUE);
+    return \Drupal::entityTypeManager()->getViewBuilder('mcapi_wallet')->viewMultiple($wallets);
   }
 
 }

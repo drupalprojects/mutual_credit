@@ -23,9 +23,11 @@ mcapi.worth.element:
   css:
     component:
       css/worth-element.css: {}
-mcapi.gchart:
+mcapi.gcharts:
   header: true
   js:
-    #why is this at the bottom of the page?
-    http://www.google.com/jsapi: { type: external }
-    js/gchartstart.js: {}
+    https://www.gstatic.com/charts/loader.js: { type: external }
+    #this load core chart and gauge, which is used in mcapi_limits
+    #because loading can ony happen once per page
+    js/gcharts.js: {}
+    

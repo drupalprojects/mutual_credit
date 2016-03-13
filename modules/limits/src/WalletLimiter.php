@@ -41,8 +41,6 @@ class WalletLimiter {//couldn't be bothered to make an interface for this
 
   /**
    * prepare the $this->limits
-   *
-   * @return \Drupal\mcapi_limits\WalletLimiter
    */
   public function getLimits($refresh = TRUE) {
     if ($this->limits && !$refresh) {
@@ -54,17 +52,15 @@ class WalletLimiter {//couldn't be bothered to make an interface for this
     foreach ($needed_currencies as $curr_id => $currency) {
       $limits[$curr_id] = $this->defaults($currency);
     }
-    //get the per-wallet overridden values
-    foreach ($this->load() as $curr_id => $minmax) {
-      if (isset($minmax['min'])) {
-        $limits[$curr_id]['min'] = $minmax['min'];
-      }
-      if (isset($minmax['max'])) {
-        $limits[$curr_id]['max'] = $minmax['max'];
+    //overwrite defaults with any per-wallet overridden values
+    foreach ($this->overrides() as $curr_id => $rows) {
+      foreach ($rows as $limit => $vals) {
+        $limits[$curr_id][$limit] = $vals['value'];
       }
     }
+
     //then add in the currencies with no limits
-    foreach (array_diff_key($needed_currencies, $this->limits) as $curr_id => $currency) {
+    foreach (array_diff_key($needed_currencies, $limits) as $curr_id => $currency) {
       $limits[$curr_id] = ['min' => NULL, 'max' => NULL];
     }
     return $limits;
@@ -123,8 +119,6 @@ class WalletLimiter {//couldn't be bothered to make an interface for this
   }
 
   function __toString() {
-    drupal_set_message('use the theme system to visualise wallets');
-
     foreach ($this->limits as $curr_id => $limits) {
       $currency = Currency::load($curr_id);
       $row = [];
@@ -147,8 +141,6 @@ class WalletLimiter {//couldn't be bothered to make an interface for this
    *
    * @return array
    *   the min and max limits
-   *
-   * @deprecated
    */
   public function defaults($currency) {
     return \Drupal::service('plugin.manager.mcapi_limits')
@@ -157,37 +149,48 @@ class WalletLimiter {//couldn't be bothered to make an interface for this
   }
 
   /*
-   * return the values for all currencies in the wallet which
-   * the user can use, taking overrides into account
+   * return the overridden value of all overridable currencies available to this wallet
    *
    * @return array
    *
    * saved limit overrides, keyed by curr_id. Each override is an array with
    * min, max, editor, & date(unixtime)
    */
-  private function load() {
+  public function overrides() {
+    $overridable_curr_ids = $this->overridable();
+    if (empty($overridable_curr_ids)) {
+      return [];
+    }
+    $rows = $this->database->select('mcapi_wallets_limits', 'l')
+      ->fields('l', array('curr_id', 'max', 'value', 'editor', 'date'))
+      ->condition('wid', $this->wallet->id())
+      ->condition('curr_id', $overridable_curr_ids)
+      ->execute()
+      ->fetchAll();
     $result = [];
+    foreach ($rows as $limit) {
+      $key = $limit->max ? 'max' : 'min';
+      $result[$limit->curr_id][$key] = [
+        'value' => $limit->value,
+        'editor' => $limit->editor,
+        'date' => $limit->date
+      ];
+    }
+    return $result;
+  }
+
+  private function overridable() {
+    $overridable_curr_ids = [];
     foreach ($this->wallet->currenciesAvailable() as $currency) {
       $config = $currency->getThirdPartySettings('mcapi_limits');
       if (!empty($config['override'])) {
         $overridable_curr_ids[] = $currency->id();
       }
     }
-    if (empty($overridable_curr_ids))return [];
-    //if there is no override value saved, nothing will be returned
-    $limits = $this->database->select('mcapi_wallets_limits', 'l')
-      ->fields('l', array('curr_id', 'max', 'value', 'editor', 'date'))
-      ->condition('wid', $this->wallet->id())
-      ->condition('curr_id', $overridable_curr_ids)
-      ->execute();
-    while ($limit = $limits->fetch()) {
-      $key = $limit->max ? 'max' : 'min';
-      $result[$limit->curr_id] = [
-        $key => $limit->value,
-        'editor' => $limit->editor,
-        'date' => $limit->date
-      ];
-    }
-    return $result;
+    return $overridable_curr_ids;
+  }
+
+  static function create($wallet) {
+    return \Drupal::service('mcapi_limits.wallet_limiter')->setwallet($wallet);
   }
 }

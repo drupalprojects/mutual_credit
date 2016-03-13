@@ -105,11 +105,10 @@ class Fees extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $config = $this->configFactory()->getEditable('mcapi.fees');
-
     $config
       ->set('curr_id', $form_state->getValue('curr_id'))
       ->set('rate', $form_state->getValue('rate'))
-      ->set('types', $form_state->getValue('types'))
+      ->set('types', array_filter($form_state->getValue('types')))
       ->set('round_up', $form_state->getValue('round_up'))
       ->set('payer', $form_state->getValue('payers')['payer'])
       ->set('payee', $form_state->getValue('payers')['payee'])

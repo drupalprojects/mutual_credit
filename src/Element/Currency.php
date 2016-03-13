@@ -8,7 +8,6 @@
 namespace Drupal\mcapi\Element;
 
 use Drupal\mcapi\Mcapi;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
 use Drupal\Core\Render\Element\Checkboxes;
 
@@ -55,11 +54,11 @@ class Currency extends FormElement {
     elseif ($element['#options'] == 'all') {
       $element['#options'] = Mcapi::entityLabelList('mcapi_currency');
     }
-
     if (count($element['#options']) == 1) {
       $element['#type'] = 'hidden';
       $element['#value'] = key($element['#options']);
-      unset($element['#theme_wrappers']);
+      $element['#default_value'] = key($element['#options']);
+      unset($element['#theme_wrappers'], $element['#options']);
     }
     elseif ($element['#multiple']) {
       //have to do some of the checkbox processing manually coz we missed it
@@ -73,10 +72,4 @@ class Currency extends FormElement {
     return $element;
   }
 
-  public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
-    if ($input !== NULL) {
-      dsm('\Drupal\mcapi\Element\Currency::valueCallback'.$input);
-      return $input;
-    }
-  }
 }

@@ -7,4 +7,4 @@ round_up: true
 payer: true
 payee: true
 target: 0
-reason: 'Transaction charge'
+description: 'Transaction charge'

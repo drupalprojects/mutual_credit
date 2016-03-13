@@ -38,7 +38,8 @@ class Worthform extends FormElement {
       '#min' => 0,
       '#max' => NULL,
       '#allowed_curr_ids' => [],
-      '#oneofmany' => TRUE
+      '#oneofmany' => FALSE,
+      '#theme_wrappers' => ['form_element']
     ];
   }
 
@@ -65,10 +66,14 @@ class Worthform extends FormElement {
     //we might need to filter #default_value not in config mode
     if (count($element['#allowed_curr_ids']) == 1) {
       $currency = Currency::load(strtolower(reset($element['#allowed_curr_ids'])));//@todo remove strtolower
+
       $element['#default_value'] = (array)$element['#default_value'];
+
       $value = isset($element['#default_value']['value']) ? $element['#default_value']['value'] : 0;
 
-      if ($element['#config'] && !is_numeric($value)) {
+      $value = abs($value);//see #minus
+
+      if ($element['#config'] && (!is_numeric($value) || $value == 0)) {
         $value_parts = [];
       }
       else {
@@ -125,7 +130,7 @@ class Worthform extends FormElement {
         }
         $element[$i] += [
           '#default_value' => @$value_parts[$i],
-          '#theme_wrappers' => []//try removing this
+          '#theme_wrappers' => []
         ];
         //if a preset value isn't in the $options
         //then we ignore the options and use the numeric sub-widget
@@ -155,9 +160,9 @@ class Worthform extends FormElement {
           }
 
           if ($element['#config']) {
+            //placeholder's only work in config fields
             $element['#type'] = 'textfield';
-            //@todo markup
-            if (array_key_exists('#placeholder', $element)) {
+            if (isset($element['#placeholder'])) {
               $placeholder_val = @$element['#placeholder'];
               $p_parts = $currency->formattedParts(abs(intval($placeholder_val)));
               $element[$i]['#placeholder'] = $p_parts[$i];
@@ -187,14 +192,11 @@ class Worthform extends FormElement {
     $output = [];
     if ($input != FALSE && isset($input['curr_id'])) {
       if ($element['#config'] && $input[1] == '') {
-        return;
+        return [];
       }
       $val = Currency::load($input['curr_id'])->unformat($input);
-      if ($val == 0) {
-        //return [];
-      }
 
-      if ($element['#minus']) {
+      if ($element['#minus'] && $val > 0) {
         $val = -$val;
       }
       return [
@@ -229,19 +231,13 @@ class Worthform extends FormElement {
     }
     else {
       //check for allowed zero values.
-      $currency = Currency::load($val['curr_id']);
       //zero values are only accepted if the currency allows and if cardinality there is only one currency in the field
-      if ($val['value'] == '0') {
-        if (empty($currency->zero)) {
-          $form_state->setError($element, t('Zero value not allowed.'));
-        }
-      }
-      else {
+      if ($val['value']) {
         if ($val['value'] < 0 && !$element['#minus']) {
           //this should never happen
           $form_state->setError(
             $element['#value']['value'],
-            t('Negative amounts not allowed: !val', array('%val' => $currency->format($worth['value'])))
+            t('Negative amounts not allowed: !val', ['%val' => Currency::load($val['curr_id'])->format($worth['value'])])
           );
         }
       }

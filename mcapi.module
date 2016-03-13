@@ -330,24 +330,6 @@ function mcapi_theme($existing, $type, $theme, $path) {
 }
 
 /**
- * take a worth value, typically from config and return true if all the
- *  currencies in it are zero
- * @param array $worth
- *   a worth value expressed as an array of arrays with curr_id & value
- * @return boolean
- *   TRUE if all the items have a worth of zero
- */
-function empty_worth(array $worth) {
-  foreach ($worth as $item) {
-    if (isset($item['value'])) {
-      return FALSE;
-    }
-  }
-  return TRUE;
-}
-
-
-/**
  * Implements hook_help().
  */
 function mcapi_forms_help($route_name) {
@@ -450,7 +432,7 @@ function mcapi_query_mcapi_transaction_access_alter(Drupal\Core\Database\Query\A
       $plugin->entityViewsCondition($query, $or_group, \Drupal::currentUser()->id());
     }
     elseif ($table = 'mcapi_transactions_index') {
-      dsm('check whether per-transaction access contrtol is desirable on the index table');
+      drupal_set_message('@todo check whether per-transaction access control is desirable on the index table');
       $plugin->indexViewsCondition($query, $or_group, \Drupal::currentUser()->id());
     }
   }

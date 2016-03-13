@@ -3,7 +3,6 @@
 /**
  * @file
  *  Contains Drupal\mcapi_limits\Plugin\Limits\Calculated
- *
  */
 
 namespace Drupal\mcapi_limits\Plugin\Limits;
@@ -52,7 +51,7 @@ class Calculated extends McapiLimitsBase {
   }
 
   /**
-   * @see \Drupal\mcapi_limits\McapiLimitsBase::getLimits($wallet)
+   * {@inheritdoc}
    */
   public function getLimits(WalletInterface $wallet) {
     $stats = $wallet->getStats($this->currency->id());
@@ -76,9 +75,7 @@ class Calculated extends McapiLimitsBase {
   }
 
   /**
-   *
-   * @param unknown $element
-   * @param unknown $form_state
+   * element validation callback
    */
   public static function validate_formula($element, $form_state) {
     if (!strlen($element['#value'])) return;
@@ -95,9 +92,7 @@ class Calculated extends McapiLimitsBase {
   }
 
   /**
-   *
-   * @param unknown $string
-   * @param unknown $values
+   * helper
    */
   private static function parse($string, $values) {
     $tokens = ['@in', '@out', '@num', '@ptn'];
@@ -112,10 +107,8 @@ class Calculated extends McapiLimitsBase {
     return eval('return '. $pattern.';');
   }
 
-
   /**
-   * (non-PHPdoc)
-   * @see \Drupal\mcapi_limits\Plugin\Limits\McapiLimitsBase::defaultConfiguration()
+   * {@inheritdoc}
    */
   public function defaultConfiguration() {
     $defaults = parent::defaultConfiguration();

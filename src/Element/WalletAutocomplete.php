@@ -30,16 +30,17 @@ class WalletAutocomplete extends EntityAutocomplete {
     $info['#restrict'] = '';
     $info['#exclude'] = [];
     $info['#hidden'] = FALSE;
+    //$info['#pre_render'][] = [get_class($this), 'preRender'];
     return $info;
   }
 
-  public static function processEntityAutocomplete(array &$element, FormStateInterface $form_state, array &$complete_form) {
+  public static function preRender($element) {
     if (!empty($element['#value'])) {
+      drupal_set_message($element['#value']);
+      return $element;
+
       $element['#type'] = 'item';
       $element['#markup'] = \Drupal\mcapi\Entity\Wallet::load($element['#value'])->label();
-    }
-    else {
-      parent::processEntityAutocomplete($element, $form_state, $complete_form);
     }
     return $element;
   }

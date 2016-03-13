@@ -39,7 +39,6 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
       '#title' => $this->t('Hide the wallet field if there is only one.'),
       '#type' => 'checkbox',
       '#default_value' => $this->getSetting('hide_one_wallet'),
-      '#weight' => $w++,
     ];
     return $element;
   }

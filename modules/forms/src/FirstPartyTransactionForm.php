@@ -50,7 +50,6 @@ class FirstPartyTransactionForm extends TransactionForm {
     unset($form['creator']);
     $form['payer']['widget'][0]['target_id']['#hidden'] = $this->configEntity->hide_one_wallet;
     $form['payee']['widget'][0]['target_id']['#hidden'] = $this->configEntity->hide_one_wallet;
-
     $form['#twig_template'] = $this->configEntity->experience['twig'];
     return $form;
   }

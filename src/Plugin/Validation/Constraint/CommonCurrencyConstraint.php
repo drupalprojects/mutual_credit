@@ -50,7 +50,7 @@ class CommonCurrencyConstraint extends CompositeConstraintBase {
     //don't have a separate class for the validator, use this one.
     return get_class($this);
   }
-  
+
   /**
    * {@inheritdoc}
    */

@@ -8,12 +8,10 @@
 
 namespace Drupal\mcapi_forms\Form;
 
-use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Template\Attribute;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class FirstPartyFormDesigner extends EntityForm {
@@ -33,13 +31,15 @@ class FirstPartyFormDesigner extends EntityForm {
     );
   }
 
-
+  /**
+   * {@inheritdoc}
+   */
   function getFormId() {
     return 'first_party_editform';
   }
 
   /**
-   * Overrides Drupal\Core\Entity\EntityForm::form().
+   * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
 
@@ -257,8 +257,8 @@ class FirstPartyFormDesigner extends EntityForm {
     }
   }
 
-  /*
-   * element validation function
+  /**
+   * {@inheritdoc}
    */
   static function validatePath(&$element, $form_state) {
     if ($form_state->getValue('path')[0] !== '/') {

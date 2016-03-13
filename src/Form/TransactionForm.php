@@ -55,6 +55,7 @@ class TransactionForm extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
+    
     $form = parent::form($form, $form_state);
     //try to prevent the same wallet being in both payer and payee fields.
     //we can only do this is one field has only one option

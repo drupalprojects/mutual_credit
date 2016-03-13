@@ -29,15 +29,29 @@ class Explicit extends McapiLimitsBase {
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $args = func_get_args();
     $conf = $this->configuration['minmax'];
-
-    $subform['minmax'] =  [
-      '#type' => 'minmax',
-      '#default_value' => [
-        'min' => $conf['min'] ? $conf['min']['value'] : '',
-        'max' => $conf['max'] ? $conf['max']['value'] : ''
+     $subform = [
+      'min' => [
+        '#title' => $this->t('Min'),
+        '#description' =>  t('Leave blank for no minimum limit'),
+        '#type' => 'worth_form',
+        '#weight' => 0,
+        '#default_value' => $conf['min'] ? $conf['min']['value'] : '',
+        '#allowed_curr_ids' => [$this->currency->id],
+        '#config' => TRUE,
+        '#minus' => TRUE
       ],
-      '#curr_id' => $this->currency->id
+      'max' => [
+        '#title' => $this->t('Max'),
+        '#description' =>  t('Leave blank for no maximum limit'),
+        '#type' => 'worth_form',
+        '#weight' => 1,
+        '#default_value' => $conf['max'] ? $conf['max']['value'] : '',
+        '#allowed_curr_ids' => [$this->currency->id],
+        '#config' => TRUE
+      ]
     ];
+
+    dsm($subform);
 
     $subform += parent::buildConfigurationForm($form, $form_state);
     return $subform;

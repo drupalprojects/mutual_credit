@@ -13,9 +13,8 @@ services:
     arguments: [@entity_type.manager, @config.factory]
     tags:
      - { name: event_subscriber }
-     
-  #transaction creation hooks
-  mcapi.transaction.create.subscriber:
+
+  mcapi.transaction.subscriber:
     class: Drupal\mcapi\TransactionSubscriber
     tags:
       - { name: event_subscriber }

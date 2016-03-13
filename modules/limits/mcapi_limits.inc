@@ -1,6 +1,7 @@
 <?php
 
 use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -57,9 +58,11 @@ function template_preprocess_mcapi_limits_balanced(&$vars) {
 
   $limiter = \Drupal::service('mcapi_limits.wallet_limiter')
     ->setwallet($wallet);
-  $vars['balance'] = $currency->format($summary['balance'], Currency::DISPLAY_PLAIN);
-  $vars['min'] = $currency->format($limits->min($curr_id), Currency::DISPLAY_PLAIN);
-  $vars['max'] = $currency->format($limits->max($curr_id), Currency::DISPLAY_PLAIN);
+  $vars['balance'] = $currency->format($stats['balance'], Currency::DISPLAY_PLAIN);
+  $vars['min'] = $currency->format($limiter->min($curr_id), Currency::DISPLAY_PLAIN);
+  $vars['max'] = $currency->format($limiter->max($curr_id), Currency::DISPLAY_PLAIN);
+  $vars['minformatted'] = strip_tags($currency->format($limiter->min($curr_id), Currency::DISPLAY_NORMAL));
+  $vars['maxformatted'] = strip_tags($currency->format($limiter->max($curr_id), Currency::DISPLAY_NORMAL));
 }
 
 
@@ -194,9 +197,6 @@ function limits_settings_subform($form, FormStateInterface $form_state) {
  *   a renderable array
  */
 function mcapi_view_limits(WalletInterface $wallet, $curr_ids = []) {
-  //@todo how do we attach css in twig or in preprocessing?
-  $renderable['#attached']['library'] = ['mcapi/mcapi.wallets', 'mcapi/mcapi.gchart'];
-
   $currencies = $wallet->currenciesAvailable();
   if ($curr_ids) {
     $currencies = array_intersect_key($currencies, array_flip($curr_ids));

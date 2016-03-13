@@ -34,13 +34,12 @@ class WorthWidget extends WidgetBase {
    * @see \Drupal\Core\Field\WidgetInterface
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
-
     //because this is a multiple widget, we ignore the delta value and put all items
     $element += array(
       '#title' => $this->fieldDefinition->label(),
       '#title_display' => 'attribute',
       '#type' => 'worths_form',
-      '#default_value' => $items->getValue()
+      '#default_value' => $items->getValue() ? : NULL
     );
 
     unset($element['#description']);
@@ -52,7 +51,6 @@ class WorthWidget extends WidgetBase {
    * @todo test this errorElement
    */
   public function errorElement(array $element, ConstraintViolationInterface $violation, array $form, FormStateInterface $form_state) {
-    //returns the whole element - all currencies will be shown in red
-    return $element;
+    return $element[$violation->getpropertyPath()];
   }
 }

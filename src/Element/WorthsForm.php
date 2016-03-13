@@ -85,12 +85,13 @@ class Worthsform extends FormElement {
     //we might need to filter #default_value not in config mode
     //by now the #default_value MUST contain some $items.
     foreach ($element['#default_value'] as $delta => $item) {
-      $element[] = [
+      $element[$delta] = [
         '#type' => 'worth_form',
         '#default_value' => $item['value'],
         '#allowed_curr_ids' => [$item['curr_id']],
         '#config' => $element['#config'],
-        '#oneofmany' => count($element['#default_value']) > 1
+        '#oneofmany' => count($element['#default_value']) > 1,
+        '#theme_wrappers' => []
       ];
     }
     return $element;

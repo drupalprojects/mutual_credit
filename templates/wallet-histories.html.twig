@@ -12,7 +12,7 @@
  * - functionname
  * - id #the unique id of the chart
  * - vaxislabels # array of labels keyed by value
- * e.g. 
+ * e.g.
  */
     [
       functionname = drawHistorycc
@@ -42,10 +42,10 @@
       ]
     ]
 #}
-{{ attach_library('mcapi/mcapi.gchart') }}
-<script>google.load('visualization', '1.0', {'packages':['corechart']});
+{{ attach_library('mcapi/mcapi.gcharts') }}
+<script>
 {% for chart in currencies %}
-  google.setOnLoadCallback({{ chart.functionname }});
+  google.charts.setOnLoadCallback({{ chart.functionname}});
   function {{ chart.functionname }}() {
     var data = new google.visualization.DataTable();
     {% for name, column in chart.columns %}
@@ -66,9 +66,8 @@ var options = {
   }
 {% endfor %}
 </script>
-        
+
 {% for chart in currencies %}
   <div id="{{ chart.id }}" class = "history-chart" style="width:{{ width }}px; height:{{ height }}px;"></div>
 {% endfor %}
 
-    

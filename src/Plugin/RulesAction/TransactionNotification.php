@@ -19,7 +19,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Pays or charges an entity a fixed amount IF the specified currency is available.
  *
  * @Action(
- *   id = "one_off_payment",
+ *   id = "transaction_notification",
  *   label = @Translation("Transaction Notification"),
  *   context = {
  *     "recipient" = @ContextDefinition("string",
@@ -49,8 +49,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *     "ccs" = @ContextDefinition("string",
  *       label = @Translation("CCs"),
  *       description = @Translation("Tokens should be available")
- *     )
- *     "transaction" = @ContextDefinition("string",
+ *     ),
+ *     "transaction" = @ContextDefinition("entity",
  *       label = @Translation("Transaction"),
  *       description = @Translation("The transaction triggering the notification")
  *     ),
@@ -59,15 +59,50 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class TransactionNotification extends RulesActionBase {//implements ContainerFactoryPluginInterface {
 
-  function __construct(array $configuration, $plugin_id, $plugin_definition, MailManagerInterface $mailManager) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->mailManager = $mailManager;
-  }
+  /**
+   * The logger channel the action will write log messages to.
+   *
+   * @var \Psr\Log\LoggerInterface
+   */
+  protected $logger;
   
-  function create($container) {
-    $vars = parent::create($container);
-    $vars[] = $container->get('mail.manager');
-    return $vars;
+  /**
+   * @var \Drupal\Core\Mail\MailManagerInterface
+   */
+  protected $mailManager;
+
+
+  /**
+   * Constructs a SendEmail object.
+   *
+   * @param array $configuration
+   *   A configuration array containing information about the plugin instance.
+   * @param string $plugin_id
+   *   The plugin ID for the plugin instance.
+   * @param mixed $plugin_definition
+   *   The plugin implementation definition.
+   * @param \Psr\Log\LoggerInterface $logger
+   *   The alias storage service.
+   * @param \Drupal\Core\Mail\MailManagerInterface $mail_manager
+   *   The mail manager service.
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, LoggerInterface $logger, MailManagerInterface $mail_manager) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->logger = $logger;
+    $this->mailManager = $mail_manager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('logger.factory')->get('mcapi'),
+      $container->get('plugin.manager.mail')
+    );
   }
   
   /**
@@ -76,10 +111,13 @@ class TransactionNotification extends RulesActionBase {//implements ContainerFac
    * @param AccountInterface $account
    * @param type $return_as_object
    * 
-   * @todo I'm not sure how to determine access to an action
    */
-  function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
-    
+  public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
+    // Just allow access per default for now.
+    if ($return_as_object) {
+      return AccessResult::allowed();
+    }
+    return TRUE;
   }
   
   protected function doExecute($recipient, $subject, $message, $reply = NULL, LanguageInterface $language = NULL, $ccs, $transaction) {
@@ -88,12 +126,12 @@ class TransactionNotification extends RulesActionBase {//implements ContainerFac
     $params = [
       'subject' => $subject,
       'message' => $message,
+      'ccs' => $ccs
     ];
-    // Set a unique key for this mail.
-    $key = 'rules_action_mail_' . $this->getPluginId();
 
     $recipients = implode(', ', $to);
-    $message = $this->mailManager->mail('rules', $key, $recipients, $langcode, $params, $reply);
+    //@todo implement mcapi_rules to do token replacement and CCs on the mail
+    $message = $this->mailManager->mail('mcapi', 'rules', $recipients, $langcode, $params, $reply);
     if ($message['result']) {
       $this->logger->notice('Successfully sent email to %recipient', ['%recipient' => $recipients]);
     }

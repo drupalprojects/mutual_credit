@@ -6,79 +6,108 @@
  */
 function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
 
-  if ($type != 'xaction' || !array_key_exists($type, $data) || !is_object($data[$type])) {
-    return [];
+  if (!array_key_exists($type, $data) || !is_object($data[$type])) {
+    return;
   }
-  $replacements = [];
-  $transaction = $data[$type];
 
-  foreach ($tokens as $name => $original) {
-    switch ($name) {
-      case 'state':
-        $replacements[$original] = $transaction->state->entity->label();
-        break;
-      case 'type':
-        $replacements[$original] = $transaction->type->entity->label();
-        break;
-      case 'payer':
-        $replacements[$original] = $transaction->payer->entity->getHolder()->link();
-        break;
-      case 'payee':
-        $replacements[$original] = $transaction->payee->entity->getHolder()->link();
-        break;
-      case 'creator':
-        $replacements[$original] = $transaction->creator->entity->link();
-        break;
-      case 'description':
-        $replacements[$original] = $transaction->description->getString();
-        break;
-      case 'created':
-        $replacements[$original] = format_date($transaction->created->value, 'medium');
-        break;
-      case 'url':
-        $replacements[$original] = $transaction->url('canonical');
-        break;
-      //the field module did this in d7 but can't find where to debug in d8
-      case 'worth':
-        $replacements[$original] = (string)$transaction->worth;
+  $replacements = [];
+  if ($type == 'xaction') {
+    $transaction = $data[$type];
+    foreach ($tokens as $name => $original) {
+      switch ($name) {
+        case 'state':
+          $replacements[$original] = $transaction->state->entity->label();
+          break;
+        case 'type':
+          $replacements[$original] = $transaction->type->entity->label();
+          break;
+        case 'payer':
+          $replacements[$original] = $transaction->payer->entity->getHolder()->link();
+          break;
+        case 'payee':
+          $replacements[$original] = $transaction->payee->entity->getHolder()->link();
+          break;
+        case 'creator':
+          $replacements[$original] = $transaction->creator->entity->link();
+          break;
+        case 'description':
+          $replacements[$original] = $transaction->description->getString();
+          break;
+        case 'created':
+          $replacements[$original] = format_date($transaction->created->value, 'medium');
+          break;
+        case 'url':
+          $replacements[$original] = $transaction->url('canonical');
+          break;
+        //the field module did this in d7 but can't find where to debug in d8
+        case 'worth':
+          $replacements[$original] = (string)$transaction->worth;
+      }
+    }
+
+    //handle any entity references - tokens within tokens
+    //@todo test this
+    $token_service = \Drupal::token();
+    if ($payer_tokens = $token_service->findWithPrefix($tokens, 'payer')) {
+      $replacements += $token_service->generate(
+        'user',
+        $payer_tokens,
+        ['user' => $transaction->payer->target_id],
+        $options
+      );
+    }
+    if ($payee_tokens = $token_service->findWithPrefix($tokens, 'payee')) {
+      $replacements += $token_service->generate(
+        'user',
+        $payee_tokens,
+        ['user' => $transaction->payee->target_ids],
+        $options
+      );
+    }
+    if ($creator_tokens = $token_service->findWithPrefix($tokens, 'creator')) {
+      $replacements += $token_service->generate(
+        'user',
+        $creator_tokens,
+        ['user' => $transaction->creator->target_id],
+        $options
+      );
+    }
+    if ($created_tokens = $token_service->findWithPrefix($tokens, 'created')) {
+      $replacements += $token_service->generate(
+        'created',
+        $created_tokens,
+        ['created' => $transaction->created->value],
+        $options
+      );
+    }
+  }
+  if ($type == 'wallet') {
+    $wallet = $data[$type];
+    foreach ($tokens as $name => $original) {
+      switch ($name) {
+        case 'owner':
+          $replacements[$original] = $wallet->getOwner()->label();
+          break;
+        case 'owner-link':
+          $replacements[$original] = $wallet->getOwner()->link(NULL, NULL, ['absolute' => TRUE]);
+          break;
+        case 'holder':
+          $replacements[$original] = $wallet->getHolder()->label();
+          break;
+        case 'holder-link':
+          $replacements[$original] = $wallet->getHolder()->link(NULL, NULL, ['absolute' => TRUE]);
+          break;
+        case 'name':
+          $replacements[$original] = $wallet->label();
+          break;
+        case 'link':
+          $replacements[$original] = $wallet->link(NULL, NULL, ['absolute' => TRUE]);
+          break;
+
+      }
     }
   }
 
-  //handle any entity references - tokens within tokens
-  //@todo test this
-  $token_service = \Drupal::token();
-  if ($payer_tokens = $token_service->findWithPrefix($tokens, 'payer')) {
-    $replacements += $token_service->generate(
-      'user',
-      $payer_tokens,
-      ['user' => $transaction->payer->target_id],
-      $options
-    );
-  }
-  if ($payee_tokens = $token_service->findWithPrefix($tokens, 'payee')) {
-    $replacements += $token_service->generate(
-      'user',
-      $payee_tokens,
-      ['user' => $transaction->payee->target_ids],
-      $options
-    );
-  }
-  if ($creator_tokens = $token_service->findWithPrefix($tokens, 'creator')) {
-    $replacements += $token_service->generate(
-      'user',
-      $creator_tokens,
-      ['user' => $transaction->creator->target_id],
-      $options
-    );
-  }
-  if ($created_tokens = $token_service->findWithPrefix($tokens, 'created')) {
-    $replacements += $token_service->generate(
-      'created',
-      $created_tokens,
-      ['created' => $transaction->created->value],
-      $options
-    );
-  }
   return $replacements;
 }
 
@@ -94,6 +123,11 @@ function mcapi_token_info() {
         'name' => t('Transactions'),
         'description' => t('Tokens related to a community accounting transactions.'),
         'needs-data' => 'mcapi_transaction',
+      ],
+      'wallet' => [
+        'name' => t('Wallet'),
+        'description'  => $this->t('Wallet'),
+        'needs_data' => 'mcapi_wallet'
       ]
     ]
   ];
@@ -112,6 +146,27 @@ function mcapi_token_info() {
 
   $info['tokens']['xaction']['url'] = [
     'name' => t('Absolute link'),
+  ];
+
+  $info['tokens']['wallet'] = [
+    'name' => [
+      'name' => t('Wallet name')
+    ],
+    'link' => [
+      'name' => t('Wallet link')
+    ],
+    'owner' => [
+      'name' => t('Owner label')
+    ],
+    'owner-link' => [
+      'name' => t('Owner link')
+    ],
+    'holder-name' => [
+      'name' => t('Holder label')
+    ],
+    'holder-link' => [
+      'name' => t('Holder link')
+    ]
   ];
   return $info;
 }

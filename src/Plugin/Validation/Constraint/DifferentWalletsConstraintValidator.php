@@ -17,7 +17,6 @@ class DifferentWalletsConstraintValidator extends ConstraintValidator {
    */
   public function validate($transaction, Constraint $constraint) {
     //check the payer and payee aren't the same
-
     if ($transaction->payer->target_id === $transaction->payee->target_id) {
       \Drupal::logger('mcapi')->debug($transaction->payer->target_id ."!=". $transaction->payee->target_id);
       $this->context

@@ -24,9 +24,9 @@ class Contact extends ContentEntityForm {
   protected $mailHandler;
 
   protected $dateFormatter;
-  
+
   protected $languageManager;
-  
+
   protected $mailManager;
 
   public function __construct($flood, $logger, $mail_handler, $date_formatter, $language_manager, $mail_manager) {
@@ -51,12 +51,12 @@ class Contact extends ContentEntityForm {
       $container->get('plugin.manager.mail')
     );
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-    
+
     $user = $this->currentUser();
 
     if (count($this->languageManager->getLanguages()) > 1) {
@@ -120,9 +120,9 @@ class Contact extends ContentEntityForm {
       '#access' => $user->isAuthenticated(),
       '#weight' => 8
     );
-    
+
     $form['#attributes']['class'][] = 'contact-form';
-    
+
     $form['actions']['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Send'),
@@ -130,8 +130,8 @@ class Contact extends ContentEntityForm {
     ];
     return $form;
   }
- 
-  
+
+
   /**
    * {@inheritdoc}
    */
@@ -150,8 +150,8 @@ class Contact extends ContentEntityForm {
       }
     }
   }
-  
-  
+
+
   /**
    * {@inheritdoc}
    */
@@ -165,7 +165,7 @@ class Contact extends ContentEntityForm {
     // the contact form; either to the contacted user account or the front page.
     $form_state->setRedirectUrl($this->entity->urlInfo());
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -186,10 +186,10 @@ class Contact extends ContentEntityForm {
 
     // Send email to the recipient(s).
     $this->mailManager->mail(
-      'mcapi_exchange', 
-      'contact', 
+      'mcapi_exchange',
+      'contact',
       $this->entity->mail->value,
-      $this->languageManager->getDefaultLanguage()->getId(), 
+      $this->languageManager->getDefaultLanguage()->getId(),
       [
         'message' => $values['message'],
         'sender' => $sender_cloned,

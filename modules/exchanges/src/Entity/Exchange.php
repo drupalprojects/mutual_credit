@@ -328,9 +328,9 @@ class Exchange extends ContentEntityBase implements EntityOwnerInterface, Exchan
    */
   public function memberIds($entity_type) {
     return \Drupal::entityQuery('og_membership')
-      ->condition('member_entity_type', $entity_type)
-      ->condition('group_entity_type', 'mcapi_exchange')
-      ->condition('group_entity_id', $this->id())
+      ->condition('field_name', EXCHANGE_OG_FIELD)
+      ->condition('entity_type', 'mcapi_exchange')
+      ->condition('entity_id', $this->id())
       ->execute();
   }
 

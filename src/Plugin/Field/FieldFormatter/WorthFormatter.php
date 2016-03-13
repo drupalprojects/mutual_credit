@@ -64,17 +64,25 @@ class WorthFormatter extends FormatterBase {
    * {@inheritdoc}
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
-    $elements = [
-      0 => [
-        '#type' => 'worths_view',
-        '#format' => $this->getSetting('format'),
-        '#worths' => $items->getValue()
-      ]
-    ];
+    if ($items->count() == 1 && $items->first()->value == 0) {
+      $elements = [
+        '#markup' => \Drupal::config('mcapi.settings')->get('zero_snippet')
+      ];
+    }
+    else {
+      $elements = [
+        0 => [
+          '#type' => 'worths_view',
+          '#format' => $this->getSetting('format'),
+          '#worths' => $items->getValue()
+        ]
+      ];
+    }
     return $elements;
   }
 
   private function getOptions() {
     return Currency::formats();
   }
+
 }

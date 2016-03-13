@@ -8,7 +8,7 @@
 namespace Drupal\mcapi;
 
 /**
- * Contains all events for creating transactions and transitioning them between workflow states
+ * Contains all events for transitioning transactions between workflow states
  */
 final class McapiEvents {
 
@@ -27,11 +27,11 @@ final class McapiEvents {
   /**
    * This hook is good for taxes
    */
-  const CHILDREN = 'mcapi.transaction.children';
+  const ASSEMBLE = 'mcapi_transaction.assemble';
 
   /**
    * This hook is good for triggering notifications
    */
-  const ACTION = 'mcapi.transaction.action';
+  const ACTION = 'mcapi_transaction.action';
 
 }

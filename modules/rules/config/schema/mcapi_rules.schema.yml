@@ -29,5 +29,5 @@ mcapi.fees:
       label: Target wallet
     description:
       type: text
-      label: Reason
+      label: Transaction description 
 

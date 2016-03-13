@@ -334,10 +334,12 @@ function mcapi_exchanges_query_whichWallets_alter(\Drupal\Core\Database\Driver\m
 /**
  * Implements hook_ENTITY_TYPE_insert for mcapi_wallet().
  * Ensure the wallet is in the same Exchange as its holder
- * @todo update this when og field is loading into the entity
  * @note this assumes that every holder is in an exchange
+ * @todo update this when og field is loading into the entity
+ * @deprecated I think. Wallets no longer need the og reference field
  */
 function mcapi_exchanges_mcapi_wallet_presave($wallet) {
+  return;
   $holder = $wallet->getHolder();
 
   if ($holder->getEntityTypeId() == 'mcapi_exchange') {

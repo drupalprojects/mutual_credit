@@ -15,32 +15,27 @@
  */
 #}
 {% set dangerzone = 0.25 %}{% set range = max - min %}{% set zonesize =  range * dangerzone /2 %}{% set minsafe = min + zonesize %}{% set maxsafe = max - zonesize %}
+{{ attach_library('mcapi/mcapi.gcharts') }}
 <script>
-google.load('visualization', '1', {'packages':['gauge']});
-google.setOnLoadCallback({{ functionname }});
+google.charts.setOnLoadCallback({{ functionname }});
 function {{ functionname }}() {
   var data = new google.visualization.arrayToDataTable([
     ['Label', 'Value'],
-    ['{{ currency.label }}', '{{ balance }}']
+    ['{{ currency.label }}', {{ balance }}]
   ]);
   var options = {
+    width: 150, height: 150,
+    redColor: '{{ currency.color }}',
+    redFrom: {{ maxsafe }}, redTo: {{ max }},
+    yellowColor: '#ffffff',
+    yellowFrom: {{ minsafe }}, yellowTo: {{ maxsafe }},
+    greenColor: '{{ currency.color }}',
+    greenFrom: {{ min }}, greenTo: {{ minsafe }},
     min: {{ min }},
     max: {{ max }},
-    greenColor: '{{ currency.color }}', 
-    greenFrom: {{ min }}, 
-    greenTo: {{ minsafe }},
-    yellowColor: '#ffffff', 
-    yellowFrom: {{ minsafe }}, 
-    yellowTo: {{ maxsafe }},
-    redColor: '{{ currency.color }}', 
-    redFrom: {{ maxsafe }}, 
-    redTo: {{ max }},
-    width: 150,
-    height: 150
   }
   new google.visualization.Gauge(document.getElementById('{{ id }}')).draw(data, options);
 }
 </script>
-@todo this gcharts gauge javascript doesn't show
-<span id="{{ id }}" style="width:150px; height:150px;"></span>
+<div id="{{ id }}" style="width:150px; height:150px;"></div>
 <div class = "limits">Min: {{ minformatted }} | Max: {{ maxformatted }}</div>

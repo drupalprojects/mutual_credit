@@ -3,46 +3,43 @@
 /**
  * @file
  * Contains \Drupal\mcapi\TransactionSubscriber.
+ * @note not used in this module. just here for demonstration purposes
  */
 
 namespace Drupal\mcapi;
 
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Drupal\mcapi\Event\TransactionSaveEvents;
-use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher ;
+use Drupal\mcapi\Event\TransactionAssembleEvent;
+use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
  *
  */
 class TransactionSubscriber implements EventSubscriberInterface {
 
-  //we could inject into __construct() using services.yml
-
   /**
    * {@inheritdoc}
    */
   public static function getSubscribedEvents() {
     return [
-      McapiEvents::CHILDREN => ['onmakeChildren'],
+      McapiEvents::ASSEMBLE => ['onmakeChildren'],
       McapiEvents::ACTION => ['onTransactionAction']
     ];
   }
 
   /**
    *
-   * This is an example for now, but it mightMcapiEvents work with rules later on.
-   * use $events->addChild(Transaction)
+   * This is an example for now, but it mightMcapi work with rules later on.
+   * use $events->addChild($transaction)
    *
-   * @param TransactionSaveEvents $events
+   * @param TransactionAssembleEvent $event
    *   no ->arguments() are passed. getSubject() gives the transaction
-   * @param string $eventName
+   * @param string $eventName which is always mcapi_transaction.assemble
    * @param ContainerAwareEventDispatcher $container
    */
-  function onMakeChildren(TransactionSaveEvents $events, $eventName, ContainerAwareEventDispatcher $container) {
-    //could $eventName be anything but 'mcapi.transaction.children' a.k.a. McapiEvents::CHILDREN
-    if (\Drupal::moduleHandler()->moduleExists('devel')) {
-      dsm('onmakechildren: '.$eventName);
-    }
+  function onMakeChildren(TransactionAssembleEvent $event, $eventName, ContainerAwareEventDispatcher $container) {
+    drupal_set_message('onmakechildren: '.$eventName);//testing
   }
 
   /**
@@ -55,7 +52,7 @@ class TransactionSubscriber implements EventSubscriberInterface {
    * @param ContainerAwareEventDispatcher $container
    */
   function onTransactionAction(TransactionSaveEvents $events, $eventName, ContainerAwareEventDispatcher $container) {
-    $events->addMessage('onTransactionAction: '.$eventName);
+    $events->setMessage('onTransactionAction: '.$eventName);
   }
 
 }

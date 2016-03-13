@@ -4,7 +4,7 @@ fields:
   description: true
   participants: true
 worths_delimiter: ' | '
-zero_snippet: '<img src = "present.png" width = "31" />'
+zero_snippet: '<span class="worth-zero" />'
 counted:
   done: true
   undone: false

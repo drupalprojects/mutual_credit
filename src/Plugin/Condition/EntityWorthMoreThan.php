@@ -89,16 +89,16 @@ class EntityWorthMoreThan extends \Drupal\rules\Core\RulesConditionBase {
     }
     return TRUE;
   }
-  
-  
+
+
   /**
    * {@inheritdoc}
    * @todo
    */
   public function negate($negate = TRUE) {
-    
+
   }
-  
+
   /**
    * Determines whether condition result will be negated.
    *
@@ -106,10 +106,10 @@ class EntityWorthMoreThan extends \Drupal\rules\Core\RulesConditionBase {
    *   Whether the condition result will be negated.
    */
   public function isNegated(){}
-    
-  public function refineContextDefinitions(){}
 
-  
+  public function refineContextDefinitions(array $selected_data){}
+
+
   /**
    * Sets the value for a provided context.
    *
@@ -157,8 +157,8 @@ class EntityWorthMoreThan extends \Drupal\rules\Core\RulesConditionBase {
    *   The array of provided context definitions, keyed by context name.
    */
   public function getProvidedContextDefinitions(){}
-  
-  
+
+
   /**
    * Check configuration access.
    *
