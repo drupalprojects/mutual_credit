@@ -217,7 +217,6 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
         }
       }
     }
-
     $this->setConfiguration($config);
   }
 

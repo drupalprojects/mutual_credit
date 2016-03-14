@@ -67,12 +67,7 @@ class Worthform extends FormElement {
     if (count($element['#allowed_curr_ids']) == 1) {
       $currency = Currency::load(strtolower(reset($element['#allowed_curr_ids'])));//@todo remove strtolower
 
-      $element['#default_value'] = (array)$element['#default_value'];
-
-      $value = isset($element['#default_value']['value']) ? $element['#default_value']['value'] : 0;
-
-      $value = abs($value);//see #minus
-
+      $value = abs($element['#default_value']);//see #minus
       if ($element['#config'] && (!is_numeric($value) || $value == 0)) {
         $value_parts = [];
       }

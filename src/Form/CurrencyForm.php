@@ -162,7 +162,7 @@ class CurrencyForm extends EntityForm {
     $help[] = $this->t('E.g. for Hours, Minutes put Hr00:60/4mins , for dollars and cents put $0.00; for loaves put 0 loaves.');
     $help[] = $this->t('The first number is always a string of zeros showing the number of characters (powers of ten) the widget will allow.');
     $help[] = $this->t('The optional /n at the end will render the final number widget as a dropdown field showing intervals, in the example, of 15 mins.');
-    $help[] = $this->t('Special effects can be accomplised with css.');
+    $help[] = $this->t('Special effects can be accomplised with HTML & css.');
     $form['display']['format'] = [
       '#title' => $this->t('Format'),
       '#description' => implode(' ', $help),

@@ -28,14 +28,13 @@ class Explicit extends McapiLimitsBase {
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $args = func_get_args();
-    $conf = $this->configuration['minmax'];
-     $subform = [
+    $subform = [
       'min' => [
         '#title' => $this->t('Min'),
         '#description' =>  t('Leave blank for no minimum limit'),
         '#type' => 'worth_form',
         '#weight' => 0,
-        '#default_value' => $conf['min'] ? $conf['min']['value'] : '',
+        '#default_value' => $this->configuration['min'] ? $this->configuration['min']['value'] : '',
         '#allowed_curr_ids' => [$this->currency->id],
         '#config' => TRUE,
         '#minus' => TRUE
@@ -45,13 +44,11 @@ class Explicit extends McapiLimitsBase {
         '#description' =>  t('Leave blank for no maximum limit'),
         '#type' => 'worth_form',
         '#weight' => 1,
-        '#default_value' => $conf['max'] ? $conf['max']['value'] : '',
+        '#default_value' => $this->configuration['max'] ? $this->configuration['max']['value'] : '',
         '#allowed_curr_ids' => [$this->currency->id],
         '#config' => TRUE
       ]
     ];
-
-    dsm($subform);
 
     $subform += parent::buildConfigurationForm($form, $form_state);
     return $subform;
@@ -63,11 +60,9 @@ class Explicit extends McapiLimitsBase {
   public function getLimits(WalletInterface $wallet) {
     $curr_id = $this->currency->id();
     //the format is a bit inelegant because it is saved directly from the minmax widget
-    $min_item = reset($this->configuration['minmax']['min']);
-    $max_item = reset($this->configuration['minmax']['max']);
     return [
-      'min' => $min_item['value'],
-      'max' => $max_item['value']
+      'min' => $this->configuration['min']['value'],
+      'max' => $this->configuration['max']['value']
     ];
   }
 
@@ -77,10 +72,8 @@ class Explicit extends McapiLimitsBase {
   public function defaultConfiguration() {
     $defaults = parent::defaultConfiguration();
     return $defaults + [
-      'minmax' => [
         'min' => ['value' => -1000],
         'max' => ['value' => 1000]
-      ]
     ];
   }
 

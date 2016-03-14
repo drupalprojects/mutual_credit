@@ -35,7 +35,7 @@ class Balanced extends McapiLimitsBase {
       '#description' => $this->t('The distance from zero a user can trade'),
       '#type' => 'worth_form',
       '#allowed_curr_ids' => [$this->currency->id()],
-      '#default_value' => $this->configuration['liquidity'],
+      '#default_value' => $this->configuration['liquidity']['value'],
       '#min' => 0
     ];
     return $subform;
@@ -46,12 +46,9 @@ class Balanced extends McapiLimitsBase {
    * {@inheritdoc}
    */
   public function getLimits(WalletInterface $wallet){
-    //the stored value is a 1 item array keyed by curr_id
-    //we don't need to lookup the curr_id, we can just get the first value
-    $val = $this->configuration['liquidity']['value'];
     $limits = [
-      'min' => -$val,
-      'max' => $val
+      'min' => -$this->configuration['liquidity']['value'],
+      'max' => $this->configuration['liquidity']['value']
     ];
     return $limits;
   }
@@ -65,7 +62,6 @@ class Balanced extends McapiLimitsBase {
       //this is the format the worth widget expects
       'liquidity' => [
         'curr_id' => $this->currency->id(),
-          //@todo check this after we have saved a value
         'value' => 1000
       ]
     ];

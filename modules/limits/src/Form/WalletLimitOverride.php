@@ -92,7 +92,7 @@ class WalletLimitOverride extends FormBase {
             '#type' => 'worth_form',
             '#weight' => 1,
             '#default_value' => '',
-            '#placeholder' => $defaults['min'],
+            '#placeholder' => $defaults['max'],
             '#allowed_curr_ids' => [$curr_id],
             '#config' => TRUE
           ]
@@ -100,10 +100,10 @@ class WalletLimitOverride extends FormBase {
         if (isset($overrides[$curr_id])) {
           $vals = $overrides[$curr_id];
           if (isset($vals['min'])) {
-            $form[$curr_id]['min']['#default_value'] = ['curr_id' => $curr_id, 'value' => $vals['min']['value']];
+            $form[$curr_id]['min']['#default_value'] = $vals['min']['value'];
           }
           if (isset($vals['max'])) {
-            $form[$curr_id]['max']['#default_value'] = ['curr_id' => $curr_id, 'value' => $vals['max']['value']];
+            $form[$curr_id]['max']['#default_value'] = $vals['max']['value'];
           }
         }
         $submit = TRUE;

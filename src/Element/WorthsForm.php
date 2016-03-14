@@ -40,7 +40,6 @@ class Worthsform extends FormElement {
       '#attributes' => ['class' => ['worth-element']],
       '#config' => FALSE,
       '#allowed_curr_ids' => [],
-      '#theme_wrappers' => ['form_element'],
     ];
   }
 
@@ -149,6 +148,8 @@ class Worthsform extends FormElement {
   * @param integer $base_value
   *
   * @return interger | NULL
+  *
+  * @todo this doesn't belong here
   */
   public static function calc($formula, $base_value) {
     if (is_null($base_value)) return 0;

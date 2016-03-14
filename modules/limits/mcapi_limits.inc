@@ -14,9 +14,9 @@ function template_preprocess_mcapi_limits_absolute(&$vars) {
 
   $limits = \Drupal::service('mcapi_limits.wallet_limiter')
     ->setwallet($vars['wallet']);
-  $vars['balanceformatted'] = $currency->format($summary['balance'], Currency::DISPLAY_NORMAL);
-  $vars['minformatted'] = $currency->format($limits->min($curr_id), Currency::DISPLAY_NORMAL);
-  $vars['maxformatted'] = $currency->format($limits->max($curr_id), Currency::DISPLAY_NORMAL);
+  $vars['balanceformatted'] = ['#markup' => $currency->format($summary['balance'])];
+  $vars['minformatted'] = ['#markup' => $currency->format($limits->min($curr_id))];
+  $vars['maxformatted'] = ['#markup' => $currency->format($limits->max($curr_id))];
   $vars['min'] = $currency->format($limits->min($curr_id), Currency::DISPLAY_PLAIN);
   $vars['max'] = $currency->format($limits->max($curr_id), Currency::DISPLAY_PLAIN);
   $vars['balance'] = $currency->format($summary['balance'], Currency::DISPLAY_PLAIN);
@@ -34,10 +34,10 @@ function template_preprocess_mcapi_limits_relative(&$vars) {
   $vars['spend_limit'] = $limiter->spend_limit($vars['currency']->id(), $balance);
 
   if (!is_null($vars['spend_limit'])) {
-    $vars['spendlimitformatted'] = $vars['currency']->format($vars['spend_limit']);
+    $vars['spendlimitformatted'] = ['#markup' => $vars['currency']->format($vars['spend_limit'])];
   }
   if (!is_null($vars['earn_limit'])) {
-    $vars['earnlimitformatted'] = $vars['currency']->format($vars['earn_limit']);
+    $vars['earnlimitformatted'] = ['#markup' => $vars['currency']->format($vars['earn_limit'])];
   }
 }
 
@@ -61,8 +61,8 @@ function template_preprocess_mcapi_limits_balanced(&$vars) {
   $vars['balance'] = $currency->format($stats['balance'], Currency::DISPLAY_PLAIN);
   $vars['min'] = $currency->format($limiter->min($curr_id), Currency::DISPLAY_PLAIN);
   $vars['max'] = $currency->format($limiter->max($curr_id), Currency::DISPLAY_PLAIN);
-  $vars['minformatted'] = strip_tags($currency->format($limiter->min($curr_id), Currency::DISPLAY_NORMAL));
-  $vars['maxformatted'] = strip_tags($currency->format($limiter->max($curr_id), Currency::DISPLAY_NORMAL));
+  $vars['minformatted'] = ['#markup' => $currency->format($limiter->min($curr_id))];
+  $vars['maxformatted'] = ['#markup' => $currency->format($limiter->max($curr_id))];
 }
 
 
@@ -77,23 +77,56 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, FormStateInte
     $options[$name] = $plugin['label'];
   }
   $currency = $form_state->getFormObject()->getEntity();
-
-  $plugin = mcapi_limits_form_state_load_plugin($form_state, $currency);
-  $form_state->set('limits_plugin', $plugin->id);
-
-  //limits could be managed by drupal OR the entity controller. Drupal offers more flexibility
-  $warning[] = t("Transactions will be rejected which take accounts beyond these limits.");
-  $warning[] = t("In an exchange currency, no accounts, even admin accounts, should issue more credit than it can redeem.");
-  $warning[] = t("Trust in the system can be increased by limiting the right to issue credit to trusted, known, productive actors in the economy, which may or not include the goverment!");
-  $warning[] = t("In a fiat (acknowledgement) currency usually only the admin account will go negative i.e. lissue the credit.");
-  $warning[] = t("A commodity currency is the same as a fiat, except all the admin debt corresponds to a stored commodity.");
   $form['limits'] = [
     '#title' => t('Balance limits'),
-    '#description' => implode(' ', $warning),
+    '#description' => t("Transactions will be rejected which take accounts beyond these limits."),
     '#type' => 'details',
     '#weight' => 20,
     '#collapsible' => FALSE,
     '#open' => TRUE,
+  ];
+  if ($currency->isNew()) {
+    $form['limits']['note'] = [
+      //this is because we need the currency id to build the worth fields in the limits settings form
+      '#markup' => t('Limits can only be configured after the currency is saved.'),
+      '#weight' => 20,
+    ];
+    return;
+  }
+  $plugin = mcapi_limits_form_state_load_plugin($form_state, $currency);
+  $form_state->set('limits_plugin', $plugin->id);
+
+  $form['limits'] += [
+    'warning_acknowledgement' => [
+      '#type' => 'item',
+      '#markup' => t('Usually just one admin account can go below zero, and the more it does so the less the units are circulated between members, but just accumulate in their accounts, never to be spent.'),
+      '#weight' => -1,
+      '#states' => [
+        'visible' => [
+          ':input[name="issuance"]' => ['value' => Currency::TYPE_ACKNOWLEDGEMENT]
+        ]
+      ],
+    ],
+    'warning_exchange' => [
+      '#type' => 'item',
+      '#markup' => t('The integrity of the system depends on account balances averaging zero. Every account, including admin should be committed to returning to zero before closing.'),
+      '#weight' => -1,
+      '#states' => [
+        'visible' => [
+          ':input[name="issuance"]' => ['value' => Currency::TYPE_EXCHANGE]
+        ]
+      ],
+    ],
+    'warning_commodity' => [
+      '#type' => 'item',
+      '#markup' => t('All accounts should be positive, except one (issuing) account which is negative according to the value of the commodity stored'),
+      '#weight' => -1,
+      '#states' => [
+        'visible' => [
+          ':input[name="issuance"]' => ['value' => Currency::TYPE_COMMODITY]
+        ]
+      ],
+    ],
     'plugin' => [
       '#title' => t('Plugin'),
       '#description' => t('How will the limits be determined?'),
@@ -165,7 +198,6 @@ function mcapi_limits_submit(&$form, FormStateInterface $form_state) {
   foreach ($plugin->getConfiguration() as $key => $val) {
     $currency->setThirdPartySetting('mcapi_limits', $key, $val);
   }
-  //@todo how does the system know that these settings are defined as a config type in mcapi_limits.schema.yml?
   //this has to go after the plugin has set the values
   $currency->setThirdPartySetting('mcapi_limits', 'plugin', $plugin->id);
   $currency->save();

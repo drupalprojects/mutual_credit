@@ -151,6 +151,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       'zero' => FALSE,
       'color' => '000',
       'weight' => 0,
+      'uid' => \Drupal::currentUser()->id()
     );
   }
 
