@@ -391,9 +391,6 @@ function mcapi_dependent_transaction_action($transaction, $settings) {
   foreach ($settings['presets']['worth_items']['worths'] as $delta => $worth_formula) {
     //if this currency was in the prime transaction, pass it to the calculator
     $items = field_get_items('transaction', $transaction, 'worth');
-    //echo 'from transaction';print_r($items[$delta]);
-    //echo 'from settings'; print_r($worth_formula);
-    //die();//enables you to CTRL-R on the browser
     $calculated = _mcapi_calc($worth_formula['main_quant'], @$items[$delta]['quantity']);
     if (!$calculated) continue;
     $rounded = mcapi_round($calculated, $worth_formula['currcode'], $settings['presets']['worth_items']['round'] == 'up');
@@ -607,7 +604,7 @@ function worth_element_validate(&$element, &$form_state, $form) {
 function worths_element_validate(&$element, &$form_state) {
   //we need to drop the empty values to prevent them being written to the database
   //unless the currency settings explicitly allow it.
-  //first of all set the form_State value, which could not be set from the form_type_worths_value
+  //first of all set the $form_state value, which could not be set from the form_type_worths_value
   //because of the way it is populated from the container inwards
   drupal_array_set_nested_value($form_state['values'], $element['#array_parents'], $element['#value']);
   if ($element['#required']) {//note that this checks all the $items together
@@ -697,7 +694,7 @@ function form_type_worth_value(&$element, $edit = FALSE, &$form_state) {
   }
   elseif (is_numeric($edit['main_quant']) || empty($edit['main_quant'])) {
     $item['quantity'] = floatval($edit['main_quant']);
-    if (!empty($item['div_quant'])) {
+    if (!empty($edit['div_quant'])) {
       $item['quantity'] += ($edit['div_quant'] + 0) / 100;
     }
   }
@@ -820,8 +817,14 @@ function theme_worth_element($variables) {
   $curr_select = drupal_render($element['currcode']);
   $quant_field = drupal_render($element['main_quant']);
   if ($element['currcode']['#type'] == 'hidden' || $element['currcode']['#theme'] == 'hidden') {//if the currency is preset, then we can use its own display format
-//print_r($element['#value']);die();
-    $currcode = isset($element['#value']) ? $element['#value']['currcode'] : $element['#default_value']['currcode'];
+
+    if (isset($element['#value']) && is_array($element['#value'])) {
+      $currcode = $element['#value']['currcode'];
+    }
+    elseif (isset($element['#default_value']) && is_array($element['#default_value'])) {
+      $currcode = $element['#value']['currcode'];
+    }
+    //else there is a problem
     $currency_display = currency_load($currcode)->display;
     if (isset($element['div_quant'])) {
       $quant_field .= $currency_display['delimiter'] . drupal_render($element['div_quant']);
