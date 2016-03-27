@@ -743,7 +743,8 @@ function mcapi_currency_form_validate($form, &$form_state) {
   //check that the reservoir account is allowed to use the currency
   $callback = 'in_'. strtok($form_state['values']['access']['membership'], ':');
   $arg = strtok(':');
-  if (!$callback(array($arg), $form_state['values']['reservoir'])) {
+  $rids = drupal_map_assoc(array($arg));
+  if (!$callback($rids, $form_state['values']['reservoir'])) {
     form_set_error('reservoir', t('Reservoir account does not have access to the currency!'));
   }
 }
@@ -1181,7 +1182,7 @@ function mcapi_transaction_operations() {
       'Are you sure you want to undo? Only the site administrator will be able to restore this transaction.',
     'access callback' => 'transaction_op_undo_access',
     'submit callback' => 'transaction_op_undo',
-    //'form callback' => 'transaction_op_undo_form',
+    'form callback' => TRUE,
     'redirect' => 'transaction/%transaction',
     'weight' => 10,
   );

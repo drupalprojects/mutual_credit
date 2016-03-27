@@ -288,7 +288,7 @@ function mcapi_signatures_init() {
  */
 function mcapi_signatures_preprocess_certificate(&$variables) {
   $transaction = &$variables['object'];
-  if (!empty($transaction->pending_signatures)) {
+  if (array_filter($transaction->pending_signatures)) 
     $variables['pending'] = array(
       '#theme' => 'pending_signatures',
       '#transaction' => $transaction
@@ -332,11 +332,22 @@ function transaction_access_callback_signatory($transaction) {
  */
 function transaction_access_callback_signatory_views($query, $condition, $state) {
   //The join may have been created already by the views schema
-  if (!array_key_exists('mcapi_signatures', $query->gettables())) {
-    $query->addJoin('LEFT', 'mcapi_signatures', 'mcapi_signatures', 'mcapi_signatures.serial = mcapi_transactions.serial');
+  $tables = $query->getTables();
+  $base_table = reset($tables);
+  $and = db_and();
+  if (!isset($tables['mcapi_signatures'])) {
+    $query->addJoin(
+      'LEFT', 
+      'mcapi_signatures', 
+      'sigs', 
+      'sigs.serial = '. $base_table['alias'] .'.serial'
+    );
   }
+  module_load_include('inc', 'mcapi_signatures');
+  $and->condition($base_table['table'].'.type', _get_signable_transaction_types(), 'IN');
+  $and->condition('sigs.uid', $GLOBALS['user']->uid);
+  $condition->condition($and);
   $query->distinct();
-  $condition->condition('mcapi_signatures.uid', $GLOBALS['user']->uid);
 }
 
 /*

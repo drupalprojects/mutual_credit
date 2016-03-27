@@ -369,6 +369,9 @@ function mcapi_update_dependencies() {
       '7001' => array(
         'system' => 7034
       ),
+      '7003' => array(
+        'taxonomy' => 7004
+      )
     ),
     'system' => array(
       //profile module changes the name of the tables which we need to work with

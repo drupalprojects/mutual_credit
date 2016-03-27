@@ -269,9 +269,9 @@ function mcapi_help($section, $arg) {
  * implements hook_menu()
  */
 function mcapi_menu() {
-  module_load_include('admin.inc', 'mcapi');
   //take this opportunity of an occasional hook to check that the description field is set
   if (!variable_get('transaction_description_field', '')) {
+    module_load_include('admin.inc', 'mcapi');
     if (count(_mcapi_get_text_instances())) {
       drupal_set_message(t('Is the textfield on your transaction used for the description? !link', array('!link' => l('admin/accounting/fields', 'admin/accounting/fields'))));
     }
@@ -291,14 +291,13 @@ function mcapi_permission() {
 /**
  * implements hook_theme
  */
-function mcapi_theme($existing, $type, $theme, $path) {
+function mcapi_theme() {
   $items = array(
     'transaction' => array(
       'render element' => 'transaction'
     ),
     'certificate' => array(
       'template' => 'certificate',
-      'pattern' => 'certificate__',
       'variables' => array(
         'object' => NULL,
         'id' => '',
@@ -426,6 +425,7 @@ function mcapi_update_index() {
     //is this achievable using GROUP BY?
     $xids[$trans->serial][] = $trans->xid;
   }
+  module_load_include('admin.inc', 'mcapi');
   foreach ($xids as $serial => $xids) {
     $text = array();
     foreach(_mcapi_get_text_instances() as $fieldname) {
@@ -788,7 +788,7 @@ function transaction_operation_access($op, $transaction = NULL) {
 }
 
 /**
- * implements hook mcapi_permissions().
+ * implements hook transaction_access_callbacks().
  * each callback refers to 2 functions - itself and CALLBACK_views
  * Declare the access callbacks for (transactions in) currencies
  * each callback takes the following args
@@ -1318,7 +1318,6 @@ function mcapi_field_widget_form($form, &$form_state, $field, $instance, $langco
   return $element;
 }
 
-
 /*
  * implements hook_field_validate().
  * check if the current user has permission to use the currency in this flow.
@@ -1334,7 +1333,7 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
         if (currency_access('membership', $item['currcode'], $account)) continue;
         $errors[$field['field_name']][$langcode][$delta][] = array(
           'error' => 'currency_access_membership',
-          'message' => t('User @name cannot use @currency', array('@name' => user_load($entity->uid)->name, '@currency' => $currency->human_name))
+          'message' => t('User @name cannot use @currency', array('@name' => user_load($entity->creator)->name, '@currency' => $currency->human_name))
         );
       }
     }
@@ -1366,7 +1365,6 @@ function mcapi_field_is_empty($item) {
   return !(array_key_exists('quantity', $item) && strlen($item['quantity']));
 }
 
-
 /*
  * implements hook_form_field_ui_field_edit_form_alter().
  * remove the default 'worth' setting from the field settings form i.e. cardinality
@@ -1396,7 +1394,6 @@ function mcapi_form_field_ui_field_overview_form_alter(&$form, &$form_state) {
     $form['fields']['worth']['delete']['#type'] = 'markup';
   }
 }
-
 
 //this is a property callback for the worth field in mcapi_field_info
 function worthfield_property_info_callback(&$info, $entity_type, $field, $instance, $field_type) {
@@ -1456,7 +1453,7 @@ function mcapi_user_delete($account) {
     //there is a small chance that for some reason $currency->reservoir isn't set.
     $res = isset($currency->reservoir) ? $currency->reservoir : 1;
     entity_get_controller('transaction')->mergeAccounts($res, $account->uid);
-    drupal_set_message(t("All transactions belonging to user @name have been moved to the reservoir account"), 'warning');
+    drupal_set_message(t("All transactions belonging to user @name have been moved to the reservoir account", array('@name' => $account->name)), 'warning');
   }
 }
 
@@ -1511,3 +1508,52 @@ function mcapi_operation_include($info) {
   }
 }
 
+/**
+ * implements form_type_ELEMENT_NAME_value
+ * default value_callback for worths
+ * this function is included because the worths process callback includes mcapi.inc
+ */
+function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
+  $value = array();
+  if ($edit) {
+    foreach ($edit as $delta => $item) {
+      $val = form_type_worth_value($element[$delta], $item, $form_state);
+      if (!is_null($val)) {
+        $value[] =  $val;
+      }
+    }
+  }
+  return $value ? $value : $element['#default_value'];
+}
+
+/**
+ * implements form_type_ELEMENT_NAME_value
+ */
+function form_type_worth_value(&$element, $edit = FALSE, &$form_state) {
+  if (empty($edit['currcode'])) {
+    return $element['#default_value'];
+  }
+  $item = array('currcode' => $edit['currcode']);
+  if (!strlen($edit['main_quant']) && empty($edit['div_quant'])) {
+    $item['quantity'] = '';
+  }
+  elseif ($element['#calc']) {
+    $item['quantity'] = $edit['main_quant'];
+  }
+  elseif (is_numeric($edit['main_quant']) || empty($edit['main_quant'])) {
+    $item['quantity'] = floatval($edit['main_quant']);
+    if (!empty($edit['div_quant'])) {
+      $item['quantity'] += ($edit['div_quant'] + 0) / 100;
+    }
+  }
+  //set the value to zero if the field is empty and the currency allows it
+  $currency = currency_load($edit['currcode']);
+  if (empty($item['quantity']) && $currency->display['zero']) {
+    //empty field will be saved as valid transaction
+    $item['quantity'] = '0';
+  }
+  elseif(empty($item['quantity']) && empty($element['#preset'])) {
+    return;//this empty field is note to 0, but ignored
+  }
+  return $item;
+}

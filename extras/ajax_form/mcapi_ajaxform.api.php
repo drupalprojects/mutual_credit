@@ -35,7 +35,7 @@
   //don't forget to declare your transaction states in hook_mcapi_info_states
   //constants are a good idea for those
   //default transaction state is 1, or TRANSACTION_STATE_FINISHED
-  $props['state']  = TRANSACTION_STATE_MY
+  $props['state']  = TRANSACTION_STATE_MY_STATE
 
   $transaction = entity_create('transaction', $props);
 

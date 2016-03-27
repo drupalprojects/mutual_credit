@@ -190,7 +190,10 @@ function transaction_access_callback_creator_views($query, $condition, $state) {
  * or views pager won't know how many results there were
  */
 function mcapi_query_transaction_view_access_alter(QueryAlterableInterface $query) {
-  $query->addJoin('LEFT', 'field_data_worth', 'w', 'w.entity_id = mcapi_transactions.xid');return;
+  $base_table = reset($query->getTables());
+  if ($base_table['table'] != 'mcapi_transactions') return;
+  $base_table_alias = $base_table['alias'];
+  $query->addJoin('LEFT', 'field_data_worth', 'w', "w.entity_id = {$base_table_alias}.xid");
   $states = array_keys(mcapi_get_states());
   //what currencies can the current user see?
   $currencies = currencies_load($GLOBALS['user']);
@@ -199,15 +202,27 @@ function mcapi_query_transaction_view_access_alter(QueryAlterableInterface $quer
     //where (currcode = A and (state = x) OR (state = Y) )
     $state_or_state = db_or();//where state = A OR B
     foreach ($states as $state) {
-      $callbacks = array_filter($currency->view_transaction_states[$state]);
-      foreach ($callbacks as $callback) {
-        $callback .= '_views';
-        $state_and_callback = db_and()->condition('mcapi_transactions.state', $state);
-        $callback($query, $state_and_callback, $state);
-        $state_or_state->condition($state_and_callback);
+      if (isset($currency->view_transaction_states[$state])) {
+        $callbacks = array_filter($currency->view_transaction_states[$state]);
+        foreach ($callbacks as $callback) {
+          $callback .= '_views';
+          $state_and_callback = db_and();
+          $state_and_callback->condition($base_table_alias.'.state', $state);
+          $callback($query, $state_and_callback, $state);
+          $state_or_state->condition($state_and_callback);
+        }
+      }
+      else{
+        drupal_set_message(
+          t('The currency has not been configured to work with transaction state @state', array('@state' => $state)),
+          'warning',
+          FALSE
+        );
       }
     }
-    $currcode_and_states = db_and()->condition('w.worth_currcode', $currcode)->condition($state_or_state);
+    $currcode_and_states = db_and()
+      ->condition('w.worth_currcode', $currcode)
+      ->condition($state_or_state);
     $or_currcodes->condition($currcode_and_states);
   }
   //to see this working, show the sql query on admin/structure/views/settings/basic

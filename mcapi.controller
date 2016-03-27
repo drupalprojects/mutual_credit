@@ -135,8 +135,11 @@ class mcapiEntityController extends EntityAPIController {
         $transaction->{$desc_fieldname} = array(LANGUAGE_NONE => array(0 => array('value' => $values['description'])));
         unset($values['description']);
       }
-      elseif (isset($values[$desc_fieldname])) {
-        if (isset($values[$desc_fieldname][LANGUAGE_NONE])) $values[$desc_fieldname] = $values[$desc_fieldname][LANGUAGE_NONE];
+      elseif (isset($values[$desc_fieldname])) {        
+        //trying to cope with all possible fudged form structures
+        if (isset($values[$desc_fieldname][LANGUAGE_NONE])) {
+          $values[$desc_fieldname] = $values[$desc_fieldname][LANGUAGE_NONE];
+        }
         $transaction->{$desc_fieldname} = array(
           LANGUAGE_NONE => $values[$desc_fieldname]
         );

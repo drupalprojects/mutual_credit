@@ -9,7 +9,6 @@
 class views_handler_filter_mcapi_states extends views_handler_filter_in_operator {
 
   function construct() {
-    //$this->value_value = t('True');
     $this->value_value = t('State');
     $this->accept_null = FALSE;
     $this->value_options = NULL;

@@ -96,7 +96,9 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       $form['secondperson']['#required'] = TRUE;
       $form['secondperson']['#multiple'] = FALSE;
       $form['secondperson']['#exclude'] = array($GLOBALS['user']->uid);
-      $form['secondperson']['#default_value'] = $settings['secondperson']['preset'];
+      if (!isset($form['secondperson']['#default_value'])) {
+        $form['secondperson']['#default_value'] = $settings['secondperson']['preset'];
+      }
       $type = $settings['direction']['widget'] ? $settings['direction']['widget'] : 'select';
       $options = ($type == 'select' && empty($settings['direction']['preset'])) ? array(t('Please choose...')) : array();
       $form['direction'] = array(

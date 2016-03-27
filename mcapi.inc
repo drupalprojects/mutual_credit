@@ -190,7 +190,7 @@ function mcapi_get_op_form($op, $transaction, $mode = 'nojs') {
   $operation = &$operations[$op];
   $operated = FALSE;
   if (!empty($operation['form callback'])) {
-    $renderable = drupal_get_form('transaction_operation_form', $op, $transaction);
+    $renderable = drupal_get_form('transaction_operation_form', $op, $transaction, $mode);
   }
   else {
     //do the form submission without showing the form
@@ -203,14 +203,12 @@ function mcapi_get_op_form($op, $transaction, $mode = 'nojs') {
       drupal_set_message(strip_tags(drupal_render($renderable)));
       drupal_goto(mcapi_operation_redirect_path($operation, $transaction));
     }
-    else return $renderable;
+    else {
+      return $renderable;
+    }
   }
   elseif ($mode == 'ajax') {//return ajax commands
     //this form will sumit and expect ajax
-    $renderable['actions']['submit']['#attributes']['class'][] = 'use-ajax-submit';
-    drupal_add_js('misc/jquery.form.js');
-    drupal_add_js('misc/ajax.js', array('type' => 'file'));
-    //when the button is clicked replace the whole transaction div with the results.
     $commands[] = ajax_command_replace('#transaction-'.$transaction->serial, drupal_render($renderable));
     return array(
       '#type' => 'ajax',
@@ -222,7 +220,7 @@ function mcapi_get_op_form($op, $transaction, $mode = 'nojs') {
 /**
  * default form callback for all transaction operations
  */
-function transaction_operation_form($form, &$form_state, $op, $transaction) {
+function transaction_operation_form($form, &$form_state, $op, $transaction, $mode) {
   $operations = transaction_operations(TRUE, FALSE);
   $info = $operations[$op];
   //quickfix to https://drupal.org/node/2118869
@@ -253,23 +251,23 @@ function transaction_operation_form($form, &$form_state, $op, $transaction) {
 
 /**
  * Form submission for the generic operation form
+ * @todo something is overwriting the $form_state[redirect]
  */
 function transaction_operation_form_submit($form, &$form_state) {
   $operation = $form_state['transaction_operation'];
   $transaction = transaction_load($form_state['values']['serial']);
   $renderable = mcapi_submit_op_form($operation, $transaction, $form_state['values']);
-  $renderable = 'hello';
   if ($form_state['redirect1']) {
-    drupal_set_message(strip_tags(drupal_render($renderable)));
-    //todo what is overwriting the redirect?
     $form_state['redirect'] = $form_state['redirect1'];
     return;
   }
   //if this is ajax we return the result, otherwise redirect the form
-  $commands[] = ajax_command_replace('#transaction-operation-form', drupal_render($renderable));
   ajax_deliver(array(
     '#type' => 'ajax',
-    '#commands' => $commands
+    '#commands' => ajax_command_replace(
+      '#transaction-operation-form',
+      drupal_render($renderable)
+    )
   ));
   //not possible to redirect here
   exit();
@@ -359,7 +357,7 @@ function transaction_access_callback_creator($transaction) {
  */
 function mcapi_transaction_mail_action($transaction, $settings, $old_state) {
   //the actions settings allow to filter by transaction type and state
-  if ($transaction->state != $settings['state']) return;
+  if (!isset($settings['state']) || ($transaction->state != $settings['state'])) return;
   if (empty($settings['transaction_types'][$transaction->type])) return;
 
   $params = $settings + array('transaction' => $transaction);
@@ -515,7 +513,7 @@ function _transactions_diff($transaction) {
  * or it may be a simulated transaction with no xid and serial or dependents
  */
 function template_preprocess_certificate(&$vars) {
-  $transaction = &$vars['object'];
+  $transaction = $vars['object'];
   $vars['payer'] = theme('username', array('account' => user_load($transaction->payer)));
   $vars['payee'] = theme('username', array('account' => user_load($transaction->payee)));
   $vars['state'] = $transaction->state;
@@ -660,56 +658,6 @@ function _worths_element_process($element, &$form_state) {
   return $element;
 }
 
-/**
- * implements form_type_ELEMENT_NAME_value
- * default value_callback for worths
- * this function is included because the worths process callback includes mcapi.inc
- */
-function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
-  $value = array();
-  if ($edit) {
-    foreach ($edit as $delta => $item) {
-      $val = form_type_worth_value($element[$delta], $item, $form_state);
-      if (!is_null($val)) {
-        $value[] =  $val;
-      }
-    }
-  }
-  return $value ? $value : $element['#default_value'];
-}
-
-/**
- * implements form_type_ELEMENT_NAME_value
- */
-function form_type_worth_value(&$element, $edit = FALSE, &$form_state) {
-  if (empty($edit['currcode'])) {
-    return $element['#default_value'];
-  }
-  $item = array('currcode' => $edit['currcode']);
-  if (!strlen($edit['main_quant']) && empty($edit['div_quant'])) {
-    $item['quantity'] = '';
-  }
-  elseif ($element['#calc']) {
-    $item['quantity'] = $edit['main_quant'];
-  }
-  elseif (is_numeric($edit['main_quant']) || empty($edit['main_quant'])) {
-    $item['quantity'] = floatval($edit['main_quant']);
-    if (!empty($edit['div_quant'])) {
-      $item['quantity'] += ($edit['div_quant'] + 0) / 100;
-    }
-  }
-  //set the value to zero if the field is empty and the currency allows it
-  $currency = currency_load($edit['currcode']);
-  if (empty($item['quantity']) && $currency->display['zero']) {
-    //empty field will be saved as valid transaction
-    $item['quantity'] = '0';
-  }
-  elseif(empty($item['quantity']) && empty($element['#preset'])) {
-    return;//this empty field is note to 0, but ignored
-  }
-  return $item;
-}
-
 function _worth_element_process($element, &$form_state) {
   $element['#title_display'] = 'attribute';
   $main_quant = '';
@@ -842,9 +790,12 @@ function theme_worth_element($variables) {
 
 
 function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
-  if ($ajax) drupal_add_js('misc/ajax.js', array('type' => 'file'));
   global $language;
   static $operations;
+  if ($ajax) {
+    drupal_add_js('misc/ajax.js', array('type' => 'file'));
+  }
+
   if (!$operations) {
     $operations = transaction_operations(TRUE, FALSE);
   }

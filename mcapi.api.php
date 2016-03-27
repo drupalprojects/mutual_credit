@@ -24,13 +24,13 @@
 
 
 /*
- * wrapper around entity_load
- * load a cluster of transactions sharing a serial number
- * The first transaction will be the 'volitional' transaction and the rest are loaded into
- * $transaction->dependents where the theme layer expects to find them
- * $serial can be varchar or an array of varchars
+ * 
+ * @param integer $serial 
+ *   can be varchar or an array of varchars
+ * @return object
+ *   the transaction entity with ->dependents
  */
-stdClass transaction_load($serial);
+transaction_load($serial);
 
 
 /*
@@ -115,7 +115,7 @@ $conditions = array('involving' => array(234, 567));
  *   NB paging is ignored
  *   NB in multiple cardinality fields, only the first value is filtered for
  */
-array transaction_filter((array)$conditions, $offset, $limit, $fieldapi_conditions);
+transaction_filter((array)$conditions, $offset, $limit, $fieldapi_conditions);
 
 
 
@@ -135,7 +135,7 @@ array transaction_filter((array)$conditions, $offset, $limit, $fieldapi_conditio
  * - gross_out
  * - count
  */
-array transaction_totals($uid, $currcode, $filters);
+transaction_totals($uid, $currcode, $filters);
 
 
 /*
