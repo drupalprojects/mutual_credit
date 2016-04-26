@@ -36,7 +36,7 @@ class WalletAutocomplete extends EntityAutocomplete {
 
   public static function preRender($element) {
     if (!empty($element['#value'])) {
-      drupal_set_message($element['#value']);
+      debug($element['#value'], 'testing preset wallet value');
       return $element;
 
       $element['#type'] = 'item';

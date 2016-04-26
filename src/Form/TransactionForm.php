@@ -25,6 +25,12 @@ class TransactionForm extends ContentEntityForm {
   protected $request;
 
   /**
+   *
+   * @var \Drupal\Core\Session\AccountProxy
+   */
+  protected $currentUser;
+
+  /**
    * @var boolean
    * whether the wallet widgets should be restricted by directionality
    * @todo move this to the mcapi_forms module? probably not while the payin/payout
@@ -33,10 +39,11 @@ class TransactionForm extends ContentEntityForm {
   public $restrict = FALSE;
 
 
-  public function __construct($entity_type_manager, $tempstore, $current_request) {
+  public function __construct($entity_type_manager, $tempstore, $current_request, $current_user) {
     parent::__construct($entity_type_manager);
     $this->tempStore = $tempstore;
     $this->request = $current_request;
+    $this->currentUser = $current_user;
   }
 
   /**
@@ -47,7 +54,8 @@ class TransactionForm extends ContentEntityForm {
     return new static(
       $container->get('entity.manager'),
       $container->get('user.private_tempstore'),
-      $container->get('request_stack')->getCurrentRequest()
+      $container->get('request_stack')->getCurrentRequest(),
+      $container->get('current_user')
     );
   }
 
@@ -55,7 +63,6 @@ class TransactionForm extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-    
     $form = parent::form($form, $form_state);
     //try to prevent the same wallet being in both payer and payee fields.
     //we can only do this is one field has only one option
@@ -77,6 +84,9 @@ class TransactionForm extends ContentEntityForm {
         $payer['#selection_settings']['exclude'] = [$payee['#value']];
       }
     }
+    $form['type']['#access'] = $this->currentUser->hasPermission('manage mcapi');
+    $form['created']['#access'] = $this->currentUser->hasPermission('manage mcapi');
+
     return $form;
   }
 

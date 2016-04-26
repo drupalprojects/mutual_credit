@@ -1,0 +1,71 @@
+uuid: 0e6ea44b-42fa-4bf3-a709-9fb03d63f459
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.mcapi_transaction.credit
+    - field.field.mcapi_transaction.mcapi_transaction.worth
+  module:
+    - mcapi
+    - mcapi_forms
+id: mcapi_transaction.mcapi_transaction.credit
+targetEntityType: mcapi_transaction
+bundle: mcapi_transaction
+mode: credit
+content:
+  created:
+    type: datetime_timestamp
+    weight: 3
+    settings: {  }
+    third_party_settings: {  }
+  description:
+    type: string_textfield
+    weight: 2
+    settings:
+      size: 60
+      placeholder: 'What for?'
+    third_party_settings: {  }
+  payee:
+    type: wallet_reference_autocomplete
+    weight: 1
+    settings:
+      match_operator: CONTAINS
+      size: '60'
+      placeholder: 'Payee wallet'
+      hide_one_wallet: '0'
+    third_party_settings: {  }
+  payer:
+    type: wallet_reference_autocomplete
+    weight: 0
+    settings:
+      match_operator: CONTAINS
+      size: '60'
+      placeholder: 'Payer wallet'
+      hide_one_wallet: '0'
+    third_party_settings: {  }
+  worth:
+    type: worth
+    weight: 4
+    settings:
+      exclude: '0'
+      currencies:
+        cc: 0
+        veur: 0
+        hhrs: 0
+    third_party_settings: {  }
+hidden:
+  creator: true
+  type: true
+third_party_settings:
+  mcapi_forms:
+    title: 'Credit another member'
+    wallet_link_title: 'Credit [mcapi_wallet:name]'
+    path: /transact/credit
+    menu_title: 'Credit'
+    menu_weight: '-10'
+    menu_name: account
+    type: default
+    direction: '-1'
+    experience_twig: 'I, {{ payer }}\r\nreceived {{ description }}\r\nfrom\r\n{{ payee }}\r\nand now credit them for\r\n{{ worth }}'
+    experience_button: Preview
+    experience_preview: 'page'

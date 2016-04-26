@@ -133,13 +133,13 @@ class WalletSettings extends ConfigFormBase {
       '#type' => 'details',
       'wallet_widget_max_radios' => [
         '#title' => $this->t('Radio button threshhold'),
-        '#title' => $this->t('This tiny number of references will give a radio button widget'),
+        '#description' => $this->t('Number of available wallets below which to show a radio button widget'),
         '#type' => 'number',
         '#default_value' => $config->get('wallet_widget_max_radios'),
       ],
       'wallet_widget_max_select' => [
         '#title' => $this->t('Dropdown threshhold'),
-        '#description' => $this->t('More than this number of options will give an autocomplete field'),
+        '#description' => $this->t('Number of available wallets above which to show an autocomplete field'),
         '#type' => 'number',
         '#default_value' => $config->get('wallet_widget_max_select'),
       ],

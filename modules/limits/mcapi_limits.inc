@@ -113,7 +113,7 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, FormStateInte
       '#weight' => -1,
       '#states' => [
         'visible' => [
-          ':input[name="issuance"]' => ['value' => Currency::TYPE_EXCHANGE]
+          ':input[name="issuance"]' => ['value' => Currency::TYPE_PROMISE]
         ]
       ],
     ],
@@ -233,6 +233,7 @@ function mcapi_view_limits(WalletInterface $wallet, $curr_ids = []) {
   if ($curr_ids) {
     $currencies = array_intersect_key($currencies, array_flip($curr_ids));
   }
+  $renderable = [];
   foreach ($currencies as $currency) {
     if ($currency->getThirdPartySetting('mcapi_limits', 'plugin', 'none') == 'none') {
       continue;

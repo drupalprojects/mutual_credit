@@ -57,7 +57,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
 
   const TYPE_ACKNOWLEDGEMENT = 2;
   const TYPE_COMMODITY = 1;
-  const TYPE_EXCHANGE = 0;
+  const TYPE_PROMISE = 0;
 
   const DISPLAY_NATIVE = 1;//the raw integer value held in the database e.g.5400
   const DISPLAY_NORMAL = 2;//the text value for display eg 1hr 30 mins
@@ -316,7 +316,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   public static function issuances() {
     return [
       Self::TYPE_ACKNOWLEDGEMENT => t('Acknowledgement', [], ['context' => 'currency-type']),
-      Self::TYPE_EXCHANGE => t('Exchange', [], ['context' => 'currency-type']),
+      Self::TYPE_PROMISE => t('Promise of value', [], ['context' => 'currency-type']),
       Self::TYPE_COMMODITY => t('Backed by a commodity', [], ['context' => 'currency-type']),
     ];
   }

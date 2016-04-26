@@ -1,6 +1,6 @@
 mcapi.admin.transaction:
-  route_name: mcapi.transaction.admin
-  title: 'Register Transaction'
+  route_name: entity.mcapi_transaction.add_form
+  title: 'Create Transaction'
   appears_on:
     - mcapi.admin
     - view.mcapi_transactions.admin

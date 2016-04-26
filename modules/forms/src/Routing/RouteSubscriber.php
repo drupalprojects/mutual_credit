@@ -4,7 +4,6 @@
  * @file
  * Contains \Drupal\mcapi_forms\Routing\RouteSubscriber.
  * Creates walletAdd routes for specified entities
- * @deprecated
  */
 
 namespace Drupal\mcapi_forms\Routing;
@@ -15,30 +14,20 @@ use Symfony\Component\Routing\RouteCollection;
 use Symfony\Component\Routing\Route;
 
 /**
- * Subscriber for walletadd routes on specified entities
+ * Subscriber to create a router item for each transaction form display
  */
 class RouteSubscriber extends RouteSubscriberBase {
-
-  private $settings;
-
-  /**
-   * @param Drupal\Core\Entity\EntityTypeManager $entity_manager
-   * @param \Drupal\Core\Config\ConfigFactory $configFactory
-   */
-  function __construct($entity_manager, $configFactory) {
-    $this->entityTypeManager = $entity_manager;
-    $this->settings = $configFactory->get('mcapi.settings');
-  }
 
   /**
    * {@inheritdoc}
    */
   protected function alterRoutes(RouteCollection $collection) {
     //add a route for each form
-    foreach (entity_load_multiple('firstparty_editform') as $id => $editform) {
-      $route = new Route($editform->path);
+    foreach (mcapi_form_displays_load(TRUE) as $mode => $display) {
+      $settings = $display->get('third_party_settings.mcapi_forms');
+      $route = new Route($settings['path']);
       $route->setDefaults([
-        '_entity_form' => 'mcapi_transaction.1stparty',
+        '_entity_form' => 'mcapi_transaction.'.$mode,
         '_title_callback' => '\Drupal\mcapi_forms\FirstPartyTransactionForm::title'
       ]);
       $route->setRequirements([
@@ -48,10 +37,10 @@ class RouteSubscriber extends RouteSubscriberBase {
       ]);
       $route->setOptions([
         'parameters' => [
-          'firstparty_editform' => ['id' => $id],
+          'mode' => $mode,
         ]
       ]);
-      $collection->add('mcapi.1stparty.'.$id, $route);
+      $collection->add('mcapi.1stparty.'.$mode, $route);
     }
   }
 

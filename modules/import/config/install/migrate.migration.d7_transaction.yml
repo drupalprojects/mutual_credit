@@ -1,0 +1,24 @@
+id: d7_transaction
+label: Transaction entity
+migration_tags:
+  - Drupal 7
+#builder:
+#  plugin: d7_transaction
+source:
+  plugin: d7_mcapi_transaction
+process:
+  xid: xid
+  serial: serial
+  type: type
+  description: description
+  uid: uid
+  state: state
+  created: created
+  changed: changed
+destination:
+  plugin: entity:mcapi_transaction
+migration_dependencies:
+  required:
+    - d7_user
+  optional:
+    - d7_field_instance

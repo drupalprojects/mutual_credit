@@ -1,7 +1,7 @@
 <?php
 
-use \Drupal\Core\Render\Element;
-
+use Drupal\Core\Render\Element;
+use Drupal\mcapi\Plugin\TransactionActionBase;
 
 /**
  * theme preprocessor
@@ -88,3 +88,228 @@ function mcapi_strip_wrappers_recursive(&$element) {
   }
 }
 
+/**
+ * alter the form EntityFormDisplay form
+ */
+function mcapi_forms_display_decorate(&$form, $settings) {
+  $form['#tree'] = TRUE;
+  $w = 0;
+  $form['form_title'] = [
+    '#type' => 'textfield',
+    '#title' => t('Title of the form'),
+    '#default_value' => $settings['title'],
+    '#size' => 40,
+    '#maxlength' => 80,
+    '#required' => TRUE,
+    '#weight' => -10,
+  ];
+  $form['wallet_link_title'] = [
+    '#title' => t('Link title to show on wallet'),
+    '#description' => t('Optionally use token [mcapi_wallet:name]'),
+    '#type' => 'textfield',
+    '#weight' => -9,
+    '#default_value' => $settings['wallet_link_title'],
+  ];
+
+  $form['path'] = [
+    '#title' => t('Path'),
+    '#description' => t('The url path at which this form will appear. Must begin with / and be unique.'),
+    '#type' => 'path',
+    '#weight' => -8,
+    '#default_value' => $settings['path'],
+    '#placeholder' => t('/internal/path'),
+    '#convert_path' => \Drupal\Core\Render\Element\PathElement::CONVERT_URL,
+    '#element_validate' => ['mcapi_forms_unique_path'],
+    '#required' => TRUE
+  ];
+
+  $form['menu'] = [
+    '#title' => t('Menu link'),
+    '#description' => t('Currently there is no special access control for these form displays'),
+    '#type' => 'details',
+    '#weight' => -5,
+    'title' => [
+      '#title' => t('Link title'),
+      '#type' => 'textfield',
+      '#default_value' => $settings['menu_title'],
+      '#weight' => 1
+    ],
+    'weight' => [
+      '#title' => t('Weight'),
+      '#type' => 'weight',
+      '#default_value' => $settings['menu_weight'],
+      '#description' => t('In the menu, the heavier links will sink and the lighter links will be positioned nearer the top.'),
+      '#weight' => 2
+    ]
+  ];
+
+  foreach (\Drupal\system\Entity\Menu::loadMultiple() as $menu_name => $menu) {
+    $custom_menus[$menu_name] = $menu->label();
+  }
+  $form['menu']['menu_name'] = [
+    '#title' => t('Menu'),
+    '#type' => 'select',
+    '#options' =>  $custom_menus,
+    '#required' => FALSE,
+    '#empty_value' => '',
+    '#default_value' => $settings['menu_name'],
+    '#weight' => 2
+  ];
+  $form['type'] =  [
+    '#title' => t('Transaction type'),
+    '#type' => 'mcapi_types',
+    '#default_value' => $settings['type'],
+    '#weight' => -3,
+    '#required' => TRUE,
+  ];
+  $form['direction'] = [
+    '#title' => t('Direction'),
+    '#description' => t('Direction of payment relative to the current user'),
+    '#type' => 'radios',
+    '#options' => [
+      MCAPI_FORMS_DIR_BOTH => t("Both (Permission '@permission' required)", ['@permission' => t('Create 3rdparty transactions')], ['context' => 'payment direction']),
+      MCAPI_FORMS_DIR_OUTGOING => t('Outgoing', [], ['context' => 'payment direction']),
+      MCAPI_FORMS_DIR_INCOMING => t('Incoming', [], ['context' => 'payment direction'])
+    ],
+    '#default_value' => $settings['direction'],
+    '#required' => TRUE,
+    '#weight' => -2
+  ];
+
+  $moreInfo = t(
+    'Put any default values here.') .' '.
+    \Drupal::linkGenerator()->generate(
+      t('More field configuration options...'),
+      \Drupal\Core\Url::fromRoute('entity.entity_form_display.mcapi_transaction.default')
+    );
+
+  $all_fields = \Drupal::service('entity_field.manager')
+    ->getFieldMap()['mcapi_transaction'];
+
+  $tokens = array_diff(
+    array_keys($all_fields),
+    ['xid', 'uuid', 'serial', 'parent', 'creator', 'type', 'state', 'changed']
+  );
+  $form['experience'] = [
+    '#title' => t('User experience'),
+    '#type' => 'details',
+    '#open' => TRUE,
+    'twig' => [
+      '#title' => t('Main form'),
+      '#description' => implode(' ', [
+        t('Use the following twig tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically.'),
+        ' {{ '. implode(' }}, {{ ', $tokens) .' }}',
+        \Drupal::linkGenerator()->generate(
+          t('What is twig?'),
+          \Drupal\Core\Url::fromUri('http://twig.sensiolabs.org/doc/templates.html')
+        )
+      ]),
+      '#type' => 'textarea',
+      '#rows' => 6,
+      '#default_value' => str_replace(array('\r\n','\n','\r'), "\n", $settings['experience_twig']),
+      '#element_validate' => ['validate_twig_template'],
+      '#weight' => 1,
+      '#required' => TRUE
+    ],
+    'button' => [
+      '#title' => t('Button label'),
+      '#description' => t("The text to appear on the 'save' button, or the absolute url of an image."),
+      '#type' => 'textfield',
+      '#default_value' => $settings['experience_button'],
+      '#required' => TRUE,
+      '#weight' => 2,
+    ],
+    'preview' => [
+      '#title' => t('Preview mode'),
+      '#type' => 'radios',
+      '#options' => [
+        TransactionActionBase::CONFIRM_NORMAL => t('Basic - Go to a fresh page'),
+        TransactionActionBase::CONFIRM_AJAX => t('Ajax - Replace the form'),
+        TransactionActionBase::CONFIRM_MODAL => t('Modal - Confirm in a dialogue box')
+      ],
+      '#default_value' => $settings['experience_preview'],
+      '#weight' => 3,
+      '#required' => TRUE
+    ],
+    '#weight' => $w++,
+  ];
+
+  $form['#suffix'] = t(
+    "N.B The confirmation page is configured separately, at %link",
+    ['%link' => \Drupal::linkGenerator()->generate(
+      'admin/accounting/workflow/save',
+      \Drupal\Core\Url::fromRoute('entity.action.edit_form', ['action' => 'transaction_save'])
+    )]
+  );
+
+  $form['actions']['submit']['#submit'][] = 'mcapi_forms_display_submit';
+}
+
+/**
+ * form submit callback
+ */
+function mcapi_forms_display_submit($form, $form_state) {
+  $entity = $form_state->getFormObject()->getEntity();
+  $entity->setThirdpartySetting('mcapi_forms', 'title', $form_state->getValue('form_title'));
+  $entity->setThirdpartySetting('mcapi_forms', 'wallet_link_title', $form_state->getValue('wallet_link_title'));
+  $entity->setThirdpartySetting('mcapi_forms', 'path', $form_state->getValue('path'));
+  $menu = $form_state->getValue('menu');
+  $entity->setThirdpartySetting('mcapi_forms', 'menu_title', $menu['title']);
+  $entity->setThirdpartySetting('mcapi_forms', 'menu_weight',  $menu['weight']);
+  $entity->setThirdpartySetting('mcapi_forms', 'menu_name',  $menu['menu_name']);
+  $entity->setThirdpartySetting('mcapi_forms', 'type', $form_state->getValue('type'));
+  $entity->setThirdpartySetting('mcapi_forms', 'direction', $form_state->getValue('direction'));
+  $experience = $form_state->getValue('experience');
+  $entity->setThirdpartySetting('mcapi_forms', 'experience_twig', $experience['twig']);
+  $entity->setThirdpartySetting('mcapi_forms', 'experience_button', $experience['button']);
+  $entity->setThirdpartySetting('mcapi_forms', 'experience_preview', $experience['preview']);
+  $entity->save();
+}
+
+//check that the required transaction form elements either have preset OR are in the Twig
+function validate_twig_template(array $element, $form_state) {
+  $errors = [];
+  if (strpos($element['#value'], "{{ partner }}") === NULL) {
+    if (!$form_state->getValue('partner')['preset']) {
+      $errors[] = 'partner';
+    }
+  }
+  //ensure the worth field is present if there are
+  if (strpos($element['#value'], '{{ worth }}') == NULL) {
+    $empty = TRUE;
+    foreach ($form_state->getValues('fieldapi_presets')['worth']['preset'] as $item) {
+      if ($item['value']) {
+        $empty = FALSE;
+        break;
+      }
+    }
+    if ($empty){
+      $errors[] = 'worth';
+    }
+  }
+  foreach ($errors as $field_name) {
+    $form_state->setError(
+      $element,
+      t(
+        'Field @fieldname neither appears in the form, nor has a preset value',
+        ['@fieldname' => $element['#title']]
+      )
+    );
+  }
+}
+
+  //is called from the form validator, so must be public
+  //@todo
+  function mcapi_forms_unique_path(&$element, $form_state) {
+    drupal_set_message('need to check for a unique path');
+    return;
+
+    $values = $form_state->getValues();
+    $dupe = \Drupal::database()->select('router', 'r')
+      ->fields('r', ['name'])
+      ->condition('name', 'mcapi.1stparty.'.$values['id'], '<>')
+      ->condition('path', $values['path'])
+      ->execute()->fetchField();
+    if ($dupe) $form_state->setError('path', t('Path is already used.'));
+
+  }

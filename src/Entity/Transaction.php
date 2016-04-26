@@ -33,11 +33,11 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *     "list_builder" = "\Drupal\mcapi\ListBuilder\TransactionListBuilder",
  *     "access" = "Drupal\mcapi\Access\TransactionAccessControlHandler",
  *     "form" = {
+ *       "default" = "Drupal\mcapi\Form\TransactionForm",
  *       "operation" = "Drupal\mcapi\Form\OperationForm",
  *       "12many" = "Drupal\mcapi\Form\One2Many",
  *       "many21" = "Drupal\mcapi\Form\Many2One",
- *       "admin" = "Drupal\mcapi\Form\TransactionForm",
- *       "edit" = "Drupal\mcapi\Form\TransactionEditForm",
+ *       "edit" = "Drupal\mcapi\Form\TransactionEditForm"
  *     },
  *     "views_data" = "Drupal\mcapi\Views\TransactionViewsData",
  *     "route_provider" = {
@@ -56,6 +56,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *   links = {
  *     "canonical" = "/transaction/{mcapi_transaction}",
  *     "edit-form" = "/transaction/{mcapi_transaction}/edit",
+ *     "add-form" = "/transaction/create",
  *     "collection" = "/admin/accounting/transactions"
  *   },
  *   constraints = {
@@ -213,17 +214,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
+    $fields = parent::baseFieldDefinitions($entity_type);
     //note that the worth field is field API because we can't define multiple cardinality fields in this entity.
-    $fields['xid'] = BaseFieldDefinition::create('integer')
-      ->setLabel(t('Transaction ID'))
-      ->setDescription(t('The unique database key of the transaction'))
-      ->setReadOnly(TRUE)
-      ->setSetting('unsigned', TRUE);
-
-    $fields['uuid'] = BaseFieldDefinition::create('uuid')
-      ->setLabel(t('UUID'))
-      ->setDescription(t('The transaction UUID.'))
-      ->setReadOnly(TRUE);
 
     $fields['description'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Description'))
@@ -251,7 +243,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
 
     //I wanted to add the CanPayout and CanPayin constraints in the widget builder
     //but I couldn't see how. So at the moment they apply to all entity forms, but
-    //they only run code when $items->restriction is TRUE
+    //they only run code when $items->restricted is TRUE
     $fields['payer'] = BaseFieldDefinition::create('wallet_reference')
       ->setLabel(t('Payer'))
       ->setDescription(t('The giving wallet'))
@@ -283,7 +275,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setDescription(t('The user who created the transaction'))
       ->setSetting('target_type', 'user')
       ->setDisplayConfigurable('view', TRUE)
-      ->setDisplayConfigurable('form', TRUE)
       ->setReadOnly(TRUE)
       ->setRevisionable(FALSE)
       ->setRequired(TRUE);
@@ -317,7 +308,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
         'form',
         ['type' => 'datetime_timestamp', 'weight' => 10]
       )
-      ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE);
 
     $fields['changed'] = BaseFieldDefinition::create('changed')

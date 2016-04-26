@@ -14,7 +14,6 @@ use Drupal\Core\Form\FormState;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi_forms\FirstPartyTransactionForm;
-use Drupal\mcapi_forms\Entity\FirstPartyFormDesign;
 
 
 /**
@@ -32,7 +31,7 @@ class FirstParty extends BlockBase {
     return \Drupal::service('entity.form_builder')
       ->getForm(
         Transaction::create(),
-        $this->configuration['editform_id']
+        $this->configuration['mode']
       );
   }
 
@@ -51,8 +50,6 @@ class FirstParty extends BlockBase {
       elseif($route_name == 'mcapi.transaction.operation') {
         $access = AccessResult::forbidden();
       }
-      //@todo check access settings of the form itself
-      //$this->editform = FirstPartyFormDesign::load($this->configuration['editform_id']);
     }
     return $return_as_object ? $access : $access->isAllowed();
   }
@@ -63,15 +60,14 @@ class FirstParty extends BlockBase {
    */
   function blockForm($form, FormStateInterface $form_state) {
     $options = [];
-    foreach (FirstPartyFormDesign::loadMultiple() as $id => $editform) {
-      $options[$id] = $editform->label();
+    foreach (mcapi_form_displays_load() as $mode => $display) {
+      $options[$mode] = $display->label();
     }
-    $form['editform_id'] = [
-      '#title' => t('Form to use'),
-      '#description' => t('Choose from all the firstparty forms which are not specific to one exchange'),
+    $form['mode'] = [
+      '#title' => t('Display'),
       '#type' => 'select',
       '#options' => $options,
-      '#default' => $this->configuration['editform_id']
+      '#default' => $this->configuration['mode']
     ];
     return $form;
   }
@@ -81,7 +77,7 @@ class FirstParty extends BlockBase {
    * {@inheritdoc}
    */
   public function blockSubmit($form, FormStateInterface $form_state) {
-    $this->configuration['editform_id'] = $form_state->getValues()['editform_id'];
+    $this->configuration['mode'] = $form_state->getValues()['mode'];
   }
 
 }

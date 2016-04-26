@@ -94,17 +94,17 @@ class CurrencyForm extends EntityForm {
       ],
       '#weight' => 3,
     ];
-    $form['exchange'] = [
+    $form['promise'] = [
       '#type' => 'container',
       '#children' => implode(" ", [
-        $this->t("Exchange currencies are 'sufficient' - they are issued and redeemed as as users earn and spend."),
+        $this->t("Promise, or credit currencies are 'sufficient' - they are issued and redeemed as as users earn and spend."),
         $this->t('The sum of all balances of active accounts, including the reservoir account, is zero, and ideally, accounts are returned to zero before being deactivated.'),
         $this->t('To stop accounts straying too far from zero, positive and negative balance limits are often used.'),
         $this->t('This model is sometimes called mutual credit, barter, or reciprocal exchange.'),
       ]),
       '#states' => [
         'visible' => [
-          ':input[name="issuance"]' => ['value' => Currency::TYPE_EXCHANGE]
+          ':input[name="issuance"]' => ['value' => Currency::TYPE_PROMISE]
         ]
       ],
       '#weight' => 3,

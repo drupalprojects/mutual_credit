@@ -112,7 +112,7 @@ class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
     return $this->entityTypeManager
       ->getViewBuilder('mcapi_wallet')
       ->viewMultiple(
-        Mcapi::walletsOf($this->holder_entity, TRUE), 
+        \Drupal\mcapi\Mcapi::walletsOf($this->holder_entity, TRUE), 
         'mini'
       );
   }

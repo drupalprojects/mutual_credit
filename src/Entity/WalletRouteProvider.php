@@ -26,10 +26,11 @@ class WalletRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRoutePr
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_manager
    *   The entity manager.
    */
-  public function  __construct(EntityTypeManagerInterface $entity_type_manager, EntityFieldManagerInterface $entity_field_manager, $config) {
+  public function  __construct(EntityTypeManagerInterface $entity_type_manager, EntityFieldManagerInterface $entity_field_manager, $config, $entity_manager) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
     $this->config = $config;
+    parent::__construct($entity_manager, $entity_field_manager);//deprecated
   }
 
   /**
@@ -39,7 +40,8 @@ class WalletRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRoutePr
     return new static(
       $container->get('entity_type.manager'),
       $container->get('entity_field.manager'),
-      $container->get('config.factory')->get('mcapi.settings')
+      $container->get('config.factory')->get('mcapi.settings'),
+      $container->get('entity.manager')
     );
   }
 

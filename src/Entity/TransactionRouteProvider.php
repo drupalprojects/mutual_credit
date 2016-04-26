@@ -26,6 +26,10 @@ class TransactionRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRo
     $options['parameters']['mcapi_transaction']['serial'] = TRUE;
 
     $route_collection
+      ->get('entity.mcapi_transaction.add_form')
+      ->setRequirement('_permission', 'create 3rdparty transactions');
+
+    $route_collection
       ->get('entity.mcapi_transaction.canonical')
       ->setRequirement('user', '\d+')
       ->setOptions($options);
@@ -44,17 +48,6 @@ class TransactionRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRo
       ->setRequirement('user', '\d+')
       ->setOptions($options);
     $route_collection->add('mcapi.transaction.operation', $route);
-
-    //a route to the default (admin) transaction create form
-    $route = (new Route('/transaction/admin'))
-      ->setDefaults([
-        '_title' => 'Admin append transaction',
-        '_entity_form' => 'mcapi_transaction.admin',
-      ])
-      ->setRequirement('_permission', 'manage mcapi')
-      ->setOption('_admin_route', TRUE);
-    $route_collection->add('mcapi.transaction.admin', $route);
-
 
     return $route_collection;
   }

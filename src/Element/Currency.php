@@ -36,7 +36,7 @@ class Currency extends FormElement {
   /**
    * process callback
    */
-  static function process_currcodes($element) {
+  static function process_currcodes($element, $form_state) {
     $conditions = [];
     if ($element['#status']) {
       $conditions['status'] = TRUE;
@@ -45,7 +45,7 @@ class Currency extends FormElement {
       //shows the intersection of all currencies and currencies provided
       $element['#options'] = array_intersect_key(
         Mcapi::entityLabelList('mcapi_currency', $element['#curr_ids']),
-        entity_load_multiple_by_properties('mcapi_currency', $conditions)
+        \Drupal\mcapi\Entity\Currency::loadByProperties($conditions)
       );
     }
     elseif (empty($element['#options'])) {
@@ -64,7 +64,7 @@ class Currency extends FormElement {
       //have to do some of the checkbox processing manually coz we missed it
       $element['#type'] = 'checkboxes';
       $element['#value'] = array_filter($element['#default_value']);
-      $element = Checkboxes::processCheckboxes($element);
+      $element = Checkboxes::processCheckboxes($element, $form_state);
     }
     else {
       $element['#theme'] = 'select';

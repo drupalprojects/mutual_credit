@@ -59,11 +59,13 @@ class TransactionViewBuilder extends EntityViewBuilder {
    * @return array
    */
   protected function getBuildDefaults(EntityInterface $entity, $view_mode) {
+    if ($view_mode == 'full'){
+      $view_mode = 'certificate';
+    }
     //if the view_mode is 'full' that means nothing was specified, which is the norm.
     //so we turn to the 'view' transition where the view mode is a configuration.
     $build = parent::getBuildDefaults($entity, $view_mode);
     switch($view_mode) {
-      case 'full':
       case 'certificate':
         $build['#theme'] = 'mcapi_transaction_twig';
         $build['#mcapi_transaction']->twig = \Drupal\system\Entity\Action::load('transaction_view')

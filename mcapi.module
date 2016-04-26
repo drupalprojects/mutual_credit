@@ -10,6 +10,7 @@ use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\mcapi\Plugin\Field\FieldWidget\WalletReferenceAutocompleteWidget;
 
 
 //@todo is it appropriate to use constants for plugin names?
@@ -355,9 +356,16 @@ function mcapi_mcapi_form_list() {
     'link' => Link::fromTextAndUrl(t('Many to one'), \Drupal\Core\Url::fromRoute('mcapi.masspay.many21', [])),
     'operations' => []
   ];
+  $forms['default'] = [
+    'link' => Link::fromTextAndUrl(t('3rd party'), \Drupal\Core\Url::fromRoute('entity.mcapi_transaction.add_form')),
+    'operations' => [],
+  ];
   return $forms;
 }
 
+/**
+ * Implements hook_query_TAG_alter().
+ */
 function mcapi_entity_query_transaction_query_alter($query)  {
   drupal_set_message('mcapi_entity_query_transaction_query_alter chance to do some transaction access control');
 }
@@ -374,6 +382,9 @@ function mcapi_entity_form_display_alter($display, $display_context){
     $display->setComponent('worth', $settings);
   }
 }
+/**
+ * Implements hook_entity_view_display_alter().
+ */
 function mcapi_entity_view_display_alter($display, $display_context){
   if ($display_context['bundle'] == 'mcapi_transaction') {
     $settings = $display->getComponent('worth');
@@ -382,7 +393,7 @@ function mcapi_entity_view_display_alter($display, $display_context){
   }
 }
 
-/*
+/**
  * utility to retrieve any enabled views 'embed' displays which takes a wallet id as its first argument
  * @todo make some settings here, or some responsivness to the actual views, then cache it
  */
@@ -456,4 +467,3 @@ function empty_worths_config(array $worth) {
   }
   return TRUE;
 }
-

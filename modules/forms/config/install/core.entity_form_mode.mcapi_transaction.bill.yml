@@ -1,0 +1,8 @@
+uuid: 48aa7255-856d-4383-8736-54c3287c48d4
+langcode: en
+status: true
+id: mcapi_transaction.bill
+label: 'Bill'
+targetEntityType: mcapi_transaction
+cache: true
+third_party_settings: { }

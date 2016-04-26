@@ -4,6 +4,8 @@ status: true
 dependencies:
   module:
     - mcapi
+_core:
+  default_config_hash: ygHkSqxconFKpdOL1PiYgEfdVoDtDCsyppuSbwY7_Vg
 id: wallets
 label: Wallets
 module: views
@@ -79,16 +81,16 @@ display:
       row:
         type: fields
         options:
-          default_field_elements: false
+          default_field_elements: true
           inline: {  }
           separator: ''
           hide_empty: false
         provider: views
       fields:
-        label:
-          id: label
+        name:
+          id: name
           table: mcapi_wallet
-          field: label
+          field: name
           relationship: none
           group_type: group
           admin_label: ''
@@ -133,10 +135,23 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          link_to_entity: 1
-          link: 1
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
           entity_type: mcapi_wallet
-          plugin_id: mcapi_entity_label
+          entity_field: name
+          plugin_id: field
         holder:
           id: holder
           table: mcapi_wallet
@@ -144,7 +159,58 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          label: 'Holding entity'
+          label: 'held by'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          owner: 0
+          entity_type: mcapi_wallet
+          plugin_id: mcapi_wallet_holder
+        summary_balance:
+          id: summary_balance
+          table: mcapi_wallet
+          field: summary_balance
+          relationship: none
+          group_type: group
+          admin_label: ''
+          label: Balance
           exclude: false
           alter:
             alter_text: false
@@ -186,19 +252,19 @@ display:
           empty_zero: false
           hide_alter_empty: true
           entity_type: mcapi_wallet
-          plugin_id: mcapi_wallet_holder
-        nothing:
-          id: nothing
-          table: views
-          field: nothing
+          plugin_id: wallet_summary
+        summary_volume:
+          id: summary_volume
+          table: mcapi_wallet
+          field: summary_volume
           relationship: none
           group_type: group
           admin_label: ''
-          label: ''
+          label: 'Gross income'
           exclude: false
           alter:
-            alter_text: true
-            text: 'Need to add the wallet balance and turnover...'
+            alter_text: false
+            text: ''
             make_link: false
             path: ''
             absolute: false
@@ -227,25 +293,26 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: false
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
           empty: ''
           hide_empty: false
           empty_zero: false
-          hide_alter_empty: false
-          plugin_id: custom
+          hide_alter_empty: true
+          entity_type: mcapi_wallet
+          plugin_id: wallet_summary
       filters:
-        name:
-          id: name
+        payways:
+          id: payways
           table: mcapi_wallet
-          field: name
+          field: payways
           relationship: none
           group_type: group
           admin_label: ''
           operator: '!='
-          value: _intertrading
+          value: A
           group: 1
           exposed: false
           expose:
@@ -273,7 +340,7 @@ display:
             default_group_multiple: {  }
             group_items: {  }
           entity_type: mcapi_wallet
-          entity_field: name
+          entity_field: payways
           plugin_id: string
       sorts: {  }
       title: Wallets
@@ -328,6 +395,7 @@ display:
     cache_metadata:
       max-age: -1
       contexts:
+        - 'languages:language_content'
         - 'languages:language_interface'
         - url
         - url.query_args
@@ -392,6 +460,7 @@ display:
     cache_metadata:
       max-age: -1
       contexts:
+        - 'languages:language_content'
         - 'languages:language_interface'
         - url
         - url.query_args
@@ -462,6 +531,7 @@ display:
     cache_metadata:
       max-age: -1
       contexts:
+        - 'languages:language_content'
         - 'languages:language_interface'
         - url
         - url.query_args
@@ -524,6 +594,7 @@ display:
     cache_metadata:
       max-age: -1
       contexts:
+        - 'languages:language_content'
         - 'languages:language_interface'
         - url
         - url.query_args
@@ -576,6 +647,7 @@ display:
     cache_metadata:
       max-age: 0
       contexts:
+        - 'languages:language_content'
         - 'languages:language_interface'
         - url.query_args
       tags: {  }

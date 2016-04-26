@@ -35,9 +35,6 @@ function mcapi_exchanges_entity_type_alter(array &$entity_types) {
   $path = 'Drupal\mcapi_exchanges\Overrides\\';
   $entity_types['mcapi_currency']->setListbuilderClass($path.'CurrencyListBuilderExchanges');
   $entity_types['mcapi_wallet']->setAccessClass($path.'ExchangesWalletAccessControlHandler');
-  if (isset($entity_types['firstparty_editform'])) {
-    //$entity_types['firstparty_editform']->setListbuilderClass($path.'FirstPartyEditFormListBuilderExchanges');
-  }
   if (\Drupal::config('mcapi_exchanges.settings')->get('segregate_exchanges')) {
     $entity_types['user']->setFormClass('join', 'Drupal\mcapi_exchanges\Form\Join');
   }

@@ -1,0 +1,16 @@
+id: d7_transaction
+label: Transaction entity
+migration_tags:
+  - Drupal 7
+source:
+  plugin: d7_mcapi_signatures
+process:
+  serial: serial
+  uid: uid
+  signed:
+    plugin: sign_date
+destination:
+  plugin: mcapi_signatures
+migration_dependencies:
+  required:
+    - d7_transaction

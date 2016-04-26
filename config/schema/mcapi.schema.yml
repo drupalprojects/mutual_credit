@@ -159,7 +159,7 @@ transaction_relatives:
   sequence: { }
 
 action.configuration.mcapi_transaction.*:
-  type: mapping
+  type: config_entity
   label: Transition action settings
   mapping:
     provider:

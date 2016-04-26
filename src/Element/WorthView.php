@@ -31,28 +31,12 @@ class WorthView extends \Drupal\Core\Render\Element\RenderElement {
     $currency = $element['#currency'];
     $element['#attributes']['class'][] = 'currency-'.$currency->id;
     $markup = '';
-    if ($element['#value']) {
-      if ($element['#value'] < 0) {
-        $markup = '-';
-      }
-      $markup .= $currency->format(abs($element['#value']), $element['#format']);
+    
+    if ($element['#value'] < 0) {
+      $markup = '-';
     }
-    else {
-      //apply any special formatting for zero value transactions
-//      if ($currency->zero) {
-//        if ($element['#format'] == \Drupal\mcapi\Entity\Currency::DISPLAY_NORMAL) {
-//          //@todo this format can't currently output #attributes
-//          $element['#attributes']['class'][] = 'zero';
-//          $markup .=  \Drupal::config('mcapi.settings')->get('zero_snippet');
-//        }
-//        else {
-//          $markup .= 0;
-//        }
-//      }
-//      else {
-//        \Drupal::logger('mcapi')->warning("Zero value shouldn't be possible in currency ".$currency->id);
-//      }
-    }
+    $markup .= $currency->format(abs($element['#value']), $element['#format']);
+    
     if ($element['#minus']) {
       $markup .= '-'.$markup;
     }

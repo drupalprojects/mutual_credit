@@ -21,8 +21,8 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
   /**
    * {@inheritdoc}
    */
-
   public function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = NULL) {
+    //creating transactions is simply a matter of being allowed to pay in and out of at least 1 wallet
     return Mcapi::enoughWallets($account->id()) ?
       AccessResult::Allowed()->cachePerUser() :
       AccessResult::Forbidden()->cachePerUser();

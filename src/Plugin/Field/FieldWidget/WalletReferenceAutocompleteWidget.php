@@ -1,8 +1,7 @@
 <?php
 /**
  * @file
- * Contains \Drupal\mcapi\Plugin\Field\Widget\WalletReferenceAutocompleteWidget.
- * @todo inject entityTypeManager and config('mcapi.settings')
+ * Contains \Drupal\mcapi\Plugin\Field\FieldWidget\WalletReferenceAutocompleteWidget.
  */
 
 namespace Drupal\mcapi\Plugin\Field\FieldWidget;
@@ -30,12 +29,19 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
   /**
    * {@inheritdoc}
    */
+  public static function defaultSettings() {
+    return parent::defaultSettings() + [
+      'hide_one_wallet' => FALSE
+    ];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function settingsForm(array $form, FormStateInterface $form_state) {
     $element = parent::settingsForm($form, $form_state);
     unset($element['size']);
-
-    //@todo make this work
-    $form['hide_one_wallet'] = [
+    $element['hide_one_wallet'] = [
       '#title' => $this->t('Hide the wallet field if there is only one.'),
       '#type' => 'checkbox',
       '#default_value' => $this->getSetting('hide_one_wallet'),
@@ -50,39 +56,50 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
   public function settingsSummary() {
     $summary = parent::settingsSummary();
     unset($summary[1]);//size
+    $message = $this->getSetting('hide_one_wallet') ?
+      $this->t('Hide widget for one wallet') :
+      $this->t('Show widget for one wallet');
+    $summary['hide_one'] = ['#markup' => $message];
     return $summary;
   }
 
+
+
   /**
    * {@inheritdoc}
+   * @see function mcapi_field_widget_wallet_reference_autocomplete_form_alter
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
-    $referenced_entities = $items->referencedEntities();
-    $default_value = isset($referenced_entities[$delta]) ? $referenced_entities[$delta] : NULL;
-    if ($form_state->getFormObject()->restrict) {
-      $items->restriction = $this->fieldDefinition->getName() == 'payer' ? 'payout' : 'payin';
-    }
-    //$items restriction is needed for validation
-    else $items->restriction = '';
 
-    if ($default_value && $default_value->isIntertrading()) {
-      $wids = [$default_value->id()];
+    if ($form_state->get('restrictWallets')) {
+      $restriction = $this->fieldDefinition->getName() == 'payer' ? 'payout' : 'payin';
+      $items->restricted = TRUE;//used in wallet constraint validator
     }
     else {
-      $wids = Mcapi::getWalletSelection('', $items->restriction);
+      $restriction = '';
+      $items->restricted = FALSE;
+    }
+
+    $referenced_entities = $items->referencedEntities();
+    $default_value_wallet = isset($referenced_entities[$delta]) ? $referenced_entities[$delta] : NULL;
+    if ($default_value_wallet && $default_value_wallet->isIntertrading()) {
+      $wids = [$default_value_wallet->id()];
+    }
+    else {
+      //get all payer or payee wallets regardless of direction
+      $wids = Mcapi::getWalletSelection('', $restriction);
     }
     $count = count($wids);
 
     if (!$count) {
       throw new \Exception('No wallets to show for '.$this->fieldDefinition->getName());
     }
-    //@todo inject this
-    $config = \Drupal::config('mcapi.settings');
+    $max = \Drupal::config('mcapi.settings')->get('wallet_widget_max_select');
     //present different widgets according to the number of wallets to choose from, and settings
     if ($count == 1) {
       $wid = reset($wids);
       $element['#value'] = $wid;
-     if ($this->getSetting('hide_one_wallet')) {
+      if ($this->getSetting('hide_one_wallet')) {
         $element['#type'] = 'value';
       }
       else {
@@ -90,13 +107,13 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
         $element['#markup'] = \Drupal\mcapi\Entity\Wallet::load($wid)->label();
       }
     }
-    elseif ($count > $config->get('wallet_widget_max_select')) {
+    elseif ($count > $max) {
       $element += [
         '#type' => 'wallet_entity_auto',
         //assuming that the field item name IS the role
         '#selection_handler' => 'default:mcapi_wallet',//this should be implicit because of the $type
-        '#selection_settings' => ['restrict' => $items->restriction],
-        '#default_value' => $default_value,
+        '#selection_settings' => ['restrict' => $restriction],
+        '#default_value' => $default_value_wallet,
         '#placeholder' => $this->getSetting('placeholder'),
         '#size' => 60,//appearance should be managed with css
         '#maxlength' => 64,
@@ -105,11 +122,12 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
     }
     else {
       $element += [
-        '#type' => ($config->get('wallet_widget_max_radios')) ? 'select' : 'radios',
+        '#type' => (\Drupal::config('mcapi.settings')->get('wallet_widget_max_radios')) ? 'select' : 'radios',
         '#options' => Mcapi::entityLabelList('mcapi_wallet', $wids),
         '#default_value' => $default_value ? $default_value->id() : ''
       ];
     }
+
     return ['target_id' => $element];
   }
 

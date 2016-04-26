@@ -199,17 +199,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
-    $fields['wid'] = BaseFieldDefinition::create('integer')
-      ->setLabel(t('Wallet ID'))
-      ->setDescription(t('The unique wallet ID.'))
-      ->setReadOnly(TRUE)
-      ->setSetting('unsigned', TRUE);
-
-    $fields['uuid'] = BaseFieldDefinition::create('uuid')
-      ->setLabel(t('UUID'))
-      ->setDescription(t('The wallet UUID.'))
-      ->setReadOnly(TRUE);
-
+    $fields = parent::baseFieldDefinitions($entity_type);
     $fields['holder_entity_type'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Holder entity type'))
       ->setDescription(t('The timezone of this user.'))

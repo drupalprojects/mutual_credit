@@ -1,9 +1,0 @@
-uuid: 48aa7255-8567-4313-8736-54c3287c48d4
-langcode: en
-status: true
-id: mcapi_transaction.3rdparty
-provider: mcapi_forms
-label: '3rd party'
-targetEntityType: mcapi_transaction
-cache: true
-

@@ -20,8 +20,6 @@ use Drupal\Core\Form\FormStateInterface;
  */
 class WalletHolder extends Standard {
 
-
-
   protected function defineOptions() {
     $options = parent::defineOptions();
     $options['owner'] = array('default' => '');
@@ -35,8 +33,8 @@ class WalletHolder extends Standard {
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     parent::buildOptionsForm($form, $form_state);
     $form['owner']  = [
-      '#title' => $this->t('User the wallet owner'),
-      '#description' => $this->t('The owner is always a user, who may own the holding entity'),
+      '#title' => $this->t('Show the wallet owner'),
+      '#description' => $this->t('The holder can be any entity but the owner is always a user'),
       '#type' => 'checkbox',
       '#default_value' => $this->options['owner']
     ];

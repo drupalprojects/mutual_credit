@@ -20,7 +20,6 @@ abstract class CanPay extends Constraint implements ConstraintValidatorInterface
    */
   protected $context;
 
-
   /**
    * {@inheritDoc}
    */

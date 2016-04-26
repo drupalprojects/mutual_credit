@@ -1,10 +1,7 @@
 name: Migrate transactions
-description: Not yet upgraded
-package: Community Accounting
-core: 7.x
+description: To be deleted
+core: 8.x
 type: module
-
-configure: mcapi.migrate.settings
 
 dependencies:
   - mcapi

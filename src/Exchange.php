@@ -53,6 +53,9 @@ class Exchange {
         Exchanges::currenciesAvailableToUser($account) :
         Currency::loadMultiple();
 
+      if (!$currencies) {
+        debug('Why would there be no currencies availabe to user '.$account->id());
+      }
       uasort($currencies, '\Drupal\mcapi\Mcapi::uasortWeight');
       $account->currencies_available = $currencies;
     }

@@ -31,7 +31,7 @@ class CanPayin extends CanPay {
    * {@inheritdoc}
    */
   public function validate($items, Constraint $constraint) {
-    if ($items->restriction) {
+    if ($items->restricted) {
       //$items is the payee wallet listfield
       $eligible = \Drupal::entityTypeManager()
         ->getStorage('mcapi_wallet')

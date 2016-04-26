@@ -244,7 +244,7 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
           'id' => $id,
           'name' => $currency_name,
           'zero' => rand(0, 1),
-          'issuance' => Currency::TYPE_EXCHANGE,//same for all
+          'issuance' => Currency::TYPE_PROMISE,//same for all
           'format' => $this->getFormat($id),
           'uid' => 1
         ]);

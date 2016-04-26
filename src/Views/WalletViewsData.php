@@ -19,17 +19,6 @@ class WalletViewsData extends EntityViewsData {
     $data['mcapi_wallet']['wid']['field']['id'] = 'mcapi_entity';
 
     $data['mcapi_wallet']['name']['help'] = $this->t("When the holder can hold one wallet only, the wallet inherits the name of its holder");
-    //@todo surely the entity label should have been added already?
-    $data['mcapi_wallet']['label'] = [
-      'title' => $this->t('Label'),
-      'help' => $this->t('The label of the wallet, (usually the same as the raw name)'),
-      'real field' => 'wid',
-      'field' => [
-        //@todo waiting for entity_label to abandon the 'entity type field' in its definition
-        'id' => 'entity_label',
-        'entity type field' => 'holder_entity_type',
-      ],
-    ];
 
     $data['mcapi_wallet']['holder'] = [
       'title' => $this->t('Link to holding entity'),

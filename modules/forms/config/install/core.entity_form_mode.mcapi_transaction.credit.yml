@@ -1,9 +1,8 @@
 uuid: 48aa7255-8567-4383-8736-54c3287c48d4
 langcode: en
 status: true
-id: mcapi_transaction.1stparty
-provider: mcapi_forms
-label: '1st Party'
+id: mcapi_transaction.credit
+label: 'Credit'
 targetEntityType: mcapi_transaction
 cache: true
 third_party_settings: { }

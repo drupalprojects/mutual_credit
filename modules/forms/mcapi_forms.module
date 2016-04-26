@@ -1,34 +1,25 @@
 <?php
 
-use Drupal\mcapi_forms\Entity\FirstPartyFormDesign;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Link;
+
+
+define('MCAPI_FORMS_DIR_INCOMING', 1);
+define('MCAPI_FORMS_DIR_OUTGOING', -1);
+define('MCAPI_FORMS_DIR_BOTH', 0);
 
 /**
  * Implements hook_entity_type_build().
  */
 function mcapi_forms_entity_type_build(array &$entity_types) {
   if (isset($entity_types['mcapi_transaction'])) {
-    $entity_types['mcapi_transaction']->setFormClass('1stparty', 'Drupal\mcapi_forms\FirstPartyTransactionForm');
-    $entity_types['mcapi_transaction']->setFormClass("3rdparty", "Drupal\mcapi\Form\TransactionForm");
+    foreach (mcapi_form_displays_load(TRUE) as $mode => $display) {
+      $entity_types['mcapi_transaction']->setFormClass(
+        $display->get('mode'),
+        'Drupal\mcapi_forms\FirstPartyTransactionForm'
+      );
+    }
   }
-}
-
-/*
- * Implements hook_form_field_config_edit_form_alter().
- */
-function mcapi_forms_form_field_config_edit_form_alter(&$form, &$form_state) {
-  if ($form_state->getFormObject()->getEntity()->getTargetEntityTypeId() == 'mcapi_transaction') {
-    drupal_set_message(t("Most of the time, these values won't be seen on transaction forms"));
-  }
-}
-
-/**
- * machine_name callback
- * @param string $id
- */
-function mcapi_editform_load($id) {
-  return FirstPartyFormDesign::load($id);
 }
 
 /**
@@ -39,12 +30,12 @@ function mcapi_editform_load($id) {
  *   each link is an array
  */
 function mcapi_forms_menu_links_discovered_alter(&$links) {
-  foreach (FirstPartyFormDesign::loadMultiple() as $id => $first_party_form) {
-    if ($menu = $first_party_form->menu['menu_name']) {
-      $route_name = 'mcapi.1stparty.'.$id;
-      $parent_path = substr($first_party_form->path, 0, strrpos($first_party_form->path, '/'));
+  foreach (mcapi_form_displays_load() as $id => $first_party_form) {
+    $design = $first_party_form->getThirdPartySettings('mcapi_forms');
+    if ($menu = $design['menu_name']) {
+      $route_name = 'mcapi.1stparty.'.$first_party_form->get('mode');
       $links[$route_name.'.link'] = [
-        'title' => $first_party_form->title,
+        'title' => $design['title'],
         'route_name' => $route_name,
         'provider' => 'mcapi_forms',
         'menu_name' => $menu,
@@ -61,7 +52,7 @@ function mcapi_forms_menu_links_discovered_alter(&$links) {
  *
  * change the default date widget for the created field
  *
- * @todo make this work with the date_popup widget, but in what module
+ * @todo make this work with the date_popup widget, but in what module?
  */
 function mcapi_forms_entity_base_field_info_alter(&$fields, EntityTypeInterface $entity_type) {
   if ($entity_type->id() == 'mcapi_transaction') {
@@ -88,7 +79,6 @@ function mcapi_forms_theme() {
   ];
 }
 
-
 /**
  * implement mcapi hook_mcapi_form_list().
  * return a list of transaction forms declared in this module.
@@ -99,29 +89,57 @@ function mcapi_forms_theme() {
 function mcapi_forms_mcapi_form_list() {
   $forms = [];
 
-  $forms['default'] = [
-    'link' => Link::fromTextAndUrl(t('Administration'), \Drupal\Core\Url::fromRoute('mcapi.transaction.admin')),
-    'operations' => [],
-  ];
-  foreach (FirstPartyFormDesign::loadMultiple() as $id => $entity) {
-    $forms[$id]['link'] = Link::fromTextAndUrl($entity->title, \Drupal\Core\Url::fromRoute('mcapi.1stparty.'.$id));
-
-    if ($entity->access('update') && $entity->hasLinkTemplate('edit-form')) {
-      $forms[$id]['operations']['edit'] = [
-        'title' => t('Edit'),
-        'weight' => 10,
-        'url' => $entity->urlInfo('edit-form'),
-      ];
-    }
-    if ($entity->access('delete') && $entity->hasLinkTemplate('delete-form')) {
-      $forms[$id]['operations']['delete'] = [
-        'title' => t('Delete'),
-        'weight' => 100,
-        'url' => $entity->urlInfo('delete-form'),
-      ];
-    }
+  foreach (mcapi_form_displays_load() as $mode => $entity) {
+    $edit_form_settings = $entity->getThirdPartySettings('mcapi_forms');
+    $forms[$mode] = [
+      'link' => Link::fromTextAndUrl(
+        $edit_form_settings['title'],
+        \Drupal\Core\Url::fromRoute('mcapi.1stparty.'.$mode)
+      ),
+      'operations' => [
+        'edit' => [
+          'title' => t('Edit'),
+          'url' => Drupal\Core\Url::fromRoute(
+            'entity.entity_form_display.mcapi_transaction.form_mode',
+            ['form_mode_name' => $mode]
+          )
+        ]
+      ]
+    ];
   }
   return $forms;
+}
+
+/**
+ *
+ * utility
+ * get the EntityFormDisplays which have the thirdpartysettings
+ *
+ * @param bool $config
+ *   TRUE if there is a risk of recursion
+ * @return []
+ *   The EntityFormDisplay entities, as entities or as config
+ */
+function mcapi_form_displays_load($config = FALSE) {
+  $displays = [];
+  if ($config) {
+    $transaction_form_display_ids = \Drupal::configFactory()->listAll('core.entity_form_display.mcapi_transaction.mcapi_transaction');
+    foreach ($transaction_form_display_ids as $id) {
+      $display = \Drupal::config($id);
+      $displays[$display->get('mode')] = $display;
+    }
+  }
+  else {
+    $entities = \Drupal::entityTypeManager()
+      ->getStorage('entity_form_display')
+      ->loadByProperties(['bundle' => 'mcapi_transaction']);
+    foreach ($entities as $display) {
+      if ($display->status()) {
+        $displays[$display->get('mode')] = $display;
+      }
+    }
+  }
+  return $displays;
 }
 
 /**
@@ -141,24 +159,50 @@ function mcapi_forms_entity_extra_field_info() {
  */
 function mcapi_forms_mcapi_wallet_view(array &$build, $entity, $display) {
   if ($display->getComponent('trade_with')) {
-    $ids = \Drupal::entityQuery('firstparty_editform')
-      ->condition('wallet_link_title', '', '<>')
-      ->execute();
-    foreach (FirstPartyFormDesign::loadMultiple($ids) as $id => $configEntity) {
-      //I'm presuming the loaded config entity is translated
-      if ($configEntity->incoming) {
-        $query = ['payer' => $entity->id()];
+    foreach (mcapi_form_displays_load() as $id => $display) {
+      if ($settings = $display->getThirdpartySettings('mcapi_forms')) {
+        switch($settings['direction']) {
+          case MCAPI_FORMS_DIR_INCOMING:
+            $key = 'payer';
+            break;
+          case MCAPI_FORMS_DIR_OUTGOING:
+            $key = 'payee';
+            break;
+          default:
+            continue;
+        }
+        $build['wallet_link_'.$id] = [
+          '#type' => 'link',
+          '#title' => wallet_link_title($entity, $settings['wallet_link_title']),
+          '#url' => \Drupal\Core\Url::fromUserInput($settings['path'], ['query' => [$key => $entity->id()]]),
+          '#attributes' => ['class' => 'wallet-link'],
+        ];
       }
-      else {
-        $query = ['payee' => $entity->id()];
-      }
-
-      $build['wallet_link_'.$id] = [
-        '#type' => 'link',
-        '#title' => $configEntity->walletLinkTitle($entity),
-        '#url' => Drupal\Core\Url::fromUserInput($configEntity->path, ['query' => $query]),
-        '#attributes' => ['class' => 'wallet-link'],
-      ];
     }
   }
+}
+
+/**
+ * implements hook_form_FORM_ID_alter
+ */
+function mcapi_forms_form_entity_form_display_edit_form_alter(&$form, \Drupal\Core\Form\FormState $form_state) {
+  if ($form['#entity_type'] == 'mcapi_transaction') {
+    $entity_form_display = $form_state->getFormObject()->getEntity();
+    if ($entity_form_display->getMode() == 'default') {
+      return;
+    }
+    $form_state->loadInclude('mcapi_forms', 'inc');
+    mcapi_forms_display_decorate($form, $entity_form_display->getThirdpartySettings('mcapi_forms'));
+  }
+}
+
+function mcapi_forms_make_default_transaction($type, $overrides = []) {
+  //prepare a transaction using the defaults here
+  $vars = ['type' => $type];
+  $vars += $overrides;
+  return \Drupal\mcapi\Entity\Transaction::create($vars);
+}
+
+function wallet_link_title(\Drupal\mcapi\Entity\WalletInterface $wallet, $title) {
+  return str_replace('[mcapi_wallet:name]', $wallet->label(), $title);
 }

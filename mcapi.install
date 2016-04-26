@@ -7,7 +7,6 @@
 
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Wallet;
-use Drupal\mcapi\Mcapi;
 
 /**
  * Implements hook_install().
@@ -43,7 +42,48 @@ function mcapi_install() {
   \Drupal::configFactory()->getEditable('mcapi.settings')
     ->set('zero_snippet', $snippet)
     ->save();
+}
 
+function mcapi_modules_installed($modules) {
+  if (in_array('migrate', $modules)) {
+    $map_process = [
+      'plugin' => 'static_map',
+      'bypass' => TRUE,
+    ];
+    $config = \Drupal::configFactory()->getEditable('migrate.migration.d7_field');
+    $process = $map_process + [
+      'source' => 'entity_type',
+      'map' => [
+        'transaction' => 'mcapi_transaction',
+      ]
+    ];
+    $config->set('process.entity_type', $process);
+
+    $process = $map_process + [
+      'source' => 'field_name',
+      'map' => [
+        'transaction_description' => '',
+      ]
+    ];
+    $config->set('process.field_name', $process);
+
+    $map = $config->get('process.type.map');
+    $map['worth_field'] = 'worth';
+    $config->set('process.type.map', $map);//this will probably be automated @see d7_field.yml
+    $conifg->save();
+
+
+
+
+    $config = \Drupal::configFactory()->getEditable('migrate.migration.d7_field_instance');
+    $process['source'] = 'bundle';
+    $config->set('process.entity_type', $process)->set('process.bundle', $process)->save();
+    //@todo once migration has settled down
+    //\Drupal::service('plugin.manager.migration')->createInstance($id)
+    //$migration->setProcessOfProperty('entity_type', $process);
+
+    drupal_set_message("refresh user 1's wallet name to ".User::load(1)->getDisplayName());
+  }
 }
 
 

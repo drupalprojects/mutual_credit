@@ -130,6 +130,7 @@ class Mcapi {
       $entities = \Drupal::entityTypeManager()->getStorage($entity_type_id)->loadMultiple();
     }
     elseif(is_string(key($data))) {
+      //that means it is a conditions list
       $entities = entity_load_multiple_by_properties($entity_type_id, $data);
     }
     elseif(is_numeric(reset($data))) {
@@ -260,10 +261,9 @@ class Mcapi {
     }
     else {
       $query = \Drupal::entityQuery('mcapi_wallet')
-        ->condition('payways', \Drupal\mcapi\Entity\Wallet::PAYWAY_AUTO, '<>')
+        ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
         ->condition('orphaned', 0);
       if ($match) {
-        //@todo inject database
         $query->condition('name', '%'.\Drupal::database()->escapeLike($match).'%', 'LIKE');
       }
       $wids = $query->execute();

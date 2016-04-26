@@ -126,7 +126,7 @@ function mcapi_token_info() {
       ],
       'wallet' => [
         'name' => t('Wallet'),
-        'description'  => $this->t('Wallet'),
+        'description'  => t('Wallet'),
         'needs_data' => 'mcapi_wallet'
       ]
     ]
