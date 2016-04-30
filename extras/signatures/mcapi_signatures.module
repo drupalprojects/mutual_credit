@@ -57,13 +57,14 @@ function mcapi_signall_access($account) {
 
 /*
  * Implements hook_entity_load()
- * put the signatories into the transaction entity
+ * put the signatories property on every transaction entity
  */
 function mcapi_signatures_entity_load($entities, $type) {
-  if ($type != 'transaction') return;
-  //as we put the signatures into the transaction objects, we check that each transaction is pending
-  foreach ($entities as $key => $transaction) {
-    $transaction->pending_signatures = mcapi_get_signatories($transaction->serial);
+  if ($type == 'transaction') {
+    //as we put the signatures into the transaction objects, we check that each transaction is pending
+    foreach ($entities as $key => $transaction) {
+      $transaction->pending_signatures = mcapi_get_signatories($transaction->serial);
+    }
   }
 }
 
@@ -288,7 +289,7 @@ function mcapi_signatures_init() {
  */
 function mcapi_signatures_preprocess_certificate(&$variables) {
   $transaction = &$variables['object'];
-  if (array_filter($transaction->pending_signatures)) 
+  if (array_filter($transaction->pending_signatures)) {
     $variables['pending'] = array(
       '#theme' => 'pending_signatures',
       '#transaction' => $transaction

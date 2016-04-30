@@ -1,0 +1,64 @@
+<?php
+/**
+ * @file
+ * Installation for ces_interop module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function mcapi_cc_schema() {
+  $schema = array();
+  $schema['mcapi_cc'] = array(
+    'description' => 'Community Exchange network transaction ids.',
+    'fields' => array(
+      'xid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'serial' => array(
+        'type' => 'varchar',
+        'length' => '32',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'txid' => array(
+        'description' => 'the clearing central transaction id',
+        'type' => 'varchar',
+        'length' => '36',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'remote_exchange_id' => array(
+        'description' => 'the seven char code of the exchange in clearing central',
+        'type' => 'varchar',
+        'length' => '7',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'remote_user_id' => array(
+        'description' => 'the remote users id in the remote system',
+        'type' => 'varchar',
+        'length' => '32',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'remote_user_name' => array(
+        'description' => 'the remote users name at the time of the transaction',
+        'type' => 'varchar',
+        'length' => '60',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('serial'),
+    'unique keys' => array(
+      'serial' => array('serial'),
+      'txid' => array('txid')
+    ),
+  );
+  return $schema;
+}
+

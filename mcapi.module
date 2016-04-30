@@ -61,14 +61,15 @@ function transaction_cluster_create(stdclass $transaction, $really = TRUE) {
  * @return array
  *   the transaction cluster, with serial number and xids
  */
-function transaction_cluster_write(array $cluster, $really = TRUE) {
+function transaction_cluster_write(array $cluster, $really = TRUE, $skip_validation = FALSE) {
   static $timediff = 0;
   if (!empty(current($cluster)->serial)) {
     throw new Exception ('Cannot insert transactions which already have a serial numbers: '.$transaction->serial);
   }
-  //put all the transactions side by side ready for the entity controller to validate and insert
-  module_invoke_all('accounting_validate', $cluster);
-
+  if (!$skip_validation) {
+    //put all the transactions side by side ready for the entity controller to validate and insert
+    module_invoke_all('accounting_validate', $cluster);
+  }
   $serial = entity_get_controller('transaction')->next_serial();
   module_invoke_all('transaction_pre_insert', $cluster);
   $created = $cluster[0]->created ? : REQUEST_TIME -1;
@@ -269,9 +270,9 @@ function mcapi_help($section, $arg) {
  * implements hook_menu()
  */
 function mcapi_menu() {
+  module_load_include('admin.inc', 'mcapi');
   //take this opportunity of an occasional hook to check that the description field is set
   if (!variable_get('transaction_description_field', '')) {
-    module_load_include('admin.inc', 'mcapi');
     if (count(_mcapi_get_text_instances())) {
       drupal_set_message(t('Is the textfield on your transaction used for the description? !link', array('!link' => l('admin/accounting/fields', 'admin/accounting/fields'))));
     }
@@ -1333,7 +1334,10 @@ function mcapi_field_validate($entity_type, $entity, $field, $instance, $langcod
         if (currency_access('membership', $item['currcode'], $account)) continue;
         $errors[$field['field_name']][$langcode][$delta][] = array(
           'error' => 'currency_access_membership',
-          'message' => t('User @name cannot use @currency', array('@name' => user_load($entity->creator)->name, '@currency' => $currency->human_name))
+          'message' => t(
+            'User @name cannot use @currency',
+            array('@name' => user_load($entity->creator)->name, '@currency' => $currency->human_name)
+          )
         );
       }
     }

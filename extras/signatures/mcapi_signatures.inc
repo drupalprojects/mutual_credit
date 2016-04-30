@@ -354,8 +354,8 @@ function mcapi_signatures_config($form, &$form_state) {
 function mcapi_sig_transaction_create($transaction, $really = 0) {
   //check the settings for this content type to see what signatures are required if any.
   $config = _signature_settings_default($transaction->type);
+  $transaction->pending_signatures = array();
   if ($transaction->state == TRANSACTION_STATE_PENDING) {
-    $transaction->pending_signatures = array();
     //put the signatures in the transaction object,
     if ($config['participants']) {
       $transaction->pending_signatures[$transaction->payer] = $transaction->creator == $transaction->payer ? 0 : 1;

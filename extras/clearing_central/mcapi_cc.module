@@ -1,0 +1,923 @@
+<?php
+/**
+ * @file
+ * @todo support testing with cxn and the switchover to live, deleting all test transactions
+ */
+
+//define('CLEARING_CENTRAL_URL', 'http://cxn.org.za');
+//define('CLEARING_CENTRAL_IP', '69.61.35.151');
+define('CLEARING_CENTRAL_URL', 'http://clearingcentral.net');
+define('CLEARING_CENTRAL_IP', '75.98.165.130');
+
+define('MCAPI_CC_CEN_ERR_INVALID_USER', 2);
+define('MCAPI_CC_CEN_ERR_TRANSACTION_DENIED', 4);
+define('MCAPI_CC_CEN_ERR_ACCESS_DENIED', 11);
+define('CEN_SUCCESS', 1);
+
+/**
+ * Implements hook_menu().
+ */
+function mcapi_cc_menu() {
+  $items = array();
+  //settings page
+  $items['admin/accounting/cc'] = array(
+    'title' => 'CES settings',
+    'description' => 'Change global settings related to IntegralCES interoperability.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mcapi_cc_settings_form'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  //clearing central comes in here
+  $items['clearingcentral'] = array(
+    'page callback' => 'mcapi_cc_endpoint',
+    'access callback' => 'mcapi_cc_check_cc_ip',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['transact/remote'] = array(
+    'title' => 'Remote',
+    'description' => 'With CES network',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mcapi_cc_remote_bill_form'),
+    'access callback' => 'remote_transaction_access',
+    'type' => MENU_LOCAL_TASK
+  );
+  $items['transact/remote/claim'] = array(
+    'title' => 'Remote bill',
+    'description' => 'Charge a member in another CES exchange',
+    'type' => MENU_DEFAULT_LOCAL_TASK
+  );
+  $items['transact/remote/pay'] = array(
+    'title' => 'Remote credit ',
+    'description' => 'Credit a member in another CES exchange',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mcapi_cc_remote_credit_form'),
+    'access callback' => 'remote_transaction_access',
+    'type' => MENU_LOCAL_TASK
+  );
+
+  return $items;
+}
+
+/**
+ * menu access callback
+ * prohibits remote transactions until the settings form is populated
+ */
+function remote_transaction_access() {
+  return variable_get('mcapi_cc_cenip_user') && variable_get('mcapi_cc_cenip_pass') && user_access('transact');
+}
+
+/**
+ * implements mcapi hook_info_types().
+ */
+function mcapi_cc_mcapi_info_types() {
+  return array('remote');
+}
+
+/**
+ * Module settings form.
+ */
+function mcapi_cc_settings_form() {
+  $form = array();
+  module_load_include('inc', 'mcapi');
+  $form['mcapi_cc_intertrading_currcode'] = array(
+    '#title' => t('Currency used for intertrading'),
+    '#title_display' => 'before',
+  ) + currency_picker_element(
+    array_keys(currencies_load($account = NULL)),
+    variable_get('mcapi_cc_intertrading_currcode', 'credunit')
+  );
+
+  $cc_account_uid = variable_get('mcapi_cc_intertrading_account');
+  if (!$cc_account_uid) {
+    $form['mcapi_cc_create_account'] = array(
+      '#type' => 'submit',
+      '#value' => t('Create intertrading account'),
+      '#submit' => array('mcapi_cc_create_intertrading_account'),
+      '#weight' => 1
+    );
+    $already = FALSE;
+  }
+  else {
+    $already = db_select('mcapi_transactions', 'm')
+      ->condition(
+        db_or()
+        ->condition('payer', $cc_account_uid)
+        ->condition('payee', $cc_account_uid)
+      )
+      ->condition('type', 'remote')
+      ->countQuery()
+      ->execute()->fetchField();
+    if ($already) {
+     $form['mcapi_cc_intertrading_account']['#disabled'] = TRUE;
+    }
+  }
+
+  $form['mcapi_cc_intertrading_account'] = array(
+    '#title' => t('Intertrading account'),
+    '#description' => t('An account nobody will ever log in to'),
+    '#type' => 'user_chooser_few',
+    '#callback' => 'user_chooser_segment_perms',
+    '#args' => array('transact'),
+    '#default_value' => $cc_account_uid,
+    '#element_validate' => array('mcapi_cc_intertrading_account_validate'),
+    '#weight' => 0,
+    '#disabled' => $already,
+    '#required' => 0,
+  );
+
+  $form['mcapi_cc_cenip_user'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Exchange ID'),
+    '#description' => t(
+      'Network Identifier in the Community Exchange Network. For example: cen0123. You can check your account at !link.',
+      array('!link' => l(t('Clearing Central'), CLEARING_CENTRAL_URL))),
+    '#size' => 15,
+    '#maxlength' => 7,
+    '#disabled' => $already,
+    '#default_value' => variable_get('mcapi_cc_cenip_user'),
+    '#weight' => 2
+  );
+  $form['mcapi_cc_cenip_pass'] = array(
+    '#title' => t('Password'),
+    '#type' => 'textfield',
+//    '#type' => 'password',
+    '#description' => t('Password of the Community Exchange Network account for this exchange. Leave blank to keep the stored password.'),
+    '#size' => 15,
+    '#disabled' => $already,
+    '#default_value' => variable_get('mcapi_cc_cenip_pass'),
+    '#element_validate' => array('mcapi_cc_auth_validate_pw'),
+    '#weight' => 3
+  );
+  return system_settings_form($form);
+}
+
+/**
+ * form button submit callback
+ * create an account only for intertrading
+ */
+function mcapi_cc_create_intertrading_account() {
+  $mail = t('intertrading') . '@'.$_SERVER["HTTP_HOST"];
+  $roles = user_roles(TRUE, 'transact');
+  $role_name = reset($roles);
+  $rid = key($roles);
+  $props = array(
+    'name' => 'Intertrading account',
+    'mail' => $mail,
+    'status' => 1,
+    'roles' => array($rid => $role_name)
+  );
+  $account = entity_create('user', $props);
+  user_save($account);
+  variable_set('mcapi_cc_intertrading_account', $account->uid);
+  drupal_set_message(t('Created account @num with mail @mail and role @role', array('@num' => $account->uid, '@mail' => $account->mail, '@role' => $role_name)));
+}
+
+/**
+ * Custom element validation
+ * Check whether the user and password are correct.
+ */
+function mcapi_cc_auth_validate_pw(&$element, &$form_state) {
+  // Simulate a login to clearing central and check the redirect URL.
+  $data = array(
+    'nid' => $form_state['values']['mcapi_cc_cenip_user'],
+    'password' => $form_state['values']['mcapi_cc_cenip_pass'],
+    'system' => 'ices'
+  );
+  $result = drupal_http_request(
+    CLEARING_CENTRAL_URL .'/logon.php',
+    array(
+      'method' => 'POST',
+      'data' => drupal_http_build_query($data),
+      'headers' => array(
+        'Content-Type' => 'application/x-www-form-urlencoded',
+      )
+    )
+  );
+  if (strpos($result->redirect_url, 'index.php') !== FALSE) {
+    // We are being redirected to index, so the password is incorrect.
+    form_set_error($element, t('The pair NID/password is incorrect.'));
+  }
+}
+
+/**
+ * form element validation callback
+ */
+function mcapi_cc_intertrading_account_validate(&$element, &$form_state) {
+  if ($uid = &$element_value) {
+    //this account must have no transactions in it that aren't remote.
+    if (db_query("SELECT xid FROM {mcapi_transactions} WHERE type != 'remote' AND (payer = $uid OR payee = $uid)")->count()) {
+      form_error($element, t('This account cannot be used for intertrading'));
+    }
+  }
+}
+
+/**
+ * menu form callback
+ * build a transaction form from scratch
+ */
+function mcapi_cc_remote_credit_form($form, &$form_state) {
+  $values = isset($form_state['values']) ? $form_state['values'] : array();
+  //get the transactions if it was created in an earlier build
+  if (empty($form_state['transactions'])) {
+    //the home is exchange is requesting
+    $form['from_local_exchange'] = array(
+      '#type'=> 'value',
+      '#value' => variable_get('mcapi_cc_intertrading_account')
+    );
+    $form['to_cen_exchange'] = array(
+      '#title' => t('ID of remote exchange'),
+      '#description' => t('Enter the identifier of the remote network, for example "cen1234". Click "Search" to find the network identifier you are looking for.'),
+      '#type' => 'textfield',
+      '#size' => 10,
+      '#maxlength' => 7,
+      '#field_suffix' => l(t('Search'), CLEARING_CENTRAL_URL . '/nidsearch.php', array('attributes' => array('target' => '_blank'))),
+      '#required' => TRUE,
+      '#default_value' => isset($values['from_cen_exchange']) ? $values['from_cen_exchange'] : '',
+      '#element_validate' => array('from_cen_exchange_format_element_validate'),
+      '#weight' => 1
+    );
+    $form['to_cen_account_id'] = array(
+      '#title' => t('ID or email of payee in remote exchange'),
+      '#type' => 'textfield',
+      '#size' => 10,
+      '#maxlength' => 8,
+      '#required' => TRUE,
+      '#default_value' => isset($values['to_cen_accountname']) ? $values['to_cen_accountname'] : '',
+      '#weight' => 2,
+    );
+    $form['from_local_account'] = array(
+      '#type' => 'value',
+      '#value' => $GLOBALS['user']->uid
+    );
+    $form['outgoing'] = array(
+      '#type' => 'hidden',
+      '#value' => 1
+    );
+    if (user_access('manage all transactions')) {
+      $form['from_local_account'] = array(
+        '#title' => t('Payer in @site_name', array('@site_name' => variable_get('site_name'))),
+        '#type' => 'user_chooser',
+        '#type' => 'user_chooser_few',
+        '#callback' => 'user_chooser_segment_perms',
+        '#args' => array('transact'),
+        '#default_value' => $GLOBALS['user']->uid,
+        '#weight' => 3
+      );
+    }
+    // Remove buyer account and add a field for remote buyer account.
+    if ($fieldname = variable_get('transaction_description_field')) {
+      $form['description'] = array(
+        '#title' => t('What was received'),
+        '#type' => 'textfield',
+        '#size' => 64,
+        '#maxlength' => 256,//@todo what is the max length?
+        '#required' => TRUE,
+        '#default_value' => isset($values['description']) ? $values['description'] : '',
+        '#weight' => 4,
+      );
+    }
+    $form['worth'] = array(
+      '#title' => t('Remote quantity'),
+      '#description' => t("Denominated in the OTHER exchange's currency"),
+      '#type' => 'textfield',
+      '#element_validate' => array('element_validate_mcapi_number_positive'),
+      '#default_value' => 0,
+      'size' => 5,
+      '#weight' => 5
+    );
+    $form['#validate'] = array('cc_transaction_form_validate');
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#submit' => array('mcapi_cc_mcapi_cc_remote_form_submit'),
+      // Give the submit button the same text as the previous page form.
+      '#value' => t('Submit'),
+      '#weight' => 6
+    );
+  }
+  else {
+    mcapi_cc_remote_credit_confirm_form($form, $form_state);
+  }
+  return $form;
+}
+
+function mcapi_cc_remote_credit_confirm_form(&$form, $form_state) {
+  //this is the confirmation page, so make the submit button final
+  $form['certificate'] = transaction_view($form_state['transactions'], 'certificate', FALSE);
+
+  $form['operation'] = array(
+    '#type' => 'value',
+    '#value' => t('Send'),
+  );
+  $form['message'] = array(
+    '#markup' => t('This cannot be undone!'),
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#submit' => array('mcapi_cc_transaction_confirm_form_submit'),
+    // Give the submit button the same text as the previous page form.
+    '#value' => t('Submit'),
+  );
+  // Disable input validation on confirm form. It has been already validated in
+  // last step.
+  $form['#validate'] = array();
+}
+
+/**
+ * menu form callback
+ * build a transaction form from scratch
+ */
+function mcapi_cc_remote_bill_form($form, &$form_state) {
+  $values = isset($form_state['values']) ? $form_state['values'] : array();
+  //get the transactions if it was created in an earlier build
+  if (empty($form_state['transactions'])) {
+    //the home is exchange is requesting
+    $form['from_local_exchange'] = array(
+      '#type'=> 'value',
+      '#value' => variable_get('mcapi_cc_intertrading_account')
+    );
+    $form['from_cen_exchange'] = array(
+      '#title' => t('ID of remote exchange'),
+      '#description' => t('Enter the identifier of the remote network, for example "cen1234". Click "Search" to find the network identifier you are looking for.'),
+      '#type' => 'textfield',
+      '#size' => 10,
+      '#maxlength' => 7,
+      '#field_suffix' => l(t('Search'), CLEARING_CENTRAL_URL . '/nidsearch.php', array('attributes' => array('target' => '_blank'))),
+      '#required' => TRUE,
+      '#default_value' => isset($values['from_cen_exchange']) ? $values['from_cen_exchange'] : '',
+      '#element_validate' => array('from_cen_exchange_format_element_validate'),
+      '#weight' => 1
+    );
+    $form['from_cen_account_id'] = array(
+      '#title' => t('ID or email of payer in remote exchange'),
+      '#type' => 'textfield',
+      '#size' => 10,
+      '#maxlength' => 8,
+      '#required' => TRUE,
+      '#default_value' => isset($values['to_cen_accountname']) ? $values['to_cen_accountname'] : '',
+      '#weight' => 2,
+    );
+    $form['outgoing'] = array(
+      '#type' => 'hidden',
+      '#value' => 0
+    );
+    $form['to_local_account'] = array(
+      '#type' => 'value',
+      '#value' => $GLOBALS['user']->uid
+    );
+    if (user_access('manage all transactions')) {
+      $form['to_local_account'] = array(
+        '#title' => t('Payee in @site_name', array('@site_name' => variable_get('site_name'))),
+        '#type' => 'user_chooser',
+        '#type' => 'user_chooser_few',
+        '#callback' => 'user_chooser_segment_perms',
+        '#args' => array('transact'),
+        '#default_value' => $GLOBALS['user']->uid,
+        '#weight' => 3
+      );
+    }
+    // Remove buyer account and add a field for remote buyer account.
+    if ($fieldname = variable_get('transaction_description_field')) {
+      $form['description'] = array(
+        '#title' => t('What was given'),
+        '#type' => 'textfield',
+        '#size' => 64,
+        '#maxlength' => 256,//@todo what is the max length?
+        '#required' => TRUE,
+        '#default_value' => isset($values['description']) ? $values['description'] : '',
+        '#weight' => 4,
+      );
+    }
+    $form['worth'] = array(
+      '#title' => t('Quantity'),
+      '#type' => 'worth',
+      '#tree' => 1,
+      '#default_value' => array(
+        'currcode' => variable_get('mcapi_cc_intertrading_currcode'),
+        'quantity' => 0
+      ),
+      '#currcodes' => (array)variable_get('mcapi_cc_intertrading_currcode'),
+      '#weight' => 5
+    );
+    $form['#validate'] = array('cc_transaction_form_validate');
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#submit' => array('mcapi_cc_mcapi_cc_remote_form_submit'),
+      // Give the submit button the same text as the previous page form.
+      '#value' => t('Submit'),
+      '#weight' => 6
+    );
+  }
+  else {
+    mcapi_cc_remote_credit_confirm_form($form, $form_state);
+  }
+  return $form;
+}
+
+function element_validate_mcapi_number_positive(&$element, $form_state) {
+  if (is_numeric($element['#value'])) {
+    if ($element['#value'] > 0) {
+      return;
+    }
+  }
+  form_error($element, t('Quantity must be a positive number'));
+}
+
+/**
+ * Custom element validation callback().
+ */
+function from_cen_exchange_format_element_validate($element, &$form_state) {
+  $nid = $element['#value'];
+  if (strlen($nid) != 7 || strtolower(substr($nid, 0, 3)) != 'cen' || !ctype_digit(substr($nid, 3))) {
+    form_error($element, t('The Network Id must be the three leters "cen" plus four numbers.'));
+  }
+}
+
+/**
+ * form validation function to replace transaction_form_validate
+ */
+function cc_transaction_form_validate($form, &$form_state) {
+  $values = &$form_state['values'];
+  if ($values['outgoing'] == 1) {
+    $props['worth'] = array(
+      0 => array(
+        'currcode' => variable_get('mcapi_cc_intertrading_currcode'),
+         //We cannot know the converstion rate at this point, so put this in to validate only
+        'quantity' => 1
+      )
+    );
+  }
+  elseif($values['outgoing'] == 0)  {
+    //I don't know why form_type_worth_value isn't running but just run it manually for now
+    $values['worth'] = form_type_worth_value($form['worth'], $values['worth'], $form_state);
+    $props['worth'] = array(
+      0 => array(
+        'currcode' => variable_get('mcapi_cc_intertrading_currcode'),
+        'quantity' => $values['worth']['quantity']
+      )
+    );
+  }
+
+  //put in the payer and payee
+  $props = array(
+    'type' => 'remote',
+    'state' => TRANSACTION_STATE_FINISHED,
+    'description' => $values['description']
+  );
+
+  if ($values['outgoing'] == 1) {
+    $props += array(
+      'payer' => $values['from_local_account'],
+      'payee' => variable_get('mcapi_cc_intertrading_account')
+    );
+  }
+  elseif ($values['outgoing'] == 0) {
+    $props += array(
+      'payee' => $values['to_local_account'],
+      'payer' => variable_get('mcapi_cc_intertrading_account')
+    );
+  }
+
+  $transaction = entity_create('transaction', $props);
+  $transaction->outgoing = $values['outgoing'];//this is needed later
+
+  if ($values['outgoing'] == 1) {
+    $extra = array(
+      'xid' => 0,
+      'remote_exchange_id' => $values['to_cen_exchange'],
+      'remote_user_id' => $values['to_cen_account_id'],
+      'remote_user_name' => ''
+    );
+  }
+  elseif ($values['outgoing'] == 0) {
+    $extra = array(
+      'xid' => 0,
+      'remote_exchange_id' => $values['from_cen_exchange'],
+      'remote_user_id' => $values['from_cen_account_id'],
+      'remote_user_name' => ''
+    );
+  }
+
+  field_attach_form_validate('transaction', $transaction, $form, $form_state);
+  mcapi_cc_addfields($transaction, $extra);
+  //we don't write this transaction yet, we only want to check the integrity and balance limits here.
+  try {
+    $form_state['transactions'] = transaction_cluster_create($transaction, FALSE);
+  }
+  catch (\Exception $e) {
+    drupal_set_message('Transaction failed local validation: '.$e->getMessage(), 'error');
+  }
+}
+
+/**
+ * Implements hook_form_submit().
+ */
+function mcapi_cc_mcapi_cc_remote_form_submit($form, &$form_state) {
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * Submit function for remote CENIP transactions.
+ */
+function mcapi_cc_transaction_confirm_form_submit($form, &$form_state) {
+  $transaction = reset($form_state['transactions']);
+  $transaction->txid = mcapi_cc_make_uuid();
+  $data = array(
+    'txid' => $transaction->txid,
+    'outgoing' => $transaction->outgoing
+  );
+  if ($transaction->outgoing) {
+    $buyer = user_load($transaction->payer);
+    $data += array(
+      'amount' => $form_state['values']['worth'],
+      'seller_nid' => $transaction->remote_exchange_id,
+      'seller_id' => $transaction->remote_user_id,
+      'buyer_nid' => variable_get('mcapi_cc_cenip_user'),
+      'buyer_xname' => variable_get('site_name'),
+      'buyer_id' => $buyer->uid,
+      'buyer_name' => format_username($buyer),
+      //'buyer_email' => $buyer->mail,
+    );
+  }
+  else {
+    $seller = user_load($transaction->payee);
+    $data += array(
+      'amount' => $transaction->worth['und'][0]['quantity'],
+      'buyer_nid' => $transaction->remote_exchange_id,
+      'buyer_id' => $transaction->remote_user_id,
+      'seller_nid' => variable_get('mcapi_cc_cenip_user'),
+      'seller_xname' => variable_get('site_name'),
+      'seller_id' => $seller->uid,
+      'seller_name' => format_username($seller),
+      //'seller_email' => $seller->mail,
+    );
+  }
+  if ($fieldname = variable_get('transaction_description_field')) {
+    $values = reset($transaction->{$fieldname});
+    //set the raw value this time
+    $data['description'] = $values[0]['value'];
+  }
+  if ($result = clearing_central_send('txinput.php', $data, 'POST')) {
+    $transaction->remote_user_name = substr($result['remote_user_name'], 0, 60);
+    if ($transaction->outgoing) {
+      $transaction->worth[LANGUAGE_NONE][0] = array(
+        'currcode' => variable_get('mcapi_cc_intertrading_currcode'),
+        'quantity' => $result['quantity']
+      );
+    }
+    //we're actually skipping validation
+    transaction_cluster_write($form_state['transactions'], TRUE, TRUE);
+    drupal_set_message('The transaction has been saved.');
+  }
+}
+
+/**
+ * Utility function. wrapper around drupal_http_request
+ * @param string $endpoint
+ * @param array $data
+ * @param string $method
+ * @return string
+ *   the error message
+ */
+function clearing_central_send($endpoint, array &$data, $method = 'POST') {
+  $data['password'] = variable_get('mcapi_cc_cenip_pass');
+  watchdog('Clearing Central', 'Sending <pre>@result</pre>', array('@result' => print_r($data, 1)));
+  // Simulate a login to clearing central and check the redirect URL.
+  $result = drupal_http_request(
+    CLEARING_CENTRAL_URL . '/'.$endpoint,
+    array(
+      'method' => $method,
+      'data' => drupal_http_build_query($data),
+      'headers' => array(
+        'Content-Type' => 'application/x-www-form-urlencoded',
+      )
+    )
+  );
+  if ($result->code != 200) {
+    watchdog('Clearing Central', 'Clearing Central not OK <pre>@result</pre>', array('@result' => print_r($result, 1)));
+    return;
+  }
+  parse_str($result->data, $data);
+  if ($data['response'] != CEN_SUCCESS) {
+    drupal_set_message(cen_lookup_response($data['response']), 'error');
+  }
+  else return $data;
+}
+
+/**
+ * Send urlencoded query response to the user.
+ *
+ * @param string $status
+ *   The HTTP status, ex: '200 OK'
+ * @param array $query
+ *   The associative array with key-value pairs.
+ */
+function cen_respond($status, $query) {
+  drupal_add_http_header('Status', $status);
+  drupal_add_http_header('Cache-Control', 'no-store');
+  $content = drupal_http_build_query($query);
+  drupal_add_http_header('Content-Length', strlen($content));
+  print $content;
+  drupal_exit();
+}
+
+/**
+ * implements entity hook_entity_load()
+ */
+function mcapi_cc_entity_load($entities, $type) {
+  if ($type == 'transaction') {
+    foreach ($entities as $transaction) {
+      if ($transaction->type == 'remote') {
+        $extras = db_select('mcapi_cc', 'cc')->fields('cc')->condition('xid', $transaction->xid)->execute()->fetch();
+        mcapi_cc_addfields($transaction, (array)$extras);
+      }
+    }
+  }
+}
+
+/**
+ * Utility
+ * load a transaction using its clearing central id
+ * @param string $txid
+ *   Clearing central's transaction id.
+ */
+function mcapi_cc_load($txid) {
+  $extra = db_select('mcapi_cc', 't')
+    ->fields('t')
+    ->condition('txid', $txid)
+    ->execute()
+    ->fetch();
+  if ($extra) {
+    $transaction = transaction_load($extra->serial);
+    mcapi_cc_addfields($transaction, (array)$extra);
+    return $transaction;
+  }
+}
+
+/**
+ * Utility
+ * Add this modules extra fields to the transaction
+ * @param type $transaction
+ * @param array $extra
+ *   the values of the fields to add, keyed by fieldname
+ */
+function mcapi_cc_addfields($transaction, array $extra) {
+  foreach ($extra as $fieldname => $value) {
+    $transaction->{$fieldname} = $value;
+  }
+}
+
+/**
+ * Callback function for Clearing Central.
+ *
+ * This function is called when the Clearing Central contacts the system with a
+ * proposed transaction in the POST
+ * Builds the transaction & writes it
+ * Replies
+ *
+ */
+function mcapi_cc_endpoint() {
+  $post = filter_input_array(INPUT_POST);
+  if (!$post) {
+    $post = filter_input_array(INPUT_GET);//for dev purposes only @todo delete
+  }
+  watchdog('Clearing Central', 'incoming post: @post', array('@post' => print_r($post, 1)));
+
+  //this incoming transaction is coming from another exchange
+  //so we need to build it from scratch, validate, save add the fields to the post and return it
+  $transaction = mcapi_cc_make_transaction($post);
+  $transaction->state = TRANSACTION_STATE_FINISHED;
+  try {
+    transaction_cluster_create($transaction, TRUE);
+    watchdog('Clearing Central', 'made new transaction object from: @transaction', array('@transaction' => print_r($transaction, 1)));
+  }
+  catch (Exception $ex) {
+    watchdog(
+      'Clearing Central',
+      'failed to write passive transaction: @message',
+      array('@message'=> $ex->getMessage() ."\n".print_r($transaction, 1))
+    );
+    $post['response'] = MCAPI_CC_CEN_ERR_TRANSACTION_DENIED;//somewhat arbitrary error code - faulty data
+    cen_respond('200 OK', $post);
+  }
+
+  //notify the remote transactee
+  $uid = $post['outgoing'] ? $transaction->payee : $transaction->payer;
+  $recipient = user_load($uid);
+  drupal_mail(
+    'mcapi_cc',
+    '2ndparty',
+    $recipient->mail,
+    user_preferred_language($recipient),
+    array(
+      'mcapi_transaction' => $transaction,
+      'recipient' => $recipient
+    )
+  );
+  $post['response'] = CEN_SUCCESS;
+  cen_respond('201 OK', array('response' => CEN_SUCCESS));
+}
+
+/**
+ * @param array $params
+ *   as received from clearing central
+ * @param boolena $remote
+ *   invert the outgoing value as we see the transaction from the other side
+ * @return array (
+ *   [txid] => 1234
+ *   [buyer_id] => 26
+ *   [buyer_nid] => cen0001
+ *   [buyer_name] => Alice
+ *   [seller_name] => Tim
+ *   [seller_nid] => cen0002
+ *   [seller_id] => tim01
+ *   [description] => Test
+ *   [amount] => 10
+ *   [outgoing] => 1
+ * )
+ */
+function mcapi_cc_make_transaction($params) {
+  $intertrading_uid = variable_get('mcapi_cc_intertrading_account');
+  $props = array(
+    'txid' => $params['txid'],
+    'quantity' => $params['amount'],
+    'type' => 'remote',
+    'state' => TRANSACTION_STATE_FINISHED,
+    'currcode' => variable_get('mcapi_cc_intertrading_currcode', 'credunit'),
+    'description' => $params['description'],
+    'creator' => $intertrading_uid
+  );
+  if ($params['outgoing']) {
+    $props['payer'] = $intertrading_uid;
+    $props['payee'] = mcapi_cc_uid_lookup_from_string($params['seller_id']);
+  }
+  else {
+    $props['payee'] = $intertrading_uid;
+    $props['payer'] = mcapi_cc_uid_lookup_from_string($params['buyer_id']);
+  }
+  watchdog('Clearing Central', 'making new transaction from: @props', array('@props' => print_r($props, 1)));
+  $transaction = entity_get_controller('transaction')->create($props);
+  $transaction->txid = $params['txid'];
+  //now add the extra fields
+  if ($params['outgoing']) {
+    $transaction->remote_exchange_id = $params['buyer_nid'];
+    $transaction->remote_user_id = $params['buyer_id'];
+    $transaction->remote_user_name = $params['buyer_name'];
+  }
+  else {
+    $transaction->remote_exchange_id = $params['seller_nid'];
+    $transaction->remote_user_id = $params['seller_id'];
+    $transaction->remote_user_name = $params['seller_name'];
+  }
+  return $transaction;
+}
+
+function mcapi_cc_uid_lookup_from_string($string) {
+  if (is_numeric($string)) {
+    $user = user_load($string);
+  }
+  elseif(valid_email_address($string)) {
+    $user = user_load_by_mail($string);
+  }
+  else {
+    $user = user_load_by_name($string);
+  }
+  if ($user && $user->status) {
+    return $user->uid;
+  }
+  cen_respond('200 OK', array('response' => MCAPI_CC_CEN_ERR_INVALID_USER));
+}
+
+/**
+ * menu access callback
+ * grant access to any and all requests from the IP address of the clearing central server
+ */
+function mcapi_cc_check_cc_ip() {
+  if ($_SERVER["REMOTE_ADDR"] == CLEARING_CENTRAL_IP) {
+    return TRUE;
+  }
+  watchdog(
+    'Clearing Central',
+    "@remote does not equal @ccip",
+    array('@remote' => $_SERVER["REMOTE_ADDR"], '@ccip' => CLEARING_CENTRAL_IP)
+  );
+  cen_respond('200 OK', array(
+    'result' => MCAPI_CC_CEN_ERR_ACCESS_DENIED,
+    'txid' => NULL,
+  ));
+}
+
+/**
+ * theme preprocessor.
+ * add extra fields to the transaction certificate
+ * @todo look up the long name of the exchange
+ */
+function mcapi_cc_preprocess_certificate(&$vars) {
+  $transaction = $vars['object'];
+  if ($transaction->type != 'remote') {
+    return;
+  }
+  $remote_name = t(
+    '!name of !exchange',
+    array(
+      '!name' => $transaction->remote_user_name ? : $transaction->remote_user_id,
+      '!exchange' => $transaction->remote_exchange_id
+    )
+  );
+  if ($transaction->payer == variable_get('mcapi_cc_intertrading_account')) {
+    $vars['payer'] = $remote_name;
+  }
+  else {
+    $vars['payee'] = $remote_name;
+  }
+}
+
+function cen_lookup_response($code) {
+  $codes = array(
+    0 => t('Unknown error in Clearing Central'),
+    CEN_SUCCESS => 'success',
+    2 => t('Remote trader does not exist (unknown account number)'),
+    3 => t('Exchange not registered on CC'),
+    4 => t('Transaction denied ("no funds", over limit, account locked, exchange over deficit limit etc.)'),
+    5 => t('faulty data'),
+    6 => t('Repeat transaction and so rejected by CC (same TXID submitted)'),
+    7 => t('URL error'),
+    8 => t('Conversion rate not set'),
+    9 => t('Server error (e.g. cannot access db)'),
+    10 => t('Password is wrong in settings'),
+    11 => t('IP of incoming server not in CC DB'),
+    12 => t('No TXID provided (update/delete only)'),
+    13 => t('TXID does not exist (update/delete only)'),
+    14 => t('Unable to connect to remote server'),
+    15 => t('Failed to connect to host or proxy')
+  );
+  return $codes[$code];
+}
+
+
+/**
+ * implements hook_transaction_cluster_write()
+ *
+ * @param array $cluster
+ * @param boolean $really
+ */
+function mcapi_cc_transaction_cluster_write($cluster, $really = FALSE) {
+  $transaction = reset($cluster);
+  if ($really and $transaction->type == 'remote') {
+    $transaction->remote_user_name = substr($transaction->remote_user_name, 0, 60);
+    $fields = array('xid', 'serial', 'txid', 'remote_exchange_id', 'remote_user_id', 'remote_user_name');
+    $query = db_insert('mcapi_cc')
+      ->fields($fields);
+    foreach ($cluster as $entity) {
+      foreach ($fields as $fieldname) {
+        $values[$fieldname] = $entity->{$fieldname};
+      }
+      $query->values($values);
+    }
+    $query->execute();
+  }
+}
+
+function mcapi_cc_make_uuid() {
+  $bytes = '';
+  do {
+    $random_state = hash('sha256', microtime() . mt_rand() . print_r($_SERVER, TRUE));
+    $bytes .= hash('sha256', mt_rand() . $random_state, TRUE);
+  } while (strlen($bytes) < 16);
+  $bytes = substr($bytes, 0, 16);
+
+  $hex = substr(hash('sha256', $bytes), 0, 32);
+  $time_hi_and_version = base_convert(substr($hex, 12, 4), 16, 10);
+  $time_hi_and_version &= 0x0FFF;
+  $time_hi_and_version |= (4 << 12);
+  $clock_seq_hi_and_reserved = base_convert(substr($hex, 16, 4), 16, 10);
+  $clock_seq_hi_and_reserved &= 0x3F;
+  $clock_seq_hi_and_reserved |= 0x80;
+  return sprintf(
+    '%s-%s-%04x-%02x%02x-%s',
+    substr($hex, 0, 8),
+    substr($hex, 8, 4),
+    $time_hi_and_version,
+    $clock_seq_hi_and_reserved,
+    substr($hex, 20, 2),
+    substr($hex, 20)
+  );
+}
+
+/**
+ * Implements hook_mail().
+ *
+ * @param type $message
+ */
+function mcapi_cc_mail($key, &$message, $params) {
+  if ($key == '2ndparty') {
+    $message['subject'] = t('!site_name: remote transaction', array('!site_name' => variable_get('site_name')));
+    $message['body'][] = t('Hi %name', array('%name' => format_username($params['recipient'])));
+    $message['body'][] = t('%site_name accepted a remote transaction involving you.', array('!site_name' => variable_get('site_name')));
+    $renderable = transaction_view($params['mcapi_transaction'], 'sentence');
+    $message['body'][] = render($renderable);
+    $message['body'][] = t('If you disagree with the transaction please contact @mail to cancel it.', array('@mail' => 'support@communityforge.net'));
+    $message['headers']['bcc'] = 'matslats@fastmail.com';
+  }
+}

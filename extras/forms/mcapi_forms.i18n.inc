@@ -30,7 +30,7 @@ function mcapi_forms_i18n_object_info() {
       '%ctools_export_ui' => 'name',
     ),
     // To produce edit links automatically.
-    'edit path' => 'admin/accounting/workflow/forms/list/%ctools_export_ui/edit',
+    'edit path' =>     'admin/accounting/workflow/forms/list/%ctools_export_ui/edit',
     // Auto-generate translate tab.
     'translate tab' => 'admin/accounting/workflow/forms/list/%ctools_export_ui/translate',
     // Properties for string translation.
@@ -55,27 +55,28 @@ function mcapi_forms_i18n_object_info() {
         'outgoing' => t('Outgoing direction'),
       ),
       // Path to translate strings to every language.
-      'translate path' => 'admin/accounting/forms/list/%ctools_export_ui/translate/%i18n_language',
+      'translate path' => 'admin/accounting/workflow/forms/list/%ctools_export_ui/translate/%i18n_language',
     )
   );
   return $info;
 }
+if (class_exists('i18n_string_object_wrapper')) {
+  class i18nmcapiform extends i18n_string_object_wrapper {
 
-class i18nmcapiform extends i18n_string_object_wrapper {
-
-  /**
-   * Get translatable properties
-   */
-  protected function build_properties() {
-    $strings = parent::build_properties();
-    $mcapiform_experience = (array)$this->object;
-    $textgroup = $this->get_textgroup();
-    foreach ($strings['payforms']['experience'][$mcapiform_experience['name']] as $fieldname => $item) {
-      $strings[$textgroup]['experience'][$mcapiform_experience['name']][$fieldname] = array(
-        'title' => $item['title'],
-        'string' => @$mcapiform_experience[$fieldname]
-      );
+    /**
+     * Get translatable properties
+     */
+    protected function build_properties() {
+      $strings = parent::build_properties();
+      $mcapiform_experience = (array)$this->object;
+      $textgroup = $this->get_textgroup();
+      foreach ($strings['payforms']['experience'][$mcapiform_experience['name']] as $fieldname => $item) {
+        $strings[$textgroup]['experience'][$mcapiform_experience['name']][$fieldname] = array(
+          'title' => $item['title'],
+          'string' => @$mcapiform_experience[$fieldname]
+        );
+      }
+      return $strings;
     }
-    return $strings;
   }
 }

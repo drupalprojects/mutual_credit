@@ -1,0 +1,10 @@
+name = Clearing Central
+description = Creates transactions with other communities via CES Clearing Central
+core = 7.x
+package = Community Accounting
+configure = admin/accounting/cc
+
+dependencies[] = number
+;dependencies[] = oauth2_server
+;dependencies[] = services
+;dependencies[] = rest_server

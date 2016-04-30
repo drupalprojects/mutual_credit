@@ -110,6 +110,7 @@ function transaction_form_validate($form, &$form_state) {
   //entity_form_submit_build_entity('transaction', NULL, $form, $form_state);
   $transaction = entity_create('transaction', $props);
   if (!$transaction->payer || !$transaction->payee) {
+    //this occurred once when the mcapi_form didn't have a required fieldapi field
     form_set_error('payer', 'Cannote trade with user 0. This is a known error! please mail matslats@gmail.com and say what exactly you tried to do! ');
     return;
   }
@@ -764,8 +765,8 @@ function theme_worth_element($variables) {
   $element['#attributes']['class'][] = "worth-widget";
   $curr_select = drupal_render($element['currcode']);
   $quant_field = drupal_render($element['main_quant']);
-  if ($element['currcode']['#type'] == 'hidden' || $element['currcode']['#theme'] == 'hidden') {//if the currency is preset, then we can use its own display format
-
+  if ($element['currcode']['#type'] == 'hidden' || $element['currcode']['#theme'] == 'hidden') {
+    //if the currency is preset, then we can use its own display format
     if (isset($element['#value']) && is_array($element['#value'])) {
       $currcode = $element['#value']['currcode'];
     }
