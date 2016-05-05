@@ -70,3 +70,4 @@ mcapi.masspay.many21:
     _title: 'Many wallets pay one'
   requirements:
     _permission: 'manage mcapi'
+

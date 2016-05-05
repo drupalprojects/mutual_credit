@@ -39,7 +39,7 @@ class TransactionSubscriber implements EventSubscriberInterface {
    * @param ContainerAwareEventDispatcher $container
    */
   function onMakeChildren(TransactionAssembleEvent $event, $eventName, ContainerAwareEventDispatcher $container) {
-    drupal_set_message('onmakechildren: '.$eventName);//testing
+    //drupal_set_message('onmakechildren: '.$eventName);//testing
   }
 
   /**
@@ -52,7 +52,7 @@ class TransactionSubscriber implements EventSubscriberInterface {
    * @param ContainerAwareEventDispatcher $container
    */
   function onTransactionAction(TransactionSaveEvents $events, $eventName, ContainerAwareEventDispatcher $container) {
-    $events->setMessage('onTransactionAction: '.$eventName);
+    //$events->setMessage('onTransactionAction: '.$eventName);
   }
 
 }

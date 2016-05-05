@@ -51,7 +51,7 @@ class Erase extends \Drupal\mcapi\Plugin\TransactionActionBase implements \Drupa
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $elements = parent::buildConfigurationForm($form, $form_state);
-    $elements['states'][TRANSACTION_STATE_ERASED] = [
+    $elements['states']['erased'] = [
       '#disabled' => TRUE,//setting #default value seems to have no effect
     ];
     return $elements;
@@ -67,7 +67,7 @@ class Erase extends \Drupal\mcapi\Plugin\TransactionActionBase implements \Drupa
       ->set($object->serial->value, $object->state->target_id);
 
     $saved = $object
-      ->set('state', TRANSACTION_STATE_ERASED);//will be saved later
+      ->set('state', 'erased');//will be saved later
 
   }
 

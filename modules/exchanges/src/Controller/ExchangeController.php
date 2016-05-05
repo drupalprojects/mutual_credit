@@ -7,7 +7,6 @@
 
 namespace Drupal\mcapi_exchanges\Controller;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\mcapi_exchanges\ExchangeInterface;
 
@@ -36,7 +35,7 @@ class ExchangeController extends ControllerBase {
    *   The page title.
    */
   public function pageTitle(ExchangeInterface $mcapi_exchange) {
-    return SafeMarkup::checkPlain($mcapi_exchange->label());
+    return \Drupal\Component\Utility\Html::escape($mcapi_exchange->label());
   }
 
   /**

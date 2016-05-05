@@ -49,7 +49,7 @@ class OneOffPayment extends RulesActionBase {//implements ContainerFactoryPlugin
       //allow a price to be fixed on the entity using the worth field.
       'worth' => $this->configuration['worth'],
       'type' => 'auto',
-      'state' => TRANSACTION_STATE_FINISHED,
+      'state' => 'done',
       'description' => $this->configuration['description']
     );
     if ($direction == 'entitypays') {

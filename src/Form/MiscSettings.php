@@ -89,11 +89,11 @@ class MiscSettings extends ConfigFormBase {
       '#default_value' => $config->get('counted'),
       '#weight' => 14,
       //these values are absolutely fixed
-      TRANSACTION_STATE_FINISHED => [
+      'done' => [
     	  '#disabled' => TRUE,
         '#value' => TRUE,
       ],
-      TRANSACTION_STATE_ERASED => [
+      'erased' => [
     	  '#disabled' => TRUE,
         '#value' => FALSE,
       ]

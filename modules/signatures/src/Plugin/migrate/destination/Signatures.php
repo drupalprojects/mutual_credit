@@ -16,7 +16,7 @@ use Drupal\migrate\Entity\MigrationInterface;
  * Destination for mcapi_signatures.
  *
  * @MigrateDestination(
- *   id = "mcapi_signatures"
+ *   id = "d7_mcapi_signatures"
  * )
  */
 class Signatures extends \Drupal\migrate\Plugin\migrate\destination\DestinationBase {
@@ -45,7 +45,7 @@ class Signatures extends \Drupal\migrate\Plugin\migrate\destination\DestinationB
   /**
    * {@inheritdoc}
    */
-  public function import(Row $row, array $old_destination_id_values = array()) {
+  public function import(\Drupal\migrate\Row $row, array $old_destination_id_values = array()) {
     $this->rollbackAction = MigrateIdMapInterface::ROLLBACK_DELETE;
 
     //these is probably a better way than this
@@ -62,7 +62,7 @@ class Signatures extends \Drupal\migrate\Plugin\migrate\destination\DestinationB
   }
 
 
-  public function fields(MigrationInterface $migration = NULL) {
+  public function fields(\Drupal\migrate\Plugin\MigrationInterface $migration = NULL) {
     return ['serial', 'uid', 'signed'];
   }
 

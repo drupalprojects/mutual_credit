@@ -7,9 +7,7 @@
 
 namespace Drupal\mcapi\Controller;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\mcapi\Entity\TransactionInterface;
 
 /**
@@ -18,7 +16,7 @@ use Drupal\mcapi\Entity\TransactionInterface;
 class TransactionController extends ControllerBase {
 
   /**
-   * @param Drupal\mcapi\Entity\TransactionInterface $transaction
+   * @param Drupal\mcapi\Entity\TransactionInterface $mcapi_transaction
    *
    * @return array
    *  a render array
@@ -30,29 +28,29 @@ class TransactionController extends ControllerBase {
   /**
    * The _title_callback for the transaction.view route.
    *
-   * @param Drupal\mcapi\Entity\TransactionInterface $transaction
+   * @param Drupal\mcapi\Entity\TransactionInterface $mcapi_transaction
    *
    * @return string
    *   The page title.
    */
   public function pageTitle(TransactionInterface $mcapi_transaction) {
-    return SafeMarkup::checkPlain($mcapi_transaction->label());
+    return \Drupal\Component\Utility\Html::escape($mcapi_transaction->label());
   }
 
   /**
    * Builds a transaction page render array.
    *
-   * @param Drupal\mcapi\Entity\TransactionInterface $transaction
+   * @param Drupal\mcapi\Entity\TransactionInterface $mcapi_transaction
    *
    * @return array
    *   a render array
    */
-  protected function buildPage(TransactionInterface $transaction) {
+  protected function buildPage(TransactionInterface $mcapi_transaction) {
     //we look to the 'view' operation to get the display settings.
     return array(
       'transaction' => $this->entityTypeManager()
         ->getViewBuilder('mcapi_transaction')
-        ->view($transaction)
+        ->view($mcapi_transaction)
     );
   }
 }

@@ -233,7 +233,7 @@ class Worthform extends FormElement {
           $form_state->setError(
             $element['#value']['value'],
             t(
-              'Negative amounts not allowed: !val', 
+              'Negative amounts not allowed: !val',
               ['%val' => Currency::load($val['curr_id'])->format($worth['value'])]
             )
           );

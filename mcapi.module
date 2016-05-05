@@ -10,12 +10,6 @@ use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
 use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\mcapi\Plugin\Field\FieldWidget\WalletReferenceAutocompleteWidget;
-
-
-//@todo is it appropriate to use constants for plugin names?
-const TRANSACTION_STATE_FINISHED = 'done';
-const TRANSACTION_STATE_ERASED = 'erased';
 
 /**
  * Implements hook_requirements().
@@ -331,15 +325,6 @@ function mcapi_theme($existing, $type, $theme, $path) {
 }
 
 /**
- * Implements hook_help().
- */
-function mcapi_forms_help($route_name) {
-  if ($route_name == 'mcapi.admin.transaction_form.list') {
-    return t('These are transaction forms from all over the system: entity display forms and custom forms.');
-  }
-}
-
-/**
  * implement mcapi hook_mcapi_form_list().
  * return a list of transaction forms declared in this module.
  * each item must e an array with the following keys
@@ -361,13 +346,6 @@ function mcapi_mcapi_form_list() {
     'operations' => [],
   ];
   return $forms;
-}
-
-/**
- * Implements hook_query_TAG_alter().
- */
-function mcapi_entity_query_transaction_query_alter($query)  {
-  drupal_set_message('mcapi_entity_query_transaction_query_alter chance to do some transaction access control');
 }
 
 /**
@@ -415,15 +393,15 @@ function mcapi_one_wallet_entity_views_displays() {
 }
 
 /**
- * Implements hook_query_tag_alter().
+ * Implements hook_query_MCAPI_TRANSACTION_ACCESS_alter().
+ *
  * Per-transaction access control on transaction views
  * on the basis of only relatives being able to see it
  * relatives are defined in the transaction_view action configuration
  *
- * @param Drupal\views\ViewExecutable $view
  * @param Drupal\views\Plugin\views\query\QueryPluginBase $query
  *
- * @note this wasn't firing sometimes in mcapi.views_execution.inc
+ * @note this hook doesn't work when placed in mcapi.views_execution.inc
  *
  */
 function mcapi_query_mcapi_transaction_access_alter(Drupal\Core\Database\Query\AlterableInterface $query) {

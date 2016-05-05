@@ -49,6 +49,10 @@ class TransactionRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRo
       ->setOptions($options);
     $route_collection->add('mcapi.transaction.operation', $route);
 
+    $route = $route_collection
+      ->get('entity.mcapi_transaction.edit_form')
+      ->setRequirement('_entity_access', 'mcapi_transaction.edit');
+
     return $route_collection;
   }
 

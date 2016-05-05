@@ -64,11 +64,12 @@ class WorthFieldItemList extends FieldItemList {
     return $c;
   }
 
-  public function __toString() {
+  public function getString() {
     foreach ($this->list as $item) {
-      $worths[] = (string)$item;
+      $worths[] = $item->getString();
     }
-    return implode(\Drupal::config('mcapi.settings')->get('worths_delimiter'), $worths);
+    $string = implode(\Drupal::config('mcapi.settings')->get('worths_delimiter'), $worths);
+    return \Drupal\Core\Render\Markup::create($string);
   }
 
   /**

@@ -23,7 +23,7 @@ class FirstWalletIndex extends ArgumentPluginBase {
    */
   public function query($group_by = FALSE) {
     $this->ensureMyTable();
-    $wids = Mcapi::walletsOf(User::load($this->argument));
-    $this->query->addWhere(0, $this->tableAlias.'.wallet_id', reset($wids));
+    $wid = Mcapi::firstWalletIdOfEntity(User::load($this->argument));
+    $this->query->addWhere(0, $this->tableAlias.'.wallet_id', $wid);
   }
 }

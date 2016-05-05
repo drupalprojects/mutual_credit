@@ -274,10 +274,37 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setLabel(t('Creator'))
       ->setDescription(t('The user who created the transaction'))
       ->setSetting('target_type', 'user')
+      ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE)
+      ->setDisplayOptions(
+        'form',
+        ['type' => 'hidden', 'weight' => 10]
+      )
       ->setReadOnly(TRUE)
       ->setRevisionable(FALSE)
       ->setRequired(TRUE);
+
+    $fields['created'] = BaseFieldDefinition::create('created')
+      ->setLabel(t('Created on'))
+      ->setDescription(t('The time that the transaction was created.'))
+      ->setRevisionable(FALSE)
+      ->setDisplayOptions(
+        'view',
+        ['label' => 'hidden', 'type' => 'timestamp', 'weight' => 0]
+      )
+      ->setDisplayOptions(
+        'form',
+        ['type' => 'hidden', 'weight' => 10]
+      )
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
+
+    $fields['changed'] = BaseFieldDefinition::create('changed')
+      ->setLabel(t('Changed'))
+      ->setDescription(t('The time that the transaction was last saved.'))
+      ->setDisplayConfigurable('view', TRUE)
+      ->setRevisionable(FALSE)
+      ->setTranslatable(FALSE);
 
     $fields['type'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Type'))
@@ -295,28 +322,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setDisplayConfigurable('view', TRUE)
       ->setReadOnly(FALSE)
       ->setRequired(TRUE);
-
-    $fields['created'] = BaseFieldDefinition::create('created')
-      ->setLabel(t('Created on'))
-      ->setDescription(t('The time that the transaction was created.'))
-      ->setRevisionable(FALSE)
-      ->setDisplayOptions(
-        'view',
-        ['label' => 'hidden', 'type' => 'timestamp', 'weight' => 0]
-      )
-      ->setDisplayOptions(
-        'form',
-        ['type' => 'datetime_timestamp', 'weight' => 10]
-      )
-      ->setDisplayConfigurable('view', TRUE);
-
-    $fields['changed'] = BaseFieldDefinition::create('changed')
-      ->setLabel(t('Changed'))
-      ->setDescription(t('The time that the transaction was last saved.'))
-      ->setDisplayConfigurable('view', TRUE)
-      ->setRevisionable(FALSE)
-      ->setTranslatable(FALSE);
-
     return $fields;
   }
 

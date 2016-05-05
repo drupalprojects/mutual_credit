@@ -8,8 +8,6 @@ use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi_signatures\Signatures;
 use Drupal\mcapi\Mcapi;
 
-const TRANSACTION_STATE_PENDING = 'pending';
-
 /**
  * Implements hook_help().
  * @return string
@@ -176,7 +174,7 @@ function mcapi_signatures_entity_extra_field_info() {
         'description' => t("Transactions awaiting the user's signature"),
         'weight' => 3,
       ],
-      'waiting_on_another' => [
+      'waiting_on_others' => [
         'label' => t('Signatures awaited'),
         'description' => t("Transactions awaiting others' signatures"),
         'weight' => 3,
@@ -191,24 +189,22 @@ function mcapi_signatures_entity_extra_field_info() {
  * show the pending transactions on the user
  */
 function mcapi_signatures_user_view(array &$build, $account, $display) {
-  drupal_set_message('check the views for pending signatures');
+
   if ($display->getComponent('waiting_on_me')) {
-    $build['mcapi_signatures'] = [
-      'content' => views_embed_view(
-        'mcapi_pending_signatures',
-        'my_sig_needed',
-        $account->id()
-      )
-    ];
+    $build['mcapi_signatures']['#attached']['library'] = ['mcapi_signatures/signatures'];
+    $build['mcapi_signatures']['my_sig_needed'] = views_embed_view(
+      'mcapi_pending_signatures',
+      'my_sig_needed',
+      $account->id()
+    );
   }
   if ($display->getComponent('waiting_on_others')) {
-    $build['mcapi_signatures'] = [
-      'content' => views_embed_view(
-        'mcapi_pending_signatures',
-        'other_sig_needed',
-        $account->id()
-      )
-    ];
+    $build['mcapi_signatures']['#attached']['library'] = ['mcapi_signatures/signatures'];
+    $build['mcapi_signatures'][ 'other_sig_needed'] = views_embed_view(
+      'mcapi_pending_signatures',
+      'other_sig_needed',
+      $account->id()
+    );
   }
 }
 

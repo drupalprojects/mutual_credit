@@ -22,13 +22,13 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
           $replacements[$original] = $transaction->type->entity->label();
           break;
         case 'payer':
-          $replacements[$original] = $transaction->payer->entity->getHolder()->link();
+          $replacements[$original] = $transaction->payer->entity->getHolder()->toLink()->toString();
           break;
         case 'payee':
-          $replacements[$original] = $transaction->payee->entity->getHolder()->link();
+          $replacements[$original] = $transaction->payee->entity->getHolder()->toLink()->toString();
           break;
         case 'creator':
-          $replacements[$original] = $transaction->creator->entity->link();
+          $replacements[$original] = $transaction->creator->entity->toLink()->toString();
           break;
         case 'description':
           $replacements[$original] = $transaction->description->getString();
@@ -37,11 +37,11 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
           $replacements[$original] = format_date($transaction->created->value, 'medium');
           break;
         case 'url':
-          $replacements[$original] = $transaction->url('canonical');
+          $replacements[$original] = $transaction->toUrl();
           break;
         //the field module did this in d7 but can't find where to debug in d8
         case 'worth':
-          $replacements[$original] = (string)$transaction->worth;
+          $replacements[$original] = $transaction->worth->getString();
       }
     }
 
@@ -89,19 +89,19 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
           $replacements[$original] = $wallet->getOwner()->label();
           break;
         case 'owner-link':
-          $replacements[$original] = $wallet->getOwner()->link(NULL, NULL, ['absolute' => TRUE]);
+          $replacements[$original] = $wallet->getOwner()->toLink(NULL, NULL, ['absolute' => TRUE]);
           break;
         case 'holder':
           $replacements[$original] = $wallet->getHolder()->label();
           break;
         case 'holder-link':
-          $replacements[$original] = $wallet->getHolder()->link(NULL, NULL, ['absolute' => TRUE]);
+          $replacements[$original] = $wallet->getHolder()->toLink(NULL, NULL, ['absolute' => TRUE]);
           break;
         case 'name':
           $replacements[$original] = $wallet->label();
           break;
         case 'link':
-          $replacements[$original] = $wallet->link(NULL, NULL, ['absolute' => TRUE]);
+          $replacements[$original] = $wallet->toLink(NULL, NULL, ['absolute' => TRUE]);
           break;
 
       }

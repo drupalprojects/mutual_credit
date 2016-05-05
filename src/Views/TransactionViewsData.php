@@ -22,8 +22,8 @@ class TransactionViewsData extends EntityViewsData {
     $data['mcapi_transaction']['table']['base']['defaults']['field'] = 'xid';
     $data['mcapi_transaction']['table']['wizard_id'] = 'transactions';
     $data['mcapi_transaction']['table']['access query tag'] = 'mcapi_views_access';
-    //expected in \Drupal\views\Plugin\views\query\QueryPluginBase::getEntityTableInfo()...
-    $data['mcapi_transaction']['table']['entity revision'] = NULL;
+    //$data['mcapi_transaction']['table']['entity revision'] = NULL;
+//      any problems with transactions see https://www.drupal.org/node/2477847
 
     $data['mcapi_transaction']['state']['field']['id'] = 'mcapi_state';
     $data['mcapi_transaction']['state']['filter'] = [
@@ -72,31 +72,52 @@ class TransactionViewsData extends EntityViewsData {
     ];
      *
      */
-    //@todo I don't know why these relationships aren't coming automatically when 'creator' is
+    //@todo I don't know why these relationships aren't coming automatically
     $data['mcapi_transaction']['payer']['help'] = $this->t('The wallet which was debited');
     $data['mcapi_transaction']['payer']['relationship'] = [
       'base' => 'mcapi_wallet',
       'base field' => 'wid',
-      'label' => 'Debited wallet',
-      'title' => 'Debited wallet',
+      'label' => $this->t('Debited wallet'),
+      'title' => $this->t('Debited wallet'),
       'id' => 'standard'
     ];
     $data['mcapi_transaction']['payer']['field']['default_formatter'] = 'entity_reference_label';
 
-    $data['mcapi_transaction']['payee']['help'] = $this->t('The wallet which was credited');
+    $data['mcapi_transaction']['payee']['help'] = $this->t('The wallet which was credited.');
     $data['mcapi_transaction']['payee']['relationship'] = [
       'base' => 'mcapi_wallet',
       'base field' => 'wid',
-      'label' => 'Credited wallet',
-      'title' => 'Credited wallet',
+      'label' => $this->t('Credited wallet'),
+      'title' => $this->t('Credited wallet'),
       'id' => 'standard'
     ];
     $data['mcapi_transaction']['payee']['field']['default_formatter'] = 'entity_reference_label';
+
     $data['mcapi_transaction']['first_wallet'] = [
-      'title' => $this->t('First wallet'),
-      'help' => $this->t('Wallet held by the user'),
+      'title' => $this->t('First wallet of the passed user'),
+      'help' => $this->t('First wallet of the passed user'),
       'argument' => [
         'id' => 'mcapi_first_wallet',
+      ]
+    ];
+
+    $title = $this->t('Credited wallet') .' ('. $this->t('First wallet of the passed user').')';
+    $data['mcapi_transaction']['first_payee'] = [
+      'title' => $title,
+      'help' => $title,
+      'argument' => [
+        'id' => 'mcapi_first_wallet',
+        'field' => 'payee'
+      ]
+    ];
+
+    $title = $this->t('Debited wallet.') .' ('. $this->t('First wallet of the passed user').')';
+    $data['mcapi_transaction']['first_payer'] = [
+      'title' => $title,
+      'help' => $title,
+      'argument' => [
+        'id' => 'mcapi_first_wallet',
+        'field' => 'payer'
       ]
     ];
     /*

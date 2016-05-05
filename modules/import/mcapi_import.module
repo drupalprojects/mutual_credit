@@ -424,7 +424,7 @@ function mcapi_import_balances_member($uid, $curr_id, $type, $balance, $gross_in
   $transactions = [];
   $values = array(
     'type' => $type,
-    'state' => TRANSACTION_STATE_FINISHED,
+    'state' => 'done',
     'curr_id' => $curr_id
   );
 

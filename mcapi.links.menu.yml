@@ -32,18 +32,24 @@ mcapi.admin_misc:
   route_name: mcapi.admin_misc
   parent: mcapi.admin
   weight: 18
-  
+
 mcapi.admin.transaction_form.list:
   title: Payment forms
   description: Configure any of the transaction forms
   route_name: mcapi.admin.transaction_form.list
   parent: mcapi.admin
   weight: 5
-  
+
 mcapi.mass:
   title: Mass transactions
   description: Between one wallet and many
   route_name: mcapi.masspay.12many
+  menu_name: tools
+
+mcapi.transaction.add_form:
+  title: Create transaction
+  description: Between any two wallets
+  route_name: entity.mcapi_transaction.add_form
   menu_name: tools
 
 #for some reasons views doesn't make this show as a menu link in alpha11

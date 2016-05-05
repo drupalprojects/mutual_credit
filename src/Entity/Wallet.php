@@ -201,13 +201,14 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields = parent::baseFieldDefinitions($entity_type);
     $fields['holder_entity_type'] = BaseFieldDefinition::create('string')
-      ->setLabel(t('Holder entity type'))
-      ->setDescription(t('The timezone of this user.'))
+      ->setLabel(t('Holder type'))
+      ->setDescription(t('The entity type of the wallet holder'))
       ->setSetting('max_length', 32)
       ->setRequired(TRUE);
 
     $fields['holder_entity_id'] = BaseFieldDefinition::create('integer')
-      ->setLabel(t('Holder entity ID'))
+      ->setLabel(t('Holder ID'))
+      ->setDescription(t('The entity id of the wallet holder'))
       ->setRequired(TRUE);
 
     $fields['name'] = BaseFieldDefinition::create('string')

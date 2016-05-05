@@ -83,7 +83,7 @@ class Endpoint extends SystemController {
     $transaction = \Drupal::entityTypeManager()
       ->getStorage('mcapi_transaction')
       ->loadByProperties(['uuid' => $params['txid']]);
-    $transaction->state->target_id = TRANSACTION_STATE_FINISHED;
+    $transaction->state->target_id = 'done';
     $transaction->save();
     return 200;
   }
@@ -156,7 +156,7 @@ class Endpoint extends SystemController {
         $params['seller_country'] = $country;
       }
       $transaction = Transaction::create($props);
-      $transaction->state->target_id = TRANSACTION_STATE_FINISHED;
+      $transaction->state->target_id = 'done';
       $transaction->remote_exchange_id = $other_exchange_id;
       $transaction->remote_user_id = $other_exchange_name;
       $transaction->remote_user_name = $other_user_name;

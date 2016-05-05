@@ -21,7 +21,6 @@ use Drupal\Core\Render\RendererInterface;
 use Drupal\Search\SearchQuery;
 use Drupal\search\Plugin\SearchIndexingInterface;
 use Drupal\search\Plugin\ConfigurableSearchPluginBase;
-use Drupal\Component\Utility\SafeMarkup;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -257,31 +256,25 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
    * @note borrowed from nodeSearch - too complicated
    */
   protected function prepareResults(StatementInterface $found) {
-    $results = array();
-    $keys = $this->keywords;
-
+    $results = [];
     foreach ($found as $item) {
       // Render the transaction.
       $tx = Transaction::load($item->sid);
-      $build = ['#markup' => SafeMarkup::escape($tx->description->value)]
+      $build = ['#plain_text' => $tx->description->value]
         + $this->entityTypeManager
         ->getViewBuilder('mcapi_transaction')
         ->view($tx, 'search_result');
 
-      unset($build['#theme']);
+      unset($build['#theme']);//not sure why we did this
 
-      $rendered = SafeMarkup::set($this->renderer->render($build));
       //see template_preprocess_search_result
       //search result theming is not v good and not well documented in beta 11
-      $result = array(
-        'link' => $tx->url(
-          'canonical',
-          ['absolute' => TRUE]
-        ),
+      $result = [
+        'link' => $tx->toUrl('canonical', ['absolute' => TRUE]),
         'title' => $tx->description->value,
         'date' => $tx->created->value,//not used
         'score' => $item->calculated_score,//not used
-      );
+      ];
       $results[] = $result;
     }
     return $results;
@@ -367,7 +360,7 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
       $this->getPluginId(),
       $transaction->id(),
       'und',
-      SafeMarkup::checkPlain($transaction->description->value)
+      $transaction->description->value
     );
   }
 

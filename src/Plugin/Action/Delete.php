@@ -3,12 +3,12 @@
 /**
  * @file
  *  Contains Drupal\mcapi\Plugin\Action\Delete
- *
  */
 
 namespace Drupal\mcapi\Plugin\Action;
 
 use Drupal\Core\Form\FormStateInterface;
+
 
 /**
  * Removes a transaction from the db.
@@ -27,7 +27,7 @@ class Delete extends \Drupal\mcapi\Plugin\TransactionActionBase {
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $elements = parent::buildConfigurationForm($form, $form_state);
-    unset($elements['access'][TRANSACTION_STATE_ERASED]);
+    unset($elements['access']['erased']);
     //if the transaction no longer exists there's nothing to configure for the final step
     unset($elements['feedback']['redirect']['#states']);
     //because after a transaction is deleted, you can't very well go and visit it.

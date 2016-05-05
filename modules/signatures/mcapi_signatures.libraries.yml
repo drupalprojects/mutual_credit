@@ -2,4 +2,4 @@ signatures:
   version: VERSION
   css:
     component:
-      signatures.css: {}
+      css/signatures.css: {}

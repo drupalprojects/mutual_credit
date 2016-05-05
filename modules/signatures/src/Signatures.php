@@ -38,7 +38,7 @@ class Signatures {
       $transaction->signatures[$account->id()] = REQUEST_TIME;
       //set the state to finished if there are no outstanding signatures
       if (array_search(0, $transaction->signatures) === FALSE) {
-        $transaction->set('state', TRANSACTION_STATE_FINISHED);
+        $transaction->set('state', 'done');
       }
     }
   }

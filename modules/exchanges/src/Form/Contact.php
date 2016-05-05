@@ -163,7 +163,7 @@ class Contact extends ContentEntityForm {
 
     // To avoid false error messages caused by flood control, redirect away from
     // the contact form; either to the contacted user account or the front page.
-    $form_state->setRedirectUrl($this->entity->urlInfo());
+    $form_state->setRedirectUrl($this->entity->toUrl());
   }
 
   /**

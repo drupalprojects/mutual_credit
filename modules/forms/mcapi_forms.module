@@ -31,11 +31,11 @@ function mcapi_forms_entity_type_build(array &$entity_types) {
  */
 function mcapi_forms_menu_links_discovered_alter(&$links) {
   foreach (mcapi_form_displays_load() as $id => $first_party_form) {
-    $design = $first_party_form->getThirdPartySettings('mcapi_forms');
-    if ($menu = $design['menu_name']) {
+    $settings = $first_party_form->getThirdPartySettings('mcapi_forms');
+    if ($menu = $settings['menu_name']) {
       $route_name = 'mcapi.1stparty.'.$first_party_form->get('mode');
       $links[$route_name.'.link'] = [
-        'title' => $design['title'],
+        'title' => $settings['title'],
         'route_name' => $route_name,
         'provider' => 'mcapi_forms',
         'menu_name' => $menu,
@@ -87,10 +87,10 @@ function mcapi_forms_theme() {
  * - 'operations' => [Url::fromPath('blah')] an array of items, each with title and path
  */
 function mcapi_forms_mcapi_form_list() {
+  drupal_set_message(t('Create more forms by creating more transaction form displays and customising them'));
   $forms = [];
 
   foreach (mcapi_form_displays_load() as $mode => $entity) {
-    $edit_form_settings = $entity->getThirdPartySettings('mcapi_forms');
     $forms[$mode] = [
       'link' => Link::fromTextAndUrl(
         $edit_form_settings['title'],
@@ -123,10 +123,13 @@ function mcapi_forms_mcapi_form_list() {
 function mcapi_form_displays_load($config = FALSE) {
   $displays = [];
   if ($config) {
-    $transaction_form_display_ids = \Drupal::configFactory()->listAll('core.entity_form_display.mcapi_transaction.mcapi_transaction');
+    $transaction_form_display_ids = \Drupal::configFactory()
+      ->listAll('core.entity_form_display.mcapi_transaction.mcapi_transaction');
     foreach ($transaction_form_display_ids as $id) {
       $display = \Drupal::config($id);
-      $displays[$display->get('mode')] = $display;
+      if ($display->get('third_party_settings.mcapi_forms')) {
+        $displays[$display->get('mode')] = $display;
+      }
     }
   }
   else {
@@ -134,7 +137,7 @@ function mcapi_form_displays_load($config = FALSE) {
       ->getStorage('entity_form_display')
       ->loadByProperties(['bundle' => 'mcapi_transaction']);
     foreach ($entities as $display) {
-      if ($display->status()) {
+      if ($settings = $display->getThirdPartySettings('mcapi_forms')) {
         $displays[$display->get('mode')] = $display;
       }
     }
@@ -160,24 +163,23 @@ function mcapi_forms_entity_extra_field_info() {
 function mcapi_forms_mcapi_wallet_view(array &$build, $entity, $display) {
   if ($display->getComponent('trade_with')) {
     foreach (mcapi_form_displays_load() as $id => $display) {
-      if ($settings = $display->getThirdpartySettings('mcapi_forms')) {
-        switch($settings['direction']) {
-          case MCAPI_FORMS_DIR_INCOMING:
-            $key = 'payer';
-            break;
-          case MCAPI_FORMS_DIR_OUTGOING:
-            $key = 'payee';
-            break;
-          default:
-            continue;
-        }
-        $build['wallet_link_'.$id] = [
-          '#type' => 'link',
-          '#title' => wallet_link_title($entity, $settings['wallet_link_title']),
-          '#url' => \Drupal\Core\Url::fromUserInput($settings['path'], ['query' => [$key => $entity->id()]]),
-          '#attributes' => ['class' => 'wallet-link'],
-        ];
+      $settings = $display->getThirdPartySettings('mcapi_forms');
+      switch($settings['direction']) {
+        case MCAPI_FORMS_DIR_INCOMING:
+          $key = 'payer';
+          break;
+        case MCAPI_FORMS_DIR_OUTGOING:
+          $key = 'payee';
+          break;
+        default:
+          continue;
       }
+      $build['wallet_link_'.$id] = [
+        '#type' => 'link',
+        '#title' => wallet_link_title($entity, $settings['wallet_link_title']),
+        '#url' => \Drupal\Core\Url::fromUserInput($settings['path'], ['query' => [$key => $entity->id()]]),
+        '#attributes' => ['class' => 'wallet-link'],
+      ];
     }
   }
 }

@@ -140,7 +140,7 @@ class WalletAddForm extends ContentEntityForm {
    */
   public function save(array $form, FormStateInterface $form_state) {
     $this->entity->save();
-    $form_state->setRedirectUrl($this->entity->urlInfo('edit-form'));
+    $form_state->setRedirectUrl($this->entity->toUrl('edit-form'));
   }
 
 }

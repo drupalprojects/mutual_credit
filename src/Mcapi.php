@@ -70,6 +70,11 @@ class Mcapi {
   /**
    * utility function
    * loads any of the transaction operation actions
+   *
+   * @param string $operation
+   *   may or may not begin with transaction_'
+   *
+   * @todo alther the incoming $operation to be more consistent and harminise with $this::transactionActionsLoad()
    */
   static function transactionActionLoad($operation) {
     //sometimes the $operation is from the url so it is shortened, and sometimes is the id of an action.
@@ -261,7 +266,7 @@ class Mcapi {
     }
     else {
       $query = \Drupal::entityQuery('mcapi_wallet')
-        ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
+        ->condition('payways', Wallet::PAYWAY_AUTO, '<>')//not intertrading wallets
         ->condition('orphaned', 0);
       if ($match) {
         $query->condition('name', '%'.\Drupal::database()->escapeLike($match).'%', 'LIKE');
@@ -270,6 +275,11 @@ class Mcapi {
     }
 
     return $wids;
+  }
+
+  public static function firstWalletIdOfEntity(ContentEntityInterface $entity) {
+    $wids = Mcapi::walletsOf($entity);
+    return reset($wids);
   }
 
 }

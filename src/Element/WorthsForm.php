@@ -48,17 +48,17 @@ class Worthsform extends FormElement {
    * the #default_value is then used to build the widget
    */
   public static function processDefaults($element, FormStateInterface $form_state, $form) {
+    //populate #allowed_curr_ids from the default value OR all currencies
     if (empty($element['#default_value'])) {
       if (empty($element['#allowed_curr_ids'])) {
         $element['#allowed_curr_ids'] = array_keys(Exchange::currenciesAvailableToUser());
       }
-      if (empty($element['#default_value'])) {
-        foreach ($element['#allowed_curr_ids'] as $curr_id) {
-          $element['#default_value'][] = [
-            'curr_id' => $curr_id,
-            'value' => ''
-          ];
-        }
+      $element['#default_value'] = [];
+      foreach ($element['#allowed_curr_ids'] as $curr_id) {
+        $element['#default_value'][] = [
+          'curr_id' => $curr_id,
+          'value' => ''
+        ];
       }
     }
     else {

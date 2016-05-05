@@ -38,7 +38,7 @@ class ExchangeListBuilder extends EntityListBuilder {
       'class' => array($entity->status->value ? 'enabled' : 'disabled'),
       'title' => array($entity->label()),
       'data' => array(
-        'title' => $entity->link(),
+        'title' => $entity->toLink(),
         'active' => $entity->get('status')->value ? t('Active') : t('Deactivated'),
         'open' => $entity->get('open')->value ? t('Open') : t('Private'),
         'members' => count($entity->memberIds('user')),
@@ -63,19 +63,19 @@ class ExchangeListBuilder extends EntityListBuilder {
       $operations['disable'] = [
         'title' => t('Deactivate'),
         'weight' => 40,
-        'url' => $entity->urlInfo('disable-confirm')
+        'url' => $entity->toUrl('disable-confirm')
       ];
     }
     elseif (!$entity->get('status')->value) {
       $operations['enable'] = [
         'title' => t('Activate'),
         'weight' => -10,
-        'url' => $entity->urlInfo('enable-confirm')
+        'url' => $entity->toUrl('enable-confirm')
       ];
       $operations['delete'] = [
         'title' => t('Delete'),
         'weight' => -10,
-        'url' => $entity->urlInfo('delete-confirm')
+        'url' => $entity->toUrl('delete-confirm')
       ];
     }
     return $operations;

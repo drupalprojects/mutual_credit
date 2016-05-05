@@ -11,10 +11,10 @@ namespace Drupal\mcapi_signatures\Plugin\migrate\source;
  * Drupal signatures source from database.
  *
  * @MigrateSource(
- *   id = "signatures"
+ *   id = "d7_mcapi_signatures"
  * )
  */
-class Signatures extends DrupalSqlBase {
+class Signatures extends \Drupal\migrate_drupal\Plugin\migrate\source\DrupalSqlBase {
 
   public function query() {
     $query = $this->select('mcapi_signatures', 's')->fields('s', ['serial', 'uid', 'pending']);

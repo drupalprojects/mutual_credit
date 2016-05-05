@@ -1,10 +1,11 @@
+uuid: 5efb4897-66b3-41d0-ae37-c666be8f8a6a
 langcode: null
 status: true
 dependencies:
   config:
-    - core.entity_view_mode.mcapi_transaction.sentence
+    - core.entity_view_mode.mcapi_transaction.sentence_ops
   module:
-    - mcapi
+    - mcapi_signatures
     - user
 id: mcapi_pending_signatures
 label: 'Pending transactions'
@@ -56,7 +57,7 @@ display:
         type: 'entity:mcapi_transaction'
         options:
           relationship: none
-          view_mode: sentence
+          view_mode: sentence_ops
       fields:
         xid:
           table: mcapi_transaction
@@ -169,20 +170,7 @@ display:
       title: 'Pending transactions'
       header: {  }
       footer: {  }
-      empty:
-        area:
-          id: area
-          table: views
-          field: area
-          relationship: none
-          group_type: group
-          admin_label: ''
-          empty: true
-          tokenize: false
-          content:
-            value: 'No pending transactions'
-            format: plain_text
-          plugin_id: text
+      empty: {  }
       relationships:
         serial:
           id: serial
@@ -230,6 +218,13 @@ display:
           not: false
           plugin_id: user_uid
       display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+      tags: {  }
   my_pending:
     display_plugin: block
     id: my_pending
@@ -240,6 +235,29 @@ display:
       display_description: ''
       block_description: 'Pending transactions'
       block_category: 'Community Accounting'
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          empty: true
+          tokenize: true
+          content:
+            value: '{{ arguments.uid }} has no transactions pending.'
+            format: plain_text
+          plugin_id: text
+      defaults:
+        empty: false
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+      tags: {  }
   my_sig_needed:
     display_plugin: block
     id: my_sig_needed
@@ -332,11 +350,33 @@ display:
       defaults:
         filters: false
         filter_groups: false
+        empty: false
       filter_groups:
         operator: AND
         groups:
           1: AND
       block_description: 'My signature needed'
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          empty: true
+          tokenize: true
+          content:
+            value: 'No transactions for {{ arguments.uid }} to sign'
+            format: plain_text
+          plugin_id: text
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+      tags: {  }
   other_sig_needed:
     display_plugin: block
     id: other_sig_needed
@@ -429,8 +469,31 @@ display:
       defaults:
         filters: false
         filter_groups: false
+        empty: false
       filter_groups:
         operator: AND
         groups:
           1: AND
       block_description: 'Waiting for another signature'
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          empty: true
+          tokenize: true
+          content:
+            value: '{{ arguments.uid }} is not waiting for any signatures'
+            format: plain_text
+          plugin_id: text
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+      tags: {  }
+

@@ -21,21 +21,27 @@ class OperationForm extends ContentEntityConfirmFormBase {
   private $plugin;
   private $config;
   private $eventDispatcher;
+  private $renderer;
   private $destination;
-  protected $entityTypeManager;//see parent
+  protected $viewBuilder;//see parent
 
   /**
    *
+   * @param \Drupal\mcapi\ViewBuilder\TransactionViewBuilder $transactionViewBuilder
    * @param \Drupal\Core\Routing\RouteMatch $route_match
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    * @param \Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher $event_dispatcher
+   * @param \Drupal\Core\Render\Renderer $renderer
+   * @param \Drupal\Core\Utility\Token $token
    */
-  function __construct($entity_type_manager, $route_match, $request_stack, $event_dispatcher) {
+  function __construct($transactionViewBuilder, $route_match, $request_stack, $event_dispatcher, $renderer, $token) {
     $this->entityTypeManager = $entity_type_manager;
     $this->action = Mcapi::transactionActionLoad($route_match->getparameter('operation'));
     $this->plugin = $this->action->getPlugin();
     $this->config = $this->plugin->getConfiguration();
     $this->eventDispatcher = $event_dispatcher;
+    $this->renderer = $renderer;
+    $this->token = $token;
     $query = $request_stack->getCurrentRequest()->query;
     if ($query->has('destination')) {
       $this->destination = $query->get('destination');
@@ -47,10 +53,12 @@ class OperationForm extends ContentEntityConfirmFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity_type.manager'),
+      $container->get('entity_type.manager')->getViewBuilder('mcapi_transaction'),
       $container->get('current_route_match'),
       $container->get('request_stack'),
-      $container->get('event_dispatcher')
+      $container->get('event_dispatcher'),
+      $container->get('renderer'),
+      $container->get('token')
     );
   }
 
@@ -80,7 +88,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
       //failing that we go to the user page user.page
       return new Url('user.page');
     }
-    return $this->entity->urlInfo('canonical');
+    return $this->entity->toUrl();
   }
 
   /**
@@ -101,7 +109,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
       $renderable = [
         '#type' => 'inline_template',
         '#template' => $this->config['twig'],
-        '#context' => \Drupal::Token()->replace(
+        '#context' => $this->token->replace(
           $this->config['twig'],
           ['mcapi_transaction' => $this->entity],
           ['sanitize' => TRUE]
@@ -113,8 +121,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
         ->getViewBuilder('mcapi_transaction')
         ->view($this->entity, $format);
     }
-    //@todo inject the renderer service
-    return \Drupal::service('renderer')->render($renderable);
+    return $this->renderer->render($renderable);
   }
 
   /**

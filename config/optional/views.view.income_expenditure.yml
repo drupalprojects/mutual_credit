@@ -1,3 +1,4 @@
+#waiting for https://www.drupal.org/node/2325899 before adding date arguments
 uuid: 538f523d-9650-4422-8900-d691adbcf01c
 langcode: en
 status: true
@@ -7,7 +8,7 @@ dependencies:
   module:
     - mcapi
 _core:
-  default_config_hash: N5C2sf9KcS8KXYcYhZ29ccP8QvbPzlZb-8wAxsxPTVI
+  default_config_hash: hU2UxUSkxw2B4mOh2q9ON0VWLqv75qACz_oTwflr7eM
 id: income_expenditure
 label: 'Income & Expenditure'
 module: views
@@ -502,20 +503,7 @@ display:
           field_api_classes: false
           plugin_id: field
       filters: {  }
-      sorts:
-        created:
-          id: created
-          table: mcapi_transaction
-          field: created
-          order: ASC
-          relationship: none
-          group_type: group
-          admin_label: ''
-          dependencies: {  }
-          exposed: false
-          expose:
-            label: ''
-          granularity: second
+      sorts: {  }
       title: 'Income & Expenditure'
       header: {  }
       footer: {  }
@@ -595,10 +583,10 @@ display:
       display_extenders: {  }
       display_description: ''
       arguments:
-        payer:
-          id: payer
+        first_payer:
+          id: first_payer
           table: mcapi_transaction
-          field: payer
+          field: first_payer
           relationship: none
           group_type: group
           admin_label: ''
@@ -627,11 +615,8 @@ display:
             type: none
             fail: 'not found'
           validate_options: {  }
-          break_phrase: false
-          not: false
           entity_type: mcapi_transaction
-          entity_field: payer
-          plugin_id: numeric
+          plugin_id: mcapi_first_wallet
       defaults:
         arguments: false
     cache_metadata:
@@ -698,41 +683,6 @@ display:
               - views
           plugin_id: standard
           provider: views
-        created:
-          id: created
-          table: mcapi_transaction
-          field: created
-          relationship: none
-          group_type: group
-          admin_label: ''
-          default_action: ignore
-          exception:
-            value: all
-            title_enable: false
-            title: All
-          title_enable: false
-          title: ''
-          default_argument_type: fixed
-          default_argument_options:
-            argument: ''
-          default_argument_skip_url: false
-          summary_options:
-            base_path: ''
-            count: true
-            items_per_page: 25
-            override: false
-          summary:
-            sort_order: asc
-            number_of_records: 0
-            format: default_summary
-          specify_validation: false
-          validate:
-            type: none
-            fail: 'not found'
-          validate_options: {  }
-          entity_type: mcapi_transaction
-          entity_field: created
-          plugin_id: date
       defaults:
         arguments: false
         fields: false
@@ -1230,7 +1180,7 @@ display:
             fail: 'not found'
           validate_options: {  }
           entity_type: mcapi_transaction
-          plugin_id: mcapi_first_wallet
+          plugin_id: mcapi_first_payee_wallet
       defaults:
         arguments: false
         fields: false

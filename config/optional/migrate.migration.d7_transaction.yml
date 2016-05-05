@@ -1,0 +1,39 @@
+id: d7_transaction
+label: Transaction entity
+migration_tags:
+  - Drupal 7
+source:
+  plugin: d7_mcapi_transaction
+process:
+  serial: serial
+  payer:
+    plugin: check_wallet
+  payee:
+    plugin: check_wallet
+  type:
+    plugin: static_map
+    default_value: 'default'
+    source: type
+    map:
+      dependent: auto
+      auto: auto
+      remote: remote
+      mass: mass
+  state:
+    plugin: static_map
+    default_value: 'default'
+    source: state
+    map:
+      -3: hanging
+      -1: pending
+      0: erased
+      1: done
+  description: description
+  creator: uid
+  created: created
+destination:
+  plugin: entity:mcapi_transaction
+migration_dependencies:
+  required:
+    - d7_user
+    - d7_field_instance

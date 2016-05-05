@@ -1,5 +1,5 @@
 <?php
-kkkkkkk
+
 /**
  * @file
  * Contains \Drupal\taxonomy\Plugin\migrate\cckfield\Worth.

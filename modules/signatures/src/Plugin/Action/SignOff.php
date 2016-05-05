@@ -21,7 +21,7 @@ use Drupal\Core\Form\FormStateInterface;
  * )
  */
 class Signoff extends \Drupal\mcapi\Plugin\TransactionActionBase {
-    
+
   /*
    * {@inheritdoc}
   */
@@ -33,17 +33,18 @@ class Signoff extends \Drupal\mcapi\Plugin\TransactionActionBase {
     ];
     return $elements;
   }
-  
+
   /*
    * {@inheritdoc}
   */
-  public function execute() {
-    foreach ($this->transaction->signatures as $uid => $signed) {
+  public function execute($transaction = NULL) {
+    foreach ($transaction->signatures as $uid => $signed) {
       if ($signed) {
         continue;
       }
-      Signatures::sign($this->transaction, User::load($uid));
+      \Drupal\mcapi_signatures\Signatures::sign($transaction, \Drupal\user\Entity\User::load($uid));
     }
+    parent::execute($transaction);
   }
 
 }

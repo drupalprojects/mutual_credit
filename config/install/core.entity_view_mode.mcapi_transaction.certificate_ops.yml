@@ -1,0 +1,11 @@
+uuid: b35e2853-fce3-412e-bc00-fed204aee2d3
+langcode: en
+status: true
+dependencies:
+  module:
+    - mcapi
+id: mcapi_transaction.certificate_ops
+label: Certificate + operations
+targetEntityType: mcapi_transaction
+cache: false
+

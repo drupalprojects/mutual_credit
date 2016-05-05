@@ -55,7 +55,7 @@ class TransactionStorageSchema extends SqlContentEntityStorageSchema {
         'state' => [
           'type' => 'varchar',
           'not null' => TRUE,
-          'default' => TRANSACTION_STATE_FINISHED,
+          'default' => 'done',
           'length' => 15,
           'description' => 'The id of the mcapi_state config entity'
         ],

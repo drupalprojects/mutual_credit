@@ -30,7 +30,7 @@ configuration:
   format: certificate
   twig: ''
   display: 2
-  button: 'I''''m sure!'
+  button: 'I''m sure!'
   cancel_link: Cancel
   message: ''
   weight: 0

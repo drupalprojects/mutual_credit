@@ -44,7 +44,7 @@ class CurrencyListBuilder extends DraggableListBuilder {
     if (empty($actions)) {
       return;
     }
-    $row['title'] = ['#markup' => $entity->link(NULL, 'canonical')];
+    $row['title'] = ['#markup' => $entity->toLink()->toString()];
 
     $count = $entity->transactionCount();
     //this includes deleted transactions

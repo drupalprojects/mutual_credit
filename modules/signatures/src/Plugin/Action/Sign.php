@@ -33,12 +33,13 @@ class Sign extends \Drupal\mcapi\Plugin\TransactionActionBase {
     ];
     return $elements;
   }
-  
+
   /*
    * {@inheritdoc}
   */
-  public function execute() {
-    Signatures::sign($this->transaction, \Drupal::currentUser());
+  public function execute($transaction = NULL) {
+    \Drupal\mcapi_signatures\Signatures::sign($transaction, \Drupal::currentUser());
+    parent::execute($transaction);
   }
 
 

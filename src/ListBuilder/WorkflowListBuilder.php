@@ -85,6 +85,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
     $form[] = $this->visualise();
     $form['plugins'] = [
       '#type' => 'table',
+      '#caption' => $this->t('Other actions may be available at admin/config/system/actions'),
       '#header' => $this->buildHeader(),
       '#tabledrag' => [
         [

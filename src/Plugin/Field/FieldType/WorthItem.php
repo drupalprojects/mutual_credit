@@ -126,7 +126,7 @@ class WorthItem extends FieldItemBase {
     parent::onChange($property_name, $notify);
   }
 
-  public function __toString() {
+  public function getString() {
     return $this->currency->format($this->value, 'normal');
   }
 }

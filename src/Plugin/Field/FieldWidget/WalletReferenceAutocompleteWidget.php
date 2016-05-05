@@ -49,7 +49,6 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
     return $element;
   }
 
-
   /**
    * {@inheritdoc}
    */
@@ -62,8 +61,6 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
     $summary['hide_one'] = ['#markup' => $message];
     return $summary;
   }
-
-
 
   /**
    * {@inheritdoc}

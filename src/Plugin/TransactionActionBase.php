@@ -161,14 +161,19 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
     $elements['sure']['format'] = [
       '#title' => t('View mode'),
       '#type' => 'radios',
+      //this doesn't list all view modes because we don't want to show the operations.
+      //@todo this excludes view modes which may have been introduced by user 1 or other modules
+      '#options' => [
+        'certificate' => $this->t('Certificate'),
+        'sentence' => $this->t('Sentence')
+      ],
       '#default_value' => $this->configuration['format'],
       '#required' => TRUE,
       '#weight' => 6
     ];
-    foreach ($this->entityDisplayRepository->getViewModes('mcapi_transaction') as $id => $def) {
-      $elements['sure']['format']['#options'][$id] = $def['label'];
-    }
 
+    //@todo there used to be a twig view mode. Can't remember what happened to it
+    //Ideally we would be able to enter some twig to show the transaction on the confirmation page
     $elements['sure']['twig'] = [
       '#title' => t('Template'),
       '#description' => Mcapi::twigHelp(),//@note this is escaped in twig so links don't work
@@ -284,7 +289,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
       'twig' => '',
       'display' => '',
       'weight' => 0,
-      'access' => '',
+      'access' => [],
       'button' => '',
       'cancel_link' => '',
       'message' => '',

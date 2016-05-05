@@ -7,6 +7,7 @@
 
 namespace Drupal\mcapi\Controller;
 use Drupal\mcapi\Mcapi;
+use Drupal\Component\Utility\Crypt;
 
 /**
  * Defines a class to build a listing of action entities.
@@ -16,20 +17,13 @@ use Drupal\mcapi\Mcapi;
  */
 class ActionListOverride extends \Drupal\action\ActionListBuilder {
 
-  private $transactionActions;
-
-  function __construct($entity_type, $storage, $action_manager) {
-    parent::__construct($entity_type, $storage, $action_manager);
-    $this->transactionActions = Mcapi::transactionActionsLoad();
-  }
-
   /**
    * {@inheritdoc}
    */
   public function load() {
     $entities = parent::load();
-    //remove the mcapi actions
-    foreach (array_keys($this->transactionActions) as $id) {
+    //remove the mcapi actions from the list of actions
+    foreach (array_keys(Mcapi::transactionActionsLoad()) as $id) {
       unset($entities[$id]);
     }
     return $entities;
@@ -41,8 +35,11 @@ class ActionListOverride extends \Drupal\action\ActionListBuilder {
   public function render() {
     $build = parent::render();
     $options = &$build['action_admin_manage_form']['parent']['action']['#options'];
-    $key = array_search(t('Delete a transaction...'), $options);
-    unset($options[$key]);
+    //remove any transaction actions from the dropdown which are already in use
+    foreach (Mcapi::transactionActionsLoad() as $action) {
+      $key = Crypt::hashBase64($action->getPlugin()->getPluginId());
+        unset($options[$key]);
+    }
     return $build;
   }
 

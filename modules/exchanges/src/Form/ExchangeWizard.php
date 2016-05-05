@@ -11,10 +11,9 @@ namespace Drupal\mcapi_exchanges\Form;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Component\Utility\SafeMarkup;
 
 class ExchangeWizard extends ExchangeForm {
-  
+
   /**
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
@@ -33,14 +32,14 @@ class ExchangeWizard extends ExchangeForm {
     }
     return $form;
   }
-    
+
   function exchangeForm($form, $form_state) {
     $form = parent::form($form, $form_state);
-    
+
     $form['uid']['#options'] = [0 => '--'.t('New user').'--'] + $form['uid']['#options'];
     unset($form['uid']['#default_value']);
     unset($form['uid']['#required']);
-    
+
     $form['new_currency'] = [
       '#title' => $this->t('Make a new currency'),
       '#type' => 'checkbox',
@@ -51,7 +50,7 @@ class ExchangeWizard extends ExchangeForm {
     //existing and new currencies
     return $form;
   }
-  
+
   function managerForm(&$form, $form_state) {
     //this is equivalent to the user create form
     $form['subtitle'] = [
@@ -98,7 +97,7 @@ class ExchangeWizard extends ExchangeForm {
     ];
     return $form;
   }
-  
+
   function currencyForm($form, $form_state) {
     $form['subtitle'] = [
       '#markup' => t('Create a new currency.'),
@@ -132,7 +131,7 @@ class ExchangeWizard extends ExchangeForm {
   }
 
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    
+
     if (!$form_state->get('exchange')) {
       $this->validateExchange($form, $form_state);
     }
@@ -142,13 +141,13 @@ class ExchangeWizard extends ExchangeForm {
     elseif(!$form_state->get('currency')) {
       $this->validateCurrency($form, $form_state);
     }
-    
+
     if (!$form_state->get('exchange') || !$form_state->get('manager') || !$form_state->get('currency')) {
       $form_state->setRebuild(TRUE);
     }
-    
+
   }
-  
+
   function validateExchange($form, FormStateInterface $form_state) {
     $validated_exchange = parent::validateForm($form, $form_state);
     if ($uid = $form_state->getValue('uid')) {
@@ -166,7 +165,7 @@ class ExchangeWizard extends ExchangeForm {
       $form_state->set('exchange', $validated_exchange);
     }
   }
-  
+
   function validateManager($form, FormStateInterface $form_state) {
     $account = User::create([
       'name' => $form_state->getValue('username'),
@@ -176,27 +175,27 @@ class ExchangeWizard extends ExchangeForm {
       'roles' => []
     ]);
     $form_state->set('notifyMananger', $form_state->getValue('notify_new_manager'));
-    
+
     $violations = $account->validate()
       ->filterByFieldAccess($this->currentUser())
       ->filterByFields(array_diff(array_keys($account->getFieldDefinitions()), $this->getEditedFieldNames($form_state)));
     $this->flagViolations($violations, $form, $form_state);
     //@todo might need to implement getEditedFieldNames and flagfieldViolations
-    
+
     if (!$form_state->getErrors()) {
       $form_state->set('manager', $account);
     }
   }
-  
+
   function validateCurrency($form, FormStateInterface $form_state) {
     //can't think of any validation to do here
     $currency = Currency::create([
       'id'  => $form_state->getValue('id'),
-      'name' => SafeMarkup::checkPlain($form_state->getValue('id')),
+      'name' => \Drupal\Component\Utility\Html::escape($form_state->getValue('id')),
     ]);
-    
+
     //@todo what if the currency name isn't unique/
-    
+
     if (!$form_state->getErrors()) {
       $form_state->set('currency', $currency);
     }
@@ -206,11 +205,11 @@ class ExchangeWizard extends ExchangeForm {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    
+
     $this->entity = $form_state->get('exchange');//which was already validated
     $currency = $form_state->get('currency');
     $manager = $form_state->get('manager');
-    
+
     if (is_object($manager)) {
       $manager->save();
       if ($form_state->get('notifyMananger')) {
@@ -218,8 +217,8 @@ class ExchangeWizard extends ExchangeForm {
         if (_user_mail_notify('register_admin_created', $manager)) {
           drupal_set_message(
             $this->t(
-              'A welcome message with further instructions has been e-mailed to the new user <a href="@url">%name</a>.', 
-              ['@url' => $account->url(), '%name' => $manager->getAccountName()]
+              'A welcome message with further instructions has been e-mailed to the new user %linked.',
+              ['%linked' => $manager->toLink()]
             )
           );
         }
@@ -235,7 +234,7 @@ class ExchangeWizard extends ExchangeForm {
       $currencies[] = $currency;
       $this->entity->currencies->setValue($currencies);
     }
-    
+
     $status = parent::save($form, $form_state);//this will also redirect
     $form_state->setRedirect('mcapi.admin_exchange_list');
   }

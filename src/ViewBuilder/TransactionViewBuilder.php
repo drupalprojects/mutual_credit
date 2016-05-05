@@ -60,12 +60,13 @@ class TransactionViewBuilder extends EntityViewBuilder {
    */
   protected function getBuildDefaults(EntityInterface $entity, $view_mode) {
     if ($view_mode == 'full'){
+      //if the view_mode is 'full' that means nothing was specified, which is the norm.
+      //so we turn to the 'view' transition where the view mode is a configuration.
       $view_mode = 'certificate';
     }
-    //if the view_mode is 'full' that means nothing was specified, which is the norm.
-    //so we turn to the 'view' transition where the view mode is a configuration.
     $build = parent::getBuildDefaults($entity, $view_mode);
     switch($view_mode) {
+      case 'certificate_ops':
       case 'certificate':
         $build['#theme'] = 'mcapi_transaction_twig';
         $build['#mcapi_transaction']->twig = \Drupal\system\Entity\Action::load('transaction_view')
@@ -73,11 +74,18 @@ class TransactionViewBuilder extends EntityViewBuilder {
           ->getConfiguration()['twig'];
         $build['#theme_wrappers'][] = 'mcapi_transaction';
         break;
+      case 'sentence_ops':
       case 'sentence':
         //this way of doing it we can't quite use the parent theme callback mcapi_transaction
         //so we'll just add this div by hand
+        unset($build['#theme'], $build['#mcapi_transaction']);
         $template = '<div class = "mcapi_transaction-sentence">'.$this->settings->get('sentence_template').'</div>';
-        $build = ['#markup' => \Drupal::token()->replace($template, ['xaction' => $entity])];
+        $build['#markup'] = \Drupal::token()->replace($template, ['xaction' => $entity]);
+        if ($view_mode == 'sentence') {
+          break;
+        }
+        $link_list = $this->buildLinkList($this->buildActionlinks($entity));
+        $build['#markup'] .= render($link_list);
         break;
       default:
         throw new Exception('unknown view mode');
@@ -108,27 +116,31 @@ class TransactionViewBuilder extends EntityViewBuilder {
     parent::buildComponents($build, $entities, $displays, $view_mode);
     foreach ($entities as $id => $transaction) {
       //no action links on the action page itself
-      //todo inject routeMatch
+      //todo inject routeMatch //need to cache by route in that case
       if (\Drupal::routeMatch()->getRouteName() != 'mcapi.transaction.operation') {
-        $links = $this->buildActionlinks($transaction);
-        if ($links) {
-          foreach ($links as $op) {
-            $items[] = [
-              '#type' => 'link',
-              '#title' => $op['title'],
-              '#url' => $op['url']
-            ];
-          }
-          $build[$id]['links'] = [
-            //'#title' => t('Operations...'),
-            '#theme' => 'item_list',
-            '#list_type' => 'ul',
-            '#items' => $items,
-            '#attributes' => ['class' => ['transaction-operations']]
-          ];
-        }
+        $build[$id]['links'] = $this->buildLinkList($this->buildActionlinks($transaction));
       }
     }
+  }
+
+  function buildLinkList($link_list) {
+    $links = [];
+    if ($link_list) {
+      $links = [
+        '#theme' => 'item_list',
+        '#list_type' => 'ul',
+        '#items' => [],
+        '#attributes' => ['class' => ['transaction-operations']]
+      ];
+      foreach ($link_list as $op) {
+        $links['#items'][] = [
+          '#type' => 'link',
+          '#title' => $op['title'],
+          '#url' => $op['url']
+        ];
+      }
+    }
+    return $links;
   }
 
   /**

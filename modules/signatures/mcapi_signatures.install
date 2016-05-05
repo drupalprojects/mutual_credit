@@ -16,10 +16,7 @@ function mcapi_signatures_install() {
  * Implements hook_modules_installed().
  */
 function mcapi_signatures_modules_installed($modules) {
-  //this isn't working in installation profiles because I think the router isn't updated
-  //Symfony\Component\Routing\Exception\RouteNotFoundException: Route "mcapi.admin.workflow" does not exist. in Drupal\Core\Routing\RouteProvider->getRouteByName()
-  return;
-  if (in_array('mcapi_signatures', $modules) && !in_array('mcapi', $modules)) {
+  if (isset($modules['mcapi_signatures']) && !isset($modules['mcapi'])) {
     drupal_set_message(t(
       "Workflow settings should be reviewed to take account of transaction signing. @link",
       ['@link' => \Drupal\Core\Link::fromTextAndUrl(
@@ -38,15 +35,6 @@ function mcapi_signatures_modules_installed($modules) {
  * would not be uninstallable.
  */
 function mcapi_signatures_uninstall() {
-  $p = \Drupal::database()->select('mcapi_transaction', 't')
-    ->fields('t')
-    ->condition('state', 'pending')
-    ->countQuery()
-    ->execute()
-    ->fetchfield();
-  if ($p) {
-    drupal_set_message("This uninstall shouldn't have been possible if any transactions are pending");
-  }
   \Drupal::database()->update('mcapi_transaction')
     ->fields(['state' => 'done'])
     ->condition('state', 'pending')
@@ -110,7 +98,7 @@ function signature_integrity_check($modify = FALSE) {
   //set all pending transactions to completed
   \Drupal::database()->update('mcapi_transaction')
     ->fields(['state' => 1])
-    ->condition('state', TRANSACTION_STATE_PENDING)->execute();
+    ->condition('state', 'pending')->execute();
   //any transactions with pending signatures should be set back to pending state
   $pending_serials = \Drupal::database()->select('mcapi_signatures', 's')
     ->fields('s', ['serial'])
@@ -120,7 +108,7 @@ function signature_integrity_check($modify = FALSE) {
     return;
   }
   \Drupal::database()->update('mcapi_transaction')
-    ->fields(['state' => TRANSACTION_STATE_PENDING])
+    ->fields(['state' => 'pending'])
     ->condition('serial', $pending_serials)
     ->execute();
 }

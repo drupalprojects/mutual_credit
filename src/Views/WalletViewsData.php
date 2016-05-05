@@ -39,21 +39,24 @@ class WalletViewsData extends EntityViewsData {
 
   static function addWalletSummaries(array &$table) {
     $table['summary_balance'] = [
-      'title' => t('Wallet current balance'),
+      'title' => t('Current balance'),
+      'description' => t("Balances of entity's first wallet"),
       'field' => [
         'id' =>'wallet_summary',
         'stat' => 'balance'
       ]
     ];
     $table['summary_trades'] = [
-      'title' => t('Wallet transaction count'),
+      'title' => t('Transaction count'),
+      'description' => t("Number of trades in entity's first wallet"),
       'field' => [
         'id' =>'wallet_summary',
         'stat' => 'trades'
       ]
     ];
     $table['summary_volume'] = [
-      'title' => t('Wallet trading volume'),
+      'title' => t('Trading volume'),
+      'description' => t("Volumes entity's first wallet"),
       'field' => [
         'id' =>'wallet_summary',
         'stat' => 'volume'

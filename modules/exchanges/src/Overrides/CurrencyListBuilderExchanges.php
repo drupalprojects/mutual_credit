@@ -77,7 +77,7 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
     else {
       $names = [];
       foreach (Exchange::loadMultiple($used_in) as $e) {
-        $names[] = $e->link();
+        $names[] = $e->toLink();
       }
       $row['exchanges']['#markup'] = implode(', ', $names);
 

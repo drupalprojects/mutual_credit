@@ -59,7 +59,7 @@ class DashboardController extends ControllerBase {
         '#type' => 'details',
         '#open' => $exchange->status->value,
         'manager' => array(
-          '#markup' => 'Managed by '.l(($exchange->getOwner()->label()),$exchange->getOwner()->url())
+          '#markup' => 'Managed by '. $exchange->getOwner()->toLink()
         ),
         'currencies' => array(
           '#prefix' => '<br />'
@@ -88,7 +88,7 @@ class DashboardController extends ControllerBase {
         }
         $tbody[$wallet->id()] = array(
           'id' => \Drupal::l('#'.$wallet->id(), 'wallet/'.$wallet->id()),
-          'name' => \Drupal::l($wallet->getHolder()->label(), $wallet->getHolder()->url()),
+          'name' => $wallet->getHolder()->toLink(),
           'balances' => array(
             'data' => array('#markup' => implode('<br />', $balances))
           ),

@@ -147,7 +147,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
     $values += array(
       'issuance' => 'acknowledgement',
-      'format' => ['$', '999', '.', '99'],
+      'format' => ['$', '000', '.', '99'],
       'zero' => FALSE,
       'color' => '000',
       'weight' => 0,
@@ -239,7 +239,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       //hopefully now we've got a machine readable number...
     }
 
-    return $minus_sign . implode('', $output);
+    return \Drupal\Core\Render\Markup::create($minus_sign . implode('', $output));
   }
 
   /**
@@ -291,7 +291,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    */
   function deletable() {
     $all_transactions = $this->transactionCount();
-    $deleted_transactions = $this->transactionCount(['state' => TRANSACTION_STATE_ERASED]);
+    $deleted_transactions = $this->transactionCount(['state' => 'erased']);
     return $all_transactions == $deleted_transactions;
   }
 

@@ -1,6 +1,0 @@
-id: signatures
-label: Needs signatures
-description: Requires signatures by default
-start_state: pending
-provider: mcapi_signatures
-third_party_settings: { }

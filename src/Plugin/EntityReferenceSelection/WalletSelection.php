@@ -70,7 +70,7 @@ class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelectio
   private function queryEntities($match = NULL) {
     return \Drupal\mcapi\Mcapi::getWalletSelection(
       $match,
-      $this->configuration['handler_settings']['restrict']
+      $this->configuration['handler_settings']['op']
     );
   }
 

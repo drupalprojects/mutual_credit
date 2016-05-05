@@ -135,6 +135,5 @@ class TransactionForm extends ContentEntityForm {
 
     return $entity;
   }
-
 }
 

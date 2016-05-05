@@ -1,5 +1,5 @@
 <?php
-ppppp
+
 /**
  * @file
  * Contains \Drupal\mcapi\Plugin\migrate\process\Worth.

@@ -8,26 +8,20 @@ services:
     tags:
       - { name: paramconverter, priority: 10 }
 
-  mcapi.route.subscriber:
-    class: Drupal\mcapi\Routing\RouteSubscriber
-    arguments: [@entity_type.manager, @config.factory]
-    tags:
-     - { name: event_subscriber }
-
   mcapi.transaction.subscriber:
     class: Drupal\mcapi\TransactionSubscriber
     tags:
       - { name: event_subscriber }
-  
+
   #register a new logger channel
   logger.channel.mcapi:
     parent: logger.channel_base
     arguments: ['mcapi']
-    
+
 #replaces Drupal\Core\Entity\Query\Sql\QueryFactory
   mcapi.query.sql:
     class: Drupal\mcapi\Entity\QueryFactory
     arguments: ['@database']
     tags:
       - { name: backend_overridable }
-      
+

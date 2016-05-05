@@ -159,7 +159,7 @@ function template_preprocess_mcapi_currency(&$vars) {
   $build = $vars['currency'];
   $currency = $build['#mcapi_currency'];
   $vars['name'] = $currency->name;
-  $vars['owner'] = entity_load('user', $currency->uid)->link();
+  $vars['owner'] = entity_load('user', $currency->uid)->toLink();
   $vars['color'] = $currency->color;
   $storage = \Drupal::entityTypeManager()->getStorage('mcapi_transaction');
   $vars['transactions'] = $storage->count($currency->id);
@@ -175,9 +175,9 @@ function template_preprocess_mcapi_transaction_twig(&$vars) {
   $transaction = $elements['#mcapi_transaction'];
   $vars['state'] = $transaction->state->entity->label();
   $vars['type'] = $transaction->type->entity->label();
-  $vars['creator'] = $transaction->creator->entity->link();
+  $vars['creator'] = $transaction->creator->entity->toLink();
   if (!$transaction->isNew()) {
-    $vars['url'] = $transaction->link();
+    $vars['url'] = $transaction->toLink();
   }
   if ($transaction->children) {
     $children = \Drupal::entityTypeManager()

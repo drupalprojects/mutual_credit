@@ -47,7 +47,7 @@ class CurrencyForm extends EntityForm {
     else {
       $form['id'] = [
         '#type' => 'machine_name',
-        '#maxlength' => 128,
+        '#maxlength' => 8,//this is the max length of the worth->curr_id column
         '#machine_name' => [
           'exists' => '\Drupal\mcapi\Entity\Currency::load',
           'source' => ['name'],

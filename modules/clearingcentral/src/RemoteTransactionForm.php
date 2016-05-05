@@ -65,7 +65,7 @@ class RemoteTransactionForm extends TransactionForm {
     $form['remote_exchange_id'] = [
       '#title' => $this->t('Remote exchange'),
       '#type' => 'textfield',
-      '#placeholder' => 'CES0001',
+      '#placeholder' => 'CEN0001',
       '#weight' => 3
     ];
     $form['remote_user_id'] = [

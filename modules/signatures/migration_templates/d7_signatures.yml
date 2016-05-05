@@ -10,7 +10,7 @@ process:
   signed:
     plugin: sign_date
 destination:
-  plugin: mcapi_signatures
+  plugin: d7_mcapi_signatures
 migration_dependencies:
   required:
     - d7_transaction
