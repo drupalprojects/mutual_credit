@@ -3,7 +3,6 @@ status: true
 dependencies:
   config:
     - core.entity_view_mode.mcapi_transaction.search_result
-    - field.field.mcapi_transaction.mcapi_transaction.categories
     - field.field.mcapi_transaction.mcapi_transaction.worth
   module:
     - mcapi
@@ -48,7 +47,6 @@ content:
     third_party_settings: {  }
     label: inline
 hidden:
-  categories: true
   changed: true
   creator: true
   mcapi_signatures: true

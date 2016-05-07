@@ -1,7 +1,0 @@
-name: Migrate transactions
-description: To be deleted
-core: 8.x
-type: module
-
-dependencies:
-  - mcapi
