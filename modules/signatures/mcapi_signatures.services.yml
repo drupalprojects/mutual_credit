@@ -1,0 +1,4 @@
+services:
+  mcapi.signatures:
+    class: Drupal\mcapi_signatures\Signatures
+    arguments: [@current_user, @database]

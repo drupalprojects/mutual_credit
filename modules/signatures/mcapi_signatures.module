@@ -1,16 +1,11 @@
 <?php
 /**
  * @file
- * @todo rewrite this module using a signataure service
+ * @todo create a default rule
  */
-
-use Drupal\mcapi\Entity\Type;
-use Drupal\mcapi_signatures\Signatures;
-use Drupal\mcapi\Mcapi;
 
 /**
  * Implements hook_help().
- * @return string
  */
 function mcapi_signatures_help($route_name, $route_match) {
   switch ($route_name) {
@@ -28,7 +23,7 @@ function mcapi_signatures_help($route_name, $route_match) {
  * alter the start_state of transaction types according to this module's settings
  */
 function mcapi_signatures_mcapi_type_load($entities) {
-  foreach($entities as $type_id => $entity) {
+  foreach($entities as $entity) {
     $signatory_relatives = $entity
       ->getThirdPartySetting('mcapi_signatures', 'signatures');
     if(!empty($signatory_relatives)) {
@@ -40,92 +35,83 @@ function mcapi_signatures_mcapi_type_load($entities) {
 /**
  * Implements hook_ENTITY_TYPE_presave().
  * add the signatures to a new transaction object and sign for the current user
+ * @note Signatures are added here and saved along with the transaction in mcapi_signatures_mcapi_transaction_insert()
  */
 function mcapi_signatures_mcapi_transaction_presave($transaction) {
   //the start state has already been set in transaction::validate
   if ($transaction->state->target_id == 'pending' && $transaction->isNew()) {
-    $relatives = Type::load($transaction->type->target_id)
-      ->getThirdPartySetting('mcapi_signatures', 'signatures');
-    $user_ids = Mcapi::transactionRelatives()
-      ->getUsers($transaction, $relatives);
-    foreach ($user_ids as $uid) {
-      $transaction->signatures[$uid] = 0;
-    }
-    //sign for the current user
-    Signatures::sign($transaction, \Drupal::currentUser());
-    //we can't save the signatures until we have the serial number
+    //sign by the the current user
+    \Drupal::service('mcapi.signatures')
+      ->setTransaction($transaction)
+      ->addSignatures()
+      ->sign();
   }
 }
 
-
 /**
- * Implements hook_ENTITY_TYPE_load
+ * Implements hook_ENTITY_TYPE_load().
  * put the signatories into the transaction entity
  */
 function mcapi_signatures_mcapi_transaction_load($entities) {
-  $xids = [];
-  foreach ($entities as $xid => $e) {
-    if ($e->parent->value == 0) {
-      $xids[$e->serial->value] = $xid;
-    }
-  }
-  //we load these regardless of settings, just in case settings have changed
-  //leaving some transactions invisibly pending.
-  //no matter everything will be cached
-  $signatures = \Drupal::database()->select('mcapi_signatures', 's')
-    ->fields('s', ['serial', 'uid', 'signed'])
-    ->condition('serial', array_keys($xids), 'IN')
-    ->execute()->fetchAll();
-  foreach ($signatures as $sig) {
-    $entities[$xids[$sig->serial]]->signatures[$sig->uid] = $sig->signed;
-  }
+  Drupal\mcapi_signatures\Signatures::load($entities);
 }
 
 /**
- * implement mcapi hook_ENTITY_delete
+ * implement mcapi hook_ENTITY_delete().
  * this doesn't happen with the undo action, which merely changes the state.
  * delete the signature data when a transaction is deleted
  */
 function mcapi_signatures_mcapi_transaction_delete($transaction) {
-  db_delete('mcapi_signatures')
-    ->condition('serial', $transaction->serial->value)
-    ->execute();
+  \Drupal::service('mcapi.signatures')
+    ->setTransaction($transaction)
+    ->delete();
 }
 
 /**
- * Implements hook_ENTITY_insert().
- * writes the signatures after the transaction is written
+ * Implements hook_ENTITY_TYPE_insert().
+ * writes the signatures after the transaction is inserted
+ * @todo delete the mail sending when rules becomes available
  */
 function mcapi_signatures_mcapi_transaction_insert($transaction) {
-  //we're only interested in parent transactions which have signatures
-  if (isset($transaction->signatures) && !$transaction->parent->value) {
-    $q = \Drupal::database()->insert('mcapi_signatures')
-      ->fields(['serial', 'uid', 'signed']);
-
-    foreach ($transaction->signatures as $uid => $signed_unixtime) {
-      $q->values([$transaction->serial->value, $uid, $signed_unixtime]);
+  if ($transaction->state->target_id == 'pending' && !$transaction->parent->value) {
+    \Drupal::service('mcapi.signatures')
+      ->setTransaction($transaction)
+      ->insert();
+    //temp until rules module works
+    foreach (\Drupal::service('mcapi.signatures')->setTransaction($transaction)->waitingOn() as $uid) {
+      $account = \Drupal\user\Entity\User::load($uid);
+      $message = \Drupal::service('plugin.manager.mail')->mail(
+        'mcapi_signatures',
+        'signhere',
+        $account->getEmail(),
+        $account->getPreferredLangcode(),
+        [
+          'recipient' => $account,
+          'serial' => $transaction->serial->value,
+          'subject' => t('Awaiting your signature...'),
+          'body' => t("Hi [user:name],\nA transaction is awaiting your signature on [site:name].\n\n[xaction:sentence]\nLogin and sign it with one click:\n[signhere]")
+        ]
+      );
+      if ($message['result']) {
+        $this->logger->notice(
+          'Mailed %name to sign transaction @num',
+          ['%name' => $account->getUsername(), '@num' => $transaction->serial->value]
+        );
+      }
     }
-    $q->execute();
+
   }
 }
 
-
 /**
- * Implements hook_ENTITY_update().
+ * Implements hook_ENTITY_TYPE_update().
  * rewrites the signatures after the transaction is updated
  */
 function mcapi_signatures_mcapi_transaction_update($transaction) {
-  if (!isset($transaction->signatures) || empty($transaction->parent)) {
-    return;
-  }
-  foreach ($transaction->signatures as $uid => $signed) {
-    \Drupal::database()->merge('mcapi_signatures')
-      ->keys([
-        'serial' => $transaction->serial->value,
-        'uid' => $uid
-      ])->fields([
-        'signed' => $signed
-      ])->execute();
+  if (isset($transaction->signatures) && !$transaction->parent->value) {
+    \Drupal::service('mcapi.signatures')
+    ->setTransaction($transaction)
+    ->update();
   }
 }
 
@@ -189,7 +175,6 @@ function mcapi_signatures_entity_extra_field_info() {
  * show the pending transactions on the user
  */
 function mcapi_signatures_user_view(array &$build, $account, $display) {
-
   if ($display->getComponent('waiting_on_me')) {
     $build['mcapi_signatures']['#attached']['library'] = ['mcapi_signatures/signatures'];
     $build['mcapi_signatures']['my_sig_needed'] = views_embed_view(
@@ -209,7 +194,7 @@ function mcapi_signatures_user_view(array &$build, $account, $display) {
 }
 
 /**
- * Implements template_preprocess_THEMEHOOK
+ * Implements template_preprocess_THEMEHOOK().
  */
 function template_preprocess_mcapi_signatures(&$vars) {
   foreach ($vars['transaction']->signatures as $uid => $signed) {
@@ -222,17 +207,56 @@ function template_preprocess_mcapi_signatures(&$vars) {
   }
 }
 
+/**
+ * add settings to the accounting miscellaneous settingns page
+ */
 function mcapi_signatures_form_mcapi_misc_settings_alter(&$form, $form_state) {
   $form['pending_messages'] = [
     '#title' => t('Remind users to sign transactions on every page.'),
     '#type' => 'checkbox',
-    '#default_value' => \Drupal::Config('mcapi_signatures.settings')->get('pending_messages')
+    '#default_value' => \Drupal::Config('mcapi_signatures.settings')->get('pending_messages'),
+    '#weight' =>  5
   ];
   $form['action']['submit']['#submit'][] = 'mcapi_signature_settings_submit';
 }
 
+/**
+ * setting form submission callback
+ */
 function mcapi_signature_settings_submit($form, &$form_state) {
-  \Drupal::configFactory()->get('mcapi_signatures.settings')->set('pending_messages', $form_state->getValue('pending_messages'));
+  \Drupal::configFactory()
+    ->get('mcapi_signatures.settings')
+    ->set('pending_messages', $form_state->getValue('pending_messages'));
 }
 
+/**
+ * Implements hook_mail().
+ */
+function mcapi_signatures_mail($key, &$message, $params) {
+  if ($key == 'signhere') {
+    $message['subject'] = $params['subject'];
+    $data = [
+      'xaction' => \Drupal\mcapi\Entity\Transaction::loadBySerial($params['serial'])
+    ];
+    $message['body'] = \Drupal::token()->replace($params['body'], $data);
+    //now this special replacement
+    $signhere = \Drupal\Core\Url::fromRoute(
+      'mcapi.signatures.anonsign',
+      [
+        'uid' => $params['recipient']->id(),
+        'serial' => $params['serial'],
+        'hash' => mcapi_signature_hash($params['recipient']->id(), $params['serial'])
+      ],
+      ['absolute' => TRUE]
+    );
+    $message['body'] = str_replace('[signhere]', $signhere->toString(), $message['body']);
+  }
+}
 
+function mcapi_signature_hash($uid, $serial) {
+  return \Drupal\Component\Utility\Crypt::hmacBase64(
+    $uid . $serial,
+    \Drupal\Core\Site\Settings::getHashSalt()
+  );
+
+}

@@ -251,24 +251,19 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     $this->populateFields($transaction);
     //change the created time of the transactions, coz they mustn't be all in the same second
     $transaction->created->value = rand($this->getSince(), REQUEST_TIME);
-    $transaction->save();
 
-    if (isset($transaction->signatures)) {
+    $transaction->save();//testing only
+    if ($transaction->state->target_id == 'pending') {
       //signatures already exist because they were created in the presave phase
       foreach ($transaction->signatures as $uid => $signed) {
         //leave 1 in 10 signatures unsighed.
         if (rand(0, 9) > 0) {
-          \Drupal\mcapi_signatures\Signatures::sign(
-            $transaction,
-            \Drupal\user\Entity\User::load($uid)
-          );
+          \Drupal::service('mcapi.signatures')->setTransaction($transaction)->sign($uid);
         }
       }
+      //NB this could generate pending emails
       $transaction->save();
     }
-
-
-      $transaction->save();//testing only
 
   }
 

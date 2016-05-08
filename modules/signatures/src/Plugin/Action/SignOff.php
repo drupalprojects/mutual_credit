@@ -42,7 +42,9 @@ class Signoff extends \Drupal\mcapi\Plugin\TransactionActionBase {
       if ($signed) {
         continue;
       }
-      \Drupal\mcapi_signatures\Signatures::sign($transaction, \Drupal\user\Entity\User::load($uid));
+      \Drupal::service('mcapi.signatures')
+      ->setTransaction($transaction)
+      ->sign($uid);
     }
     parent::execute($transaction);
   }

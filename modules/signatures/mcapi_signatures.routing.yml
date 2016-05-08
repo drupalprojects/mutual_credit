@@ -13,3 +13,14 @@ mcapi.admin.signatures:
     _title: 'Signatures'
   requirements:
     _permission: 'configure mcapi'
+
+mcapi.signatures.anonsign:
+  path: '/transaction/{serial}/sign/{uid}/{hash}'
+  defaults:
+    _controller: \Drupal\mcapi_signatures\Controller\RemoteSign::sign
+    _title: 'Signing'
+  requirements:
+    _access: 'TRUE'
+  options:
+    _maintenance_access: TRUE
+    no_cache: TRUE

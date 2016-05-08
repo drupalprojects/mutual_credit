@@ -8,7 +8,7 @@
 namespace Drupal\mcapi_signatures;
 
 use \Drupal\Core\Form\ConfirmFormBase;
-
+use \Drupal\mcapi_signatures\Signatures;
 /**
  * Returns responses for Wallet routes.
  */
@@ -37,6 +37,7 @@ class SignAllConfirm extends ConfirmFormBase {
 
   public function form() {
     debug('this page is untested');
+    
     foreach (Signatures::transactionsNeedingSigOfUser($account) as $serial) {
       $unsigned[] = Transaction::loadBySerial($serial);
     }
