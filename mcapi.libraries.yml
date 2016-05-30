@@ -30,4 +30,7 @@ mcapi.gcharts:
     #this load core chart and gauge, which is used in mcapi_limits
     #because loading can ony happen once per page
     js/gcharts.js: {}
-    
+mcapi.currency:
+  css:
+    component:
+      css/currency.css: {}

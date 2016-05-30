@@ -169,7 +169,6 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       if (in_array($this->payways->value, [Wallet::PAYWAY_ANYONE_IN, Wallet::PAYWAY_ANYONE_BI])) {
         $payers = $this->payers->referencedEntities();
         $payers[] = $this->getOwner();
-        $payers = array_unique($payers);
         $this->payers->setValue($payers);
         drupal_set_message('Allowing owner of '.$this->holder_entity_type->value .' to be a payer');
       }
@@ -261,7 +260,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     if (!$this->stats) {
       $this->stats = $this->entityTypeManager()
         ->getStorage('mcapi_transaction')
-        ->summaryData($this->id());
+        ->walletSummary($this->id());
       //fill in the values of any unused, available currencies
       foreach ($this->currenciesAvailable() as $curr_id => $currency) {
         if (!array_key_exists($curr_id, $this->stats)) {

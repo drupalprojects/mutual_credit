@@ -132,7 +132,6 @@ class TransactionForm extends ContentEntityForm {
     if ($entity->isNew()) {
       $entity->assemble();
     }
-
     return $entity;
   }
 }

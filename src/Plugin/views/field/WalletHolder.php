@@ -51,10 +51,12 @@ class WalletHolder extends Standard {
    * {@inheritdoc}
    */
   function render(ResultRow $values) {
-    $holder = $this->getEntity($values)->getHolder();
-    return $this->options['owner'] ?
-      $holder->getOwner()->toLink()->toString() :
-      $holder->toLink()->toString();
+    $wallet = $this->getEntity($values);
+    
+    $entity = $this->options['owner'] ?
+      $wallet->getHolder()->getOwner() :
+      $wallet->getHolder();
+    return $entity->toLink()->toString();
   }
 
 }

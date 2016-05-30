@@ -9,19 +9,31 @@ namespace Drupal\mcapi\Storage;
 
 use Drupal\Core\Entity\ContentEntityTypeInterface;
 use Drupal\Core\Entity\Sql\SqlContentEntityStorageSchema;
-use Drupal\mcapi\Storage\FieldStorageDefinitionInterface;
 
 /**
  * Defines the extra tablesr.
  */
 class TransactionStorageSchema extends SqlContentEntityStorageSchema {
 
+
+
   /**
    * {@inheritdoc}
    */
   protected function getEntitySchema(ContentEntityTypeInterface $entity_type, $reset = FALSE) {
-    return parent::getEntitySchema($entity_type, $reset = FALSE) +
-    ['mcapi_transactions_index' => [
+    $tables = parent::getEntitySchema($entity_type, $reset = FALSE);
+    $tables['mcapi_transaction']['indexes']['parent'] = ['parent'];
+    $tables['mcapi_transaction']['foreign keys'] = [
+      'payer' => [
+        'table' => 'mcapi_wallet',
+        'columns' => ['wid' => 'wid'],
+      ],
+      'payee' => [
+        'table' => 'mcapi_wallet',
+        'columns' => ['wid' => 'wid'],
+      ]
+    ];
+    $tables['mcapi_transactions_index'] = [
       //regardless of whether the TransactionStorage in on-site, the index is kept in Drupal
       //this allows for views integration as long as the storage controller respects the index
       'description' => 'A more queryable way of storing transactions',
@@ -121,28 +133,10 @@ class TransactionStorageSchema extends SqlContentEntityStorageSchema {
       'indexes' => [
         'wallet_id' => ['wallet_id'],
         'partner_id' => ['partner_id'],
-       ]
-    ]];
+      ]
+    ];
+    return $tables;
   }
 
-    /**
-   * {@inheritdoc}
-   * @todo check that the keys are showing up in the data table
-   */
-  protected function processDataTable(ContentEntityTypeInterface $entity_type, array &$schema) {
-    if ($entity_type->id() == 'mcapi_transaction') {
-      $schema['mcapi_transaction']['indexes']['parent'] = ['parent'];
-      $schema['mcapi_transaction']['foreign keys'] = [
-        'payer' => [
-          'table' => 'mcapi_wallet',
-          'columns' => ['wid' => 'wid'],
-        ],
-        'payee' => [
-          'table' => 'mcapi_wallet',
-          'columns' => ['wid' => 'wid'],
-        ]
-      ];
-    }
-  }
 }
 

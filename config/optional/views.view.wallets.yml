@@ -4,13 +4,11 @@ status: true
 dependencies:
   module:
     - mcapi
-_core:
-  default_config_hash: ygHkSqxconFKpdOL1PiYgEfdVoDtDCsyppuSbwY7_Vg
 id: wallets
 label: Wallets
 module: views
 description: 'A list of wallets held by a given entity.'
-tag: ''
+tag: 'Community accounting'
 base_table: mcapi_wallet
 base_field: wid
 core: 8.x
@@ -203,12 +201,12 @@ display:
           owner: 0
           entity_type: mcapi_wallet
           plugin_id: mcapi_wallet_holder
-        summary_balance:
-          id: summary_balance
-          table: mcapi_wallet
-          field: summary_balance
+        diff:
+          id: diff
+          table: mcapi_transactions_index
+          field: diff
           relationship: none
-          group_type: group
+          group_type: sum
           admin_label: ''
           label: Balance
           exclude: false
@@ -251,58 +249,17 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          entity_type: mcapi_wallet
-          plugin_id: wallet_summary
-        summary_volume:
-          id: summary_volume
-          table: mcapi_wallet
-          field: summary_volume
-          relationship: none
-          group_type: group
-          admin_label: ''
-          label: 'Gross income'
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          entity_type: mcapi_wallet
-          plugin_id: wallet_summary
+          set_precision: false
+          precision: 0
+          decimal: .
+          separator: ','
+          format_plural: 0
+          format_plural_string: "1\x03@count"
+          prefix: ''
+          suffix: ''
+          format: 2
+          entity_type: mcapi_transaction
+          plugin_id: worth
       filters:
         payways:
           id: payways
@@ -342,7 +299,20 @@ display:
           entity_type: mcapi_wallet
           entity_field: payways
           plugin_id: string
-      sorts: {  }
+      sorts:
+        diff_1:
+          id: diff_1
+          table: mcapi_transactions_index
+          field: diff
+          relationship: none
+          group_type: sum
+          admin_label: ''
+          order: ASC
+          exposed: false
+          expose:
+            label: ''
+          entity_type: mcapi_transaction
+          plugin_id: standard
       title: Wallets
       header: {  }
       footer: {  }
@@ -392,6 +362,7 @@ display:
       field_langcode_add_to_query: null
       display_extenders: {  }
       display_comment: 'Its all about the Contextual filter default'
+      group_by: true
     cache_metadata:
       max-age: -1
       contexts:

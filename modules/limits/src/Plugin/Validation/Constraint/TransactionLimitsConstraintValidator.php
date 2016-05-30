@@ -16,7 +16,6 @@ namespace Drupal\mcapi_limits\Plugin\Validation\Constraint;
 
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\Currency;
-use Drupal\mcapi_limits\Event\TransactionPreventedEvent;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\DependencyInjection\ContainerInterface;

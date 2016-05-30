@@ -103,7 +103,6 @@ class WalletRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRoutePr
       ->setDefault('_title', 'Manage wallet')
       ->setRequirement('user', '\d+');
 
-
     return $route_collection;
   }
 

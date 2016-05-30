@@ -7,13 +7,11 @@ dependencies:
     - field.storage.mcapi_transaction.worth
   module:
     - mcapi
-_core:
-  default_config_hash: hU2UxUSkxw2B4mOh2q9ON0VWLqv75qACz_oTwflr7eM
 id: income_expenditure
 label: 'Income & Expenditure'
-module: views
+module: mcapi
 description: 'two displays showing a users transactions in each direction, by period'
-tag: mcapi_transaction
+tag: Community Accounting
 base_table: mcapi_transaction
 base_field: xid
 core: 8.x

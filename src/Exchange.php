@@ -52,10 +52,6 @@ class Exchange {
       $currencies = Self::MultipleExchanges() ?
         Exchanges::currenciesAvailableToUser($account) :
         Currency::loadMultiple();
-
-      if (!$currencies) {
-        debug('Why would there be no currencies availabe to user '.$account->id());
-      }
       uasort($currencies, '\Drupal\mcapi\Mcapi::uasortWeight');
       $account->currencies_available = $currencies;
     }
@@ -124,15 +120,19 @@ class Exchange {
     }
   }
 
-  static function intertradingWalletId() {
-    $query = \Drupal::entityQuery('mcapi_wallet')
-      ->condition('payways', \Drupal\mcapi\Entity\Wallet::PAYWAY_AUTO);
-    if (Self::multipleExchanges()) {
+  static function intertradingWalletId($exchange_id= NULL) {
+    if (Self::multipleExchanges() && $exchange_id) {
       //there might be a better name for this method,
       //if there were many methods that were filtering on the current user's exchange
-      Exchanges::intertradingWalletId($query);
+      $wid = Exchanges::intertradingWalletId($exchange_id);
     }
-    $wids = $query->execute();
-    return reset($wids);
+    else {
+      $wids = \Drupal::entityQuery('mcapi_wallet')
+        ->condition('payways', \Drupal\mcapi\Entity\Wallet::PAYWAY_AUTO)
+        ->execute();
+      $wid = reset($wids);
+    }
+    return $wid;
   }
 }
+

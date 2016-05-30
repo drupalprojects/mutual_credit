@@ -6,9 +6,9 @@ dependencies:
     - mcapi
 id: wallet_rankings
 label: 'Wallet rankings'
-module: views
-description: ''
-tag: ''
+module: mcapi
+description: 'Highest performing wallets by various criteria'
+tag: Community Accounting
 base_table: mcapi_transactions_index
 base_field: xid
 core: 8.x

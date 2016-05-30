@@ -121,7 +121,7 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
       $element += [
         '#type' => (\Drupal::config('mcapi.settings')->get('wallet_widget_max_radios')) ? 'select' : 'radios',
         '#options' => Mcapi::entityLabelList('mcapi_wallet', $wids),
-        '#default_value' => $default_value ? $default_value->id() : ''
+        '#default_value' => $default_value_wallet ? $default_value_wallet->id() : ''
       ];
     }
 

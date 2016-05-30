@@ -3,7 +3,6 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Views\WalletViewsData.
- *
  */
 namespace Drupal\mcapi\Views;
 
@@ -27,16 +26,37 @@ class WalletViewsData extends EntityViewsData {
         'id' => 'mcapi_wallet_holder',
       ],
     ];
+
     $data['mcapi_wallet']['holder_entity_type']['field']['id'] = 'mcapi_holder_type';
     $data['mcapi_wallet']['holder_entity_type']['field']['help'] = $this->t("The wallet holder's translated EntityType name");
 
+    //this allows us to do group queries such as find the balance per wallet
+    $data['mcapi_transactions_index']['table']['join'] = [
+      'mcapi_wallet' => [
+        'left_field' => 'wid',
+        'field' => 'wallet_id',
+        'required' => TRUE,
+        //'type' => 'RIGHT'
+      ],
+    ];
     $this->addWalletSummaries($data['mcapi_wallet']);
 
-    //other stats are available, total expenditure, total income, number of trading partners.
+    $data['users_field_data']['first_wid']['relationship'] = [
+      'title' => $this->t("The user's first wallet"),
+      'help' => $this->t("Reference the first wallet each user. N.B. Reqires aggregate query"),
+      'base' => 'mcapi_wallet',
+      'base field' => 'wid',
+      'field' => 'uid',
+      'label' => $this->t('First wallet'),
+      'id' => 'standard',
+    ];
 
     return $data;
   }
 
+  /**
+   * This is added to all walletable entity types.
+   */
   static function addWalletSummaries(array &$table) {
     $table['summary_balance'] = [
       'title' => t('Current balance'),

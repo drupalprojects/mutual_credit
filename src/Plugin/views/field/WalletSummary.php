@@ -3,14 +3,14 @@
 /**
  * @file
  * Definition of Drupal\mcapi\Plugin\views\field\WalletSummary.
- *
- * @todo this seems to be unused right now.
  */
 
 namespace Drupal\mcapi\Plugin\views\field;
 
 use Drupal\views\ResultRow;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
+use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Entity\Wallet;
 
 /**
  * Field handler to provide current stat for a given wallet via Wallet::getStatAll
@@ -35,8 +35,8 @@ class WalletSummary extends FieldPluginBase {
   public function render(ResultRow $values) {
     $entity = $this->getEntity($values);
     if ($entity->getEntityTypeId() != 'mcapi_wallet') {
-      $entities = \Drupal\mcapi\Mcapi::walletsOf($entity);
-      $wallet = \Drupal\mcapi\Entity\Wallet::load(reset($entities));
+      $entities = Mcapi::walletsOf($entity);
+      $wallet = Wallet::load(reset($entities));
     }
     else $wallet = $entity;
     $stat = $this->definition['stat'];

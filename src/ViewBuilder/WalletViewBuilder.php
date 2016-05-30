@@ -95,15 +95,27 @@ class WalletViewBuilder extends EntityViewBuilder {
     $display = $displays['mcapi_wallet'];
     foreach ($entities as $key => $wallet) {
       $extra = mcapi_entity_extra_field_info()['mcapi_wallet']['mcapi_wallet']['display'];
-      foreach (['balances', 'balance_bars', 'histories', 'stats'] as $component) {
+      foreach (['wallet_balances', 'wallet_balance_bars', 'wallet_stats'] as $component) {
         if ($info = $display->getComponent($component)) {
           $build[$key][$component] = [
             '#title' => $extra[$component]['label'],
-            '#theme' => 'wallet_'.$component,
+            '#theme' => $component,
             '#wallet' => $wallet,
             '#attributes' => ['class' => ['component', $component]],
             '#theme_wrappers' => ['mcapi_wallet_component'],
             '#weight' => $info['weight'],
+          ];
+        }
+      }
+      foreach (['histories'] as $component) {
+        if ($info = $display->getComponent($component)) {
+          $build[$key][$component] = [
+            '#title' => t('Balance history'),//only used if we add theme wrappers
+            '#type' => 'balance_histories',
+            '#wallet' => $wallet,
+            '#attributes' => ['class' => ['component', $component]],
+            '#weight' => $info['weight'],
+            '#width' => 300,
           ];
         }
       }

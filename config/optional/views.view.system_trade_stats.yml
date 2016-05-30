@@ -5,9 +5,9 @@ dependencies:
     - mcapi
 id: system_trade_stats
 label: 'System trade stats'
-module: views
-description: ''
-tag: ''
+module: mcapi
+description: 'trade stats accross the whole system'
+tag: Community Accounting
 base_table: mcapi_transactions_index
 base_field: xid
 core: 8.x

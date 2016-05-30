@@ -22,7 +22,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
  *   label = @Translation("Currency"),
  *   handlers = {
  *     "access" = "Drupal\mcapi\Access\CurrencyAccessControlHandler",
- *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
+ *     "view_builder" = "Drupal\mcapi\ViewBuilder\CurrencyViewBuilder",
  *     "form" = {
  *       "add" = "Drupal\mcapi\Form\CurrencyForm",
  *       "edit" = "Drupal\mcapi\Form\CurrencyForm",
@@ -47,13 +47,13 @@ use Drupal\Core\Entity\EntityStorageInterface;
  *     "canonical" = "/currency/{mcapi_currency}",
  *     "collection" = "/admin/accounting/currencies",
  *     "edit-form" = "/admin/accounting/currencies/{mcapi_currency}",
+ *     "add-form" = "/admin/accounting/currencies/add",
  *     "delete-form" = "/admin/accounting/currencies/{mcapi_currency}/delete",
  *   }
  * )
  */
 
 class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwnerInterface {
-
 
   const TYPE_ACKNOWLEDGEMENT = 2;
   const TYPE_COMMODITY = 1;
@@ -63,8 +63,16 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   const DISPLAY_NORMAL = 2;//the text value for display eg 1hr 30 mins
   const DISPLAY_PLAIN = 3;//formatted to appear as a number but without e.g 1.30
 
+  /**
+   * a short code identifying the currency within this site
+   * @var string
+   */
   public $id;
 
+  /**
+   * The UUID
+   * @var string
+   */
   public $uuid;
 
   /**
@@ -87,7 +95,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   public $uid;
 
   /*&
-   * one of 'acknowledgement', 'commodity', 'exchange'
+   * one of constants, see TYPE_ACKNOWLEDGEMENT, TYPE_COMMODITY, TYPE_PROMISE
    * @var string
    */
   public $issuance;
@@ -285,6 +293,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     $raw += $parts[1] * ($divisor);
     return $raw;
   }
+
 
   /**
    * {@inheritdoc}

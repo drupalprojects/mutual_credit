@@ -26,6 +26,7 @@ class Types extends Radios {
     $class = get_class($this);
     return [
       '#input' => TRUE,
+      '#title' => $this->t('Transaction type'),
       '#title_display' => 'before',
       '#process' => [
         [$class, 'processTypes'],

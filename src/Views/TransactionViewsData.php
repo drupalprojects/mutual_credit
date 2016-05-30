@@ -94,10 +94,13 @@ class TransactionViewsData extends EntityViewsData {
     $data['mcapi_transaction']['payee']['field']['default_formatter'] = 'entity_reference_label';
 
     $data['mcapi_transaction']['first_wallet'] = [
-      'title' => $this->t('First wallet of the passed user'),
+      'title' => $this->t('Involving first wallet of the passed user'),
       'help' => $this->t('First wallet of the passed user'),
       'argument' => [
         'id' => 'mcapi_first_wallet',
+      ],
+      'filter' => [
+        'id' => 'first_wallet_of_user'
       ]
     ];
 
@@ -120,15 +123,6 @@ class TransactionViewsData extends EntityViewsData {
         'field' => 'payer'
       ]
     ];
-    /*
-    $data['mcapi_transaction']['transaction_bulk_form'] = [
-      'title' => t('Bulk update'),
-      'help' => t('A form element that lets you run operations on multiple transactions.'),
-      'field' => [
-        'id' => 'bulk_form',
-      ],
-    ];
-*/
     /**
     //@todo consider why the index table isn't being found by views
     // Load all typed data definitions of all fields. This should cover each of
@@ -180,8 +174,6 @@ class TransactionViewsData extends EntityViewsData {
       ],
       'entity field' => 'xid'
     ];
-    //the wallet_id and partner_id are being used in a limited way here.
-    //with new handlers, would allow some interesting possibilities
     $data['mcapi_transactions_index']['wallet_id'] = [
       'title' => $this->t('Wallet ID'),
       'help' => $this->t('The wallet we are looking at'),
@@ -214,8 +206,6 @@ class TransactionViewsData extends EntityViewsData {
       ],
       'field' => [
         'id' => 'standard',
-//        'entity type field' => 'holder_entity_type',
-        'type' => 'holder_entity_type'
       ],
       'filter' => [
         'id' => 'wallet_name',
@@ -290,19 +280,20 @@ class TransactionViewsData extends EntityViewsData {
     $data['mcapi_transactions_index']['incoming'] = [
       'title' => $this->t('Income'),
       'help' => $this->t('The income from the transaction; positive or zero'),
-      //@todo if worth plugin isn't needed for the main entity table its not needed here either
+      //mimic the worth field
       'field' => [
         'id' => 'worth',
-        'additional fields' => ['curr_id']
+        'additional fields' => ['curr_id'],
       ],
-      /*'filter' => [
+      'filter' => [
         //@todo make a filter that knows not to show the native value
         'id' => 'numeric',
-      ],*/
+      ],
       'sort' => [
         'id' => 'numeric',
       ],
     ];
+
     $data['mcapi_transactions_index']['outgoing'] = [
       'title' => $this->t('Expenditure'),
       'help' => $this->t('The outgoing quantity of the transaction; positive or zero'),
@@ -310,17 +301,17 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'worth',
         'additional fields' => ['curr_id']
       ],
-      /*'filter' => [
+      'filter' => [
         //@todo make a filter that knows not to show the native value
         'id' => 'numeric',
-      ],*/
+      ],
       'sort' => [
         'id' => 'numeric',
       ],
     ];
     $data['mcapi_transactions_index']['diff'] = [
       'title' => $this->t('Change in balance'),
-      'help' => $this->t('The difference to the balance; positive or negative'),
+      'help' => $this->t('The difference to the balance; positive or negative.'),
       'field' => [
         'id' => 'worth',
         'additional fields' => ['curr_id']
@@ -329,7 +320,7 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'numeric',
       ],
       'sort' => [
-        'id' => 'numeric',
+        'id' => 'standard',
       ],
     ];
     $data['mcapi_transactions_index']['volume'] = [
@@ -343,7 +334,7 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'numeric',
       ],
       'sort' => [
-        'id' => 'numeric',
+        'id' => 'standard',
       ],
     ];
     $data['mcapi_transactions_index']['curr_id'] = [
@@ -354,8 +345,6 @@ class TransactionViewsData extends EntityViewsData {
       ],
       'filter' => [
         'id' => 'in_operator',
-        //a less blunt callback could be imagined
-        //or even a custom handler which would have access to the view
         'options callback' => '\Drupal\mcapi\Mcapi::entityLabelList',
         'options arguments' => ['mcapi_currency']
       ],
@@ -376,7 +365,7 @@ class TransactionViewsData extends EntityViewsData {
     ];
 
     //virtual fields
-    $data['mcapi_transactions_index']['balance'] = [
+    $data['mcapi_transactions_index']['running_balance'] = [
       'title' => $this->t('Running balance'),
       'help' => $this->t("The sum of the wallet's previous transactions."),
       'field' => [
@@ -391,6 +380,7 @@ class TransactionViewsData extends EntityViewsData {
         'id' => 'mcapi_first_wallet_index',
       ]
     ];
+
 
     return $data;
   }

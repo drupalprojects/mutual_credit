@@ -117,7 +117,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
     foreach ($entities as $id => $transaction) {
       //no action links on the action page itself
       //todo inject routeMatch //need to cache by route in that case
-      if (\Drupal::routeMatch()->getRouteName() != 'mcapi.transaction.operation') {
+      if (\Drupal::routeMatch()->getRouteName() != 'mcapi.transaction.operation' && $transaction->id()) {
         $build[$id]['links'] = $this->buildLinkList($this->buildActionlinks($transaction));
       }
     }
@@ -211,8 +211,6 @@ class TransactionViewBuilder extends EntityViewBuilder {
     uasort($operations, '\Drupal\Component\Utility\SortArray::sortByWeightElement');
     return $operations;
   }
-
-
 
 }
 

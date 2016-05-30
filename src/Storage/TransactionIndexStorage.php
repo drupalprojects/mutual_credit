@@ -16,9 +16,7 @@ namespace Drupal\mcapi\Storage;
 
 use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\mcapi\Entity\WalletInterface;
-use Drupal\mcapi\Entity\Transaction;
 
 
 abstract class TransactionIndexStorage extends SqlContentEntityStorage implements TransactionStorageInterface {
@@ -158,16 +156,22 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * {@inheritdoc}
    */
   public function indexCheck() {
-    if ($this->database->query("SELECT SUM (diff) FROM {mcapi_transactions_index}")->fetchField() +0 == 0) {
-      $states = $this->countedStates(TRUE);
-      $volume_index = $this->database->query("SELECT sum(incoming) FROM {mcapi_transactions_index}")->fetchField();
-      $volume = $this->database->query("SELECT sum(w.worth_value)
-        FROM {mcapi_transaction} t
-        LEFT JOIN {mcapi_transaction__worth} w ON t.xid = w.entity_id AND t.state IN ($states)"
-      )->fetchField();
-      if ($volume_index == $volume) return TRUE;
+    $q = $this->database->select('mcapi_transactions_index');
+    $q->addExpression('SUM(diff)');
+    //if the sum of everything is zero
+    if ($q->execute()->fetchfield() + 0 != 0) {
+      return FALSE;
     }
-    return FALSE;
+    $states = $this->countedStates(TRUE);
+    $q = $this->database->select('mcapi_transactions_index')->addExpression('SUM(incoming)');
+    $q->condition('t.state', $states, 'IN');
+    $volume_index = $q->execute()->fetchField();
+
+    $q = $this->database->select('mcapi_transaction', 't');
+    $q->join('mcapi_transaction__worth', 'w', 't.xid = w.entity_id');
+    $q->condition('t.state', $states, 'IN');
+    $volume = $q->execute()->fetchField();
+    return $volume_index == $volume;
   }
 
   /**
@@ -183,20 +187,18 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
 
   /**
    * {@inheritdoc}
-   * @todo rename this to walletSummary()
    */
-  public function summaryData($wallet_id, array $conditions = []) {
-    $query = $this->database->select('mcapi_transactions_index', 'i')
-      ->fields('i', ['curr_id']);
-    $this->parseIndexConditions($query, $conditions);
+  public function walletSummary($wallet_id, array $conditions = []) {
+    $conditions['wallet_id'] = $wallet_id;
+    $query = $this->getMcapiIndexQuery($conditions);
+    $query->addField('i', 'curr_id');
     $query->addExpression('COUNT(DISTINCT i.serial)', 'trades');
     $query->addExpression('SUM(i.incoming)', 'gross_in');
     $query->addExpression('SUM(i.outgoing)', 'gross_out');
     $query->addExpression('SUM(i.diff)', 'balance');
     $query->addExpression('SUM(i.volume)', 'volume');
     $query->addExpression('COUNT(DISTINCT i.partner_id)', 'partners');
-    $query->condition('i.wallet_id', $wallet_id)
-      ->groupby('curr_id');
+    $query->groupby('curr_id');
     return $query->execute()->fetchAllAssoc('curr_id', \PDO::FETCH_ASSOC);
   }
 
@@ -215,44 +217,45 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   /**
    * {@inheritdoc}
    */
-  public function timesBalances(WalletInterface $wallet, $curr_id, $since = 0) {
-    $history = [$wallet->created->value => 0];
+  public function historyOfWallet($wid, $curr_id, $since = 0) {
     //this is a way to add up the results as we go along
     $this->database->query("SET @csum := 0");
     //have to calculate the whole history by adding up all the diffs
     //It is cheaper to do stuff in mysql
-    $wid = $wallet->id();
-    $all_balances = $this->database->query(
-      "SELECT created, (@csum := @csum + diff) as balance
-        FROM {mcapi_transactions_index}
-        WHERE wallet_id = $wid AND curr_id = '$curr_id'
-        ORDER BY created"
-    )->fetchAll();
+    $query = $this->database->select('mcapi_transactions_index', 'i')->fields('i', ['created']);
+    $query->addExpression('(@csum := @csum + diff)', 'balance');
+    $all_balances = $query->condition('wallet_id', $wid)
+      ->condition('curr_id', $curr_id)
+      ->orderby('created', 'ASC')
+      ->execute()
+      //if two transactions happen on the same second, the latter running balance will be shown only
+      ->fetchAllKeyed();
+    $pos = 0;
     //having done the addition, we can chop the beginning off the array
-    //if two transactions happen on the same second, the latter running balance will be shown only
-    foreach ($all_balances as $point) {
-      //@todo find a more efficient way to filter an array where all the keys are < x
-      if ($point->created >= $since) {
-        $history[$point->created] = $point->balance;
+    if ($since) {
+      //we know they keys are in chronological order
+      foreach(array_keys($all_balances) as $pos => $created) {
+        if ($created > $since) {
+          break;//now the $pos is set
+        }
       }
+      //cut the beginning off
+      $all_balances = array_slice($all_balances, $pos);//to the end
     }
-    if (count($history) == 1) return [];
-    return $history;
+    return $all_balances;
   }
 
   /**
    * {@inheritdoc}
    */
   public function count($curr_id = '', $conditions = [], $serial = FALSE) {
-    $query = $this->database
-      ->select('mcapi_transactions_index', 't')
-      ->condition('t.incoming', 0);
-    $field = $serial ? 'serial' : 'xid';
-    $query->addExpression("count($field)");//how do we do this with countquery()
     if ($curr_id) {
       $conditions['curr_id'] = $curr_id;
     }
-    $this->parseIndexConditions($query, $conditions);
+    $conditions['i.incoming'] = 0;
+    $query = $this->getMcapiIndexQuery($conditions);
+    $field = $serial ? 'serial' : 'xid';
+    $query->addExpression("count($field)");//how do we do this with countquery()
     return $query->execute()->fetchField();
   }
 
@@ -260,22 +263,22 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * {@inheritdoc}
    */
   function volume($curr_id, $conditions = []) {
-    $query = $this->database->select('mcapi_transactions_index', 't')
-      ->condition('incoming', 0);
-    $query->addExpression('SUM(t.volume)');
-    $query->condition('t.curr_id', $curr_id);
-    $this->parseIndexConditions($query, $conditions);
+    $conditions['incoming'] = 0;
+    $conditions['curr_id'] = $curr_id;
+    $query = $this->getMcapiIndexQuery($conditions);
+    $query->addExpression('SUM(i.volume)');
+
     return intval($query->execute()->fetchField());
   }
 
   /**
    * Add an array of conditions to the select query
    *
-   * @param SelectInterface $query
    * @param array $conditions
    */
-  private function parseIndexConditions(SelectInterface $query, array $conditions) {
+  private function getMcapiIndexQuery(array $conditions = []) {
 
+    $query = $this->database->select('mcapi_transactions_index', 'i');
     if (empty($conditions['state'])) {
       $conditions['state'] = $this->countedStates();
     }
@@ -283,14 +286,16 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       switch($field) {
         case 'xid':
         case 'serial':
-        case 'payer':
-        case 'payee':
+        case 'partner_id':
+        case 'wallet_id':
+        //case 'payer': these can't work
+        //case 'payee':
         case 'creator':
         case 'type':
         case 'state':
         case 'curr_id':
           //@todo is this [] syntax working? I think not
-            $query->condition($field.'[]', (array)$value);
+          $query->condition($field.'[]', (array)$value);
           break;
         case 'involving':
           $value = (array)$value;
@@ -319,6 +324,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
           drupal_set_message('filtering on unknown field: '.$field, 'warning');
       }
     }
+    return $query;
   }
 
   /**
@@ -346,10 +352,9 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * {@inheritDoc}
    */
   public function wallets($curr_id, $conditions = []) {
-    $query = $this->database->select('mcapi_transactions_index', 'i')
-      ->fields('i', ['wallet_id'])
-      ->condition('curr_id', $curr_id);
-    $this->parseIndexConditions($query, $conditions);
+    $conditions['curr_id'] = $curr_id;
+    $query = $this->getMcapiIndexQuery($conditions);
+    $query->fields('i', ['wallet_id']);
     return $query->distinct()
       ->execute()
       ->fetchCol();
@@ -362,17 +367,13 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     //the running balance depends the order of the transactions. we will assume
     //the order of creation is what's wanted because that corresponds to the
     //order of the xid. NB it is possible to change the apparent creation date.
-    return db_query(
-      "SELECT SUM(diff) FROM {mcapi_transactions_index}
-        WHERE wallet_id = :wallet_id
-        AND curr_id = :curr_id
-        AND $sort_field <= :until",
-      array(
-        ':wallet_id' => $wid,
-        ':curr_id' => $curr_id,
-        ':until' => $until
-      )
-    )->fetchField();
+    $query = $this->database->select('mcapi_transactions_index');
+    $query->addExpression('SUM(diff)', 'balance');
+    $query->condition('wallet_id', $wid)
+      ->condition('curr_id', $curr_id)
+      ->condition($sort_field, $until)
+      ->execute();
+    return $query->fetchField();
   }
 
   /**
@@ -391,8 +392,79 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     $entity_query = $this->getQuery();
     $this->buildPropertyQuery($entity_query, $values);
     $result = $entity_query->execute();
-
     return $result ? $this->loadMultiple(array_keys($result)) : array();
   }
 
+
+  /**
+   * {@inheritdoc}
+   */
+  function ledgerStateByWallet(array $conditions) {
+    if (empty($conditions['curr_id'])) {
+      throw new \Exception('Currency not specified');
+    }
+    $q = $this->getMcapiIndexQuery($conditions);
+    $q->groupby('wallet_id');
+    $q->addExpression('wallet_id', 'wid');
+    $q->addExpression('SUM(diff)', 'balance');
+    $q->addExpression('SUM(volume)', 'volume');
+    $q->addExpression('SUM(incoming)', 'income');
+    $q->addExpression('SUM(outgoing)', 'expenditure');
+    $q->addExpression('COUNT(xid)', 'trades');
+    $q->addExpression('COUNT (DISTINCT partner_id)', 'partners');
+    return $q->condition('volume', 0, '>')->execute()->fetchAll();
+  }
+
+
+  function historyPeriodic($period, $conditions) {
+    if (empty($conditions['curr_id'])) {
+      throw new \Exception('Currency not specified');
+    }
+    $q = $this->getMcapiIndexQuery($conditions);
+    $q->addExpression('COUNT(DISTINCT xid)', 'trades');
+    $q->addExpression('SUM(incoming)', 'volumes');
+    $q->addExpression('COUNT(DISTINCT wallet_id)', 'wallets');
+    $q->condition('incoming', 0, '>=');
+    switch($period) {
+      case 'day':
+        $q->addExpression('DATE(FROM_UNIXTIME(created))', 'date');
+        $q->groupBy('DATE(FROM_UNIXTIME(created))');
+        break;
+      case 'week':
+        $q->addExpression('WEEK(FROM_UNIXTIME(created))', 'weeknum');
+        $q->addExpression('MIN(YEAR(FROM_UNIXTIME(created)))', 'year');
+        $q->groupBy('WEEK(FROM_UNIXTIME(created))');
+        break;
+      case 'month':
+        $q->addExpression('MONTH(FROM_UNIXTIME(created))', 'month');
+        $q->addExpression('MIN(YEAR(FROM_UNIXTIME(created)))', 'year');
+        $q->groupBy('MONTH(FROM_UNIXTIME(created))');
+        break;
+      case 'year':
+        $q->addExpression('YEAR(FROM_UNIXTIME(created))', 'year');
+        $q->groupBy('YEAR(FROM_UNIXTIME(created))');
+        break;
+    }
+
+    $dates = $trades = $volumes = $wallets = [];
+    foreach ( $q->execute()->fetchAll() as $row) {
+      switch ($period ) {
+        case 'day':
+          $dates[] = strtotime(array_reverse(implode('-', $row->date)));
+          break;
+        case 'week':
+          $dates[] = strtotime($row->year.'W'.str_pad($row->weeknum + 1, 2, 0, STR_PAD_LEFT)) -1;//the last second of the week
+          break;
+        case 'month':
+          $dates[] = strtotime($row->year.'-'.($row->month + 1)) -1;//the last second of the month
+          break;
+        case 'year':
+          $dates[] = strtotime($row->year + 1) -1;
+      }
+      $trades[] = $row->trades;
+      $volumes[] = $row->volumes;
+      $wallets[] = $row->wallets;
+    }
+    return [$dates, $trades, $volumes, $wallets];
+  }
 }

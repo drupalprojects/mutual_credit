@@ -1,0 +1,44 @@
+{#
+/**
+ * @file
+ * Default theme implementation to display a wallets in order of some property,
+ * such as balance, num of trades, or transaction volume.
+ * Variables:
+ * - id
+ * - title
+ * - values, in order
+ * - width, in pixels
+ * - height, in pixels
+ * @note No preprocessor function
+ * @see \Drupal\mcapi\Element\OrderedWallets
+#}
+{{ attach_library('mcapi/mcapi.gcharts') }}
+<script>
+google.charts.setOnLoadCallback({{ id }});
+function {{ id }}() {
+  var data = google.visualization.arrayToDataTable([
+    ['{{ title }}', ''],
+    {% for wid, val in values %}[' ', {{ val }}],
+    {% endfor %}
+  ]);
+
+  var options = {
+    legend: {
+      position: 'none'
+    },
+    width: {{ width }},
+    height: {{ height }},
+    {% if ticks %}hAxis: { ticks: [/* not working while material charts are in beta */
+      {% for val, string in ticks %}{v:{{ val }}, f:'{{ string }}'},{% endfor %}
+    ]}{% endif %}
+    enableInteractivity: false,/* not working while material charts are in beta @see https://github.com/google/google-visualization-issues/issues/2143 */
+    tooltip: {
+      trigger: 'none'/* not working while material charts are in beta*/
+    }
+  }
+  var chart = new google.charts.Bar(document.getElementById('{{ id }}'));
+  chart.draw(data, options);
+
+ }</script>
+<div id="{{ id }}" class = "extreme-balances" style="width:{{ width }}px; height:{{ height }}px;"></div>
+

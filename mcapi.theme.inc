@@ -1,13 +1,88 @@
 <?php
 
-
 /**
  * @file
- * View and theme preprocessor functions
+ * theme preprocessor functions
  */
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Render\Element;
+
+function _mcapi_theme($existing, $type, $theme, $path) {
+  $file = ['file' => 'mcapi.theme.inc'];//which actually this file
+  $items['worths'] = [
+    'variables' => [
+      'values' => [],
+      'separator' => ''
+    ]
+  ] + $file;
+  $items['worth'] = [
+    'render element' => 'worth'
+  ] + $file;
+  $items['mcapi_transaction'] = [
+    'render element' => 'transaction',
+    'template' => 'transaction'
+  ] + $file;
+  //the above is the theme wrapper for the below
+  //so they both take the same render_element
+  $items['certificate'] = [
+    'render element' => 'transaction',
+    'template' => 'certificate',
+    'pattern' => 'certificate__'
+  ] + $file;
+  $items['mcapi_transaction_twig'] = [//experimental
+    //when we call this we have to set the $transaction->twig property first
+    'render element' => 'transaction',
+    'function' => 'theme_mcapi_transaction_twig',
+  ] + $file;
+  $items['sentence'] = [
+    'render element' => 'transaction'
+  ] + $file;
+  $items['mcapi_currency'] = [
+    'render element' => 'currency',
+    'template' => 'currency'
+  ] + $file;
+  $items['mcapi_timeline'] = [
+    'variables' => [
+      'title' => '',
+      'width' => 0,
+      'height' => 0,
+      'points' => [],
+      'currency' => NULL,///used for formatting
+      'vaxislabels' => []//optional
+    ]
+  ];
+  $wallet_callbacks = [
+    'mcapi_wallet',
+    'mcapi_wallet_component',
+    'wallet_balances',
+    'wallet_balance_bars',
+    'wallet_stats',
+  ];
+  foreach ($wallet_callbacks as $callback) {
+    $items[$callback] = [
+      'render element' => 'element',
+    ] + $file;
+  }
+
+  $items['mcapi_extreme_balances'] = [//this might just be a ul
+    'variables' => [
+      'largest' => 0,
+      'tops' => [],
+      'bottoms' => []
+    ]
+  ] + $file;
+  $items['ordered_wallets'] = [
+    'variables' => [
+      'id' => '',
+      'title' => '',
+      'values' => [],
+      'width' => 0,
+      'height' => 0
+    ]
+  ] + $file;
+  return $items;
+}
 
 
 /**
@@ -198,69 +273,67 @@ function theme_mcapi_transaction_twig($vars) {
   return \Drupal::service('renderer')->render($renderable);
 }
 
-
-//@todo find a way to set the width of the chart using config
-const GCHART_HISTORY_WIDTH = 300;
-use \Drupal\mcapi\History;
 /**
  * Implements hook_preprocess_THEMEHOOK for wallet_histories
- * generates the javascript for the gchart from the user's history of each currency
- *
+ * adds a column to the data with the formatted currency value
  */
-function mcapi_preprocess_wallet_histories(&$vars) {
-  $element = $vars['element'];
-  $wallet = $element['#wallet'];
-  $vars['width'] = GCHART_HISTORY_WIDTH;
-  $vars['height'] = $vars['width']/2;
-  $histories = History::getAll(
-    $wallet,
-    $wallet->currenciesUsed(),
-    $vars['width']
-  );
-  foreach ($histories as $curr_id => $points) {
-    if (count($points) < 2) {
-      //don't draw the chart if it is empty
-      continue;
-    }
-    $currency = Currency::load($curr_id);
-    $vars['currencies'][$curr_id]['currency'] = $currency;
-    $vars['currencies'][$curr_id]['functionname'] = 'drawHistory' . $curr_id;
-    $vars['currencies'][$curr_id]['id'] = 'wallet-' . $wallet->id() . '-' . $curr_id;
-    if ($points) {
-      list($min, $middle, $max) = History::axes($points);
-    }
-    else {
-      $min = -10;
-      $middle = 0;
-      $max = 10;
-    }
-    $vars['currencies'][$curr_id]['vaxislabels'] = [
+function mcapi_preprocess_mcapi_timeline(&$vars) {
+  $vars['id'] = preg_replace('/[^a-z0-9_]+/', '_', strtolower($vars['title']));
+
+  foreach ($vars['points'] as $timestamp => $val) {
+    $vars['daterows'][] = [
+      date('Y,m,d', $timestamp),//format for javascript dates
+      $val
+    ];
+  }
+  //TEMP until gcharts works better. Force some formatted values on the axis
+  if (isset($vars['currency']) &&  empty($vars['vaxislabels'])) {
+    list($min, $middle, $max) = gchart_axes($vars['points']);
+    $vars['vaxislabels'] = [
       [
         'value' => $min,
-        'label' => $currency->format($min, TRUE)
+        'label' => $vars['currency']->format($min)
       ],
       [
         'value' => $middle,
-        'label' => $currency->format($middle, TRUE)
+        'label' => $vars['currency']->format($middle)
       ],
       [
         'value' => $max,
-        'label' => $currency->format($max, TRUE)
+        'label' => $vars['currency']->format($max)
       ]
     ];
-    $vars['currencies'][$curr_id]['columns'] = [
-      'date' => t('Date'),
-      'number' => $currency->label()
-    ];
-    //populate the javascript data object
-    foreach ($points as $timestamp => $balance) {
-      //this has a resolution of one day, not very satisfying perhaps
-      $vars['currencies'][$curr_id]['daterows'][] = [
-        date('m/d/Y', $timestamp),
-        $balance,
-        $currency->format($balance, TRUE)
-      ];
+  }
+  //@todo is there a way to have html labels in google charts?
+  if ($vars['vaxislabels']) {
+    foreach ($vars['vaxislabels'] as &$tick) {
+      $tick['label'] = strip_tags($tick['label']);
     }
   }
+
 }
 
+
+/**
+ * Calculate some good axis labels, using the min & max balance extents
+ *
+ * @param array $vals
+ *   the $points history of balances keyed by unixtimes
+ * @return array
+ *   values keyed by min, 0 & max
+ */
+function gchart_axes($vals) {
+  $max = max($vals);
+  $min = min($vals);
+  if ($min >= 0) {
+    $max = _mcapi_get_axis_max($max);
+    return [0, $max / 2, $max];
+  }
+  elseif ($max <= 0) {
+    $min = -_mcapi_get_axis_max(abs($min));
+    return [$min, $min / 2, 0];
+  }
+  else {
+    return [-_mcapi_get_axis_max(abs($min)), 0, _mcapi_get_axis_max($max)];
+  }
+}

@@ -66,8 +66,8 @@ class Erase extends \Drupal\mcapi\Plugin\TransactionActionBase implements \Drupa
       ->get('mcapi_erased')
       ->set($object->serial->value, $object->state->target_id);
 
-    $saved = $object
-      ->set('state', 'erased');//will be saved later
+    $object->set('state', 'erased');//will be saved later
+    parent::execute($object);
 
   }
 

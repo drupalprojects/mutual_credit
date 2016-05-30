@@ -8,6 +8,7 @@
  * @todo in \Drupal\views\Plugin\views\display\DisplayPluginBase::gethandlers
  * this handler is automatically overridden to be numeric in group queries which
  * means there's currently no way to format worth values in aggregate queries
+ * @see coming new plugin type https://www.drupal.org/node/2662548
  * @see https://api.drupal.org/api/drupal/core!modules!views!src!Plugin!views!query!Sql.php/function/Sql%3A%3AgetAggregationInfo/8
  */
 
@@ -56,23 +57,14 @@ class Worth extends FieldPluginBase {
    * @todo if there is a currency filter on this view, we would want to only show that currency part of each worth value
    */
   public function render(ResultRow $values) {
-    $settings = [
-      'format' => $this->options['format']
-    ];
-    $worth_items = $this->getEntity($values)->worth;
-    if (property_exists($values, 'curr_id')) {
-      $val = [
-        'curr_id' => $values->curr_id,
-        'value' => $this->getValue($values)
-      ];
-      $worth_items->setValue($val);
+    $curr_id = $this->getValue($values, 'curr_id');
+    if (!$curr_id){
+      //implies there was no result
+      //can't format zero without knowing the currency
+      return;
     }
-    return $worth_items->view(
-      [
-        'label' => 'hidden',
-        'settings' => $settings
-      ]
-    );
+    return Currency::load($curr_id)
+      ->format($this->getValue($values), $this->options['format']);
   }
 
 }

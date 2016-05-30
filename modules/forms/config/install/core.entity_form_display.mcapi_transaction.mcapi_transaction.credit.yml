@@ -63,7 +63,7 @@ third_party_settings:
     path: /transact/credit
     menu_title: 'Credit'
     menu_weight: '-10'
-    menu_name: account
+    menu_parent: 'account:'
     type: default
     direction: '-1'
     experience_twig: 'I, {{ payer }}\r\nreceived {{ description }}\r\nfrom\r\n{{ payee }}\r\nand now credit them for\r\n{{ worth }}'

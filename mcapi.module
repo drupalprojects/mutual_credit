@@ -272,56 +272,8 @@ function mcapi_entity_extra_field_info() {
  * Implements hook_theme().
  */
 function mcapi_theme($existing, $type, $theme, $path) {
-  $file = ['file' => 'templates/theme.inc'];
-  $items['worths'] = [
-    'variables' => [
-      'values' => [],
-      'separator' => ''
-    ]
-  ] + $file;
-  $items['worth'] = [
-    'render element' => 'worth'
-  ] + $file;
-  $items['mcapi_transaction'] = [
-    'render element' => 'transaction',
-    'template' => 'transaction'
-  ] + $file;
-  //the above is the theme wrapper for the below
-  //so they both take the same render_element
-  $items['certificate'] = [
-    'render element' => 'transaction',
-    'template' => 'certificate',
-    'pattern' => 'certificate__'
-  ] + $file;
-  $items['mcapi_transaction_twig'] = [//experimental
-    //when we call this we have to set the $transaction->twig property first
-    'render element' => 'transaction',
-    'function' => 'theme_mcapi_transaction_twig',
-  ] + $file;
-  $items['sentence'] = [
-    'render element' => 'transaction'
-  ] + $file;
-  $items['mcapi_currency'] = [
-    'render element' => 'currency',
-    'template' => 'currency'
-  ] + $file;
-  $items['wallet_histories'] = [
-    'render element' => 'element',
-    'file' => 'src/History.php'
-  ];
-  $wallet_callbacks = [
-    'mcapi_wallet',
-    'mcapi_wallet_component',
-    'wallet_balances',
-    'wallet_balance_bars',
-    'wallet_stats',
-  ];
-  foreach ($wallet_callbacks as $callback) {
-    $items[$callback] = [
-      'render element' => 'element',
-    ] + $file;
-  }
-  return $items;
+  module_load_include('theme.inc', 'mcapi');
+  return _mcapi_theme($existing, $type, $theme, $path);
 }
 
 /**

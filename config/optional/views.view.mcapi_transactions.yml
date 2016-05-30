@@ -11,13 +11,11 @@ dependencies:
     - mcapi
     - system
     - user
-_core:
-  default_config_hash: Vs4ELOBOSNnWH94HK54yj8fXawBnK0cJqn8fPJ6_wtE
 id: mcapi_transactions
 label: Transactions
-module: views
+module: mcapi
 description: 'A list of all transactions'
-tag: mcapi_transaction
+tag: Community Accounting
 base_table: mcapi_transaction
 base_field: xid
 core: 8.x

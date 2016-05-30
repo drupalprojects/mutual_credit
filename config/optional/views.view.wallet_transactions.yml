@@ -4,11 +4,9 @@ status: true
 dependencies:
   module:
     - mcapi
-_core:
-  default_config_hash: ajsUUxTthY1AI-VrTjxNTlrkwMoBXihyTcDkmkNlcSc
 id: wallet_transactions
 label: 'Transactions in a wallet'
-module: views
+module: mcapi
 description: ''
 tag: mcapi_transaction
 base_table: mcapi_transactions_index

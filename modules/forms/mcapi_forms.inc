@@ -143,20 +143,17 @@ function mcapi_forms_display_decorate(&$form, $settings) {
     ]
   ];
 
-  foreach (\Drupal\system\Entity\Menu::loadMultiple() as $menu_name => $menu) {
-    $custom_menus[$menu_name] = $menu->label();
+  foreach (\Drupal\system\Entity\Menu::loadMultiple() as $menu_parent => $menu) {
+    $custom_menus[$menu_parent] = $menu->label();
   }
-  $form['menu']['menu_name'] = [
-    '#title' => t('Menu'),
-    '#type' => 'select',
-    '#options' =>  $custom_menus,
-    '#required' => FALSE,
-    '#empty_value' => '',
-    '#default_value' => $settings['menu_name'],
-    '#weight' => 2
-  ];
+  debug($settings['menu_parent']);
+  $form['menu']['menu_parent'] = \Drupal::service('menu.parent_form_selector')->parentSelectElement(
+    $settings['menu_parent']  ?: 'main:',
+    'menu_link_content:7299677d-ac7b-4748-a2b8-d22cac2c9b62',
+    menu_ui_get_menus()
+  );
+
   $form['type'] =  [
-    '#title' => t('Transaction type'),
     '#type' => 'mcapi_types',
     '#default_value' => $settings['type'],
     '#weight' => -3,
@@ -256,7 +253,7 @@ function mcapi_forms_display_submit($form, $form_state) {
   $menu = $form_state->getValue('menu');
   $entity->setThirdpartySetting('mcapi_forms', 'menu_title', $menu['title']);
   $entity->setThirdpartySetting('mcapi_forms', 'menu_weight',  $menu['weight']);
-  $entity->setThirdpartySetting('mcapi_forms', 'menu_name',  $menu['menu_name']);
+  $entity->setThirdpartySetting('mcapi_forms', 'menu_parent',  $menu['menu_parent']);
   $entity->setThirdpartySetting('mcapi_forms', 'type', $form_state->getValue('type'));
   $entity->setThirdpartySetting('mcapi_forms', 'direction', $form_state->getValue('direction'));
   $experience = $form_state->getValue('experience');

@@ -14,7 +14,6 @@
 namespace Drupal\mcapi\Storage;
 
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Database\Database;
 
 
 class TransactionStorage extends TransactionIndexStorage {

@@ -36,9 +36,8 @@ interface TransactionStorageInterface extends EntityStorageInterface {
   /**
    * Get some gerneral purpose stats by adding up the transactions for a given wallet
    * This could be cached but remember it is possible to generate all kinds of stats, between any dates
-   * Because this uses the index table, it knows nothing of transactions with state <  1
-   * It might be a good idea to make a method specialised for retrieving balances only.
-   * It would be an interesting SQL query which could get balances for multiple users.
+   * Because this uses the index table, it knows nothing of transactions with state not 'done'
+   * All this can be accomplished with views but this is one handy method
    *
    * @param integer $wallet_id
    *
@@ -51,7 +50,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    *
    * @see \Drupal\mcapi\Entity\WalletInterface::getSummaries()
    */
-  function summaryData($wallet_id, array $filters);
+  function walletSummary($wallet_id, array $filters);
 
   /**
    * count the number of transactions that meet the given conditions
@@ -88,7 +87,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * Retrieve the full balance history
    * N.B if caching running balances remember to clear the cache whenever a transaction changes state or is deleted.
    *
-   * @param Wallet $wallet
+   * @param int $wallet_id
    *
    * @param string $curr_id
    *
@@ -99,7 +98,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * @return array
    *   Balances keyed by timestamp
    */
-  function timesBalances(WalletInterface $wallet, $curr_id, $since);
+  function historyOfWallet($wallet_id, $curr_id, $since);
 
   /**
    * Return the ids of all the wallets which HAVE USED this currency
@@ -132,7 +131,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    *
    * @param integer $until
    *   the meaning of this depends on the $sort_field
-   * 
+   *
    * @param string $sort_field
    *   the field by which it should be less than, and sort descending. Note this
    *   only works with fields in the base table coz its too complex for EntityQuery
@@ -141,5 +140,29 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    *
    */
   function runningBalance($wid, $xid, $until, $sort_field);
+
+
+
+  /**
+   * get all the balances at the moment of the timestamp,
+   * which means adding all transactions from the beginning until then
+   * This provides a short of snapshot of the system
+   *
+   * @param array $conditions
+   *   must contain at least a curr_id
+   */
+  function ledgerStateByWallet(array $conditions);
+
+  /**
+   *
+   * @param string $period
+   *   day, week, month, or year
+   * @param array $conditions
+   *   must contain at least a curr_id
+   *
+   * @return array
+   *   an array of dates, volumes trades, num wallets used in the periods preceding those dates
+   */
+  function historyPeriodic($period, $conditions);
 
 }

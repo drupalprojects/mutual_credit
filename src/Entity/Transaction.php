@@ -70,7 +70,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
   use EntityChangedTrait;
 
   private $moduleHandler;
-  private $eventDispatcher;
+  protected $eventDispatcher;
 
   public function __construct(array $values, $entity_type, $bundle = FALSE, $translations = array()) {
     parent::__construct($values, $entity_type, $bundle, $translations);

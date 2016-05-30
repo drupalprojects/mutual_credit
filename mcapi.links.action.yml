@@ -1,12 +1,12 @@
-mcapi.admin.transaction:
+entity.mcapi_transaction.add_form:
   route_name: entity.mcapi_transaction.add_form
   title: 'Create Transaction'
   appears_on:
     - mcapi.admin
     - view.mcapi_transactions.admin
 
-mcapi.admin.currency.add:
-  route_name: mcapi.admin_currency_add
+entity.mcapi_currency.add_form:
+  route_name: entity.mcapi_currency.add_form
   title: New currency
   appears_on:
     - entity.mcapi_currency.collection

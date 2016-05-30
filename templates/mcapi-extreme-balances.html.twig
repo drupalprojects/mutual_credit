@@ -1,0 +1,42 @@
+{#
+/**
+ * @file
+ * Default theme implementation to display a wallets in order of some property,
+ * such as balance, num of trades, or transaction volume.
+ * Variables:
+ * - largest
+ * - tops, an array containing
+ *   - the raw quantity, the linked lable of the wallet, the formatted balance
+ * - bottoms, an array containing
+ *   - the raw quantity, the linked lable of the wallet, the formatted balance
+
+ * @note No preprocessor function
+ * @see \Drupal\mcapi\Element\OrderedWallets
+#}
+
+{{ attach_library('mcapi/mcapi.currency') }}
+<table class = "extreme-balances" width = "100%">
+<thead><td align = "left">&lt; Most negative wallets</td><td align = "right">Most positive wallets &gt;</td></thead>
+<tbody>
+{% for i in 0..tops|length -1 %}
+ <tr>
+   <td align="right" width = "50%">{% set percent = cycle(bottoms, i).raw * 99 / largest %}
+     {% if percent < 50 %}{{ cycle(bottoms, i).name }}{% endif %}
+     <a href="{{ cycle(bottoms, i).link }}" title = "{{ 'See record for @walletname'|t({ '@walletname': cycle(bottoms, i).name}) }}" target = "_blank">
+       <div class = "negative" style = "width:{{ percent }}%">
+         {{ cycle(bottoms, i).worth }} {% if percent >= 50 %}{{ cycle(bottoms, i).name }}{% endif %}
+       </div>
+     </a>
+   </td>
+   <td align="left" width = "50%">{% set percent = cycle(tops, i).raw * 99 / largest %}
+     <a href="{{ cycle(tops, i).link }}" title = "{{ 'See record for @walletname'|t({ '@walletname': cycle(tops, i).name}) }}" target = "_blank">
+       <div class = "positive" style = "width:{{ percent }}%">
+         {% if percent >= 50 %}{{ cycle(tops, i).name }}{% endif %} {{ cycle(tops, i).worth }}
+       </div>
+     </a> {% if percent < 50 %}{{ cycle(tops, i).name }}{% endif %}
+   </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+</table>
+

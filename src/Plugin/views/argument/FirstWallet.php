@@ -20,17 +20,14 @@ use Drupal\mcapi\Mcapi;
  */
 class FirstWallet extends ArgumentPluginBase {
 
-
   /**
    * {@inheritdoc}
    */
   public function query($group_by = FALSE) {
     $this->ensureMyTable();
     $this->value = Mcapi::firstWalletIdOfEntity(User::load($this->argument));
-
     $placeholder = $this->placeholder();
-
-    if ($this->definition['field']) {
+    if (isset($this->definition['field'])) {
       $field = $this->tableAlias .'.'.$this->definition['field'];
       $this->query->addWhereExpression(0, $field ."= ". $this->value);
     }
@@ -38,7 +35,7 @@ class FirstWallet extends ArgumentPluginBase {
       $this->query->addWhereExpression(
         0,
         "$this->tableAlias.payer = ".$placeholder." OR $this->tableAlias.payee = ".$placeholder,
-        [$placeholder => $this->argument]
+        [$placeholder => $this->value]
       );
     }
   }

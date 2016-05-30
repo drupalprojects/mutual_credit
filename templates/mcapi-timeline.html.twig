@@ -1,0 +1,39 @@
+{#
+/**
+ * @file
+ * Default theme implementation to display a wallet's balance history. Variables:
+ * id
+ * title
+ * width
+ * height
+ * currency
+ * points
+ * daterows an array of arrays containing, m/d/Y date, value, and formatted value
+ * vaxislabels # array of labels keyed by value
+ * zeroline
+ *
+#}
+{{ attach_library('mcapi/mcapi.gcharts') }}
+<script>
+google.charts.setOnLoadCallback({{ id }});
+function {{ id }}() {
+  var data = new google.visualization.arrayToDataTable([
+    ['Date', "value"],
+    {% for row in daterows %}[new Date('{{ row.0 }}'), {{ row.1 }}],{% endfor %}
+]);
+  var options = {
+    title: "{{ title }}",
+    width: {{ width }},
+    height: {{ height }},
+    legend: {position: 'none'}{% if vaxislabels %},
+    vAxis: { ticks: [{% for tick in vaxislabels %}
+    {v:{{ tick.value }}, f:"{{ tick.label }}"},
+    {% endfor %}]}{% endif %}
+  }
+  new google.visualization.LineChart(document.getElementById('{{ id }}')).draw(data, options);
+}
+</script>
+
+<div id="{{ id }}" class = "history-chart" style="width:{{ width }}px; height:{{ height }}px;"></div>
+
+

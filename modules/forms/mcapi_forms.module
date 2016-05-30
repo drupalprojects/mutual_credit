@@ -27,20 +27,21 @@ function mcapi_forms_entity_type_build(array &$entity_types) {
  * adds menu links where the firstparty forms specify them
  *
  * @param array $links
- *   each link is an array
+ *   each link is a definition array
  */
 function mcapi_forms_menu_links_discovered_alter(&$links) {
   foreach (mcapi_form_displays_load() as $id => $first_party_form) {
     $settings = $first_party_form->getThirdPartySettings('mcapi_forms');
-    if ($menu = $settings['menu_name']) {
+    if ($menu = $settings['menu_parent']) {
+      list($menu_name, $parent_link) = explode(':', $menu);
       $route_name = 'mcapi.1stparty.'.$first_party_form->get('mode');
       $links[$route_name.'.link'] = [
         'title' => $settings['title'],
         'route_name' => $route_name,
         'provider' => 'mcapi_forms',
-        'menu_name' => $menu,
-        //'parent' => '',// currently the entity doesn't support nested menu items
-        'weight' => 5//giving them all the same weight at least keep them all together by default
+        'menu_name' => $menu_name,
+        'parent' => $parent_link,
+        'weight' => $settings['menu_weight']
       ];
     }
   }
@@ -93,7 +94,7 @@ function mcapi_forms_mcapi_form_list() {
   foreach (mcapi_form_displays_load() as $mode => $entity) {
     $forms[$mode] = [
       'link' => Link::fromTextAndUrl(
-        $edit_form_settings['title'],
+        $entity->getThirdpartySetting('mcapi_forms', 'title'),
         \Drupal\Core\Url::fromRoute('mcapi.1stparty.'.$mode)
       ),
       'operations' => [

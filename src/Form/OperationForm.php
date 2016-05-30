@@ -34,8 +34,8 @@ class OperationForm extends ContentEntityConfirmFormBase {
    * @param \Drupal\Core\Render\Renderer $renderer
    * @param \Drupal\Core\Utility\Token $token
    */
-  function __construct($transactionViewBuilder, $route_match, $request_stack, $event_dispatcher, $renderer, $token) {
-    $this->entityTypeManager = $entity_type_manager;
+  function __construct($transaction_view_builder, $route_match, $request_stack, $event_dispatcher, $renderer, $token) {
+    $this->viewBuilder = $transaction_view_builder;
     $this->action = Mcapi::transactionActionLoad($route_match->getparameter('operation'));
     $this->plugin = $this->action->getPlugin();
     $this->config = $this->plugin->getConfiguration();
@@ -117,9 +117,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
       ];
     }
     else {
-      $renderable = $this->entityTypeManager
-        ->getViewBuilder('mcapi_transaction')
-        ->view($this->entity, $format);
+      $renderable = $this->viewBuilder->view($this->entity, $format);
     }
     return $this->renderer->render($renderable);
   }

@@ -16,6 +16,7 @@ function mcapi_views_data_alter(&$data) {
     $table_name = \Drupal::entityTypeManager()->getDefinition($entity_type)->getBaseTable();
     \Drupal\mcapi\Views\WalletViewsData::addWalletSummaries($data[$table_name]);
   }
+
 }
 
 /**
