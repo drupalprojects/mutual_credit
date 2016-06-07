@@ -62,7 +62,7 @@ class WalletViewsData extends EntityViewsData {
       'title' => t('Current balance'),
       'description' => t("Balances of entity's first wallet"),
       'field' => [
-        'id' =>'wallet_summary',
+        'id' =>'wallet_stat',
         'stat' => 'balance'
       ]
     ];
@@ -70,7 +70,7 @@ class WalletViewsData extends EntityViewsData {
       'title' => t('Transaction count'),
       'description' => t("Number of trades in entity's first wallet"),
       'field' => [
-        'id' =>'wallet_summary',
+        'id' =>'wallet_stat',
         'stat' => 'trades'
       ]
     ];
@@ -78,7 +78,7 @@ class WalletViewsData extends EntityViewsData {
       'title' => t('Trading volume'),
       'description' => t("Volumes entity's first wallet"),
       'field' => [
-        'id' =>'wallet_summary',
+        'id' =>'wallet_stat',
         'stat' => 'volume'
       ]
     ];

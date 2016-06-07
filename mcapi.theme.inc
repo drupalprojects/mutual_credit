@@ -225,23 +225,8 @@ function template_preprocess_mcapi_transaction(&$vars, $hook, $info) {
 
 
 /**
- * Implements template_preprocess_THEMEHOOK for theme callback 'mcapi_currency'
- *
- * @param array $vars
- * @todo there is no currency view page yet!
+ * Implements template_preprocess_THEMEHOOK for theme callback 'mcapi_transaction_twig'
  */
-function template_preprocess_mcapi_currency(&$vars) {
-  $build = $vars['currency'];
-  $currency = $build['#mcapi_currency'];
-  $vars['name'] = $currency->name;
-  $vars['owner'] = entity_load('user', $currency->uid)->toLink();
-  $vars['color'] = $currency->color;
-  $storage = \Drupal::entityTypeManager()->getStorage('mcapi_transaction');
-  $vars['transactions'] = $storage->count($currency->id);
-  $vars['volume'] = $storage->volume($currency->id);
-  $vars['wallets'] = count($storage->wallets($currency->id));
-}
-
 function template_preprocess_mcapi_transaction_twig(&$vars) {
   $elements = $vars['transaction'];
   foreach (Element::children($elements) as $key) {
@@ -260,7 +245,9 @@ function template_preprocess_mcapi_transaction_twig(&$vars) {
       ->viewMultiple($transaction->children, 'sentence');
     $vars['children'] = render($children);
   }
-  else $vars['children']  = '';
+  else {
+    $vars['children']  = '';
+  }
 }
 
 //experimental
@@ -286,23 +273,47 @@ function mcapi_preprocess_mcapi_timeline(&$vars) {
       $val
     ];
   }
+  $currency = $vars['currency'];
   //TEMP until gcharts works better. Force some formatted values on the axis
-  if (isset($vars['currency']) &&  empty($vars['vaxislabels'])) {
-    list($min, $middle, $max) = gchart_axes($vars['points']);
-    $vars['vaxislabels'] = [
-      [
-        'value' => $min,
-        'label' => $vars['currency']->format($min, Currency::DISPLAY_NORMAL, FALSE)
-      ],
-      [
-        'value' => $middle,
-        'label' => $vars['currency']->format($middle, Currency::DISPLAY_NORMAL, FALSE)
-      ],
-      [
-        'value' => $max,
-        'label' => $vars['currency']->format($max, Currency::DISPLAY_NORMAL, FALSE)
-      ]
-    ];
+  if (isset($vars['currency'])) {
+    if ($currency->issuance == \Drupal\mcapi\Entity\Currency::TYPE_PROMISE) {
+      //make symmetrical axes for mutual credit
+      //@note its pretty difficult to give the axes nice limits if the native currency
+      //val bears no resemblance to the display value
+      //@note this data is v specific to gCharts
+      $max = _mcapi_get_axis_max(max(max($element['#points']), abs(min($element['#points']))));
+      $vars['vaxislabels'] = [
+        [
+          'value' => -$max,
+          'label' => $currency->format(-$max, Currency::DISPLAY_NORMAL, FALSE)
+        ],
+        [
+          'value' => 0,
+          'label' => $currency->format(0, Currency::DISPLAY_NORMAL, FALSE)
+        ],
+        [
+          'value' => $max,
+          'label' => $currency->format($max, Currency::DISPLAY_NORMAL, FALSE)
+        ]
+      ];
+    }
+    else {
+      list($min, $middle, $max) = gchart_axes($vars['points']);
+      $vars['vaxislabels'] = [
+        [
+          'value' => $min,
+          'label' => $currency->format($min, Currency::DISPLAY_NORMAL, FALSE)
+        ],
+        [
+          'value' => $middle,
+          'label' => $currency->format($middle, Currency::DISPLAY_NORMAL, FALSE)
+        ],
+        [
+          'value' => $max,
+          'label' => $currency->format($max, Currency::DISPLAY_NORMAL, FALSE)
+        ]
+      ];
+    }
   }
   //@todo is there a way to have html labels in google charts?
   if ($vars['vaxislabels']) {
@@ -310,9 +321,7 @@ function mcapi_preprocess_mcapi_timeline(&$vars) {
       $tick['label'] = strip_tags($tick['label']);
     }
   }
-
 }
-
 
 /**
  * Calculate some good axis labels, using the min & max balance extents

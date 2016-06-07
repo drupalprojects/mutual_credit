@@ -242,20 +242,6 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   /**
    * {@inheritDoc}
    */
-  public function currenciesUsed() {
-    if (!$this->currencies_used) {
-      $this->currencies_used = [];
-      foreach (Currency::loadMultiple(array_keys($this->getSummaries())) as $currency) {
-        $this->currencies_used[$currency->id()] = $currency;
-      }
-    }
-
-    return $this->currencies_used;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
   public function getSummaries() {
     if (!$this->stats) {
       $transactionStorage = $this->entityTypeManager()->getStorage('mcapi_transaction');

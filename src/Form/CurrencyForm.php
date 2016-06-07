@@ -201,7 +201,8 @@ class CurrencyForm extends EntityForm {
     }
 
     $required = !\Drupal::entityTypeManager()
-      ->getStorage('mcapi_currency')->getQuery('zero', '1')
+      ->getStorage('mcapi_currency')->getQuery()
+      ->condition('zero', '', '<>')
       ->count();
     \Drupal\field\Entity\FieldConfig::load('mcapi_transaction.mcapi_transaction.worth')
       ->set('required', $required)

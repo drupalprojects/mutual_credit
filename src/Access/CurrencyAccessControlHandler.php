@@ -47,8 +47,8 @@ class CurrencyAccessControlHandler extends EntityAccessControlHandler {
         }
         break;
       case 'delete':
-        $count = \Drupal::entityTypeManager()
-          ->getStorage('mcapi_transaction')->getQuery()
+        //@todo inject service entity.query.config
+        $count = \Drupal::entityQuery('mcapi_transaction')
           ->condition('worth.curr_id', $entity->id())
           ->count()
           ->execute();

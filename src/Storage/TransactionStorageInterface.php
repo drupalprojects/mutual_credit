@@ -53,37 +53,6 @@ interface TransactionStorageInterface extends EntityStorageInterface {
   function walletSummary($curr_id, $wallet_id, array $filters);
 
   /**
-   * count the number of transactions that meet the given conditions
-   *
-   * @param string $curr_id
-   *
-   * @param array $conditions
-   *   keyed by transaction entity properties, values must match.
-   *   Except in the case of state. If state is NULL, no filter will be applied,
-   *   if state is not in the $conditions, a filter for positive states will be added.
-   *
-   * @param boolean $serial
-   *   whether to count unique serial numbers or xids
-   *
-   * return integer
-   */
-  function count($curr_id, $conditions = [], $serial = FALSE);
-
-  /**
-   * get the total transaction volume of a currency.
-   *
-   * @param string $curr_id
-   *
-   * @param array $conditions
-   *   Except in the case of state. If state is NULL, no filter will be applied,
-   *   if state is not in the $conditions, a filter for positive states will be added.
-   *
-   * @return integer
-   *   raw currency value
-   */
-  function volume($curr_id, $conditions = []);
-
-  /**
    * Retrieve the full balance history
    * N.B if caching running balances remember to clear the cache whenever a transaction changes state or is deleted.
    *
@@ -110,18 +79,6 @@ interface TransactionStorageInterface extends EntityStorageInterface {
   function wallets($curr_id, $conditions = []);
 
   /**
-   * get all the balances for a given currency
-   *
-   * @param string $curr_id
-   *
-   * @return integer[]
-   *   keyed by wallet id
-   *
-   */
-  function balances($curr_id);
-
-
-  /**
    * get the balance of a given wallet, up to a given transaction id, for a
    * given currency
    *
@@ -139,19 +96,28 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * @return integer raw currency value
    *
    */
-  function runningBalance($wid, $xid, $until, $sort_field);
-
-
+  function runningBalance($wid, $curr_id, $until, $sort_field = 'xid');
 
   /**
    * get all the balances at the moment of the timestamp,
    * which means adding all transactions from the beginning until then
    * This provides a short of snapshot of the system
    *
+   * @param string $curr_id
    * @param array $conditions
-   *   must contain at least a curr_id
+   * @return various stats, keyed by wallet id
    */
   function ledgerStateByWallet($curr_id, array $conditions);
+
+  /**
+   * get all the balances at the moment of the timestamp,
+   * which means adding all transactions from the beginning until then
+   * This provides a short of snapshot of the system
+   * @param string $curr_id
+   * @param array $conditions
+   * @return Query
+   */
+  function ledgerStateQuery($curr_id, array $conditions);
 
   /**
    *
@@ -165,4 +131,8 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    */
   function historyPeriodic($curr_id, $period, $conditions);
 
+  /**
+   * Get all the currencies which the wallet has ever used.
+   */
+  function currenciesUsed($wid);
 }

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\mcapi\Plugin\views\field\WalletSummary.
+ * Definition of Drupal\mcapi\Plugin\views\field\WalletStat.
  */
 
 namespace Drupal\mcapi\Plugin\views\field;
@@ -18,9 +18,9 @@ use Drupal\mcapi\Entity\Wallet;
  *
  * @ingroup views_field_handlers
  *
- * @ViewsField("wallet_summary")
+ * @ViewsField("wallet_stat")
  */
-class WalletSummary extends FieldPluginBase {
+class WalletStat extends FieldPluginBase {
 
   /**
    * {@inheritdoc}

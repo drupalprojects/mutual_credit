@@ -9,7 +9,6 @@ namespace Drupal\mcapi\Entity;
 
 use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\user\EntityOwnerInterface;
 
 /**
  * Provides an interface defining an exchange entity.
@@ -32,14 +31,6 @@ interface WalletInterface extends ContentEntityInterface {
    *   The one entity to which this wallet belongs
    */
   function setHolder(ContentEntityInterface $entity);
-
-  /**
-   * get a list of the currencies held in the wallet
-   *
-   * @return CurrencyInterface[]
-   *   keyed by currency id
-   */
-  function currenciesUsed();
 
   /**
    * get the trading stats for all currencies allowed or used in the wallet

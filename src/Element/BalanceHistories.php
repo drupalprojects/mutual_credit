@@ -28,10 +28,11 @@ class BalanceHistories extends \Drupal\Core\Render\Element\RenderElement {
   }
 
   public static function preRender($element) {
-    foreach($element['#wallet']->currenciesUsed() as $curr_id => $currency) {
-      $points = \Drupal::entityTypeManager()
-        ->getStorage('mcapi_transaction')
-        ->historyOfWallet($element['#wallet']->id(), $curr_id);
+    $storage = \Drupal::entityTypeManager()->getStorage('mcapi_transaction');
+    $wid = $element['#wallet']->id();
+    foreach($storage->currenciesUsed($wid) as $curr_id) {
+      $currency = \Drupal\mcapi\Entity\Currency::load($curr_id);
+      $points = $storage->historyOfWallet($wid, $curr_id);
 
       if (count($points)) {
         //add a start and end points showing the balance at this moment
@@ -53,16 +54,6 @@ class BalanceHistories extends \Drupal\Core\Render\Element\RenderElement {
         '#currency' => $currency,
         '#points' => $points, //array of balances keyed by timestamp
       ];
-      if($currency->issuance == \Drupal\mcapi\Entity\Currency::TYPE_PROMISE) {
-        //make symmetrical axes
-        //its pretty difficult to give the axes nice limits if the native currency
-        //val bears no resemblance to the display value
-        $element[$curr_id]['#vaxislabels'] = [
-          ['value' => -$max, 'label' => $currency->format(-$max)],
-          ['value' => -0, 'label' => 0],
-          ['value' => $max, 'label' => $currency->format($max)],
-        ];
-      }
     }
     return $element;
   }

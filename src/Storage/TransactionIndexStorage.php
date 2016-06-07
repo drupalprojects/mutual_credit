@@ -197,19 +197,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     $query->addExpression('SUM(i.diff)', 'balance');
     $query->addExpression('SUM(i.volume)', 'volume');
     $query->addExpression('COUNT(DISTINCT i.partner_id)', 'partners');
-    return $query->execute()->fetchAllAssoc('curr_id', \PDO::FETCH_ASSOC);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function balances($curr_id) {
-    $query = $this->database->select('mcapi_transactions_index', 'i')
-      ->fields('i', ['wallet_id']);
-    $query->addExpression('SUM(i.diff)', 'balance');
-    $query->condition('i.curr_id', $curr_id)
-      ->groupby('curr_id');
-    return $query->execute()->fetchAllKeyed();
+    return $query->execute()->fetch(\PDO::FETCH_ASSOC);
   }
 
   /**
@@ -244,37 +232,16 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   }
 
   /**
-   * {@inheritdoc}
-   */
-  public function count($curr_id, $conditions = [], $serial = FALSE) {
-    $conditions['i.incoming'] = 0;
-    $query = $this->getMcapiIndexQuery($curr_id, $conditions);
-    $field = $serial ? 'serial' : 'xid';
-    $query->addExpression("count($field)");//how do we do this with countquery()
-    return $query->execute()->fetchField();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  function volume($curr_id, $conditions = []) {
-    $conditions['incoming'] = 0;
-    $query = $this->getMcapiIndexQuery($curr_id, $conditions);
-    $query->addExpression('SUM(i.volume)');
-
-    return intval($query->execute()->fetchField());
-  }
-
-  /**
    * Add an array of conditions to the select query
    *
+   * @param string $curr_id
    * @param array $conditions
    */
   private function getMcapiIndexQuery($curr_id, array $conditions = []) {
-    if (empty($curr_id)) {
+    if (!$curr_id) {
       throw new \Exception('Currency not specified');
     }
-    $query = $this->database->select('mcapi_transactions_index', 'i');
+    $query = $this->database->select('mcapi_transactions_index', 'i')->condition('curr_id', $curr_id);
     if (empty($conditions['state'])) {
       $conditions['state'] = $this->countedStates();
     }
@@ -389,24 +356,36 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     return $result ? $this->loadMultiple(array_keys($result)) : array();
   }
 
-
   /**
    * {@inheritdoc}
    */
-  function ledgerStateByWallet($curr_id, array $conditions) {
+  function ledgerStateQuery($curr_id, array $conditions) {
     $q = $this->getMcapiIndexQuery($curr_id, $conditions);
-    $q->groupby('wallet_id');
-    $q->addExpression('wallet_id', 'wid');
     $q->addExpression('SUM(diff)', 'balance');
     $q->addExpression('SUM(volume)', 'volume');
     $q->addExpression('SUM(incoming)', 'income');
     $q->addExpression('SUM(outgoing)', 'expenditure');
     $q->addExpression('COUNT(xid)', 'trades');
     $q->addExpression('COUNT (DISTINCT partner_id)', 'partners');
-    return $q->condition('volume', 0, '>')->execute()->fetchAll();
+    $q->condition('volume', 0, '>');
+    return $q;
   }
 
 
+  /**
+   * {@inheritdoc}
+   */
+  function ledgerStateByWallet($curr_id, array $conditions) {
+    $q = $this->ledgerState($curr_id, $conditions);
+    $q->addExpression('wallet_id', 'wid');
+    $q->groupby('wallet_id');
+    return $q->execute()->fetchAll();
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
   function historyPeriodic($curr_id, $period, $conditions) {
     $q = $this->getMcapiIndexQuery($curr_id, $conditions);
     $q->addExpression('COUNT(DISTINCT xid)', 'trades');
@@ -454,4 +433,18 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     }
     return [$dates, $trades, $volumes, $wallets];
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  function currenciesUsed($wid) {
+    return $this->database
+      ->select('mcapi_transactions_index', 'i')
+      ->fields('i', ['curr_id'])
+      ->distinct()
+      ->condition('wallet_id', $wid)
+      ->execute()
+      ->fetchCol();
+  }
+
 }
