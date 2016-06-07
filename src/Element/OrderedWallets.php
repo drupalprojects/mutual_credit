@@ -3,7 +3,6 @@
 /**
  * @file
  * Contains \Drupal\mcapi\Element\OrderedWallets.
- * @todo derive the width and height from somewhere
  */
 
 namespace Drupal\mcapi\Element;
@@ -16,21 +15,22 @@ use \Drupal\mcapi\Entity\Currency;
  *
  * @RenderElement("mcapi_ordered_wallets")
  */
-class OrderedWallets extends \Drupal\Core\Render\Element\RenderElement {
+class OrderedWallets extends \Drupal\Core\Render\Element\Fieldset {
 
   /**
    * {@inheritdoc}
    */
   public function getInfo() {
-    return [
-      '#pre_render' => [
-        ['\Drupal\mcapi\Element\OrderedWallets', 'preRender'],
-      ],
+    $info = parent::getInfo();
+    $info['#pre_render'][] = ['\Drupal\mcapi\Element\OrderedWallets', 'preRender'];
+    $info += [
       '#depth' => 10,
       '#users_only' => TRUE,
       '#format_vals' => FALSE,
       '#top' => 5,//show the rankings
+      '#attributes' => ['class' => ['ordered-wallets']]
     ];
+    return $info;
   }
 
   /**
@@ -47,10 +47,11 @@ class OrderedWallets extends \Drupal\Core\Render\Element\RenderElement {
       '#values' => $element['#data'],
       '#width' => 200,
       '#height' => 125,//any smaller and gChart axis labels don't show
+      '#class' => ['ordered-wallets']
     ];
     if ($element['#format_vals']) {
       $tick = Self::getTick($element['#data']);
-      $element['chart']['#vticks'][$tick] =  $currency->format($tick);
+      $element['chart']['#vticks'][$tick] =  $currency->format($tick, Currency::DISPLAY_NORMAL, FALSE);
     }
     if (!empty($element['#top'])) {
       $element['top'] = [
@@ -67,7 +68,7 @@ class OrderedWallets extends \Drupal\Core\Render\Element\RenderElement {
           continue;
         }
         if ($element['#format_vals']) {
-          $val = $currency->format($val);
+          $val = $currency->format($val, Currency::DISPLAY_NORMAL, FALSE);
         }
         $element['top']['#items'][] = ['#markup' => $wallet->getHolder()->toLink()->toString() . ' ('.$val.')'];
       }

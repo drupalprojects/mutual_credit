@@ -49,7 +49,6 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    */
   public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityStorageInterface $transaction_storage) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
-
     $this->transactionStorage = $transaction_storage;
   }
 
@@ -77,7 +76,6 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       $wallet_ids = \Drupal::entityQuery('mcapi_wallet')
         ->condition('holder_entity_type', 'user')
         ->execute();
-
     }
     shuffle($wallet_ids);
     return (count($wallet_ids) < 2) ?
@@ -146,7 +144,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     $wids = $this->prepareWallets();
     for ($i = 1; $i <= $values['num']; $i++) {
       shuffle($wids);
-      $this->develGenerateTransactionAdd($results, reset($wids), end($wids));
+      $this->develGenerateTransactionAdd($values, reset($wids), end($wids));
     }
     if (function_exists('drush_log') && $i % drush_get_option('feedback', 1000) == 0) {
       drush_log(dt('Completed @feedback transactions ', ['@feedback' => drush_get_option('feedback', 1000)], 'ok'));
@@ -161,7 +159,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       $since = \Drupal::database()
         ->select('mcapi_wallet', 'w')
         ->fields('w', ['created'])
-        ->orderBy('created', 'DESC')
+        ->orderBy('created', 'ASC')
         ->range(0, 1)
         ->execute()->fetchField();
     }
@@ -183,16 +181,15 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     for ($num = 0; $num < floor($total/100); $num ++) {
       $operations[] = ['devel_generate_operation', [$this, 'batchContentAddTransaction', $values]];
     }
-    $values['num'] = $total%100;
+    $values['num'] = $total%100;//add the remainder
     $operations[] = ['devel_generate_operation', [$this, 'batchContentAddTransaction', $values]];
 
     // Start the batch.
-    $batch = array(
+    $batch = [
       'title' => $this->t('Generating Transactions'),
       'operations' => $operations,
-      'finished' => 'devel_generate_batch_finished',
       'file' => drupal_get_path('module', 'devel_generate') . '/devel_generate.batch.inc',
-    );
+    ];
     batch_set($batch);
   }
 
@@ -239,32 +236,31 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * Create one transaction. Used by both batch and non-batch code branches.
    */
   protected function develGenerateTransactionAdd(&$results, $wid1, $wid2) {
-    $props = array(
+    $props = [
       'payer' => $wid1,
       'payee' => $wid2,
-      'type' => $this->getSetting('type') ? : 'default',
+      'type' => $this->getSetting('type') ? : 'default',//auto doesn't show in the default view
       'creator' => 1,
       'description' => $this->getRandom()->sentences(1)
-    );
+    ];
     $transaction = \Drupal\mcapi\Entity\Transaction::create($props);
     // Populate all fields with sample values.
     $this->populateFields($transaction);
     //change the created time of the transactions, coz they mustn't be all in the same second
-    $transaction->created->value = rand($this->getSince(), REQUEST_TIME);
 
-    $transaction->save();//testing only
+    $transaction->save();//this may attempt to send a pending email.
     if ($transaction->state->target_id == 'pending') {
       //signatures already exist because they were created in the presave phase
       foreach ($transaction->signatures as $uid => $signed) {
-        //leave 1 in 10 signatures unsighed.
+        //leave 1 in 10 signatures unsigned.
         if (rand(0, 9) > 0) {
           \Drupal::service('mcapi.signatures')->setTransaction($transaction)->sign($uid);
         }
       }
-      //NB this could generate pending emails
-      $transaction->save();
     }
-
+    $transaction->created->value = rand($this->getSince(), REQUEST_TIME);
+    //NB this could generate pending emails
+    $transaction->save();
   }
 
 }

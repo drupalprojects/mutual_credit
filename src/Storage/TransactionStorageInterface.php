@@ -39,9 +39,9 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * Because this uses the index table, it knows nothing of transactions with state not 'done'
    * All this can be accomplished with views but this is one handy method
    *
-   * @param integer $wallet_id
+   * @param string $curr_id
    *
-   * @param CurrencyInterface $currency
+   * @param integer $wallet_id
    *
    * @param array $filters
    *
@@ -50,7 +50,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    *
    * @see \Drupal\mcapi\Entity\WalletInterface::getSummaries()
    */
-  function walletSummary($wallet_id, array $filters);
+  function walletSummary($curr_id, $wallet_id, array $filters);
 
   /**
    * count the number of transactions that meet the given conditions
@@ -67,7 +67,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    *
    * return integer
    */
-  function count($curr_id = '', $conditions = [], $serial = FALSE);
+  function count($curr_id, $conditions = [], $serial = FALSE);
 
   /**
    * get the total transaction volume of a currency.
@@ -151,7 +151,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * @param array $conditions
    *   must contain at least a curr_id
    */
-  function ledgerStateByWallet(array $conditions);
+  function ledgerStateByWallet($curr_id, array $conditions);
 
   /**
    *
@@ -163,6 +163,6 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * @return array
    *   an array of dates, volumes trades, num wallets used in the periods preceding those dates
    */
-  function historyPeriodic($period, $conditions);
+  function historyPeriodic($curr_id, $period, $conditions);
 
 }

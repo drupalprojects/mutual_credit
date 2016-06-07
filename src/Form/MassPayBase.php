@@ -6,7 +6,7 @@
  * Create a cluster of transactions, based on a single entity form
  * N.B. This could be an entity form for Transaction OR Exchange.
  * If the latter, it will be appropriately populated.
- * 
+ *
  * @todo access for this form depends on having currenciesAvailableToUser as well as permission
  *
  */
@@ -21,6 +21,29 @@ use Drupal\Core\Entity\ContentEntityForm;
 
 class MassPayBase extends ContentEntityForm {
 
+  /**
+   * Constructs a ContentEntityForm object.
+   *
+   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
+   *   The entity manager.
+   */
+  public function __construct(EntityManagerInterface $entity_manager, $entity_type_manager, $user_data, $uuid) {
+    $this->entityManager = $entity_manager;
+    $this->setEntityTypeManager($entity_type_manager);
+    $this->userData = $user_data;
+
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('entity.manager'),
+      $container->get('entity_type.manager'),
+      $container->get('user.data')
+    );
+  }
 
   /**
    * Overrides Drupal\mcapi\Form\TransactionForm::form().
@@ -41,7 +64,7 @@ class MassPayBase extends ContentEntityForm {
 
     }
     else {
-      $viewBuilder = \Drupal::entityTypeManager()->getViewBuilder('mcapi_transaction');
+      $viewBuilder = $this->entityTypeManager->getViewBuilder('mcapi_transaction');
       foreach ($form_state->get('validated_transactions') as $transaction) {
         $form['preview'][] = $viewBuilder->view($transaction, 'sentence');
       }
@@ -52,7 +75,7 @@ class MassPayBase extends ContentEntityForm {
 
   public function step_1(array &$form, FormStateInterface $form_state) {
     if (empty($form_state->get('confirmed'))) {
-      if (Mcapi::maxWalletsOfBundle('user', 'user')==1) {
+      if (Mcapi::maxWalletsOfBundle('user', 'user') == 1) {
         $mode_options = [
           $this->t('The named users'),
       	  $this->t("All users except those named"),
@@ -75,7 +98,7 @@ class MassPayBase extends ContentEntityForm {
         '#type' => 'entity_autocomplete',
         '#target_type' => 'mcapi_wallet',
         '#selection_handler' => 'default:wallet',
-        '#selection_settings' => ['op' => 'payout']
+        '#selection_settings' => ['direction' => 'payout']
         //'#autocomplete_route_parameters' => ['role' => 'payer']
       ];
       $form['payee'] = [
@@ -83,7 +106,7 @@ class MassPayBase extends ContentEntityForm {
         '#type' => 'entity_autocomplete',
         '#target_type' => 'mcapi_wallet',
         '#selection_handler' => 'default:wallet',
-        '#selection_settings' => ['op' => 'payout']
+        '#selection_settings' => ['direction' => 'payout']
         //'#autocomplete_route_parameters' => ['role' => 'payee']
       ];
       $form['description'] = [
@@ -100,7 +123,7 @@ class MassPayBase extends ContentEntityForm {
       $form['notification'] = [
         '#title' => $this->t('Notify everybody'),
         //@todo decide whether to put rules in a different module
-        '#description' => \Drupal::moduleHandler()->moduleExists('rules') ?
+        '#description' => $this->moduleHandler->moduleExists('rules') ?
           $this->t('Ensure this mail does not clash with mails sent by the rules module.') : '',
       	'#type' => 'fieldset',
         '#open' => TRUE,
@@ -111,7 +134,7 @@ class MassPayBase extends ContentEntityForm {
           //'#description' => $this->t('The following tokens are available:') .' [user:name]',
           '#type' => 'textarea',
           //this needs to be stored per-exchange. What's the best way?
-          '#default_value' => \Drupal::service('user.data')->get('mcapi', $this->currentUser()->id(), 'masspay')
+          '#default_value' => $this->userData->get('mcapi', $this->currentUser()->id(), 'masspay')
         ]
       ];
     }
@@ -127,7 +150,6 @@ class MassPayBase extends ContentEntityForm {
       $form_state->setValue('type', 'mass');
       $values = $form_state->getValues();
       $transactions = [];
-      $uuid_service = \Drupal::service('uuid');
       foreach ((array)$form_state->getValue('payer') as $payer) {
         foreach ((array)$form_state->getValue('payee') as $payee) {
           if ($payer == $payee) {
@@ -162,7 +184,7 @@ class MassPayBase extends ContentEntityForm {
     \Drupal::service('user.data')
       ->set('mcapi', $this->currentUser()->id(), 'masspay', $values['notification']['body']);
 
-    if (!array_key_exists('op', $values)) {
+    if (!isset($values['op'])) {//@todo what does this mean?
       $form_state->setRebuild(TRUE);
     }
     else {

@@ -1,46 +1,46 @@
 #default tab
 mcapi.admin_wallet_tab:
-  route_name: mcapi.admin_wallets
   title: 'Settings'
+  route_name: mcapi.admin_wallets
   base_route: mcapi.admin_wallets
   weight: 0
 
 #default tab
 mcapi.wallet.view.tab:
-  route_name: entity.mcapi_wallet.canonical
   title: 'View'
+  route_name: entity.mcapi_wallet.canonical
   base_route: entity.mcapi_wallet.canonical
   weight: 0
 
 mcapi.wallet.edit.tab:
-  route_name: entity.mcapi_wallet.edit_form
   title: 'Manage'
+  route_name: entity.mcapi_wallet.edit_form
   base_route: entity.mcapi_wallet.canonical
   weight: 5
 
 #a default tab for editing a currency, lest more should be needed
 mcapi.currency.edit.tab:
-  route_name: entity.mcapi_currency.edit_form
   title: Properties
+  route_name: entity.mcapi_currency.edit_form
   base_route: entity.mcapi_currency.edit_form
   weight: 0
 
 mcapi.masspay.12many:
-  route_name: mcapi.masspay.12many
   title: 'One-to-many'
+  route_name: mcapi.masspay.12many
   base_route: mcapi.masspay.12many
   weight: 0
 
 mcapi.masspay.many21:
-  route_name: mcapi.masspay.many21
   title: 'Many-to-one'
+  route_name: mcapi.masspay.many21
   base_route: mcapi.masspay.12many
   weight: 0
 
 #default tab needed when signatures tab is added
 mcapi.admin_workflow_default_tab:
-  route_name: mcapi.admin.workflow
   title: Workflow
+  route_name: mcapi.admin.workflow
   base_route: mcapi.admin.workflow
   weight: 0
 
@@ -51,13 +51,9 @@ mcapi.admin.transactions.default_tab:
   base_route: view.mcapi_transactions.admin
   weight: 0
 
-#default tab unused
+#default tab used only if this module is extended
 mcapi.misc_settings.tab:
-  route_name: mcapi.admin_misc
   title: Miscellaneous
+  route_name: mcapi.admin_misc
   base_route: mcapi.admin_misc
   weight: 0
-
-mcapi.tasks:
-  class: \Drupal\Core\Menu\LocalTaskDefault
-  deriver: \Drupal\mcapi\Plugin\Derivative\McapiLocalTask

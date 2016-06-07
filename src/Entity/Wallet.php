@@ -258,12 +258,11 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    */
   public function getSummaries() {
     if (!$this->stats) {
-      $this->stats = $this->entityTypeManager()
-        ->getStorage('mcapi_transaction')
-        ->walletSummary($this->id());
+      $transactionStorage = $this->entityTypeManager()->getStorage('mcapi_transaction');
       //fill in the values of any unused, available currencies
       foreach ($this->currenciesAvailable() as $curr_id => $currency) {
-        if (!array_key_exists($curr_id, $this->stats)) {
+        $this->stats[$curr_id] = $transactionStorage->walletSummary($curr_id, $this->id());
+        if (empty($this->stats[$curr_id])) {
           $this->stats[$curr_id] = [
             'balance' => 0,
             'trades' => 0,

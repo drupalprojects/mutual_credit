@@ -78,6 +78,7 @@ function mcapi_signatures_mcapi_transaction_insert($transaction) {
       ->setTransaction($transaction)
       ->insert();
     //temp until rules module works
+    //this should be configurable by transaction type
     foreach (\Drupal::service('mcapi.signatures')->setTransaction($transaction)->waitingOn() as $uid) {
       $account = \Drupal\user\Entity\User::load($uid);
       $message = \Drupal::service('plugin.manager.mail')->mail(
@@ -89,7 +90,7 @@ function mcapi_signatures_mcapi_transaction_insert($transaction) {
           'recipient' => $account,
           'serial' => $transaction->serial->value,
           'subject' => t('Awaiting your signature...'),
-          'body' => t("Hi [user:name],\nA transaction is awaiting your signature on [site:name].\n\n[xaction:sentence]\nLogin and sign it with one click:\n[signhere]")
+          'body' => [t("Hi [user:name],\nA transaction is awaiting your signature on [site:name].\n\n[xaction:sentence]\nLogin and sign it with one click:\n[signhere]")]
         ]
       );
       if ($message['result']) {

@@ -36,14 +36,9 @@ table.extreme-balances div.positive{
 table.extreme-balances td div.positive:hover {
   border:2px solid #88f;
 }
-/*
-div.ordered-wallets{
-  margin: 2px;
-  padding: 2px;
-  border: thin solid black;
-}*/
 
-#mcapi-overview fieldset{
+fieldset.ordered-wallets{
   display:inline-block;
   list-style-position: inside;
+  width: 40%;
 }

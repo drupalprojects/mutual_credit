@@ -191,7 +191,7 @@ function template_preprocess_wallet_balance_bars(&$vars) {
 }
 
 function _mcapi_get_axis_max($val) {
-  $scale = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 10000, 25000, 50000, 100000, 250000, 500000, 1000000];
+  $scale = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 10000, 25000, 50000, 100000, 250000, 500000, 1000000, 5000000];
   $scale[] = $val;
   sort($scale);
   return $scale[array_search($val, $scale) + 1];
@@ -292,15 +292,15 @@ function mcapi_preprocess_mcapi_timeline(&$vars) {
     $vars['vaxislabels'] = [
       [
         'value' => $min,
-        'label' => $vars['currency']->format($min)
+        'label' => $vars['currency']->format($min, Currency::DISPLAY_NORMAL, FALSE)
       ],
       [
         'value' => $middle,
-        'label' => $vars['currency']->format($middle)
+        'label' => $vars['currency']->format($middle, Currency::DISPLAY_NORMAL, FALSE)
       ],
       [
         'value' => $max,
-        'label' => $vars['currency']->format($max)
+        'label' => $vars['currency']->format($max, Currency::DISPLAY_NORMAL, FALSE)
       ]
     ];
   }

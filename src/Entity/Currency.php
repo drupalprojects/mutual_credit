@@ -222,7 +222,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   /**
    * {@inheritdoc}
    */
-  function format($raw_num, $display = SELF::DISPLAY_NORMAL) {
+  function format($raw_num, $display = SELF::DISPLAY_NORMAL, $linked = TRUE) {
     //ensure its not a string
     $raw_num += 0;
     $raw_num = (int)$raw_num;
@@ -246,8 +246,21 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       $output = preg_replace('/([^0-9.]+)/', '', $output);
       //hopefully now we've got a machine readable number...
     }
-
-    return \Drupal\Core\Render\Markup::create($minus_sign . implode('', $output));
+    $text = \Drupal\Core\Render\Markup::create($minus_sign . implode('', $output));
+    if ($linked) {
+      return \Drupal\Core\Link::createFromRoute(
+        \Drupal\Core\Render\Markup::create($text),
+        'entity.mcapi_currency.canonical',
+        ['mcapi_currency' => $this->id()],
+        [
+          'html' => TRUE,
+          'attributes' => [
+            'title' => t("View @currency dashboard", ['@currency' => $this->name])
+          ]
+        ]
+      )->toString();
+    }
+    return $text;
   }
 
   /**
