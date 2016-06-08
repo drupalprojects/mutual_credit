@@ -397,3 +397,15 @@ function empty_worths_config(array $worth) {
   }
   return TRUE;
 }
+
+/**
+ * Implements hook_mail
+ */
+function mcapi_mail($key, &$message, $params) {
+  if ($key == 'mass') {//@todo replace this with rules?
+    //$params are body and $recipient_id, serial
+    $message['subject'] = $params['subject'];
+    //not using the whole token system, right now, just [user:name]
+    $message['body'] = str_replace('[user:name]', User::load($params['recipient_id'])->getDisplayName(), $params['body']);
+  }
+}

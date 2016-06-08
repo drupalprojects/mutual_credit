@@ -107,14 +107,9 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
     elseif ($count > $max) {
       $element += [
         '#type' => 'wallet_entity_auto',
-        //assuming that the field item name IS the role
-        '#selection_handler' => 'default:mcapi_wallet',//this should be implicit because of the $type
-        '#selection_settings' => ['restrict' => $restriction],
+        '#selection_settings' => ['direction' => $restriction],
         '#default_value' => $default_value_wallet,
         '#placeholder' => $this->getSetting('placeholder'),
-        '#size' => 60,//appearance should be managed with css
-        '#maxlength' => 64,
-        '#validate_reference' => FALSE,
       ];
     }
     else {

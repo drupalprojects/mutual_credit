@@ -162,13 +162,15 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     if ($q->execute()->fetchfield() + 0 != 0) {
       return FALSE;
     }
-    $states = $this->countedStates(TRUE);
-    $q = $this->database->select('mcapi_transactions_index')->addExpression('SUM(incoming)');
-    $q->condition('t.state', $states, 'IN');
+    $states = $this->countedStates();
+    $q = $this->database->select('mcapi_transactions_index', 'i');
+    $q->addExpression('SUM(incoming)');
+    $q->condition('i.state', $states, 'IN');
     $volume_index = $q->execute()->fetchField();
 
     $q = $this->database->select('mcapi_transaction', 't');
     $q->join('mcapi_transaction__worth', 'w', 't.xid = w.entity_id');
+    $q->addExpression('SUM(w.worth_value)');
     $q->condition('t.state', $states, 'IN');
     $volume = $q->execute()->fetchField();
     return $volume_index == $volume;

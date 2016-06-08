@@ -11,10 +11,10 @@
 namespace Drupal\mcapi\Element;
 
 use Drupal\Core\Entity\Element\EntityAutocomplete;
-use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Provides a widget to select wallet references by name, using autocomplete
+ * Its really just EntityAutocomplete with a lot of defaults
  *
  * @FormElement("wallet_entity_auto")
  *
@@ -27,22 +27,15 @@ class WalletAutocomplete extends EntityAutocomplete {
   public function getInfo() {
     $info = parent::getInfo();
     $info['#target_type'] = 'mcapi_wallet';
+    $info['#selection_handler'] = 'default:mcapi_wallet';
+    $info['#target_type'] = 'mcapi_wallet';
     $info['#restrict'] = '';
     $info['#exclude'] = [];
     $info['#hidden'] = FALSE;
-    //$info['#pre_render'][] = [get_class($this), 'preRender'];
+    $info['#maxlength'] = 64;
+    $info['#size'] = 60;//appearance should be managed with css
     return $info;
   }
 
-  public static function preRender($element) {
-    if (!empty($element['#value'])) {
-      debug($element['#value'], 'testing preset wallet value');
-      return $element;
-
-      $element['#type'] = 'item';
-      $element['#markup'] = \Drupal\mcapi\Entity\Wallet::load($element['#value'])->label();
-    }
-    return $element;
-  }
 
 }
