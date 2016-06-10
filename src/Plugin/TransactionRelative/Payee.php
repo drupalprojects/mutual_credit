@@ -44,7 +44,7 @@ class Payee extends PluginBase implements TransactionRelativeInterface {//does i
    * {@inheritdoc}
    */
   public function entityViewsCondition(AlterableInterface $query, $or_group, $uid) {
-    $query->join('mcapi_wallet', 'payee_wallet', 'mcapi_transaction.payee = payee_wallet.wid');
+    $query->join('mcapi_wallet', 'payee_wallet', 'base_table.payee = payee_wallet.wid');
     $query->join('users', 'payee_user', "payee_wallet.holder_entity_type = 'user' AND payee_wallet.holder_entity_id = payee_user.uid");
     $or_group->condition('payee_user.uid', $uid);
   }

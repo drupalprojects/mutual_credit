@@ -27,7 +27,7 @@
 google.charts.setOnLoadCallback({{ chart.functionname }});
 function {{ chart.functionname }}() {
   var data = google.visualization.arrayToDataTable([
-    ['', 'Given', 'Received'],
+    ['Units', 'Given', 'Received'],
     ['', {{ chart.incoming }}, {{ chart.outgoing }}]
   ]);
   var options = {
@@ -50,7 +50,6 @@ function {{ chart.functionname }}() {
 </script>
 {% for chart in currencies %}
 <div class = "balance-bar">
-  <div>{{ chart.label }}</div>
   <div class = "givenreceived" id = "{{ chart.id }}"></div>
 </div>
 {% endfor %}

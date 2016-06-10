@@ -18,11 +18,7 @@
  */
 #}
 <table border = "1" class = "wallet-stats">
-<tr><th></th>
-  {% for curr in currencies %}
-  <th >{{ curr.label }}</th>
-  {% endfor %}
-</tr><tr>
+<tr>
   <th style="font-size: 150%">Balance</th>
   {% for curr in currencies %}
   <td style="font-size: 150%">{{ curr.balance }}</td>

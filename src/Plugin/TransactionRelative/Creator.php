@@ -41,7 +41,9 @@ class Creator extends PluginBase implements TransactionRelativeInterface {//does
    * {@inheritdoc}
    */
   public function entityViewsCondition(AlterableInterface $query, $or_group, $uid) {
-    $or_group->condition('mcapi_transaction.creator', $uid);
+    //@todo do we need to actually look up the alias here?
+    //print_R(get_class_methods($query))
+    $or_group->condition('base_table.creator', $uid);
   }
 
 

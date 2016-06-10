@@ -11,9 +11,7 @@ use Drupal\Core\Field\FieldItemBase;
 use Drupal\Core\TypedData\DataDefinition;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
-use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\TypedData\DataReferenceDefinition;
-use Drupal\Core\Entity\TypedData\EntityDataDefinition;
 
 /**
  * Plugin implementation of the 'worth' field type.

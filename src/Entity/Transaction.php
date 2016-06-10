@@ -84,10 +84,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    */
   public static function loadBySerial($serial) {
     $children = [];
-    //not sure which is best, this or entityQuery. This is shorter and faster.
+    //not sure which is best, this or entityQuery. This is shorter and faster and already injected
     $results = \Drupal::entityTypeManager()
       ->getStorage('mcapi_transaction')
       ->loadByProperties(['serial' => $serial]);
+
     //put all the transaction children under the parents
     foreach ($results as $xid => $entity) {
       if ($entity->get('parent')->value) {

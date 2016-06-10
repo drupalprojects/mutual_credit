@@ -95,10 +95,10 @@ function template_preprocess_wallet_stats(&$vars) {
     if ($unused || $data['trades']) {
       $currency = Currency::load($curr_id);
       $vars['currencies'][$curr_id]['label'] = $currency->label();
-      $vars['currencies'][$curr_id]['gross_in'] = $currency->format($data['gross_in'], TRUE);
-      $vars['currencies'][$curr_id]['gross_out'] = $currency->format($data['gross_out'], TRUE);
-      $vars['currencies'][$curr_id]['volume'] = $currency->format($data['volume'], TRUE);
-      $vars['currencies'][$curr_id]['balance'] = $currency->format($data['balance'], TRUE);
+      $vars['currencies'][$curr_id]['gross_in'] = $currency->format($data['gross_in'], Currency::DISPLAY_NORMAL);
+      $vars['currencies'][$curr_id]['gross_out'] = $currency->format($data['gross_out'], Currency::DISPLAY_NORMAL);
+      $vars['currencies'][$curr_id]['volume'] = $currency->format($data['volume'], Currency::DISPLAY_NORMAL);
+      $vars['currencies'][$curr_id]['balance'] = $currency->format($data['balance'], Currency::DISPLAY_NORMAL);
       $vars['currencies'][$curr_id]['partners'] = $data['partners'];
       $vars['currencies'][$curr_id]['trades'] = $data['trades'];
     }
@@ -182,9 +182,9 @@ function template_preprocess_wallet_balance_bars(&$vars) {
       'received' => t('Received'),
       'max' => $max,
       'vaxislabels' => [
-        ['value' => 0, 'label' => $currency->format(0, TRUE)],
-        ['value' => $max / 2, 'label' => $currency->format(intval($max / 2), TRUE)],
-        ['value' => $max, 'label' => $currency->format($max), TRUE]
+        ['value' => 0, 'label' => strip_tags($currency->format(0, Currency::DISPLAY_NORMAL))],
+        ['value' => $max / 2, 'label' => strip_tags($currency->format(intval($max / 2), Currency::DISPLAY_NORMAL))],
+        ['value' => $max, 'label' => strip_tags($currency->format($max)), Currency::DISPLAY_NORMAL]
       ]
     ];
   }
@@ -281,7 +281,7 @@ function mcapi_preprocess_mcapi_timeline(&$vars) {
       //@note its pretty difficult to give the axes nice limits if the native currency
       //val bears no resemblance to the display value
       //@note this data is v specific to gCharts
-      $max = _mcapi_get_axis_max(max(max($element['#points']), abs(min($element['#points']))));
+      $max = _mcapi_get_axis_max(max(max($vars['points']), abs(min($vars['points']))));
       $vars['vaxislabels'] = [
         [
           'value' => -$max,

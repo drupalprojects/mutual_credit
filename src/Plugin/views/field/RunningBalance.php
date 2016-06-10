@@ -78,7 +78,8 @@ class RunningBalance extends Worth {
     $options = [
       'label' => 'hidden',
       'settings' => [
-        'format' => $this->options['format']
+        //no need for other formats at the moment
+        //'format' => $this->options['format']
       ]
     ];
     if (property_exists($values, 'curr_id')) {

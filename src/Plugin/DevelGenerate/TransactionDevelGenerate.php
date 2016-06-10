@@ -141,29 +141,15 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     if (!empty($values['kill'])) {
       $this->contentKill($values);
     }
-    $wids = $this->prepareWallets();
+    list($first_transaction_time, $interval) = $this->timing($values['num']);
+
     for ($i = 1; $i <= $values['num']; $i++) {
-      shuffle($wids);
-      $this->develGenerateTransactionAdd($values, reset($wids), end($wids));
+      $this->develGenerateTransactionAdd($values, $first_transaction_time + $interval*$i);
     }
     if (function_exists('drush_log') && $i % drush_get_option('feedback', 1000) == 0) {
       drush_log(dt('Completed @feedback transactions ', ['@feedback' => drush_get_option('feedback', 1000)], 'ok'));
     }
-
-    $this->setMessage($this->formatPlural($values['num'], '1 transaction created.', 'Finished creating @count transactions'));
-  }
-
-  private function getSince() {
-    static $since;
-    if (!$since) {
-      $since = \Drupal::database()
-        ->select('mcapi_wallet', 'w')
-        ->fields('w', ['created'])
-        ->orderBy('created', 'ASC')
-        ->range(0, 1)
-        ->execute()->fetchField();
-    }
-    return $since;
+    $this->setMessage(t('Finished creating @count transactions', ['@count' => $values['num']]));
   }
 
   /**
@@ -173,16 +159,21 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   private function generateBatchContent($values) {
     // Add the kill operation.
     if ($values['kill']) {
-      $operations[] = array('devel_generate_operation', array($this, 'batchContentKill', $values));
+      $operations[] = ['devel_generate_operation', [$this, 'batchContentKill', $values]];
     }
     $total = $values['num'];
+    list($values['first_transaction_time'], $values['interval']) = $this->timing($values['num']);
     $values['num'] = 100;
     // Add the operations to create the transactions.
-    for ($num = 0; $num < floor($total/100); $num ++) {
+    for ($num = 0; $num < floor($total/100); $num++) {
+      $values['batch'] = $num;
       $operations[] = ['devel_generate_operation', [$this, 'batchContentAddTransaction', $values]];
     }
-    $values['num'] = $total%100;//add the remainder
-    $operations[] = ['devel_generate_operation', [$this, 'batchContentAddTransaction', $values]];
+    if ($num = $total%100) {
+      $values['num'] = $total%100;//add the remainder
+      $values['batch'] = $num++;
+      $operations[] = ['devel_generate_operation', [$this, 'batchContentAddTransaction', $values]];
+    }
 
     // Start the batch.
     $batch = [
@@ -194,9 +185,12 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   }
 
   public function batchContentAddTransaction($vars, &$context) {
-    $wids = $this->prepareWallets();
-    $this->develGenerateTransactionAdd($context['results'], reset($wids), end($wids));
-    $context['results']['num']++;
+    $context['results']['num'] = intval($context['results']['num']);
+    for ($num = 0; $num < $vars['num']; $num++) {
+      $created = $vars['first_transaction_time'] + $vars['interval'] * $num * $vars['batch'];
+      $this->develGenerateTransactionAdd($context['results'], $created);
+      $context['results']['num']++;
+    }
   }
 
   public function batchContentKill($vars, &$context) {
@@ -225,7 +219,6 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    */
   protected function contentKill($values) {
     $transactions = Transaction::loadMultiple();
-
     if (!empty($transactions)) {
       $this->transactionStorage->delete($transactions);
       $this->setMessage($this->t('Deleted %count transactions.', array('%count' => count($transactions))));
@@ -235,10 +228,9 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   /**
    * Create one transaction. Used by both batch and non-batch code branches.
    */
-  protected function develGenerateTransactionAdd(&$results, $wid1, $wid2) {
-    $props = [
-      'payer' => $wid1,
-      'payee' => $wid2,
+  protected function develGenerateTransactionAdd(&$results, $time) {
+    list($props['payer'], $props['payee']) = $this->getWallets($time);
+    $props += [
       'type' => $this->getSetting('type') ? : 'default',//auto doesn't show in the default view
       'creator' => 1,
       'description' => $this->getRandom()->sentences(1)
@@ -246,8 +238,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     $transaction = \Drupal\mcapi\Entity\Transaction::create($props);
     // Populate all fields with sample values.
     $this->populateFields($transaction);
-    //change the created time of the transactions, coz they mustn't be all in the same second
 
+    //change the created time of the transactions, coz they mustn't be all in the same second
     $transaction->save();//this may attempt to send a pending email.
     if ($transaction->state->target_id == 'pending') {
       //signatures already exist because they were created in the presave phase
@@ -258,9 +250,38 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
         }
       }
     }
-    $transaction->created->value = rand($this->getSince(), REQUEST_TIME);
+    $transaction->created->value = $time;
     //NB this could generate pending emails
     $transaction->save();
+  }
+
+  /**
+   * the below functions shouldn't really be access the the db directly but these
+   * are both unique function and don't belong in the wallet storage controller, IMO
+   */
+  function getWallets($time) {
+    $wids = \Drupal::database()->select('mcapi_wallet', 'w')
+      ->fields('w', ['wid'])
+      ->condition('created', $time, '<')
+      ->range(0, 2)->execute()->fetchCol();
+    if (count($wids) < 2) {
+      throw new \Exception('Not enough wallets at time: '.$time);
+    }
+    shuffle($wids);
+
+    return [reset($wids), next($wids)];
+  }
+
+  function timing($count) {
+    //get the age of the second oldest wallet
+    $first_transaction_time = \Drupal::database()
+      ->select('mcapi_wallet', 'w')
+      ->fields('w', ['created'])
+      ->orderBy('created', 'ASC')
+      ->range(1, 2)->execute()->fetchField() + 1000;
+    $period = REQUEST_TIME - $first_transaction_time;
+    $interval = $period / $count;
+    return[$first_transaction_time, $interval];
   }
 
 }

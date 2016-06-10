@@ -29,7 +29,8 @@ class CurrencyViewBuilder extends EntityViewBuilder {
       '#title' => $this->t('Filter'),
       '#type' => 'details',
       //@todo inject this
-      'form' => \Drupal::formBuilder()->getForm('\Drupal\mcapi\Form\TransactionStatsFilterForm')
+      'form' => \Drupal::formBuilder()->getForm('\Drupal\mcapi\Form\TransactionStatsFilterForm'),
+      '#weight' => -1
     ];
 
     //dsm(\Drupal::request()->query->all());

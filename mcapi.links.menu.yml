@@ -51,13 +51,3 @@ mcapi.transaction.add_form:
   description: Between any two wallets
   route_name: entity.mcapi_transaction.add_form
   menu_name: tools
-
-#for some reasons views doesn't make this show as a menu link in alpha11
-#TODO route_name is wrong. Check if the view provides its own route anyhow
-#view.mcapi_transactions.accountant:
-#  title: General ledger
-#  description: All transactions, with exposed filters
-#  route_name: view.mcapi_transactions.accountant
-#  parent: mcapi.admin.transactions
-#  weight: 4
-

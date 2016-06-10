@@ -375,14 +375,14 @@ display:
           machine_name: 0
           plugin_id: worth
           provider: mcapi
-        balance:
-          id: balance
+        running_balance:
+          id: running_balance
           table: mcapi_transactions_index
-          field: balance
+          field: running_balance
           relationship: none
           group_type: group
           admin_label: ''
-          label: 'Running balance'
+          label: 'Balance'
           exclude: false
           alter:
             alter_text: false

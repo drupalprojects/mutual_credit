@@ -10,10 +10,7 @@ div.wallet{
   background-color: rgb(238, 238, 238);
   display:inline-block;
 }
-div.balance-bar,
-div.wallet-histories div.history-chart{
-  float:left;
-}
+
 div.balance-bars, div.wallet-histories, div.wallet-summaries, table.display-wallet, div.stats, a.visit-wallet-link{
   clear:both;
 }

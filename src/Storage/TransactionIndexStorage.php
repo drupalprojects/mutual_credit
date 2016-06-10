@@ -334,7 +334,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     $query->addExpression('SUM(diff)', 'balance');
     return $query->condition('wallet_id', $wid)
       ->condition('curr_id', $curr_id)
-      ->condition($sort_field, $until)
+      ->condition($sort_field, $until, '<=')
       ->execute()
       ->fetchField();
   }
@@ -378,7 +378,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * {@inheritdoc}
    */
   function ledgerStateByWallet($curr_id, array $conditions) {
-    $q = $this->ledgerState($curr_id, $conditions);
+    $q = $this->ledgerStateQuery($curr_id, $conditions);
     $q->addExpression('wallet_id', 'wid');
     $q->groupby('wallet_id');
     return $q->execute()->fetchAll();
