@@ -1,12 +1,8 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi\ViewBuilder\TransactionViewBuilder.
- */
-
 namespace Drupal\mcapi\ViewBuilder;
 
+use Drupal\system\Entity\Action;
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\mcapi\Entity\TransactionInterface;
@@ -23,6 +19,9 @@ class TransactionViewBuilder extends EntityViewBuilder {
 
   private $settings;
 
+  /**
+   * Constructor.
+   */
   public function __construct($entity_type, $entity_manager, $language_manager, $config_factory) {
     $this->settings = $config_factory->get('mcapi.settings');
     parent::__construct($entity_type, $entity_manager, $language_manager);
@@ -30,6 +29,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
 
   /**
    * {@inheritdoc}
+   *
    * @todo update with entity_type.manager when core interface changes
    */
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
@@ -42,44 +42,37 @@ class TransactionViewBuilder extends EntityViewBuilder {
   }
 
   /**
-   * Provides entity-specific defaults to the build process.
+   * {@inheritdoc}
+   *
    * 3 reasons for NOT caching transactions:
    * - it was caching twice with different contexts I couldn't find out why
-   * - it was tricky separating the certificate caching from the links in the #theme_wrapper
-   * - transactions are not viewed very often, more usually with views
-   *
-   * @param \Drupal\Core\Entity\EntityInterface $entity
-   *   The entity for which the defaults should be provided.
-   * @param string $view_mode
-   *   The view mode that should be used.
-   * @param string $langcode
-   *   (optional) For which language the entity should be prepared, defaults to
-   *   the current content language.
-   *
-   * @return array
+   * - was tricky separating certificate caching from links in #theme_wrapper
+   * - transactions are not viewed very often, more usually with views.
    */
   protected function getBuildDefaults(EntityInterface $entity, $view_mode) {
-    if ($view_mode == 'full'){
-      //if the view_mode is 'full' that means nothing was specified, which is the norm.
-      //so we turn to the 'view' transition where the view mode is a configuration.
+    if ($view_mode == 'full') {
+      // If the view_mode is 'full' that means nothing was specified, which is
+      // the norm. So we turn to the 'view' transition where the view mode is a
+      // configuration.
       $view_mode = 'certificate';
     }
     $build = parent::getBuildDefaults($entity, $view_mode);
-    switch($view_mode) {
+    switch ($view_mode) {
       case 'certificate_ops':
       case 'certificate':
         $build['#theme'] = 'mcapi_transaction_twig';
-        $build['#mcapi_transaction']->twig = \Drupal\system\Entity\Action::load('transaction_view')
+        $build['#mcapi_transaction']->twig = Action::load('transaction_view')
           ->getPlugin()
           ->getConfiguration()['twig'];
         $build['#theme_wrappers'][] = 'mcapi_transaction';
         break;
+
       case 'sentence_ops':
       case 'sentence':
-        //this way of doing it we can't quite use the parent theme callback mcapi_transaction
-        //so we'll just add this div by hand
+        // This way of doing it we can't quite use the parent theme callback
+        // mcapi_transaction, so we'll just add this div by hand.
         unset($build['#theme'], $build['#mcapi_transaction']);
-        $template = '<div class = "mcapi_transaction-sentence">'.$this->settings->get('sentence_template').'</div>';
+        $template = '<div class = "mcapi_transaction-sentence">' . $this->settings->get('sentence_template') . '</div>';
         $build['#markup'] = \Drupal::token()->replace($template, ['xaction' => $entity]);
         if ($view_mode == 'sentence') {
           break;
@@ -87,6 +80,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
         $link_list = $this->buildLinkList($this->buildActionlinks($entity));
         $build['#markup'] .= render($link_list);
         break;
+
       default:
         throw new Exception('unknown view mode');
     }
@@ -94,18 +88,18 @@ class TransactionViewBuilder extends EntityViewBuilder {
       '#attributes' => [
         'class' => [
           'transaction',
-          'type-'.$entity->type->target_id,
-          'state-' . $entity->state->target_id
+          'type-' . $entity->type->target_id,
+          'state-' . $entity->state->target_id,
         ],
-        'id' => 'transaction-'. ($entity->serial->value ? : 0),
+        'id' => 'transaction-' . ($entity->serial->value ?: 0),
       ],
       '#attached' => [
-        //for some reason in Renderer::updatestack, this bubbles up twice
-        'library' => ['mcapi/mcapi.transaction']
-      ]
+        // For some reason in Renderer::updatestack, this bubbles up twice.
+        'library' => ['mcapi/mcapi.transaction'],
+      ],
     ];
     unset($build['#cache']);
-    //@todo we might need to use the post-render cache to get the links right instead of template_preprocess_mcapi_transaction
+    // @todo we might need to use the post-render cache to get the links right instead of template_preprocess_mcapi_transaction
     return $build;
   }
 
@@ -115,28 +109,37 @@ class TransactionViewBuilder extends EntityViewBuilder {
   public function buildComponents(array &$build, array $entities, array $displays, $view_mode) {
     parent::buildComponents($build, $entities, $displays, $view_mode);
     foreach ($entities as $id => $transaction) {
-      //no action links on the action page itself
-      //todo inject routeMatch //need to cache by route in that case
+      // No action links on the action page itself
+      // todo inject routeMatch //need to cache by route in that case.
       if (\Drupal::routeMatch()->getRouteName() != 'mcapi.transaction.operation' && $transaction->id()) {
         $build[$id]['links'] = $this->buildLinkList($this->buildActionlinks($transaction));
       }
     }
   }
 
-  function buildLinkList($link_list) {
+  /**
+   * Build a list of transaction operations as links.
+   *
+   * @param array $link_list
+   *   A list of transaction operations with a title and url.
+   *
+   * @return array
+   *   An array of links.
+   */
+  public function buildLinkList($link_list) {
     $links = [];
     if ($link_list) {
       $links = [
         '#theme' => 'item_list',
         '#list_type' => 'ul',
         '#items' => [],
-        '#attributes' => ['class' => ['transaction-operations']]
+        '#attributes' => ['class' => ['transaction-operations']],
       ];
       foreach ($link_list as $op) {
         $links['#items'][] = [
           '#type' => 'link',
           '#title' => $op['title'],
-          '#url' => $op['url']
+          '#url' => $op['url'],
         ];
       }
     }
@@ -144,13 +147,15 @@ class TransactionViewBuilder extends EntityViewBuilder {
   }
 
   /**
+   * Build the action links for a transaction.
    *
    * @param TransactionInterface $transaction
+   *   The transaction to build links for.
    *
    * @return array
-   *   A renderable array of links
+   *   A renderable array of links.
    */
-  function buildActionlinks(TransactionInterface $transaction) {
+  public function buildActionlinks(TransactionInterface $transaction) {
     $operations = [];
 
     foreach (Mcapi::transactionActionsLoad() as $action_name => $action) {
@@ -165,53 +170,49 @@ class TransactionViewBuilder extends EntityViewBuilder {
           $route_params['operation'] = substr($action_name, 12);
         }
 
-        //there is a way of doing this for actions which might yield a different URL
         $operations[$action_name] = [
           'title' => $plugin->getConfiguration()['title'],
-          'url' => Url::fromRoute($route_name, $route_params)
+          'url' => Url::fromRoute($route_name, $route_params),
         ];
-
 
         $display = $plugin->getConfiguration('display');
         if ($display != TransactionActionBase::CONFIRM_NORMAL) {
           if ($display == TransactionActionBase::CONFIRM_MODAL) {
-            $renderable['#attached']['library'][] = 'core/drupal.ajax';
+            $operations['#attached']['library'][] = 'core/drupal.ajax';
             $operations[$action_name]['attributes'] = [
               'class' => ['use-ajax'],
               'data-dialog-type' => 'modal',
               'data-dialog-options' => Json::encode(['width' => 500]),
             ];
           }
-          elseif($display == TransactionActionBase::CONFIRM_AJAX) {
-            //curious how, to make a ajax link it seems necessary to put the url in 2 places
+          elseif ($display == TransactionActionBase::CONFIRM_AJAX) {
+            // To make a ajax link it seems necessary to put the url twice.
             $operations[$action_name]['ajax'] = [
-              //there must be either a callback or a path
-              'wrapper' => 'transaction-'.$transaction->serial->value,
+              // There must be either a callback or a path.
+              'wrapper' => 'transaction-' . $transaction->serial->value,
               'method' => 'replace',
-              'path' => $operations[$action_name]['url']->getInternalPath()
+              'path' => $operations[$action_name]['url']->getInternalPath(),
             ];
           }
         }
         elseif ($display != TransactionActionBase::CONFIRM_NORMAL && $action_name != 'view') {
-          //the link should redirect back to the current page, if not otherwise stated
-          if($dest = $plugin->getConfiguration('redirect')) {
+          // The link should redirect back to the current page by default.
+          if ($dest = $plugin->getConfiguration('redirect')) {
             $redirect = ['destination' => $dest];
           }
           else {
             $redirect = $this->redirecter->getAsArray();
           }
-          //@todo stop removing leading slash when the redirect service does it properly
+          // @todo stop removing leading slash when the redirect service does it properly
           $operations[$action_name]['query'] = $redirect;
         }
       }
     }
     $operations += \Drupal::moduleHandler()->invokeAll('entity_operation', [$transaction]);
     \Drupal::moduleHandler()->alter('entity_operation', $operations, $transaction);
-    //@todo check the order is sensible
+    // @todo check the order is sensible
     uasort($operations, '\Drupal\Component\Utility\SortArray::sortByWeightElement');
     return $operations;
   }
 
 }
-
-

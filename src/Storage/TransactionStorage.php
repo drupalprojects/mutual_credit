@@ -1,21 +1,12 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Storage\TransactionStorage.
- *
- * All transaction storage works with individual Drupalish entities and the xid key
- * Only at a higher level do transactions have children and work with serial numbers
- *
- * this sometimes uses sql for speed rather than the Drupal DbAPI
- *
- */
-
 namespace Drupal\mcapi\Storage;
 
 use Drupal\Core\Entity\EntityInterface;
 
-
+/**
+ * Storage controller for Transaction entity.
+ */
 class TransactionStorage extends TransactionIndexStorage {
 
   /**
@@ -25,11 +16,10 @@ class TransactionStorage extends TransactionIndexStorage {
    * and because it contains child entities,
    * We need to overwrite the whole save function
    * and by the time we call the parent, we pass it individual transaction
-   * entities having called $transaction->flatten
-   *
+   * entities having called $transaction->flatten.
    */
   public function save(EntityInterface $transaction) {
-    //determine the serial number
+    // Determine the serial number.
     if ($transaction->isNew()) {
       $serial = $this->database->query(
         "SELECT MAX(serial) FROM {mcapi_transaction}"
@@ -39,10 +29,11 @@ class TransactionStorage extends TransactionIndexStorage {
       $serial = $transaction->serial->value;
     }
     $parent = 0;
-    //note that flatten() clones the transactions
+    // Note that flatten() clones the transactions.
     foreach ($transaction->flatten(FALSE) as $entity) {
       $entity->serial->value = $serial;
-      //entity parent is 0 for the first one and then the xid of the first one for all subsequent ones
+      // Entity parent is 0 for the first one and then the xid of the first one
+      // for all subsequent ones.
       $entity->parent->value = $parent;
       $return = parent::save($entity);
       if ($parent == 0) {
@@ -65,7 +56,8 @@ class TransactionStorage extends TransactionIndexStorage {
     $record->changed = REQUEST_TIME;
     $return = parent::doSave($entity->xid->value, $entity);
     // The entity is no longer new.
-    $entity->enforceIsNew(FALSE);//because we were working on a clone
+    // because we were working on a clone.
+    $entity->enforceIsNew(FALSE);
 
     return $return;
   }
@@ -75,7 +67,7 @@ class TransactionStorage extends TransactionIndexStorage {
    */
   public function clearCache($transactions = []) {
     $ids = [];
-    foreach ($transactions AS $transaction) {
+    foreach ($transactions as $transaction) {
       foreach ($transaction->flatten() as $t) {
         $ids[] = $transaction->id();
         $t->payer->entity->invalidateTagsOnSave(TRUE);

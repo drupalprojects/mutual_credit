@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\DevelGenerate\TransactionDevelGenerate.
- */
-
 namespace Drupal\mcapi\Plugin\DevelGenerate;
 
 use Drupal\mcapi\Mcapi;
@@ -21,7 +16,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @DevelGenerate(
  *   id = "mcapi_transaction",
  *   label = @Translation("transactions"),
- *   description = @Translation("Generate a given number of transactions.."),
+ *   description = @Translation("Generate a given number of transactions..."),
  *   url = "transaction",
  *   permission = "administer devel_generate",
  *   settings = {
@@ -31,6 +26,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  */
 class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFactoryPluginInterface {
+
   /**
    * The transaction storage.
    *
@@ -39,11 +35,14 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   protected $transactionStorage;
 
   /**
+   * Constructor.
+   *
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.
    * @param string $plugin_id
    *   The plugin ID for the plugin instance.
    * @param array $plugin_definition
+   *   Definition of the plugin.
    * @param \Drupal\Core\Entity\EntityStorageInterface $transaction_storage
    *   The transaction storage.
    */
@@ -65,8 +64,10 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   }
 
   /**
-   * find some suitable wallets
+   * Find some suitable wallets.
+   *
    * @staticvar type $wallet_ids
+   *
    * @return integer[] or FALSE
    *   wallet ids, shuffled
    */
@@ -131,10 +132,11 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   }
 
   /**
-   * Method responsible for creating a small number of transactions
+   * Method responsible for creating a small number of transactions.
    *
-   * @param type $values
-   *   kill, num
+   * @param array $values
+   *   Kill, num.
+   *
    * @throws \Exception
    */
   private function generateContent($values) {
@@ -142,9 +144,19 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       $this->contentKill($values);
     }
     list($first_transaction_time, $interval) = $this->timing($values['num']);
+    drupal_set_message(
+      t(
+        'Generating @num transactions starting on @date, every @count seconds',
+        [
+          '@num' => $values['num'],
+          '@date' => date('d M Y', $first_transaction_time),
+          '@interval' => $interval,
+        ]
+      )
+    );
 
     for ($i = 1; $i <= $values['num']; $i++) {
-      $this->develGenerateTransactionAdd($values, $first_transaction_time + $interval*$i);
+      $this->develGenerateTransactionAdd($values, $first_transaction_time + $interval * $i);
     }
     if (function_exists('drush_log') && $i % drush_get_option('feedback', 1000) == 0) {
       drush_log(dt('Completed @feedback transactions ', ['@feedback' => drush_get_option('feedback', 1000)], 'ok'));
@@ -153,26 +165,35 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   }
 
   /**
-   * Method responsible for creating content when
-   * the number of elements is greater than 50.
+   * Generate batch to create large numbers of transactions.
    */
   private function generateBatchContent($values) {
     // Add the kill operation.
     if ($values['kill']) {
-      $operations[] = ['devel_generate_operation', [$this, 'batchContentKill', $values]];
+      $operations[] = [
+        'devel_generate_operation',
+        [$this, 'batchContentKill', $values],
+      ];
     }
     $total = $values['num'];
     list($values['first_transaction_time'], $values['interval']) = $this->timing($values['num']);
     $values['num'] = 100;
     // Add the operations to create the transactions.
-    for ($num = 0; $num < floor($total/100); $num++) {
+    for ($num = 0; $num < floor($total / 100); $num++) {
       $values['batch'] = $num;
-      $operations[] = ['devel_generate_operation', [$this, 'batchContentAddTransaction', $values]];
+      $operations[] = [
+        'devel_generate_operation',
+        [$this, 'batchContentAddTransaction', $values],
+      ];
     }
-    if ($num = $total%100) {
-      $values['num'] = $total%100;//add the remainder
+    if ($num = $total % 100) {
+      // Add the remainder.
+      $values['num'] = $total % 100;
       $values['batch'] = $num++;
-      $operations[] = ['devel_generate_operation', [$this, 'batchContentAddTransaction', $values]];
+      $operations[] = [
+        'devel_generate_operation',
+        [$this, 'batchContentAddTransaction', $values],
+      ];
     }
 
     // Start the batch.
@@ -184,6 +205,9 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     batch_set($batch);
   }
 
+  /**
+   * Create one transaction as part of a batch.
+   */
   public function batchContentAddTransaction($vars, &$context) {
     $context['results']['num'] = intval($context['results']['num']);
     for ($num = 0; $num < $vars['num']; $num++) {
@@ -193,6 +217,9 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     }
   }
 
+  /**
+   * Delete previous transactions before creating a batch of them.
+   */
   public function batchContentKill($vars, &$context) {
     $this->contentKill($context['results']);
   }
@@ -227,53 +254,70 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
 
   /**
    * Create one transaction. Used by both batch and non-batch code branches.
+   *
+   * @note this may attempt to send a email for pending transactions.
    */
   protected function develGenerateTransactionAdd(&$results, $time) {
     list($props['payer'], $props['payee']) = $this->getWallets($time);
     $props += [
-      'type' => $this->getSetting('type') ? : 'default',//auto doesn't show in the default view
+    // Auto doesn't show in the default view.
+      'type' => $this->getSetting('type') ?: 'default',
       'creator' => 1,
-      'description' => $this->getRandom()->sentences(1)
+      'description' => $this->getRandom()->sentences(1),
     ];
-    $transaction = \Drupal\mcapi\Entity\Transaction::create($props);
+    $transaction = Transaction::create($props);
     // Populate all fields with sample values.
     $this->populateFields($transaction);
 
-    //change the created time of the transactions, coz they mustn't be all in the same second
-    $transaction->save();//this may attempt to send a pending email.
+    // Change the created time of the transactions, coz they mustn't be all in
+    // the same second.
+    $transaction->save();
     if ($transaction->state->target_id == 'pending') {
-      //signatures already exist because they were created in the presave phase
+      // Signatures already exist because they were created in presave phase.
       foreach ($transaction->signatures as $uid => $signed) {
-        //leave 1 in 10 signatures unsigned.
+        // Leave 1 in 10 signatures unsigned.
         if (rand(0, 9) > 0) {
           \Drupal::service('mcapi.signatures')->setTransaction($transaction)->sign($uid);
         }
       }
     }
     $transaction->created->value = $time;
-    //NB this could generate pending emails
+    // NB this could generate pending emails.
     $transaction->save();
   }
 
   /**
-   * the below functions shouldn't really be access the the db directly but these
-   * are both unique function and don't belong in the wallet storage controller, IMO
+   * Get two random wallets which were created before a given date.
+   *
+   * @note The below functions shouldn't really access the the db directly but
+   * these are both unique function and also don't belong in the wallet storage
+   * controller, in my opinion.
    */
-  function getWallets($time) {
+  public function getWallets($time) {
     $wids = \Drupal::database()->select('mcapi_wallet', 'w')
       ->fields('w', ['wid'])
       ->condition('created', $time, '<')
       ->range(0, 2)->execute()->fetchCol();
     if (count($wids) < 2) {
-      throw new \Exception('Not enough wallets at time: '.$time);
+      throw new \Exception('Not enough wallets at time: ' . $time);
     }
     shuffle($wids);
 
     return [reset($wids), next($wids)];
   }
 
-  function timing($count) {
-    //get the age of the second oldest wallet
+  /**
+   * Get the earliest time and an interval to generate transactions.
+   *
+   * @param int $count
+   *   The number of transactions to create.
+   *
+   * @return array
+   *   The unixtime of the first transaction, and the interval between
+   *   subsequent transactions.
+   */
+  public function timing($count) {
+    // Get the age of the second oldest wallet.
     $first_transaction_time = \Drupal::database()
       ->select('mcapi_wallet', 'w')
       ->fields('w', ['created'])
@@ -281,7 +325,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       ->range(1, 2)->execute()->fetchField() + 1000;
     $period = REQUEST_TIME - $first_transaction_time;
     $interval = $period / $count;
-    return[$first_transaction_time, $interval];
+    return [$first_transaction_time, $interval];
   }
 
 }

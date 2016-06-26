@@ -1,13 +1,7 @@
 <?php
 
-/**
- * @file
- *  Contains Drupal\mcapi_limits\Plugin\McapiLimitsBase.
- */
-
 namespace Drupal\mcapi_limits\Plugin;
 
-use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -22,17 +16,21 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
   public $currency;
 
   /**
-   * stores the limits settings from the currency, for convenience
+   * Stores the limits settings from the currency, for convenience.
+   *
    * @var array
    */
   protected $configuration;
 
   /**
-   * @param CurrencyInterface $currency
+   * Constructor.
    *
-   * @param type $plugin_id
-   *
+   * @param array $settings
+   *   The plugin's settings.
+   * @param string $plugin_id
+   *   The id of the plugin.
    * @param array $definition
+   *   Definition of the plugin.
    */
   public function __construct(array $settings, $plugin_id, array $definition) {
     $this->currency = $settings['currency'];
@@ -46,35 +44,45 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
   public function getConfiguration() {
     return $this->configuration;
   }
+
   /**
    * {@inheritdoc}
    */
   public function setConfiguration(array $configuration) {
     $this->configuration = $configuration + $this->defaultConfiguration();
   }
+
   /**
    * {@inheritdoc}
    */
   public function defaultConfiguration() {
-    $site_name= \Drupal::config('system.site')->get('name');
+    $site_name = \Drupal::config('system.site')->get('name');
     return [
       'override' => 0,
       'skip' => ['auto', 'mass'],
       'display_relative' => FALSE,
       'prevent' => TRUE,
-      //@todo move these to rules actions
+      // @todo move these to rules actions
       'warning_mail' => [
         'subject' => $this->t('Your are trading beyond your limits!'),
-        'body' => $this->t("[current-user:name] registered a transaction with you, which produced the following warning:\n[warning]") ."\n".
-          $this->t("Please take steps to trade back with in your limits.") . "\n" .
-          $this->t("The team at %site", ['%site' =>$site_name])
+        'body' => implode("\n",
+          [
+            $this->t("[current-user:name] registered a transaction with you, which produced the following warning:\n[warning]"),
+            $this->t("Please take steps to trade back with in your limits."),
+            $this->t("The team at %site", ['%site' => $site_name]),
+          ]
+        ),
       ],
       'prevented_mail' => [
         'subject' => $this->t('Transaction prevented on %site', ['%site' => $site_name]),
-        'body' => $this->t("[current-user:name] tried to register a transaction with you, but it was prevented with the following warning:\n[warning]") ."\n".
-          $this->t("Please take steps to trade back with in your limits.") . "\n" .
-          $this->t("The team at %site", ['%site' =>$site_name])
-      ]
+        'body' => implode("\n",
+          [
+            $this->t("[current-user:name] tried to register a transaction with you, but it was prevented with the following warning:\n[warning]"),
+            $this->t("Please take steps to trade back with in your limits."),
+            $this->t("The team at %site", ['%site' => $site_name]),
+          ]
+        ),
+      ],
     ];
   }
 
@@ -82,7 +90,8 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    //we are relying in the inserted fields to validate themselves individually, so there is no validation added at the form level
+    // We rely in the inserted fields to validate themselves individually, so
+    // there is no validation added at the form level.
     $subform['override'] = [
       '#title' => $this->t('Allow wallet-level override'),
       '#description' => $this->t('Settings on the user profiles override these general limits.'),
@@ -91,17 +100,17 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       '#weight' => 5,
       '#states' => [
         'invisible' => [
-          ':input[name="limits[limits_callback]"]' => ['value' => 'limits_none']
-        ]
-      ]
+          ':input[name="limits[limits_callback]"]' => ['value' => 'limits_none'],
+        ],
+      ],
     ];
     $subform['skip'] = [
       '#title' => $this->t('Skip balance limit check for the following transactions'),
       '#description' => $this->t('Especially useful for mass transactions and automated transactions'),
       '#type' => 'checkboxes',
-      //casting it here saves us worrying about the default, which is awkward
+      // Casting it here saves us worrying about the default, which is awkward.
       '#default_value' => array_keys(array_filter($this->configuration['skip'])),
-      //would be nice if this was pluggable, but not needed for the foreseeable
+      // Would be nice if this was pluggable, but not needed for now.
       '#options' => [
         'auto' => $this->t("of type 'auto'"),
         'mass' => $this->t("of type 'mass'"),
@@ -110,12 +119,13 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       ],
       '#states' => [
         'invisible' => [
-          ':input[name="limits[limits_callback]"]' => ['value' => 'limits_none']
-        ]
+          ':input[name="limits[limits_callback]"]' => ['value' => 'limits_none'],
+        ],
       ],
       '#weight' => 6,
     ];
-    //we are relying in the inserted fields to validate themselves individually, so there is no validation added at the form level
+    // We rely in the inserted fields to validate themselves individually, so
+    // there is no validation added at the form level.
     $subform['display_relative'] = [
       '#title' => $this->t('Display perspective'),
       '#type' => 'radios',
@@ -131,7 +141,7 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       '#type' => 'radios',
       '#options' => [
         '1' => $this->t('Prevent'),
-        '0' => $this->t('Notify')
+        '0' => $this->t('Notify'),
       ],
       '#default_value' => $this->configuration['prevent'],
       '#weight' => 12,
@@ -144,9 +154,9 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       '#weight' => 15,
       '#states' => [
         'invisible' => [
-          ':input[name="limits_settings[prevent]"]' => ['value' => '0']
-        ]
-      ]
+          ':input[name="limits_settings[prevent]"]' => ['value' => '0'],
+        ],
+      ],
     ];
     $subform['warning_mail']['subject'] = [
       '#title' => t('Subject'),
@@ -159,7 +169,7 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       '#description' => $this->t('The following tokens are available: @tokens', ['@tokens' => $this->getMailTokens()]),
       '#field_prefix' => $this->t("Hi [user:name]"),
       '#type' => 'textarea',
-      '#default_value' =>  $this->configuration['warning_mail']['body'],
+      '#default_value' => $this->configuration['warning_mail']['body'],
       '#rows' => 8,
     ];
     $subform['prevented_mail'] = [
@@ -170,9 +180,9 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       '#weight' => 15,
       '#states' => [
         'invisible' => [
-          ':input[name="limits_settings[prevent]"]' => ['value' => '1']
-        ]
-      ]
+          ':input[name="limits_settings[prevent]"]' => ['value' => '1'],
+        ],
+      ],
     ];
     $subform['prevented_mail']['subject'] = [
       '#title' => t('Subject'),
@@ -185,7 +195,7 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       '#description' => $this->t('The following tokens are available: @tokens', ['@tokens' => $this->getMailTokens()]),
       '#field_prefix' => $this->t("Hi [user:name]"),
       '#type' => 'textarea',
-      '#default_value' =>  $this->configuration['prevented_mail']['body'],
+      '#default_value' => $this->configuration['prevented_mail']['body'],
       '#rows' => 8,
     ];
     return $subform;
@@ -227,18 +237,21 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
     return ['module' => 'mcapi_limits'];
   }
 
+  /**
+   * Get the sets of tokens the notification mail needs.
+   */
   private function getMailTokens() {
     $tokens = [
       'current-user' => ['name', 'link'],
       'exceeded-wallet' => ['name', 'link'],
-      'mcapi_wallet' => ['name', 'link']
+      'mcapi_wallet' => ['name', 'link'],
     ];
-    foreach($tokens as $type => $toks) {
+    foreach ($tokens as $type => $toks) {
       foreach ($toks as $tok) {
-        $strings[] = '['.$type.':'.$tok.']';
+        $strings[] = '[' . $type . ':' . $tok . ']';
       }
     }
-    return '[message]'. implode(', ', $strings);
+    return '[message]' . implode(', ', $strings);
   }
 
 }

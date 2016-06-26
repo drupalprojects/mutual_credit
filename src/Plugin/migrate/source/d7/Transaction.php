@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\migrate\source\d7\Transaction.
- */
-
 namespace Drupal\mcapi\Plugin\migrate\source\d7;
 
 use Drupal\migrate\Row;
@@ -26,8 +21,8 @@ class Transaction extends FieldableEntity {
     db_query("update hamlets.migrate_map_d7_transaction set source_row_status = 1");
     $transaction_description_field = $this->variableGet('transaction_description_field', 'transaction_description');
     $query = $this->select('mcapi_transactions', 't')->fields('t');
-    $query->join('field_data_'.$transaction_description_field, 'd', "t.xid = d.entity_id");
-    $query->addField('d', $transaction_description_field.'_value', 'description');
+    $query->join('field_data_' . $transaction_description_field, 'd', "t.xid = d.entity_id");
+    $query->addField('d', $transaction_description_field . '_value', 'description');
     return $query;
   }
 
@@ -56,7 +51,7 @@ class Transaction extends FieldableEntity {
       'state' => $this->t('State'),
       'description' => $this->t('Description'),
       'uid' => $this->t('Created by user id'),
-      'created' => $this->t('Created timestamp')
+      'created' => $this->t('Created timestamp'),
     ];
     return $fields;
   }

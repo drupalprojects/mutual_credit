@@ -1,14 +1,9 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\McapiEvents.
- */
-
 namespace Drupal\mcapi;
 
 /**
- * Contains all events for transitioning transactions between workflow states
+ * Contains all events for transitioning transactions between workflow states.
  */
 final class McapiEvents {
 
@@ -25,12 +20,12 @@ final class McapiEvents {
 
 
   /**
-   * This hook is good for taxes
+   * This hook is good for taxes.
    */
   const ASSEMBLE = 'mcapi_transaction.assemble';
 
   /**
-   * This hook is good for triggering notifications
+   * This hook is good for triggering notifications.
    */
   const ACTION = 'mcapi_transaction.action';
 

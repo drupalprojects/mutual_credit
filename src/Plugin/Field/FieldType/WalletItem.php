@@ -1,22 +1,15 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Field\Plugin\Field\FieldType\WalletItem.
- * @todo this doesn't want a list class, but much of it is coded in already
- */
-
 namespace Drupal\mcapi\Plugin\Field\FieldType;
 
 use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
 use Drupal\Core\Form\FormStateInterface;
 
-
 /**
- * Defines the 'wallet' entity field type, which differs from
- * entity_reference because it has a separate widget and autocomplete class
+ * Defines the 'wallet' entity field type.
  *
- *
+ * Differs from entity_reference because it has a separate widget and
+ * autocomplete class.
  *
  * @FieldType(
  *   id = "wallet_reference",
@@ -32,16 +25,16 @@ class WalletItem extends EntityReferenceItem {
 
   /**
    * {@inheritdoc}
+   *
    * @todo is this still needed?
    */
   public static function defaultFieldSettings() {
-    //if target_type MUST be defined in Transaction::BaseFieldDefinition doesn't work here
     return [
       'handler' => 'default:mcapi_wallet',
       'handler_settings' => [
-        'direction' => '** REPLACE THIS **'
+        'direction' => '** REPLACE THIS **',
       ],
-    ]+ parent::defaultFieldSettings();
+    ] + parent::defaultFieldSettings();
   }
 
   /**
@@ -52,7 +45,6 @@ class WalletItem extends EntityReferenceItem {
       'target_type' => 'mcapi_wallet',
     ) + parent::defaultStorageSettings();
   }
-
 
   /**
    * {@inheritdoc}

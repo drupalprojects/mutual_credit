@@ -1,13 +1,7 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Entity\WalletInterface.
- */
-
 namespace Drupal\mcapi\Entity;
 
-use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 
 /**
@@ -16,81 +10,87 @@ use Drupal\Core\Entity\ContentEntityInterface;
 interface WalletInterface extends ContentEntityInterface {
 
   /**
-   * return the holding entity entity
+   * Return the holding entity entity.
    *
    * @return ContentEntityInterface
-   *   The one entity to which this wallet belongs
+   *   The one entity to which this wallet belongs.
    */
-  function getHolder();
+  public function getHolder();
 
   /**
-   * set the holder entity
-   * @param
+   * Set the holder entity.
+   *
+   * @param ContentEntityInterface $entity
+   *   The entity which is to hold the wallet.
    *
    * @return WalletInterface
-   *   The one entity to which this wallet belongs
+   *   The one entity to which this wallet belongs.
    */
-  function setHolder(ContentEntityInterface $entity);
+  public function setHolder(ContentEntityInterface $entity);
 
   /**
-   * get the trading stats for all currencies allowed or used in the wallet
+   * Get the trading stats for all currencies allowed or used in the wallet.
    *
    * @return array
+   *   Arrays of statistics, keyed by currency id.
    *
-   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::summaryData().
+   * @see \Drupal\mcapi\Storage\TransactionStorageInterface::summaryData()
    */
-  function getSummaries();
+  public function getSummaries();
 
   /**
-   * get the standard trading stats
+   * Get the standard trading stats.
+   *
    * @param string $curr_id
-   *   the entity key for the mcapi_currency configEntity
-   * @return array or NULL if the wallet hasn't used the currency
+   *   the entity key for the mcapi_currency configEntity.
+   *
+   * @return array
+   *   Array of statistics, keyed by stat name.
+   *
    * @see $this->getStat()
    */
-  function getStats($curr_id);
+  public function getStats($curr_id);
 
   /**
-   * get the standard trading stats
+   * Get the standard trading stats.
    *
    * @param string $curr_id
-   *   the entity key for the mcapi_currency configEntity
-   *
+   *   The entity key for the mcapi_currency configEntity.
    * @param string $stat
-   *   the for the actual statistic required, one of:
-   *   balance, volume, trades, gross_in, gross_out
+   *   The for the actual statistic required, one of: balance, volume, trades,
+   *   gross_in, gross_out.
    *
-   * @return array or NULL if the wallet hasn't used the currency
+   * @return array or NULL
+   *   Stat values keyed by stat name.
    */
-  function getStat($curr_id, $stat);
-
+  public function getStat($curr_id, $stat);
 
   /**
-   * get all the transactions in a given period
+   * Get all the transactions in a given period.
    *
-   * @param integer $from
-   *   a unix timestamp
-   *
-   * @param integer $to
-   *   a unix timestamp
+   * @param int $from
+   *   A unix timestamp.
+   * @param int $to
+   *   A unix timestamp.
    *
    * @return array
-   *   all transactions between the times given
+   *   All transactions between the times given.
    */
-  function history($from = 0, $to = 0);
+  public function history($from = 0, $to = 0);
 
   /**
-   * determine if the wallet is an intertrading wallet
+   * Determine if the wallet is an intertrading wallet.
    *
-   * @return boolean
+   * @return bool
+   *   TRUE if this is an intertrading wallet.
    */
-  function isIntertrading();
+  public function isIntertrading();
 
   /**
+   * Get a list of currencies available to the wallet.
    *
    * @return CurrencyInterface[]
-   *   keyed by currency id
-   *
+   *   Keyed by currency ID.
    */
   public function currenciesAvailable();
 
@@ -102,7 +102,6 @@ interface WalletInterface extends ContentEntityInterface {
    */
   public function getOwner();
 
-
   /**
    * Returns the entity owner's user ID.
    *
@@ -111,4 +110,13 @@ interface WalletInterface extends ContentEntityInterface {
    *   the entity.
    */
   public function getOwnerId();
+
+  /**
+   * Determine whether this wallet was named automatically.
+   *
+   * @return string|NULL
+   *   The name or FALSE if the wallet isn't autonamed.
+   */
+  public function autoName();
+
 }

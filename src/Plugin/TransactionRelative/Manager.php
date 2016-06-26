@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- *  Contains Drupal\mcapi\Plugin\TransactionRelative\Payer
- */
-
 namespace Drupal\mcapi\Plugin\TransactionRelative;
 
 use Drupal\mcapi\Plugin\TransactionRelativeInterface;
@@ -12,6 +7,7 @@ use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\Core\Database\Query\AlterableInterface;
+use Drupal\Core\Database\Query\Condition;
 
 /**
  * Defines a payer relative to a Transaction entity.
@@ -34,24 +30,24 @@ class Manager extends PluginBase implements TransactionRelativeInterface {
   /**
    * {@inheritdoc}
    */
-  public function indexViewsCondition(AlterableInterface $query, $or_group, $uid) {
+  public function indexViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
 
   }
+
   /**
    * {@inheritdoc}
    */
-  public function entityViewsCondition(AlterableInterface $query, $or_group, $uid) {
-    //don't limit the view at all
+  public function entityViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
+    // don't limit the view at all.
   }
-
 
   /**
    * {@inheritdoc}
    */
   public function getUsers(TransactionInterface $transaction) {
-    //get all the users with permission to manage the site
+    // Get all the users with permission to manage the site.
     $roles = user_roles(TRUE, 'manage mcapi');
-    //there should be a better way to do this...
+    // There should be a better way to do this...
     return $this->database->select('user__roles', 'ur')
       ->fields('ur', ['uid'])
       ->condition('roles_target_id', array_keys($roles))

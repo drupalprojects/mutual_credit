@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Element\States.
- */
-
 namespace Drupal\mcapi\Element;
 
 use Drupal\mcapi\Mcapi;
@@ -13,8 +8,9 @@ use Drupal\Core\Render\Element\Radios;
 use Drupal\Core\Render\Element\Checkboxes;
 
 /**
- * Provides a form element for selecting a transaction state
- * It inherits everything from radios except the trasaction states are autofilled
+ * Provides a form element for selecting a transaction state.
+ *
+ * It inherits everything from radios but the trasaction states are autofilled.
  *
  * @FormElement("mcapi_states")
  */
@@ -34,10 +30,13 @@ class States extends Radios {
       '#multiple' => FALSE,
       '#pre_render' => [
         [$class, 'preRenderCompositeFormElement'],
-      ]
+      ],
     ];
   }
 
+  /**
+   * Process callback.
+   */
   public static function processStates(&$element, FormStateInterface $form_state, &$complete_form) {
     $element['#options'] = Mcapi::entityLabelList('mcapi_state');
     if ($element['#multiple']) {
@@ -49,4 +48,5 @@ class States extends Radios {
       return Radios::processRadios($element, $form_state, $complete_form);
     }
   }
+
 }

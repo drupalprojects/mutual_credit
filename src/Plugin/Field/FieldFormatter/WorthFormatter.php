@@ -1,11 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Core\Field\Plugin\Field\FieldFormatter\WorthFormatter.
- * @todo this should be three different formatters
- */
-
 namespace Drupal\mcapi\Plugin\Field\FieldFormatter;
 
 use Drupal\Core\Field\FormatterBase;
@@ -15,6 +9,7 @@ use Drupal\mcapi\Entity\Currency;
 
 /**
  * Plugin implementation of the 'worth' formatter.
+ *
  * @todo inject config
  *
  * @FieldFormatter(
@@ -26,7 +21,6 @@ use Drupal\mcapi\Entity\Currency;
  * )
  */
 class WorthFormatter extends FormatterBase {
-
 
   /**
    * {@inheritdoc}
@@ -40,7 +34,7 @@ class WorthFormatter extends FormatterBase {
       '#required' => TRUE,
       '#default_value' => $this->getSetting('format'),
     ];
-    //at the moment the curr_id setting can only be determined in Drupal\mcapi\Plugin\views\field\Worth
+    // curr_id setting can only be set in Drupal\mcapi\Plugin\views\field\Worth.
     return $form;
   }
 
@@ -66,7 +60,7 @@ class WorthFormatter extends FormatterBase {
   public function viewElements(FieldItemListInterface $items, $langcode) {
     if ($items->count() == 1 && $items->first()->value == 0) {
       $elements = [
-        '#markup' => \Drupal::config('mcapi.settings')->get('zero_snippet')
+        '#markup' => \Drupal::config('mcapi.settings')->get('zero_snippet'),
       ];
     }
     else {
@@ -74,13 +68,16 @@ class WorthFormatter extends FormatterBase {
         0 => [
           '#type' => 'worths_view',
           '#format' => $this->getSetting('format'),
-          '#worths' => $items->getValue()
-        ]
+          '#worths' => $items->getValue(),
+        ],
       ];
     }
     return $elements;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   private function getOptions() {
     return Currency::formats();
   }

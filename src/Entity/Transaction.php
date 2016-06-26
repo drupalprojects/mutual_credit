@@ -1,16 +1,11 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Entity\Transaction.
- */
-
 namespace Drupal\mcapi\Entity;
 
-use Drupal\mcapi\Entity\TransactionInterface;
-
-use Drupal\mcapi\Entity\Type;
+use Drupal\mcapi\Event\TransactionAssembleEvent;
 use Drupal\mcapi\McapiEvents;
+use Drupal\user\EntityOwnerInterface;
+use Drupal\user\UserInterface;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityChangedInterface;
@@ -20,8 +15,9 @@ use Drupal\Core\Entity\EntityTypeInterface;
 
 /**
  * Defines the Transaction entity.
- * Transactions are grouped and handled by serial number
- * but the unique database key is the xid.
+ *
+ * Transactions are grouped and handled by serial number but the unique database
+ * key is the xid.
  *
  * @ContentEntityType(
  *   id = "mcapi_transaction",
@@ -65,16 +61,19 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *   }
  * )
  */
-class Transaction extends ContentEntityBase implements TransactionInterface, EntityChangedInterface {
+class Transaction extends ContentEntityBase implements TransactionInterface, EntityChangedInterface, EntityOwnerInterface {
 
   use EntityChangedTrait;
 
   private $moduleHandler;
   protected $eventDispatcher;
 
+  /**
+   * Constructor.
+   */
   public function __construct(array $values, $entity_type, $bundle = FALSE, $translations = array()) {
     parent::__construct($values, $entity_type, $bundle, $translations);
-    //there seems to be no way to inject anything here
+    // There seems to be no way to inject anything here.
     $this->moduleHandler = \Drupal::moduleHandler();
     $this->eventDispatcher = \Drupal::service('event_dispatcher');
   }
@@ -84,17 +83,18 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    */
   public static function loadBySerial($serial) {
     $children = [];
-    //not sure which is best, this or entityQuery. This is shorter and faster and already injected
+    // Not sure which is best, this or entityQuery. This is shorter and faster
+    // and already injected.
     $results = \Drupal::entityTypeManager()
       ->getStorage('mcapi_transaction')
       ->loadByProperties(['serial' => $serial]);
 
-    //put all the transaction children under the parents
-    foreach ($results as $xid => $entity) {
+    // Put all the transaction children under the parents.
+    foreach ($results as $entity) {
       if ($entity->get('parent')->value) {
         $children[] = $entity;
       }
-      else{
+      else {
         $transaction = $entity;
       }
     }
@@ -114,52 +114,50 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    */
   protected function urlRouteParameters($rel) {
     return [
-      'mcapi_transaction' => $this->serial->value
+      'mcapi_transaction' => $this->serial->value,
     ];
   }
 
   /**
-   * Add children to the transaction or make other changes
-   * note this must be called explicitly, and PRIOR to validation
-   *
-   * @return NULL
+   * {@inheritdoc}
    */
   public function assemble() {
-    //prevent assembly of child transactions, which could cause infinite recursion
+    // Assembly of child transactions could cause infinite recursion.
     if ($this->parent->value) {
       return;
     }
-    //pass the transaction round to add children, but prevent the transaction from being modified.
+    // Pass the transaction round to add children, but prevent the transaction
+    // from being modified by sending a clone.
     $clone = clone($this);
     $clone->children = [];
-    //this hook prevents altering the original transaction but only allows adding of children
-    $event = new \Drupal\mcapi\Event\TransactionAssembleEvent($clone);
+    // This hook prevents altering the original transaction but only allows
+    // adding of children.
+    $event = new TransactionAssembleEvent($clone);
     $this->eventDispatcher->dispatch(McapiEvents::ASSEMBLE, $event);
     $this->children = $clone->children;
-    //allow any module to alter the transaction, with children, before validation.
+    // Allow any module to alter the transaction & children, before validation.
     \Drupal::moduleHandler()->alter('mcapi_transaction_assemble', $this);
 
     foreach ($this->children as $child) {
-      $child->parent->value = 1;//temp value because parent has no xid yet
+      // Temp value because parent has no xid yet.
+      $child->parent->value = 1;
     }
   }
 
   /**
-   * Validate a transaction including children
+   * Validate a transaction (including children).
+   *
    * The Drupal way has 'validate' and 'save' phases. We need to map those onto
-   * this Transaction's needs which are 'add children', alter, validate, and save
-   *
-   * @return \Drupal\Core\Entity\EntityConstraintViolationListInterface
-   *
+   * this Transaction's needs which are 'add children', alter, validate, & save.
    */
-  function validate() {
+  public function validate() {
     $violationList = parent::validate();
-    //only act on the parent just to be sure.
+    // Only act on the parent just to be sure.
     if ($this->parent->value == 0) {
-      //if the transaction hasn't been assembled, it won't have a children property
-      foreach ((array)$this->children as $entity) {
+      // If the transaction hasn't been assembled, it won't have 'children'.
+      foreach ((array) $this->children as $entity) {
         foreach ($entity->validate() as $violation) {
-          throw new \Exception ('Violation in child transaction, '.$violation->getPropertyPath() .': '.$violation->getMessage());
+          throw new \Exception('Violation in child transaction, ' . $violation->getPropertyPath() . ': ' . $violation->getMessage());
         }
       }
     }
@@ -172,7 +170,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
   public static function preCreate(EntityStorageInterface $storage, array &$values) {
     $values += [
       'type' => 'default',
-      'creator' => \Drupal::currentUser()->id(),//uid of 0 means drush must have created it
+    // Uid of 0 means drush must have created it.
+      'creator' => \Drupal::currentUser()->id(),
     ];
     $type = Type::load($values['type']);
     if (!$type) {
@@ -185,9 +184,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    * {@inheritdoc}
    */
   public function getCacheTags() {
-    // @todo Add bundle-specific listing cache tag? https://drupal.org/node/2145751
+    // @todo Add bundle-specific listing cache tag?
+    // @see https://drupal.org/node/2145751
     return array_merge_recursive(
-      ['mcapi_transaction:'. $this->id()],
+      ['mcapi_transaction:' . $this->id()],
       $this->payer->entity->getCacheTags(),
       $this->payee->entity->getCacheTags()
     );
@@ -201,7 +201,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
   }
 
   /**
-   * Ensure parent transactions have a 'children' property
+   * Ensure parent transactions have a 'children' property.
    */
   public static function postLoad(EntityStorageInterface $storage_controller, array &$entities) {
     foreach ($entities as $transaction) {
@@ -216,8 +216,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields = parent::baseFieldDefinitions($entity_type);
-    //note that the worth field is field API because we can't define multiple cardinality fields in this entity.
-
+    // Note that the worth field is field API because we can't define multiple
+    // cardinality fields in this entity.
     $fields['description'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Description'))
       ->setDescription(t('A one line description of what was exchanged.'))
@@ -225,16 +225,16 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setDefaultValue('')
       ->setSettings(['max_length' => 255])
       ->setDisplayConfigurable('form', TRUE)
-      ->setDisplayOptions('form', ['type' => 'string_textfield',  'weight' => 3])
+      ->setDisplayOptions('form', ['type' => 'string_textfield', 'weight' => 3])
       ->setDisplayConfigurable('view', TRUE)
-      ->setDisplayOptions('view', ['type' => 'string',  'weight' => 3]);
+      ->setDisplayOptions('view', ['type' => 'string', 'weight' => 3]);
 
     $fields['serial'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Serial number'))
       ->setDescription(t('Grouping of related transactions.'))
       ->setReadOnly(TRUE);
 
-    //this is really an entity reference
+    // This is really an entity reference.
     $fields['parent'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Parent xid'))
       ->setDescription(t('Parent transaction that created this transaction.'))
@@ -242,9 +242,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 
-    //I wanted to add the CanPayout and CanPayin constraints in the widget builder
-    //but I couldn't see how. So at the moment they apply to all entity forms, but
-    //they only run code when $items->restricted is TRUE
+    // I wanted to add the CanPayout and CanPayin constraints in the widget
+    // builder but I couldn't see how. So at the moment they apply to all entity
+    // forms, but they only run code when $items->restricted is TRUE.
     $fields['payer'] = BaseFieldDefinition::create('wallet_reference')
       ->setLabel(t('Payer'))
       ->setDescription(t('The giving wallet'))
@@ -329,7 +329,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
   /**
    * {@inheritdoc}
    */
-  function flatten($clone = TRUE) {
+  public function flatten($clone = TRUE) {
     if ($clone) {
       $transaction = clone($this);
     }
@@ -346,21 +346,53 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
   }
 
   /**
-   * Clear the cachetags of wallets involved in this transaction
-   * @param type $update
+   * {@inheritdoc}
    */
   protected function invalidateTagsOnSave($update) {
     parent::invalidateTagsOnSave($update);
-    //ensure that we invalidate tags only once if a wallet is involved in more
+    // Ensure that we invalidate tags only once if a wallet is involved in more.
     foreach ($this->flatten(FALSE) as $transaction) {
       foreach (['payer', 'payee'] as $actor) {
         $wallet = $transaction->{$actor}->entity;
-        if (!$wallet) continue;//this should never happen, but does
-        $wallets[$wallet->id()] = $wallet;//prevent duplicates
+        // This should never happen, but does.
+        if (!$wallet) {
+          continue;
+          // Prevent duplicates.
+        }
+        $wallets[$wallet->id()] = $wallet;
       }
     }
     foreach ($wallets as $wallet) {
       $wallet->invalidateTagsOnSave($update);
     }
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getOwner() {
+    return $this->creator->entity;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getOwnerId() {
+    return $this->creator->target_id;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setOwner(UserInterface $account) {
+    $this->creator = $account;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setOwnerId($uid) {
+    $this->creator->targetId = $uid;
+  }
+
 }

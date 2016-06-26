@@ -1,15 +1,8 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi\Plugin\views\argument_default\CurrentUserWallets.
- */
-
 namespace Drupal\mcapi\Plugin\views\argument_default;
 
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Plugin\views\argument_default\ArgumentDefaultPluginBase;
-use Drupal\user\Entity\User;
 
 /**
  * The fixed argument default handler.

@@ -1,11 +1,9 @@
 <?php
 
-
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Mcapi;
-
 
 /*
  * returns a message

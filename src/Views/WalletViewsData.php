@@ -1,13 +1,12 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Views\WalletViewsData.
- */
 namespace Drupal\mcapi\Views;
 
 use Drupal\views\EntityViewsData;
 
+/**
+ * Views data for wallet entity.
+ */
 class WalletViewsData extends EntityViewsData {
 
   /**
@@ -30,13 +29,13 @@ class WalletViewsData extends EntityViewsData {
     $data['mcapi_wallet']['holder_entity_type']['field']['id'] = 'mcapi_holder_type';
     $data['mcapi_wallet']['holder_entity_type']['field']['help'] = $this->t("The wallet holder's translated EntityType name");
 
-    //this allows us to do group queries such as find the balance per wallet
+    // This allows us to do group queries such as find the balance per wallet.
     $data['mcapi_transactions_index']['table']['join'] = [
       'mcapi_wallet' => [
         'left_field' => 'wid',
         'field' => 'wallet_id',
         'required' => TRUE,
-        //'type' => 'RIGHT'
+        // 'type' => 'RIGHT'.
       ],
     ];
     $this->addWalletSummaries($data['mcapi_wallet']);
@@ -57,31 +56,31 @@ class WalletViewsData extends EntityViewsData {
   /**
    * This is added to all walletable entity types.
    */
-  static function addWalletSummaries(array &$table) {
+  public static function addWalletSummaries(array &$table) {
     $table['summary_balance'] = [
       'title' => t('Current balance'),
       'description' => t("Balances of entity's first wallet"),
       'field' => [
-        'id' =>'wallet_stat',
-        'stat' => 'balance'
-      ]
+        'id' => 'wallet_stat',
+        'stat' => 'balance',
+      ],
     ];
     $table['summary_trades'] = [
       'title' => t('Transaction count'),
       'description' => t("Number of trades in entity's first wallet"),
       'field' => [
-        'id' =>'wallet_stat',
-        'stat' => 'trades'
-      ]
+        'id' => 'wallet_stat',
+        'stat' => 'trades',
+      ],
     ];
     $table['summary_volume'] = [
       'title' => t('Trading volume'),
       'description' => t("Volumes entity's first wallet"),
       'field' => [
-        'id' =>'wallet_stat',
-        'stat' => 'volume'
-      ]
+        'id' => 'wallet_stat',
+        'stat' => 'volume',
+      ],
     ];
   }
-}
 
+}

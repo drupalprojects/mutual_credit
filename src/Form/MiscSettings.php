@@ -1,18 +1,19 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Form\MiscSettings.
- *
- */
 namespace Drupal\mcapi\Form;
 
 use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Plugin\TransactionRelativeManager;
 use Drupal\Core\Form\ConfigFormBase;
-use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ * Form builder for miscellaneous settings.
+ */
 class MiscSettings extends ConfigFormBase {
 
   private $moduleHandler;
@@ -22,23 +23,38 @@ class MiscSettings extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'mcapi_misc_settings';
   }
 
-  public function __construct(ConfigFactoryInterface $configFactory, $module_handler, $transaction_relative_manager, $entity_type_manager) {
+  /**
+   * Constructor.
+   *
+   * @param ConfigFactoryInterface $configFactory
+   *   The Configfactory service.
+   * @param ModuleHandlerInterface $module_handler
+   *   The ModuleHandler service.
+   * @param EntityTypeManagerInterface $entity_type_manager
+   *   The EntityTypeManager service.
+   * @param Drupal\mcapi\Plugin\TransactionRelativeManager $transaction_relative_manager
+   *   The TransactionRelativeManager service.
+   */
+  public function __construct(ConfigFactoryInterface $configFactory, ModuleHandlerInterface $module_handler, EntityTypeManagerInterface $entity_type_manager, TransactionRelativeManager $transaction_relative_manager) {
     $this->setConfigFactory($configFactory);
     $this->moduleHandler = $module_handler;
     $this->transactionRelativeManager = $transaction_relative_manager;
     $this->entityTypeManager = $entity_type_manager;
   }
 
+  /**
+   * Injections.
+   */
   static public function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
       $container->get('module_handler'),
-      $container->get('mcapi.transaction_relative_manager'),
-      $container->get('entity_type.manager')
+      $container->get('entity_type.manager'),
+      $container->get('mcapi.transaction_relative_manager')
     );
   }
 
@@ -52,13 +68,13 @@ class MiscSettings extends ConfigFormBase {
       '#description' => $this->t('The following tokens are available: @tokens', ['@tokens' => Mcapi::tokenHelp()]),
       '#type' => 'textfield',
       '#default_value' => $config->get('sentence_template'),
-      '#weight' => 2
+      '#weight' => 2,
     ];
     $form['mail_errors'] = [
       '#title' => $this->t('Send diagnostics to user 1 by mail'),
       '#type' => 'checkbox',
       '#default_value' => $config->get('mail_errors'),
-      '#weight' => 10
+      '#weight' => 10,
     ];
     $form['worths_delimiter'] = [
       '#title' => $this->t('Delimiter'),
@@ -78,29 +94,30 @@ class MiscSettings extends ConfigFormBase {
       '#size' => 20,
       '#maxlength' => 128,
     ];
-    //NB Instead of this, 'counted' could be a property of each transaction state
-    //however at the moment that would involve user 1 editing the yaml files
-    //because transaction states have no ui to edit them
+    // @note Instead of this, 'counted' could be a property of each transaction
+    // state however at the moment that would involve user 1 editing the yml
+    // files because transaction states have no ui to edit them.
     $form['counted'] = [
-    	'#title' => $this->t('Counted transaction states'),
+      '#title' => $this->t('Counted transaction states'),
       '#description' => $this->t("Transactions in these states will comprise the wallet's balance"),
       '#type' => 'checkboxes',
       '#options' => Mcapi::entityLabelList('mcapi_state'),
       '#default_value' => $config->get('counted'),
       '#weight' => 14,
-      //these values are absolutely fixed
+      // These values are absolutely fixed.
       'done' => [
-    	  '#disabled' => TRUE,
+        '#disabled' => TRUE,
         '#value' => TRUE,
       ],
       'erased' => [
-    	  '#disabled' => TRUE,
+        '#disabled' => TRUE,
         '#value' => FALSE,
-      ]
+      ],
     ];
-    foreach ($this->transactionRelativeManager->getDefinitions() as $id => $definition) {
-      $options[$id] = $definition['label'];
-    }
+
+    //foreach ($this->transactionRelativeManager->getDefinitions() as $id => $definition) {
+    //  $options[$id] = $definition['label'];
+    //}
 
     $form['rebuild_mcapi_index'] = [
       '#title' => $this->t('Rebuild index'),
@@ -111,13 +128,16 @@ class MiscSettings extends ConfigFormBase {
         '#type' => 'submit',
         '#value' => 'Rebuild transaction index',
         '#submit' => [
-          [get_class($this), 'rebuildMcapiIndex']
-        ]
-      ]
+          [get_class($this), 'rebuildMcapiIndex'],
+        ],
+      ],
     ];
     return parent::buildForm($form, $form_state);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function validateForm(array &$form, FormStateInterface $form_state) {
 
   }
@@ -138,18 +158,26 @@ class MiscSettings extends ConfigFormBase {
       ->save();
 
     parent::submitForm($form, $form_state);
-    if($config->get('counted') != $values['counted']) {
+    if ($config->get('counted') != $values['counted']) {
       Self::rebuildMcapiIndex($form, $form_state);
     }
   }
 
-  static function rebuildMcapiIndex(array &$form, FormStateInterface $form_state) {
-    //not sure where to put this function
+  /**
+   * Submit callback.
+   *
+   * Rebuild the Transaction index table.
+   */
+  public static function rebuildMcapiIndex(array &$form, FormStateInterface $form_state) {
+    // Not sure where to put this function.
     \Drupal::entityTypeManager()->getStorage('mcapi_transaction')->indexRebuild();
-    drupal_set_message("Index table is rebuilt");
+    drupal_set_message(t("Index table is rebuilt"));
     $form_state->setRedirect('system.status');
   }
 
+  /**
+   * {@inheritdoc}
+   */
   protected function getEditableConfigNames() {
     return ['mcapi.settings'];
   }

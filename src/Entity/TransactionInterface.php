@@ -1,30 +1,38 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Entity\TransactionInterface.
- */
-
 namespace Drupal\mcapi\Entity;
 
-interface TransactionInterface extends \Drupal\Core\Entity\ContentEntityInterface {
+use Drupal\Core\Entity\ContentEntityInterface;
+
+/**
+ * Interface for Transaction entity.
+ */
+interface TransactionInterface extends ContentEntityInterface {
 
   /**
-   * load many transactions and key them by serial number instead of xid
-   * @param integer
-   *   a serial number
+   * Load many transactions and key them by serial number instead of xid.
+   *
+   * @param int $serial
+   *   A serial number.
    *
    * @return \Drupal\mcapi\Entity\TransactionInterface
+   *   The fully loaded transaction with children.
    */
-  static function loadBySerial($serial);
+  public static function loadBySerial($serial);
 
   /**
-   * returns a clone of the transaction as an array with the children next to the parent
+   * Get transactions as a flat array, i.e. without children.
    *
    * @return Transaction[]
-   *   transactions with the cloned parent transaction first and children property removed
-   *
+   *   Transactions with the cloned parent first, and children property removed
    */
-  function flatten();
+  public function flatten();
+
+  /**
+   * Add children to the transaction or make other changes.
+   *
+   * @note this must be called explicitly, and PRIOR to validation.
+   */
+  public function assemble();
 
 }

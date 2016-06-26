@@ -1,32 +1,26 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Storage\WalletStorageInterface.
- */
-
 namespace Drupal\mcapi\Storage;
 
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\mcapi\Entity\TransactionInterface;
 
+/**
+ * Storage interface for wallet entity.
+ */
 interface WalletStorageInterface extends EntityStorageInterface {
 
   /**
-   * get the wallets the given user can do the operation on
+   * Get the wallets the given user can do the operation on.
    *
    * @param string $operation
-   *   can be payin or payout
-   *
-   * @param integer $uid
-   *   a user id
-   *
+   *   Can be payin or payout.
+   * @param int $uid
+   *   A user id.
    * @param string $match
-   *   a user id
+   *   A string to match against the wallet name.
    *
    * @return integer[]
-   *   the wallet ids
-   *
+   *   The wallet IDs.
    */
   public function whichWalletsQuery($operation, $uid, $match = '');
 

@@ -1,35 +1,35 @@
 <?php
 
-/**
- * @file
- *
- * Contains \Drupal\mcapi\Mcapi
- * utility methods
- *
- */
-
 namespace Drupal\mcapi;
 
+use Drupal\Core\Url;
+use Drupal\Core\Link;
+use Drupal\system\Entity\Action;
+use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\ContentEntityInterface;
 
+/**
+ * Utility class for community accounting.
+ */
 class Mcapi {
 
   /**
-   * Get a list of bundles which can have wallets
-   * which is to say, whether it is a contentEntity configured to have at least 1 wallet
+   * Get a list of bundles which can have wallets.
+   *
+   * Which is to say, whether it is a contentEntity configured to have at least
+   * 1 wallet.
    *
    * @return array
-   *   bundle names keyed by entity type ids
-   *
+   *   Bundle names keyed by entity type ids.
    */
-  static function walletableBundles($reset = FALSE) {
+  public static function walletableBundles($reset = FALSE) {
     $bundles = &drupal_static(__FUNCTION__);
     if (!is_array($bundles) || $reset) {
       if ($cache = \Drupal::cache()->get('walletableBundles')) {
         $bundles = $cache->data;
       }
-      else{
+      else {
         $bundles = [];
         foreach (\Drupal::Config('mcapi.settings')->get('entity_types') as $entity_bundle => $max) {
           if (!$max) {
@@ -41,8 +41,9 @@ class Mcapi {
         \Drupal::cache()->set(
           'walletableBundles',
           $bundles,
-          \Drupal\Core\Cache\CacheBackendInterface::CACHE_PERMANENT,
-          ['walletable_bundles']//@todo what are the tags?
+          CacheBackendInterface::CACHE_PERMANENT,
+        // @todo what are the tags?
+          ['walletable_bundles']
         );
       }
     }
@@ -50,15 +51,18 @@ class Mcapi {
   }
 
   /**
-   * Find the maximum number of wallets a bundle can have
+   * Find the maximum number of wallets a bundle can have.
    *
-   * @param type $entity_type_id
-   * @param type $bundle
-   * @return integer
-   *   The maximum number of wallets
+   * @param string $entity_type_id
+   *   The machine name of the entity type.
+   * @param string $bundle
+   *   The machine name of the bundle.
+   *
+   * @return int
+   *   The maximum number of wallets.
    */
-  static function maxWalletsOfBundle($entity_type_id, $bundle) {
-    $bundles = SELF::walletableBundles();
+  public static function maxWalletsOfBundle($entity_type_id, $bundle) {
+    $bundles = static::walletableBundles();
     if (isset($bundles[$entity_type_id])) {
       if (isset($bundles[$entity_type_id][$bundle])) {
         return $bundles[$entity_type_id][$bundle];
@@ -68,47 +72,53 @@ class Mcapi {
   }
 
   /**
-   * utility function
-   * loads any of the transaction operation actions
+   * Utility function.
+   *
+   * Loads any of the transaction operation actions.
    *
    * @param string $operation
-   *   may or may not begin with transaction_'
+   *   May or may not begin with transaction_'.
    *
-   * @todo alther the incoming $operation to be more consistent and harminise with $this::transactionActionsLoad()
+   * @todo alter the incoming $operation to be more consistent and harminise
+   * with $this::transactionActionsLoad().
    */
-  static function transactionActionLoad($operation) {
-    //sometimes the $operation is from the url so it is shortened, and sometimes is the id of an action.
-    //there is a convention that all transaction actions take the form transaction_ONEWORD
-    if ($operation == 'operation') {//take the oneword from the given path
+  public static function transactionActionLoad($operation) {
+    // Sometimes the $operation is from the url so it is shortened, and
+    // sometimes is the id of an action. There is a convention that all
+    // transaction actions take the form transaction_ONEWORD take the oneword
+    // from the given path.
+    if ($operation == 'operation') {
       $operation = \Drupal::routeMatch()->getParameter('operation');
     }
     if (substr($operation, 0, 12) != 'transaction_') {
-      $action_name = 'transaction_'.$operation;
+      $action_name = 'transaction_' . $operation;
     }
     else {
       $action_name = $operation;
     }
-    if ($action = \Drupal\system\Entity\Action::load($action_name)) {
+    if ($action = Action::load($action_name)) {
       return $action;
     }
     throw new \Exception("No action with name '$operation'");
   }
 
   /**
-   * utility function
-   * load those special transaction operations which are also actions
+   * Utility function.
+   *
+   * Load those special transaction operations which are also actions.
    */
-  static function transactionActionsLoad() {
+  public static function transactionActionsLoad() {
     return \Drupal::entityTypeManager()
       ->getStorage('action')
       ->loadByProperties(['type' => 'mcapi_transaction']);
   }
 
   /**
-   * uasort callback for configuration entities.
-   * could be included in Drupal Core?
+   * Uasort callback for configuration entities.
+   *
+   * Should have been included in Drupal Core?
    */
-  static function uasortWeight($a, $b) {
+  public static function uasortWeight($a, $b) {
     $a_weight = (is_object($a) && property_exists($a, 'weight')) ? $a->weight : 0;
     $b_weight = (is_object($b) && property_exists($b, 'weight')) ? $b->weight : 0;
     if ($a_weight == $b_weight) {
@@ -117,28 +127,27 @@ class Mcapi {
     return ($a_weight < $b_weight) ? -1 : 1;
   }
 
-
   /**
-   * Utility function to populate a form widget's options with entity names
+   * Utility function to populate a form widget's options with entity names.
    *
    * @param string $entity_type_id
-   *
+   *   The machine name of the entity type.
    * @param array $data
-   *   either entities of the given type, entity ids, or $conditions for entity_load_multiple_by_properties
+   *   Either entities of the given type, entity ids, or $conditions for
+   *   entity_load_multiple_by_properties.
    *
    * @return string[]
-   *   The entity names, keyed by entity id
-   *
+   *   The entity names, keyed by entity id.
    */
-  static function entityLabelList($entity_type_id, array $data = []) {
+  public static function entityLabelList($entity_type_id, array $data = []) {
     if (empty($data)) {
       $entities = \Drupal::entityTypeManager()->getStorage($entity_type_id)->loadMultiple();
     }
-    elseif(is_string(key($data))) {
-      //that means it is a conditions list
+    elseif (is_string(key($data))) {
+      // That means it is a conditions list.
       $entities = entity_load_multiple_by_properties($entity_type_id, $data);
     }
-    elseif(is_numeric(reset($data))) {
+    elseif (is_numeric(reset($data))) {
       $entities = \Drupal::entityTypeManager()->getStorage($entity_type_id)->loadMultiple($data);
     }
     else {
@@ -155,14 +164,15 @@ class Mcapi {
   }
 
   /**
-   * retrieve all the wallets held by a given ContentEntity
+   * Retrieve all the wallets held by a given ContentEntity.
    *
    * @param ContentEntityInterface $entity
-   * @param boolean $load
-   *   TRUE means return the fully loaded wallets
+   *   The entity.
+   * @param bool $load
+   *   TRUE means return the fully loaded wallets.
    *
    * @return \Drupal\mcapi\Entity\WalletInterface[]
-   *   or just the wallet ids if $load is false
+   *   Or just the wallet ids if $load is FALSE.
    *
    * @todo change this to take the entityTypeId and the EntityId instead of the Entity
    */
@@ -179,10 +189,13 @@ class Mcapi {
   }
 
   /**
-   * retrieve all the wallets held by any of many ContentEntities
+   * Retrieve all the wallets held by any of many ContentEntities.
+   *
    * @param ContentEntityInterface[] $entities
+   *   An array of content entities.
+   *
    * @return int[]
-   *   the wallet ids
+   *   The wallet IDs.
    */
   public static function walletsOfHolders(array $entities) {
     $query = \Drupal::database()->select('mcapi_wallet', 'w')
@@ -201,34 +214,43 @@ class Mcapi {
   }
 
   /**
-   * Find out if the user can payin to at least one wallet and payout of at least one wallet
+   * Whether a user can payin to at least one and payout of at least one wallet.
    *
-   * @param integer $uid
-   * @return boolean
-   *   TRUE if the $uid has access to enough wallets to trade
+   * @param int $uid
+   *   The user ID.
+   *
+   * @return bool
+   *   TRUE if the $uid has access to enough wallets to trade.
    */
   public static function enoughWallets($uid) {
     $walletStorage = \Drupal::entityTypeManager()->getStorage('mcapi_wallet');
     $payin = $walletStorage->whichWalletsQuery('payin', $uid);
     $payout = $walletStorage->whichWalletsQuery('payout', $uid);
     if (count($payin) < 2 && count($payout) < 2) {
-      //this is deliberately ambiguous as to whether you have no wallets or the system has no other wallets.
-      drupal_set_message('There are no wallets for you to trade with', 'warning');
+      // This is deliberately ambiguous as to whether you have no wallets or the
+      // system has no other wallets.
+      drupal_set_message(t('There are no wallets for you to trade with', 'warning'));
       return FALSE;
     }
-    //there must be at least one wallet in each (and they must be different!)
+    // There must be at least one wallet in each (and they must be different!)
     return (count(array_unique(array_merge($payin, $payout))) > 1);
   }
 
   /**
-   * Service container
-   * @return type
+   * Service container.
+   *
+   * @return \Drupal\mcapi\Plugin\TransactionRelativeManager
+   *   The 'Transaction relative manager' service.
    */
   public static function transactionRelatives($plugin_names = []) {
     return \Drupal::service('mcapi.transaction_relative_manager')->activatePlugins($plugin_names);
   }
 
-  //this really needs replacing with a core function
+  /**
+   * Get a list of all the tokens on the transaction entity.
+   *
+   * @note This really needs replacing with a core function.
+   */
   public static function tokenHelp() {
     foreach (array_keys(\Drupal::Token()->getInfo()['tokens']['xaction']) as $token) {
       $tokens[] = "[xaction:$token]";
@@ -236,28 +258,32 @@ class Mcapi {
     return implode(', ', $tokens);
   }
 
+  /**
+   * Get a string describing where to get help writing Twig.
+   */
   public static function twigHelp() {
     foreach (array_keys(\Drupal::Token()->getInfo()['tokens']['xaction']) as $token) {
-      $tokens[] = '{{ '.$token . '}}';
+      $tokens[] = '{{ ' . $token . '}}';
     }
-    //@todo how to place links in $element['#description']?
-    $link = \Drupal\Core\Link::fromTextAndUrl(
+    // @todo how to place links in $element['#description']?
+    $link = Link::fromTextAndUrl(
         t('What is twig?'),
-        \Drupal\Core\Url::fromUri('http://twig.sensiolabs.org/doc/templates.html')
+        Url::fromUri('http://twig.sensiolabs.org/doc/templates.html')
       );
-    return implode(', ', $tokens) . '. '.$link->toString();
+    return implode(', ', $tokens) . '. ' . $link->toString();
 
   }
 
   /**
-   *
+   * Get the wallet IDs corresponding to a search string and directionality.
    *
    * @param string $match
-   *   a string to be matched against the wallet name
+   *   A string to be matched against the wallet name.
    * @param string $restrict
-   *   'payin', 'payout' or empty
+   *   One of 'payin', 'payout' or empty.
+   *
    * @return integer[]
-   *   a list of wallet ids
+   *   A list of wallet ids.
    */
   public static function getWalletSelection($match = '', $restrict = '') {
     $walletStorage = \Drupal::entityTypeManager()->getStorage('mcapi_wallet');
@@ -266,10 +292,11 @@ class Mcapi {
     }
     else {
       $query = \Drupal::entityQuery('mcapi_wallet')
-        ->condition('payways', Wallet::PAYWAY_AUTO, '<>')//not intertrading wallets
+      // Not intertrading wallets.
+        ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
         ->condition('orphaned', 0);
       if ($match) {
-        $query->condition('name', '%'.\Drupal::database()->escapeLike($match).'%', 'LIKE');
+        $query->condition('name', '%' . \Drupal::database()->escapeLike($match) . '%', 'LIKE');
       }
       $wids = $query->execute();
     }
@@ -277,6 +304,12 @@ class Mcapi {
     return $wids;
   }
 
+  /**
+   * Get the first or main wallet held by an entity.
+   *
+   * @param ContentEntityInterface $entity
+   *   Any content entity.
+   */
   public static function firstWalletIdOfEntity(ContentEntityInterface $entity) {
     $wids = Mcapi::walletsOf($entity);
     return reset($wids);

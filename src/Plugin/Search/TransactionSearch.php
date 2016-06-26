@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\user\Plugin\Search\TransactionSearch.
- */
-
 namespace Drupal\mcapi\Plugin\Search;
 
 use Drupal\mcapi\Mcapi;
@@ -24,7 +19,7 @@ use Drupal\search\Plugin\ConfigurableSearchPluginBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Executes a keyword search for transactions against the {mcapi_transaction}
+ * Executes a keyword search for transactions against the {mcapi_transaction}.
  *
  * @SearchPlugin(
  *   id = "mcapi_search",
@@ -70,11 +65,11 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
    */
   protected $advanced = [
     'state' => [
-      'column' => 'tx.state'
+      'column' => 'tx.state',
     ],
     'type' => [
-      'column' => 'tx.type'
-    ]
+      'column' => 'tx.type',
+    ],
   ];
 
   /**
@@ -114,9 +109,10 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
 
   /**
    * {@inheritdoc}
-   * //@todo determine how search access works
+   *
+   * @todo determine how search access works.
    */
-  public function access($operation, AccountInterface $account = NULL, $return_as_object = false) {
+  public function access($operation, AccountInterface $account = NULL, $return_as_object = FALSE) {
     $result = $account->isAuthenticated() ?
       AccessResult::allowed() :
       AccessResult::forbidden();
@@ -126,7 +122,8 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
 
   /**
    * {@inheritdoc}
-   * this is borrowed from nodeSearch and is overcomplicated
+   *
+   * This is borrowed from nodeSearch and is overcomplicated.
    */
   public function execute() {
     if ($this->isSearchExecutable()) {
@@ -180,6 +177,7 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
    * @return \Drupal\Core\Database\StatementInterface|null
    *   Results from search query execute() method, or NULL if the search
    *   failed.
+   *
    * @note borrowed from nodeSearch - too complicated
    */
   protected function findResults() {
@@ -187,14 +185,14 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
     $query = $this->database
       ->select('search_index', 'i', array('target' => 'replica'))
       ->extend('Drupal\Core\Database\Query\PagerSelectExtender')
-      ->extend('Drupal\search\SearchQuery');//this overrides the query::execute() method
-
+    // This overrides the query::execute() method.
+      ->extend('Drupal\search\SearchQuery');
 
     $query->join('mcapi_transaction', 'tx', 'tx.xid = i.sid');
     $query->condition('tx.state', 'erased', '<>')
       ->addTag('mcapi_transaction')
       ->searchExpression($this->keywords, $this->getPluginId());
-    //taken from node_search beta11
+    // Taken from node_search beta11
     // Handle advanced search filters in the f query string.
     // \Drupal::request()->query->get('f') is an array that looks like this in
     // the URL: ?f[]=type:page&f[]=term:27&f[]=term:13&f[]=langcode:en
@@ -231,8 +229,8 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
         }
       }
     }
-    //this is where we could tweak the query to reorder the search according to search settings
-
+    // This is where we could tweak the query to reorder the search according to
+    // search settings.
     $find = $query
       ->limit(10)
       ->execute();
@@ -244,7 +242,6 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
     return $find;
   }
 
-
   /**
    * Prepares search results for rendering.
    *
@@ -253,6 +250,7 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
    *
    * @return array
    *   Array of search result item render arrays (empty array if no results).
+   *
    * @note borrowed from nodeSearch - too complicated
    */
   protected function prepareResults(StatementInterface $found) {
@@ -265,15 +263,18 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
         ->getViewBuilder('mcapi_transaction')
         ->view($tx, 'search_result');
 
-      unset($build['#theme']);//not sure why we did this
+      // Not sure why we did this.
+      unset($build['#theme']);
 
-      //see template_preprocess_search_result
-      //search result theming is not v good and not well documented in beta 11
+      // See template_preprocess_search_result
+      // search result theming is not v good and not well documented in beta 11.
       $result = [
         'link' => $tx->toUrl('canonical', ['absolute' => TRUE]),
         'title' => $tx->description->value,
-        'date' => $tx->created->value,//not used
-        'score' => $item->calculated_score,//not used
+      // Not used.
+        'date' => $tx->created->value,
+      // Not used.
+        'score' => $item->calculated_score,
       ];
       $results[] = $result;
     }
@@ -293,17 +294,18 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
   public function markForReindex() {
     search_mark_for_reindex($this->getPluginId());
   }
+
   /**
    * {@inheritdoc}
    */
   public function indexStatus() {
-    $q = "SELECT COUNT(DISTINCT tx.xid) "
-      . "FROM {mcapi_transaction} tx "
-      . "LEFT JOIN {search_dataset} sd ON sd.sid = tx.xid AND sd.type = :type "
-      . "WHERE sd.sid IS NULL OR sd.reindex <> 0";
+    $q = "SELECT COUNT(DISTINCT tx.xid)
+      FROM {mcapi_transaction} tx
+      LEFT JOIN {search_dataset} sd ON sd.sid = tx.xid AND sd.type = :type
+      WHERE sd.sid IS NULL OR sd.reindex <> 0";
     return [
       'remaining' => $this->database->query($q, [':type' => $this->getPluginId()])->fetchField(),
-      'total' => $this->database->query('SELECT COUNT(*) FROM {mcapi_transaction}')->fetchField()
+      'total' => $this->database->query('SELECT COUNT(*) FROM {mcapi_transaction}')->fetchField(),
     ];
   }
 
@@ -312,16 +314,17 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
    */
   public function updateIndex() {
     $xids = $this->database->queryRange(
-      "SELECT tx.xid, MAX(sd.reindex) "
-      . "FROM {mcapi_transaction} tx "
-      . "LEFT JOIN {search_dataset} sd "
-      . "ON sd.sid = tx.xid AND sd.type = :type "
-      . "WHERE sd.sid IS NULL OR sd.reindex <> 0 "
-      . "GROUP BY tx.xid "
-      . "ORDER BY MAX(sd.reindex) is null DESC, "
-      . "MAX(sd.reindex) ASC, tx.xid ASC",
+      "SELECT tx.xid, MAX(sd.reindex)
+       FROM {mcapi_transaction} tx
+      LEFT JOIN {search_dataset} sd
+      ON sd.sid = tx.xid AND sd.type = :type
+      WHERE sd.sid IS NULL OR sd.reindex <> 0
+      GROUP BY tx.xid
+      ORDER BY MAX(sd.reindex) is null DESC,
+      MAX(sd.reindex) ASC, tx.xid ASC",
       0,
-      50, //this is hard-coded for now
+      // This is hard-coded for now.
+      50,
       [':type' => $this->getPluginId()],
       ['target' => 'replica']
     )->fetchCol();
@@ -331,7 +334,7 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
 
     $storage = $this->entityTypeManager->getStorage('mcapi_transaction');
     foreach ($storage->loadMultiple($xids) as $tx) {
-      //index only parent transactions
+      // Index only parent transactions.
       if ($tx->parent->value) {
         continue;
       }
@@ -344,7 +347,7 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
    */
   public function defaultConfiguration() {
     $configuration = [
-      'order' => 'relevance'
+      'order' => 'relevance',
     ];
     return $configuration;
   }
@@ -370,14 +373,15 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form['order'] = [
       '#title' => $this->t('Result order', [], ['context' => 'search']),
-      //'#description' => 'not working yet, and even then, only with the geo modules',
+      '#description' => '(only supposed to work with the geo modules)',
+      '#description' => '(only supposed to work with the geo modules)',
       '#type' => 'radios',
       '#options' => [
         'relevance' => $this->t('Keyword relevance'),
         'created' => $this->t('Created date'),
         'value' => $this->t('Raw value'),
       ],
-      '#default_value' => $this->configuration['order']
+      '#default_value' => $this->configuration['order'],
     ];
     return $form;
   }
@@ -389,8 +393,7 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
     $this->configuration['order'] = $form_state->getValue('order');
   }
 
-
-  /*
+  /**
    * {@inheritdoc}
    */
   public function buildSearchUrlQuery(FormStateInterface $form_state) {

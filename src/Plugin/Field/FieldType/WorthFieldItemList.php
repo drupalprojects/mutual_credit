@@ -1,12 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\Field\FieldType\WorthFieldItemList.
- */
-
 namespace Drupal\mcapi\Plugin\Field\FieldType;
 
+use Drupal\Core\Render\Markup;
 use Drupal\Core\Field\FieldItemList;
 
 /**
@@ -18,7 +14,7 @@ class WorthFieldItemList extends FieldItemList {
    * {@inheritdoc}
    */
   public function isEmpty() {
-    $empties= [];
+    $empties = [];
     foreach ($this->list as $key => $item) {
       if (!$item->value && !$item->currency->zero) {
         $empties[$key] = $item->currcode;
@@ -27,9 +23,9 @@ class WorthFieldItemList extends FieldItemList {
     return count($empties) == count($this->list);
   }
 
-
   /**
    * {@inheritdoc}
+   *
    * @todo Revisit the need when all entity types are converted to NG entities.
    */
   public function getValue($include_computed = FALSE) {
@@ -51,6 +47,15 @@ class WorthFieldItemList extends FieldItemList {
     $this->filterEmptyItems($values);
   }
 
+  /**
+   * Get a list of currencies.
+   *
+   * @param bool $full
+   *   True if the full entities are expected.
+   *
+   * @return array
+   *   The currencies or Currency IDs
+   */
   public function currencies($full = FALSE) {
     $c = [];
     foreach ($this->list as $item) {
@@ -64,20 +69,23 @@ class WorthFieldItemList extends FieldItemList {
     return $c;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getString() {
     foreach ($this->list as $item) {
       $worths[] = $item->getString();
     }
     $string = implode(\Drupal::config('mcapi.settings')->get('worths_delimiter'), $worths);
-    return \Drupal\Core\Render\Markup::create($string);
+    return Markup::create($string);
   }
 
   /**
    * {@inheritdoc}
    */
   public function generateSampleItems($count = 1) {
-    //we ignore the given $count, add one or maybe 2 currencies
-    //use 1 or maybe two of the active currencies
+    // We ignore the given $count, add one or maybe 2 currencies
+    // use 1 or maybe two of the active currencies.
     $currencies = \Drupal::entityTypeManager()->getStorage('mcapi_currency')->loadByProperties(['status' => TRUE]);
 
     $field_definition = $this->getFieldDefinition();
@@ -95,7 +103,6 @@ class WorthFieldItemList extends FieldItemList {
     $this->setValue($values);
   }
 
-
   /**
    * {@inheritdoc}
    */
@@ -108,4 +115,5 @@ class WorthFieldItemList extends FieldItemList {
     }
     return $val;
   }
+
 }

@@ -1,19 +1,11 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi_limits\Plugin\Validation\Constraint\TransactionLimitsConstraint.
- *
- * @todo find out if there is any advantage to just using the parent and remove if not
- *
- */
-
 namespace Drupal\mcapi_limits\Plugin\Validation\Constraint;
 
 use Symfony\Component\Validator\Constraint;
 
 /**
- * Supports validating payer & payee of parent transactions
+ * Supports validating payer & payee of parent transactions.
  *
  * @Constraint(
  *   id = "Limits",
@@ -37,6 +29,5 @@ class TransactionLimitsConstraint extends Constraint {
   public function coversFields() {
     return ['payer', 'payee', 'worth', 'state'];
   }
-
 
 }

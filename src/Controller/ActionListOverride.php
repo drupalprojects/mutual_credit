@@ -1,11 +1,7 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\mcapi\Controller\ActionListOverride.
- */
-
 namespace Drupal\mcapi\Controller;
+use Drupal\action\ActionListBuilder;
 use Drupal\mcapi\Mcapi;
 use Drupal\Component\Utility\Crypt;
 
@@ -15,14 +11,14 @@ use Drupal\Component\Utility\Crypt;
  * @see \Drupal\system\Entity\Action
  * @see action_entity_info()
  */
-class ActionListOverride extends \Drupal\action\ActionListBuilder {
+class ActionListOverride extends ActionListBuilder {
 
   /**
    * {@inheritdoc}
    */
   public function load() {
     $entities = parent::load();
-    //remove the mcapi actions from the list of actions
+    // Remove the mcapi actions from the list of actions.
     foreach (array_keys(Mcapi::transactionActionsLoad()) as $id) {
       unset($entities[$id]);
     }
@@ -35,10 +31,10 @@ class ActionListOverride extends \Drupal\action\ActionListBuilder {
   public function render() {
     $build = parent::render();
     $options = &$build['action_admin_manage_form']['parent']['action']['#options'];
-    //remove any transaction actions from the dropdown which are already in use
+    // Remove any transaction actions are already in use from the dropdown.
     foreach (Mcapi::transactionActionsLoad() as $action) {
       $key = Crypt::hashBase64($action->getPlugin()->getPluginId());
-        unset($options[$key]);
+      unset($options[$key]);
     }
     return $build;
   }

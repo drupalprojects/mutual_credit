@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Element\Types.
- */
-
 namespace Drupal\mcapi\Element;
 
 use Drupal\mcapi\Mcapi;
@@ -13,7 +8,7 @@ use Drupal\Core\Render\Element\Radios;
 use Drupal\Core\Render\Element\Checkboxes;
 
 /**
- * Provides a form element for selecting a transaction state
+ * Provides a form element for selecting a transaction state.
  *
  * @FormElement("mcapi_types")
  */
@@ -40,29 +35,31 @@ class Types extends Radios {
   }
 
   /**
-   * process callback for mcapi_types form element
-   *
-   * @return array
-   *   the processed $element
+   * Process callback for mcapi_types form element.
    */
-  static function processTypes($element, $form_state) {
+  public static function processTypes($element, FormStateInterface $form_state) {
     $element['#options'] = Mcapi::entityLabelList('mcapi_type');
-    foreach ((array)$element['#exclude'] as $type) {
+    foreach ((array) $element['#exclude'] as $type) {
       unset($element['#options'][$type]);
     }
     if ($element['#multiple']) {
       $element['#theme_wrappers'] = ['checkboxes'];
-      return Checkboxes::processCheckboxes($element, $form_state, $complete_form);
+      return Checkboxes::processCheckboxes($element, $form_state, $form_state->getCompleteForm());
     }
     else {
       $element['#theme_wrappers'] = ['select'];
-      return Radios::processRadios($element, $form_state, $complete_form);
+      return Radios::processRadios($element, $form_state, $form_state->getCompleteForm());
     }
     return $element;
   }
 
+  /**
+   * Value callback for mcapi_types form element.
+   */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
-    if ($input == NULL) return;
+    if ($input == NULL) {
+      return;
+    }
     return $input;
   }
 

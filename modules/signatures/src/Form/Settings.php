@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- *  Contains Drupal\mcapi_signatures\Form\Settings
- */
-
 namespace Drupal\mcapi_signatures\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
@@ -13,6 +8,9 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Type;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ * Form for signature settings.
+ */
 class Settings extends ConfigFormBase {
 
   private $transactionRelativeManager;
@@ -41,7 +39,7 @@ class Settings extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'mcapi_signatures_settings_form';
   }
 
@@ -49,7 +47,7 @@ class Settings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    //@todo This would look really tidy in a grid - but forms in tables are tricky
+    // @todo This would look really tidy in a grid - but forms in tables are tricky
     $options = $this->transactionRelativeManager->options();
     unset($options['signatory'], $options['pending_signatory']);
     foreach (Type::loadMultiple() as $type) {
@@ -58,17 +56,20 @@ class Settings extends ConfigFormBase {
         '#description' => $type->description,
         '#type' => 'checkboxes',
         '#options' => $options,
-        //checkboxes are a bit strange.
-        //if we don't array filter, every array key will be read as a checked box
+        // Checkboxes are a bit strange.
+        // if we don't filter, every array key will be read as a checked box.
         '#default_value' => $type->getThirdPartySetting('mcapi_signatures', 'signatures'),
-        '#required' => FALSE
+        '#required' => FALSE,
       );
     }
     return parent::buildForm($form, $form_state);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    //this is required
+    // This is required.
   }
 
   /**
@@ -85,6 +86,9 @@ class Settings extends ConfigFormBase {
     $form_state->setRedirect('mcapi.admin.workflow');
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getEditableConfigNames() {}
 
 }

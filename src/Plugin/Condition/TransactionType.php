@@ -1,16 +1,13 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\Condition\TransactionType.
- */
-
 namespace Drupal\mcapi\Plugin\Condition;
 
+use Drupal\rules\Core\RulesConditionBase;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Provides a 'Transaction is of type' condition.
+ *
  * @todo see https://www.drupal.org/node/2284687
  *
  * @Condition(
@@ -28,16 +25,14 @@ use Drupal\Core\Form\FormStateInterface;
  *     )
  *   }
  * )
- *
  */
-class TransactionType extends \Drupal\rules\Core\RulesConditionBase {
+class TransactionType extends RulesConditionBase {
 
   /**
    * {@inheritdoc}
    */
-  public function __summary() {
-    //hopefully the type names are translated
-    $states = array_filter($this->configuration['states']);
+  public function summary() {
+    // Hopefully the type names are translated.
     return $this->t(
       'Transaction type is @types',
       ['@types' => implode(', ', $this->configuration['types'])]
@@ -47,7 +42,7 @@ class TransactionType extends \Drupal\rules\Core\RulesConditionBase {
   /**
    * {@inheritdoc}
    */
-  public function __defaultConfiguration() {
+  public function defaultConfiguration() {
     return [
       'types' => [],
     ] + parent::defaultConfiguration();
@@ -56,11 +51,11 @@ class TransactionType extends \Drupal\rules\Core\RulesConditionBase {
   /**
    * {@inheritdoc}
    */
-  public function __buildConfigurationForm(array $form, FormStateInterface $form_state) {
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form['types'] = [
       '#type' => 'mcapi_types',
       '#default_value' => $this->configuration['types'],
-      '#multiple' => TRUE
+      '#multiple' => TRUE,
     ];
     return parent::buildConfigurationForm($form, $form_state);
   }
@@ -71,6 +66,5 @@ class TransactionType extends \Drupal\rules\Core\RulesConditionBase {
   public function doEvaluate($transaction, $types) {
     return in_array($transaction->type->target_id, $types);
   }
-
 
 }

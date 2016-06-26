@@ -4,12 +4,10 @@ namespace Drupal\mcapi\Plugin\Block;
 
 /**
  * @file
- * Contains \Drupal\mcapi\Plugin\Block\BalanceHistory
+ * Contains \Drupal\mcapi\Plugin\Block\BalanceHistory.
  */
 
-use Drupal\mcapi\Plugin\Block\McapiBlockBase;
 use Drupal\Core\Form\FormStateInterface;
-
 
 /**
  * Provides a user balances block.
@@ -22,12 +20,18 @@ use Drupal\Core\Form\FormStateInterface;
  */
 class BalanceHistory extends McapiBlockBase {
 
+  /**
+   * {@inheritdoc}
+   */
   public function defaultConfiguration() {
     $conf = parent::defaultConfiguration();
-    //these are the same defaults as in hook_theme
+    // These are the same defaults as in hook_theme.
     return $conf += array('width' => 300, 'height' => 150);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function blockForm($form, FormStateInterface $form_state) {
     $form = parent::blockForm($form, $form_state);
     $form['width'] = array(
@@ -36,7 +40,7 @@ class BalanceHistory extends McapiBlockBase {
       '#min' => 0,
       '#default_value' => $this->configuration['width'],
       '#max_size' => 4,
-      '#required' => TRUE
+      '#required' => TRUE,
     );
     $form['height'] = array(
       '#title' => t('Height in pixels'),
@@ -44,13 +48,15 @@ class BalanceHistory extends McapiBlockBase {
       '#min' => 0,
       '#default_value' => $this->configuration['height'],
       '#max_size' => 4,
-      '#required' => TRUE
+      '#required' => TRUE,
     );
     return $form;
   }
+
   /**
    * {@inheritdoc}
-   * How do we calculate the block title? Could be singular or plural, for example
+   *
+   * How to calculate the block title? Could be singular or plural, for example.
    */
   public function getTitle() {
     return $this->formatPlural(
@@ -67,12 +73,14 @@ class BalanceHistory extends McapiBlockBase {
     parent::build();
     return array(
       '#theme' => 'balance_histories_gchart',
-      //this isn't working
-      '#attached' =>array('library' => array('http://www.google.com/jsapi')),//how to put this in the theme layer
+      // This isn't working
+    // how to put this in the theme layer.
+      '#attached' => array('library' => array('http://www.google.com/jsapi')),
       '#account' => $this->account,
       '#curr_ids' => $this->configuration['curr_ids'],
       '#width' => $this->configuration['width'],
-      '#height' => $this->configuration['height']
+      '#height' => $this->configuration['height'],
     );
   }
+
 }

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- *  Contains Drupal\mcapi\Plugin\TransactionRelative\Payer
- */
-
 namespace Drupal\mcapi\Plugin\TransactionRelative;
 
 use Drupal\mcapi\Entity\TransactionInterface;
@@ -12,9 +7,10 @@ use Drupal\mcapi\Plugin\TransactionRelativeInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\Core\Database\Query\AlterableInterface;
+use Drupal\Core\Database\Query\Condition;
 
 /**
- * Defines a payee relative to a Transaction entity.
+ * Defines a creator relative to a Transaction entity.
  *
  * @TransactionRelative(
  *   id = "creator",
@@ -22,7 +18,7 @@ use Drupal\Core\Database\Query\AlterableInterface;
  *   description = @Translation("The user who created the transaction")
  * )
  */
-class Creator extends PluginBase implements TransactionRelativeInterface {//does it go without saying that this implements TransitionInterface
+class Creator extends PluginBase implements TransactionRelativeInterface {
 
   /**
    * {@inheritdoc}
@@ -34,23 +30,24 @@ class Creator extends PluginBase implements TransactionRelativeInterface {//does
   /**
    * {@inheritdoc}
    */
-  public function indexViewsCondition(AlterableInterface $query, $or_group, $uid) {
+  public function indexViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
 
   }
+
   /**
    * {@inheritdoc}
    */
-  public function entityViewsCondition(AlterableInterface $query, $or_group, $uid) {
-    //@todo do we need to actually look up the alias here?
-    //print_R(get_class_methods($query))
+  public function entityViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
+    // @todo do we need to actually look up the alias here?
+    // print_R(get_class_methods($query))
     $or_group->condition('base_table.creator', $uid);
   }
-
 
   /**
    * {@inheritdoc}
    */
   public function getUsers(TransactionInterface $transaction) {
-    return [$transaction->creator->entity->getOwner()->id()];
+    return [$transaction->getOwnerId()];
   }
+
 }

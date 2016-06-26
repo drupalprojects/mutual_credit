@@ -1,11 +1,5 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi\Plugin\views\filter\Wallet.
- *
- */
-
 namespace Drupal\mcapi\Plugin\views\filter;
 
 use Drupal\Core\Form\FormStateInterface;
@@ -30,7 +24,7 @@ class Wallet extends InOperator {
       '#title' => $this->t('Wallet names....'),
       '#type' => 'wallet_entity_auto',
       '#default_value' => $this->value ? Wallet::loadMultiple($this->value) : NULL,
-      '#placeholder' => $this->options['placeholder']
+      '#placeholder' => $this->options['placeholder'],
     ];
 
     $user_input = $form_state->getUserInput();
@@ -40,6 +34,9 @@ class Wallet extends InOperator {
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
   protected function valueValidate($form, FormStateInterface $form_state) {
     $uids = [];
     if ($values = $form_state->getValue(['options', 'value'])) {
@@ -51,19 +48,22 @@ class Wallet extends InOperator {
     $form_state->setValue(['options', 'value'], $uids);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function acceptExposedInput($input) {
-    $rc = parent::acceptExposedInput($input);
-
-    if ($rc) {
+    if ($rc = parent::acceptExposedInput($input)) {
       // If we have previously validated input, override.
       if (isset($this->validated_exposed_input)) {
         $this->value = $this->validated_exposed_input;
       }
     }
-
     return $rc;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function validateExposed(&$form, FormStateInterface $form_state) {
     if (empty($this->options['exposed'])) {
       return;
@@ -94,31 +94,45 @@ class Wallet extends InOperator {
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
   protected function valueSubmit($form, FormStateInterface $form_state) {
-    // prevent array filter from removing our anonymous user.
+    // Prevent array filter from removing our anonymous user.
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function buildExposeForm(&$form, FormStateInterface $form_state) {
     parent::buildExposeForm($form, $form_state);
     $form['placeholder'] = [
       '#title' => $this->t('Placeholder text'),
       '#type' => 'textfield',
       '#default_value' => $this->options['placeholder'],
-      '#weight' => -20
+      '#weight' => -20,
     ];
   }
 
+  /**
+   * {@inheritdoc}
+   */
   protected function defineOptions() {
     $options = parent::defineOptions();
     $options['placeholder']['default'] = t('Wallet name...');
     return $options;
   }
 
-  // Value options are built into the wallet element
-  public function getValueOptions() { }
+  /**
+   * Value options are built into the wallet element.
+   */
+  public function getValueOptions() {}
 
+  /**
+   * {@inheritdoc}
+   */
   public function adminSummary() {
-    // set up $this->valueOptions for the parent summary
+    // Set up $this->valueOptions for the parent summary.
     $this->valueOptions = [];
     if ($this->value) {
       $result = entity_load_multiple_by_properties('wallet', ['wid' => $this->value]);

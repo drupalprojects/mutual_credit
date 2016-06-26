@@ -1,18 +1,13 @@
 <?php
 
-/**
- * @file
- *  Contains Drupal\mcapi_limits\Plugin\Limits\Calculated
- */
-
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
 use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\Core\Form\FormStateInterface;
-Use Drupal\mcapi_limits\Plugin\McapiLimitsBase;
+use Drupal\mcapi_limits\Plugin\McapiLimitsBase;
 
 /**
- * Calculate the balance limits
+ * Calculate the balance limits.
  *
  * @Limits(
  *   id = "calculated",
@@ -35,8 +30,8 @@ class Calculated extends McapiLimitsBase {
       '#type' => 'textfield',
       '#default_value' => $this->configuration['max_formula'],
       '#element_validate' => [
-        [$class, 'validate_formula']
-      ]
+        [$class, 'validateFormula'],
+      ],
     ];
     $subform['min_formula'] = [
       '#title' => $this->t('Formula to calculate minimum limit'),
@@ -44,8 +39,8 @@ class Calculated extends McapiLimitsBase {
       '#type' => 'textfield',
       '#default_value' => $this->configuration['min_formula'],
       '#element_validate' => [
-        [$class, 'validate_formula']
-      ]
+        [$class, 'validateFormula'],
+      ],
     ];
     return $subform;
   }
@@ -57,13 +52,12 @@ class Calculated extends McapiLimitsBase {
     $stats = $wallet->getStats($this->currency->id());
     return [
       'max' => $this->parse($this->configuration['max_formula'], $stats),
-      'min' => $this->parse($this->configuration['min_formula'], $stats)
+      'min' => $this->parse($this->configuration['min_formula'], $stats),
     ];
   }
 
   /**
-   *
-   * @return string
+   * {@inheritdoc}
    */
   private static function help() {
     $help[] = t('@in: the total ever income of the user');
@@ -75,16 +69,23 @@ class Calculated extends McapiLimitsBase {
   }
 
   /**
-   * element validation callback
+   * Element validation callback.
    */
-  public static function validate_formula($element, $form_state) {
-    if (!strlen($element['#value'])) return;
-    $test_values = ['gross_in' => 110, 'gross_out' => 90, 'trades' => 10, 'partners' => 5];
-    $value = Self::parse($element['#value'], $test_values);
+  public static function validateFormula(&$element, $form_state) {
+    if (!strlen($element['#value'])) {
+      return;
+    }
+    $test_values = [
+      'gross_in' => 110,
+      'gross_out' => 90,
+      'trades' => 10,
+      'partners' => 5,
+    ];
+    $result = Self::parse($element['#value'], $test_values);
 
     if (!is_numeric($value)) {
-      //@todo display this error properly
-      form_error(
+      // @todo display this error properly
+      $form_state->setError(
         $element,
         $this->t('Formula does not evaluate to a number: @result', ['@result' => $result])
       );
@@ -92,19 +93,21 @@ class Calculated extends McapiLimitsBase {
   }
 
   /**
-   * helper
+   * Helper.
    */
   private static function parse($string, $values) {
     $tokens = ['@in', '@out', '@num', '@ptn'];
-    if (empty($values)) return '';
+    if (empty($values)) {
+      return '';
+    }
     $replacements = [
-      $values['gross_in'] ? : 0,
-      $values['gross_out'] ? : 0,
-      $values['trades'] ? : 0,
-      $values['partners'] ? : 0
+      $values['gross_in'] ?: 0,
+      $values['gross_out'] ?: 0,
+      $values['trades'] ?: 0,
+      $values['partners'] ?: 0,
     ];
     $pattern = str_replace($tokens, $replacements, $string);
-    return eval('return '. $pattern.';');
+    return eval('return ' . $pattern . ';');
   }
 
   /**
@@ -112,7 +115,7 @@ class Calculated extends McapiLimitsBase {
    */
   public function defaultConfiguration() {
     $defaults = parent::defaultConfiguration();
-    return $defaults+ [
+    return $defaults + [
       'min_formula' => '-@in/2-100',
       'max_formula' => '@in/2+100',
     ];

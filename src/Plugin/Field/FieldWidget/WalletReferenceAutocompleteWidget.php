@@ -1,11 +1,8 @@
 <?php
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\Field\FieldWidget\WalletReferenceAutocompleteWidget.
- */
 
 namespace Drupal\mcapi\Plugin\Field\FieldWidget;
 
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Field\Plugin\Field\FieldWidget\EntityReferenceAutocompleteWidget;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Field\FieldItemListInterface;
@@ -31,7 +28,7 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
    */
   public static function defaultSettings() {
     return parent::defaultSettings() + [
-      'hide_one_wallet' => FALSE
+      'hide_one_wallet' => FALSE,
     ];
   }
 
@@ -54,7 +51,8 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
    */
   public function settingsSummary() {
     $summary = parent::settingsSummary();
-    unset($summary[1]);//size
+    // Size.
+    unset($summary[1]);
     $message = $this->getSetting('hide_one_wallet') ?
       $this->t('Hide widget for one wallet') :
       $this->t('Show widget for one wallet');
@@ -64,13 +62,15 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
 
   /**
    * {@inheritdoc}
-   * @see function mcapi_field_widget_wallet_reference_autocomplete_form_alter
+   *
+   * @see mcapi_field_widget_wallet_reference_autocomplete_form_alter
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
 
     if ($form_state->get('restrictWallets')) {
       $restriction = $this->fieldDefinition->getName() == 'payer' ? 'payout' : 'payin';
-      $items->restricted = TRUE;//used in wallet constraint validator
+      // Used in wallet constraint validator.
+      $items->restricted = TRUE;
     }
     else {
       $restriction = '';
@@ -83,16 +83,17 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
       $wids = [$default_value_wallet->id()];
     }
     else {
-      //get all payer or payee wallets regardless of direction
+      // Get all payer or payee wallets regardless of direction.
       $wids = Mcapi::getWalletSelection('', $restriction);
     }
     $count = count($wids);
 
     if (!$count) {
-      throw new \Exception('No wallets to show for '.$this->fieldDefinition->getName());
+      throw new \Exception('No wallets to show for ' . $this->fieldDefinition->getName());
     }
     $max = \Drupal::config('mcapi.settings')->get('wallet_widget_max_select');
-    //present different widgets according to the number of wallets to choose from, and settings
+    // Present different widgets according to the number of wallets to choose
+    // from, and settings.
     if ($count == 1) {
       $wid = reset($wids);
       $element['#value'] = $wid;
@@ -101,7 +102,7 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
       }
       else {
         $element['#type'] = 'item';
-        $element['#markup'] = \Drupal\mcapi\Entity\Wallet::load($wid)->label();
+        $element['#markup'] = Wallet::load($wid)->label();
       }
     }
     elseif ($count > $max) {
@@ -116,7 +117,7 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
       $element += [
         '#type' => (\Drupal::config('mcapi.settings')->get('wallet_widget_max_radios')) ? 'select' : 'radios',
         '#options' => Mcapi::entityLabelList('mcapi_wallet', $wids),
-        '#default_value' => $default_value_wallet ? $default_value_wallet->id() : ''
+        '#default_value' => $default_value_wallet ? $default_value_wallet->id() : '',
       ];
     }
 

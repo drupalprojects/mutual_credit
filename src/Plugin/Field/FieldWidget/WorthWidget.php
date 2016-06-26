@@ -1,12 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\Field\FieldWidget\WorthWidget.
- */
-
 namespace Drupal\mcapi\Plugin\Field\FieldWidget;
 
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\WidgetBase;
@@ -15,7 +11,6 @@ use Symfony\Component\Validator\ConstraintViolationInterface;
 
 /**
  * Plugin implementation of the 'worth' widget.
- * No settings, I think
  *
  * @FieldWidget(
  *   id = "worth",
@@ -29,10 +24,13 @@ use Symfony\Component\Validator\ConstraintViolationInterface;
  */
 class WorthWidget extends WidgetBase {
 
+  /**
+   * {@inheritdoc}
+   */
   public static function defaultSettings() {
     return [
       'exclude' => FALSE,
-      'currencies' => []
+      'currencies' => [],
     ];
   }
 
@@ -54,19 +52,17 @@ class WorthWidget extends WidgetBase {
     return $element;
   }
 
-
   /**
    * {@inheritdoc}
    */
   public function settingsSummary() {
     $message = '';
+    $currencies = Currency::loadMultiple($this->getSetting('currencies'));
+    $names = Mcapi::entityLabelList('mcapi_currency', array_values($currencies));
     if ($this->getSetting('exclude')) {
-      $message .= $this->t('Not:');
+      $message .= $this->t('Not: @names', ['@names' => implode(', ', $names)]);
     }
-    $currencies = \Drupal\mcapi\Entity\Currency::loadMultiple($this->getSetting('currencies'));
-    $names = \Drupal\mcapi\Mcapi::entityLabelList('mcapi_currency', array_values($currencies));
-    return ['#markup' => $message . ' '.implode(', ', $names)];
-    return $summary;
+    return ['#markup' => $message];
   }
 
   /**
@@ -83,13 +79,13 @@ class WorthWidget extends WidgetBase {
       $curr_ids = array_diff(array_keys(Currency::loadMultiple()), $curr_ids);
     }
 
-    //because this is a multiple widget, we ignore the delta value and put all items
+    // Because this is a multiple widget, ignore delta value and put all items.
     $element += array(
       '#title' => $this->fieldDefinition->label(),
       '#title_display' => 'attribute',
       '#type' => 'worths_form',
-      '#default_value' => $items->getValue() ? : NULL,
-      '#allowed_curr_ids' => $curr_ids
+      '#default_value' => $items->getValue() ?: NULL,
+      '#allowed_curr_ids' => $curr_ids,
     );
 
     unset($element['#description']);
@@ -98,9 +94,11 @@ class WorthWidget extends WidgetBase {
 
   /**
    * {@inheritdoc}
+   *
    * @todo test this errorElement
    */
   public function errorElement(array $element, ConstraintViolationInterface $violation, array $form, FormStateInterface $form_state) {
     return $element[$violation->getpropertyPath()];
   }
+
 }

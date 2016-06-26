@@ -1,12 +1,14 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Entity\QueryFactory.
- */
-
 namespace Drupal\mcapi\Entity;
 
-class QueryFactory extends \Drupal\Core\Entity\Query\Sql\QueryFactory {
+use Drupal\Core\Entity\Query\Sql\QueryFactory as QueryFactoryBase;
+
+/**
+ * Query factory.
+ *
+ * This does nothing but it tells the system to look next door for the Query.
+ */
+class QueryFactory extends QueryFactoryBase {
 
 }

@@ -1,38 +1,37 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Event\TransactionSaveEvents.
- */
-
 namespace Drupal\mcapi\Event;
 
 use Symfony\Component\EventDispatcher\GenericEvent;
 
 /**
- * Event which is fired on any transaction operation
+ * Event which is fired on any transaction operation.
  *
  * @see \Drupal\mcapi\Entity\Transaction::assemble()
  */
 class TransactionSaveEvents extends GenericEvent {
 
-  const EVENT_NAME = 'mcapi_transaction_save';//I think this is used by rules module
+  // I think this is used by rules module.
+  const EVENT_NAME = 'mcapi_transaction_save';
 
   private $messages = [];
 
   /**
+   * Store a message with this transaction.
    *
    * @param string $markup
+   *   The message to be set.
    * @param string $type
-   *   the type of message i.e. status, warning or error
+   *   The type of message i.e. status, warning or error.
    */
-  public function setMessage($string, $type = 'status') {
-    if (strlen($string)) {
-      $this->messages[$type][] = $string;
+  public function setMessage($markup, $type = 'status') {
+    if (strlen($markup)) {
+      $this->messages[$type][] = $markup;
     }
   }
 
   /**
+   * Retrieve the messages associated with this event.
    *
    * @return array
    *   renderable array

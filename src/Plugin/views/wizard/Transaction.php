@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\views\wizard\Transaction.
- */
-
 namespace Drupal\mcapi\Plugin\views\wizard;
 
 use Drupal\views\Plugin\views\wizard\WizardPluginBase;
@@ -25,6 +20,5 @@ class Transaction extends WizardPluginBase {
    * Set the created column.
    */
   protected $createdColumn = 'created';
-
 
 }

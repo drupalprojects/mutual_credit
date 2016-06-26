@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Element\Relatives.
- */
-
 namespace Drupal\mcapi\Element;
 
 use Drupal\Core\Form\FormStateInterface;
@@ -12,7 +7,8 @@ use Drupal\Core\Render\Element\Checkboxes;
 use Drupal\mcapi\Mcapi;
 
 /**
- * Provides a form element for choosing several relatives of the transaction
+ * Provides a form element for choosing several relatives of the transaction.
+ *
  * @see \Drupal\mcapi\TransactionRelativeManager
  *
  * @FormElement("transaction_relatives")

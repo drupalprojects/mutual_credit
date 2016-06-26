@@ -1,21 +1,15 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Entity\CurrencyRouteProvider.
- */
-
 namespace Drupal\mcapi\Entity;
 
+use Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Entity\Routing\EntityRouteProviderInterface;
 use Symfony\Component\Routing\Route;
-use Symfony\Component\Routing\RouteCollection;
 
 /**
  * Provides routes for the user entity.
  */
-class CurrencyRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider {
+class CurrencyRouteProvider extends DefaultHtmlRouteProvider {
 
   /**
    * {@inheritdoc}
@@ -27,7 +21,7 @@ class CurrencyRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRoute
     $route_collection->get('entity.mcapi_currency.edit_form')->setOption('_admin_route', TRUE);
     $route_collection->get('entity.mcapi_currency.delete_form')->setOption('_admin_route', TRUE);
 
-    //curious that this isn't provided by the parent
+    // Curious that this isn't provided by the parent.
     $route = (new Route('/admin/accounting/currencies'))
       ->setDefaults([
         '_entity_list' => 'mcapi_currency',
@@ -39,4 +33,5 @@ class CurrencyRouteProvider extends \Drupal\Core\Entity\Routing\DefaultHtmlRoute
 
     return $route_collection;
   }
+
 }

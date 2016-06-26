@@ -1,13 +1,10 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Entity\Wallet.
- * @todo finalise the label mechanism
- */
-
 namespace Drupal\mcapi\Entity;
 
+use Drupal\user\UserInterface;
+use Drupal\mcapi\Exchange;
+use Drupal\user\Entity\User;
 use Drupal\mcapi\Mcapi;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\ContentEntityInterface;
@@ -18,14 +15,15 @@ use Drupal\Core\Field\BaseFieldDefinition;
 
 /**
  * Defines the wallet entity.
- * The metaphor is not perfect because this wallet can hold a negaive balance.
- * A more accurate term, 'account', has another meaning in Drupal
  *
- * This Entity knows all about the special intertrading wallets though none are installed by default
+ * The metaphor is not perfect because this wallet can hold a negaive balance.
+ * A more accurate term, 'account', has another meaning in Drupal.
+ *
+ * This Entity knows all about the special intertrading wallets though none are
+ * installed by default.
  *
  * @note Wallet 'holders' could be any content entity, but the wallet owner is
  * always a user, typically the owner of the holder entity
- *
  *
  * @ContentEntityType(
  *   id = "mcapi_wallet",
@@ -71,10 +69,14 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * constants used for access control
    * @todo remove these carefully
    */
-  const ACCESS_MEMBERS = 'm';//authenticated users
-  const ACCESS_OG = 'g';//same groups as wallet owner
-  const ACCESS_USERS = 'u';//refer to wallet_access table
-  const ACCESS_OWNER = 'o';//wallet owner; this is used in the creation phase only, then converted to ACCESS_USERS
+  // authenticated users.
+  const ACCESS_MEMBERS = 'm';
+  // Same groups as wallet owner.
+  const ACCESS_OG = 'g';
+  // Refer to wallet_access table.
+  const ACCESS_USERS = 'u';
+  // Wallet owner; used in the creation phase, then converted to ACCESS_USERS.
+  const ACCESS_OWNER = 'o';
 
   const PAYWAY_ANYONE_IN = 'I';
   const PAYWAY_ANYONE_OUT = 'O';
@@ -85,7 +87,9 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   private $stats = [];
   private $access = [];
 
-
+  /**
+   * {@inheritdoc}
+   */
   public static function payWays() {
     return [
       Self::PAYWAY_ANYONE_IN => t('Anyone can pay into this wallet'),
@@ -95,14 +99,14 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   }
 
   /**
-   * {@inheritDoc}
+   * {@inheritdoc}
    */
   public function getHolder() {
     if (!isset($this->holder)) {
       $this->holder = $this->entityTypeManager()
         ->getStorage($this->holder_entity_type->value)
         ->load($this->holder_entity_id->value);
-      //in the impossible event that there is no owner, set
+      // In the impossible event that there is no owner, set.
       if (!$this->holder) {
         throw new \Exception('Holder of wallet ' . $this->id() . ' does not exist: ' . $this->holder_entity_type->value . ' ' . $this->holder_entity_id->value);
       }
@@ -120,20 +124,20 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     return $this;
   }
 
-
   /**
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
     if (!isset($values['holder'])) {
-      //this is an error or a temp entityType @see _field_create_entity_from_ids
-      //set a temp holder
-      $values['holder'] = \Drupal\user\Entity\User::load(1);
+      // This is an error or a temp entityType.
+      // @see _field_create_entity_from_ids
+      // set a temp holder.
+      $values['holder'] = User::load(1);
     }
     $values['holder_entity_type'] = $values['holder']->getEntityTypeId();
     $values['holder_entity_id'] = $values['holder']->id();
 
-    //now set the default permissions
+    // Now set the default permissions.
     if (!isset($values['payways'])) {
       $values['payways'] = \Drupal::config('mcapi.settings')->get('payways');
     }
@@ -142,55 +146,65 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   /**
    * {@inheritdoc}
    */
-  function presave(EntityStorageInterface $storage) {
-    //autoname the wallet if it is its holders only wallet
-    if ($this->isAutonamed()) {
-      if ($this->payways->value == Self::PAYWAY_AUTO) {
-        $this->name->value = $this->getHolder()->label() .' '. t('Import/Export');
-        return;
-      }
-      else {
-        //for the user entity we might use ->getDisplayName()
-        $this->name->value = $this->getHolder()->label();
-      }
+  public function presave(EntityStorageInterface $storage) {
+    // Autoname the wallet if it is its holders only wallet.
+    if ($name = $this->autoName()) {
+      $this->name->value = $name;
     }
-    //if the holding entity isn't a user, then we need to add the user owner to the list of payees and payers
-    if ($this->holder_entity_type->value != 'user') {
-      //i'm sure this could be shorter to add a reference if it doesn't exist already
-      //@todo do we need to save to both fields?
+    // If the holding entity isn't a user, then we need to add the user owner to
+    // the list of payees and payers.
+    elseif ($this->holder_entity_type->value != 'user') {
+      // This could be shorter to add a reference if it doesn't exist already.
+      // @todo do we need to save to both fields?
       if (in_array($this->payways->value, [Wallet::PAYWAY_ANYONE_OUT, Wallet::PAYWAY_ANYONE_BI])) {
         $payees = $this->payees->referencedEntities();
         $payees[] = $this->getOwner();
         $payees = array_unique($payees);
         $this->payees->setValue($payees);
-        drupal_set_message('Allowing owner of '.$this->holder_entity_type->value .' to be a payee');
+        drupal_set_message(t('Allowing owner of @type to be a payee', ['@type' => $this->holder_entity_type->value]));
       }
-
       if (in_array($this->payways->value, [Wallet::PAYWAY_ANYONE_IN, Wallet::PAYWAY_ANYONE_BI])) {
         $payers = $this->payers->referencedEntities();
         $payers[] = $this->getOwner();
         $this->payers->setValue($payers);
-        drupal_set_message('Allowing owner of '.$this->holder_entity_type->value .' to be a payer');
+        drupal_set_message(t('Allowing owner of @type to be a payer', ['@type' => $this->holder_entity_type->value]));
       }
     }
   }
 
-
-  public function isAutonamed() {
-    return Mcapi::maxWalletsOfBundle($this->getHolder()->getEntityTypeId(), $this->getHolder()->bundle()) == 1
-    || $this->payways->value == Self::PAYWAY_AUTO;
+  /**
+   * {@inheritdoc}
+   */
+  public function autoName() {
+    if (Mcapi::maxWalletsOfBundle($this->getHolder()->getEntityTypeId(), $this->getHolder()->bundle()) == 1
+    || $this->payways->value == Self::PAYWAY_AUTO) {
+      if ($this->payways->value == Self::PAYWAY_AUTO) {
+        $label = $this->getHolder()->label();
+        // When this module being installed as part of an installation profile.
+        if ($label == 'placeholder-for-uid-1') {
+          $label == 'System';
+        }
+        return $label . ' ' . t('Import/Export');
+      }
+      else {
+        // For the user entity we might use ->getDisplayName()
+        return $this->getHolder()->label();
+      }
+    }
+    return FALSE;
   }
 
   /**
    * {@inheritdoc}
    */
   public function doSave($id, EntityInterface $entity) {
-    //check the name length
+    // Check the name length.
     if (strlen($this->name->value) > 64) {
       $this->name->value = substr($this->name->value, 0, 64);
-      drupal_set_message(t(
-          'Wallet name was truncated to 64 characters: @name', array('@name' => $this->name->value))
-        , 'warning');
+      drupal_set_message(
+        t('Wallet name was truncated to 64 characters: @name', ['@name' => $this->name->value]),
+        'warning'
+      );
     }
   }
 
@@ -215,7 +229,8 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       ->setDescription(t("Set by the wallet's owner"))
       ->setSetting('max_length', 64)
       ->setRequired(TRUE)
-      ->setConstraints(['NotNull' => []]);//if we leave the default to be NULL it is difficult to filter with mysql
+    // If we leave the default to be NULL it is difficult to filter with mysql.
+      ->setConstraints(['NotNull' => []]);
 
     $fields['payways'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Payment direction'))
@@ -240,12 +255,12 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   }
 
   /**
-   * {@inheritDoc}
+   * {@inheritdoc}
    */
   public function getSummaries() {
     if (!$this->stats) {
       $transactionStorage = $this->entityTypeManager()->getStorage('mcapi_transaction');
-      //fill in the values of any unused, available currencies
+      // Fill in the values of any unused, available currencies.
       foreach ($this->currenciesAvailable() as $curr_id => $currency) {
         $this->stats[$curr_id] = $transactionStorage->walletSummary($curr_id, $this->id());
         if (empty($this->stats[$curr_id])) {
@@ -255,7 +270,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
             'volume' => 0,
             'gross_in' => 0,
             'gross_out' => 0,
-            'partners' => 0
+            'partners' => 0,
           ];
         }
       }
@@ -284,23 +299,28 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   }
 
   /**
-   * get the balance(s) of the current wallet, in worth format
+   * Get the balance(s) of the current wallet, in worth format.
+   *
    * @param string $stat
+   *   Which stat we want to receive.
+   *
    * @return array
+   *   Worth values in no particular order, each with curr_id and (raw) value.
    */
   public function getStatAll($stat = 'balance') {
     foreach ($this->getSummaries() as $curr_id => $stats) {
       $worth[] = [
         'curr_id' => $curr_id,
-        'value' => $stats[$stat]
+        'value' => $stats[$stat],
       ];
     }
     return $worth;
   }
 
   /**
-   * {@inheritDoc}
-   * @todo move to static history class
+   * {@inheritdoc}
+   *
+   * @todo move to static history class.
    */
   public function history($from = 0, $to = 0) {
 
@@ -318,13 +338,13 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   }
 
   /**
-   * {@inheritDoc}
+   * {@inheritdoc}
    */
   public function invalidateTagsOnSave($update) {
     parent::invalidateTagsOnSave($update);
-    //invalidate tags for the previous and current parents
+    // Invalidate tags for the previous and current parents.
     $tags = [
-      $this->holder_entity_type->value . ':' . $this->holder_entity_id->value
+      $this->holder_entity_type->value . ':' . $this->holder_entity_id->value,
     ];
     Cache::invalidateTags($tags);
   }
@@ -340,7 +360,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * {@inheritdoc}
    */
   public function currenciesAvailable() {
-    return \Drupal\mcapi\Exchange::currenciesAvailableToUser($this->getOwner());
+    return Exchange::currenciesAvailableToUser($this->getOwner());
   }
 
   /**
@@ -355,18 +375,19 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    */
   public function getOwner() {
     $holder = $this->getHolder();
-    return $holder instanceof \Drupal\user\UserInterface ?
+    return $holder instanceof UserInterface ?
       $holder :
-      //because all wallet holder, whatever entity type, implement OwnerInterface
+      // All wallet holders, whatever entity type, implement OwnerInterface.
       $holder->getOwner();
   }
 
-
   /**
    * {@inheritdoc}
-   * @todotim make a new baseField in this file, a boolean called 'used' default 0
+   *
+   * @todo make a new baseField in this file, a boolean called 'used' default 0
    * in getSummaries set that flag and save
    * in this function just read that flag
+   *
    * @todo put this in the interface
    */
   public function isUsed() {

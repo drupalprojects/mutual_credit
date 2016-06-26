@@ -1,11 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\mcapi_signatures\Signatures
- * would be nicer if this was in a decorator class enabling things like $transaction->sign($uid);
- */
-
 namespace Drupal\mcapi_signatures;
 
 use Drupal\mcapi\Entity\TransactionInterface;
@@ -13,32 +7,48 @@ use Drupal\mcapi\Entity\Type;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\mcapi\Mcapi;
 
+/**
+ * Signatures service.
+ *
+ * Loads, signs and gives info relating to transaction signatures.
+ */
 class Signatures {
 
   private $transaction;
   private $currentUser;
   private $database;
 
-  function __construct(AccountInterface $current_user, $database) {
+  /**
+   * Constructor.
+   */
+  public function __construct(AccountInterface $current_user, $database) {
     $this->currentUser = $current_user;
     $this->database = $database;
   }
 
-  function setTransaction(TransactionInterface $transaction) {
+  /**
+   * Initialise this service by telling it which transaction to work on.
+   */
+  public function setTransaction(TransactionInterface $transaction) {
     $this->transaction = $transaction;
     return $this;
   }
 
-  static function load($entities) {
+  /**
+   * Respond to the transaction being loaded.
+   *
+   * Read from the signatory table and add them to transaction entities.
+   */
+  public static function load($entities) {
     $xids = [];
     foreach ($entities as $xid => $e) {
       if ($e->parent->value == 0) {
         $xids[$e->serial->value] = $xid;
       }
     }
-    //we load these regardless of settings, just in case settings have changed
-    //leaving some transactions invisibly pending.
-    //no matter everything will be cached
+    // We load these regardless of settings, just in case settings have changed
+    // leaving some transactions invisibly pending.
+    // no matter everything will be cached.
     $signatures = \Drupal::database()->select('mcapi_signatures', 's')
       ->fields('s', ['serial', 'uid', 'signed'])
       ->condition('serial', array_keys($xids), 'IN')
@@ -48,13 +58,23 @@ class Signatures {
     }
   }
 
-  function delete() {
+  /**
+   * Respond to the transaction being deleted.
+   *
+   * Delete from the signatory table.
+   */
+  public function delete() {
     db_delete('mcapi_signatures')
       ->condition('serial', $this->transaction->serial->value)
       ->execute();
   }
 
-  function insert() {
+  /**
+   * Respond to the transaction being inserted.
+   *
+   * Write the signatories to the signatory table.
+   */
+  public function insert() {
     $q = $this->database->insert('mcapi_signatures')
       ->fields(['serial', 'uid', 'signed']);
     foreach ($this->transaction->signatures as $uid => $signed_unixtime) {
@@ -63,8 +83,13 @@ class Signatures {
     $q->execute();
   }
 
-  function update() {
-    //this only allows the signed date to be changed, not new signatures to be added
+  /**
+   * Respond to the transaction being updated.
+   *
+   * Update the signatory table.
+   */
+  public function update() {
+    // New signatures cannot be added, only existing ones changed.
     foreach ($this->transaction->signatures as $uid => $signed) {
       $this->database->update('mcapi_signatures')
         ->fields(['signed' => $signed])
@@ -75,9 +100,9 @@ class Signatures {
   }
 
   /**
-   * add signatures to the transaction according to the configured relatives
+   * Add signatures to the transaction according to the configured relatives.
    */
-  function addSignatures() {
+  public function addSignatures() {
     $relatives = Type::load($this->transaction->type->target_id)
       ->getThirdPartySetting('mcapi_signatures', 'signatures');
     $user_ids = Mcapi::transactionRelatives()
@@ -89,17 +114,20 @@ class Signatures {
   }
 
   /**
-   * sign a transaction
-   * change the state if no more signatures are left
+   * Sign a transaction.
+   *
+   * Change the state if no more signatures are left.
+   *
    * @param int $uid
+   *   ID of the user who is signing.
    */
-  function sign($uid = NULL) {
+  public function sign($uid = NULL) {
     if (!$uid) {
       $uid = $this->currentUser->id();
     }
     if (array_key_exists($uid, $this->transaction->signatures)) {
       $this->transaction->signatures[$uid] = REQUEST_TIME;
-      //set the state to finished if there are no outstanding signatures
+      // Set the state to finished if there are no outstanding signatures.
       if (array_search(0, $this->transaction->signatures) === FALSE) {
         $this->transaction->set('state', 'done');
       }
@@ -107,11 +135,17 @@ class Signatures {
   }
 
   /**
-   * Find out which users are due to sign, or whether the passed user is due to sign
-   * @param type $uid
+   * Which users are due to sign? or whether the passed user is due to sign.
+   *
+   * @param int $uid
+   *   The user ID.
+   *
    * @return boolean | integer[]
+   *   IDs of users.
+   *
+   * @todo rewrite this as two functions
    */
-  function waitingOn($uid = 0) {
+  public function waitingOn($uid = 0) {
     $uids = [];
     if ($this->transaction->state->target_id == 'pending') {
       foreach ($this->transaction->signatures as $user_id => $signed) {
@@ -126,14 +160,17 @@ class Signatures {
     return $uids;
   }
 
-
   /**
-   * @param integer $uid
-   * @return string[]
-   *   serial numbers of the transactions
+   * Get the transactions needing signature of a given user.
+   *
+   * @param int $uid
+   *   The user ID.
+   *
+   * @return int[]
+   *   Serial numbers of the transactions.
    */
-  static function transactionsNeedingSigOfUser($uid) {
-    //assumes data integrity that all transactions referenced are in pending state
+  public static function transactionsNeedingSigOfUser($uid) {
+    // Assumes all transactions referenced are in pending state.
     return \Drupal::database()->select("mcapi_signatures", 's')
       ->fields('s', array('serial'))
       ->condition('uid', $uid)

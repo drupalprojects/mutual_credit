@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi\Plugin\views\argument_default\RouteWallets.
- */
-
 namespace Drupal\mcapi\Plugin\views\argument_default;
 
 use Drupal\views\Plugin\views\argument_default\ArgumentDefaultPluginBase;
@@ -24,20 +19,21 @@ class RouteWallets extends ArgumentDefaultPluginBase {
 
   /**
    * Return the default argument.
+   *
    * @todo inject the service
    */
   public function getArgument() {
-    //there's no validator in core either for ANY entity or for ANY contentEntity or ANY Owned Entity
-    //only for ONE given specific entityType
-    //so this function needs to decide whether to return an argument
+    // there's no validator in core either for ANY entity or for ANY
+    // contentEntity or ANY Owned Entity, only for ONE given specific entityType
+    // so this function needs to decide whether to return an argument.
     $wids = [];
-    foreach (\Drupal::routeMatch()->getParameters()->all() as $key => $entity) {
+    foreach (\Drupal::routeMatch()->getParameters()->all() as $entity) {
       if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())) {
         $wids = Mcapi::walletsOf($entity);
       }
     }
-    //@todo returning nothing means the view doesn't show - maybe throw a 404?
-    //@see Drupal\mcapi_exchanges\Plugin\views\argument_default\RouteExchanges.
+    // @todo returning nothing means the view doesn't show - maybe throw a 404?
+    // @see Drupal\mcapi_exchanges\Plugin\views\argument_default\RouteExchanges.
     return reset($wids);
 
   }

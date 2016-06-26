@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\mcapi\Entity\Type.
- */
-
 namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
@@ -25,46 +20,45 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
 class Type extends ConfigEntityBase {
 
   /**
-   * Identifier for the current Type
+   * Identifier for the current Type.
    *
    * @var string
    */
   public $id;
 
   /**
-   * Label of the current Type
+   * Label of the current Type.
    *
    * @var string
    */
   public $label;
 
   /**
-   * Description of the current State
+   * Description of the current State.
    *
    * @var string
    */
   public $description;
 
   /**
-   * first state of a new transaction
+   * First state of a new transaction.
    *
    * @var integer
    */
   public $start_state;
 
   /**
-   * the module providing this Type
+   * The module providing this Type.
    *
    * @var string
    */
   public $provider;
 
-
   /**
    * {@inheritdoc}
    */
   public function calculateDependencies() {
-    $dependencies = parent::calculateDependencies();
+    parent::calculateDependencies();
     $this->addDependency('module', $this->provider);
     return $this->dependencies;
   }

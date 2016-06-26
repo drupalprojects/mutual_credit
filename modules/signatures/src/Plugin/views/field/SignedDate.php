@@ -1,17 +1,12 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi_signatures\Plugin\views\field\SignedDate.
- */
-
 namespace Drupal\mcapi_signatures\Plugin\views\field;
 
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
-use Drupal\mcapi\Entity\Transaction;
 
 /**
+ * Show the date that that a signature was added.
  *
  * @ViewsField("signed_date")
  */
@@ -22,7 +17,10 @@ class SignedDate extends FieldPluginBase {
    */
   public function render(ResultRow $values) {
     $val = $this->getValue($values);
-    if ($val) return $val;
+    if ($val) {
+      return $val;
+    }
     return t('Awaiting signature');
   }
+
 }

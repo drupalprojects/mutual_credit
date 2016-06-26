@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi\Plugin\views\field\Type.
- */
-
 namespace Drupal\mcapi\Plugin\views\field;
 
 use Drupal\mcapi\Mcapi;
@@ -14,8 +9,9 @@ use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
 
 /**
- * Field handler for the name of the transaction state
- * I would hope for a generic filter to come along to render list key/values
+ * Field handler for the name of the transaction state.
+ *
+ * I would hope for a generic filter to come along to render list key/values.
  *
  * @ingroup views_field_handlers
  *
@@ -25,14 +21,21 @@ class Type extends FieldPluginBase {
 
   private $types;
 
-  function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
-    parent::init($view, $display, $options);//is this needed?
+  /**
+   * {@inheritdoc}
+   */
+  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+    // Is this needed?
+    parent::init($view, $display, $options);
     $this->types = Mcapi::entityLabelList('mcapi_type');
   }
 
-  function render(ResultRow $values) {
+  /**
+   * {@inheritdoc}
+   */
+  public function render(ResultRow $values) {
     $raw = $this->getValue($values);
-    return ['#markup' => '<span class = "'.$raw.'">'.$this->types[$raw].'</span>'];
+    return ['#markup' => '<span class = "' . $raw . '">' . $this->types[$raw] . '</span>'];
   }
 
 }

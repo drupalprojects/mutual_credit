@@ -1,24 +1,29 @@
-div.wallets{
-  margin:2px;
+div.wallets {
+  margin: 2px;
   background-color: rgb(250, 250, 250);
-  padding:5px;
+  padding: 5px;
   display: inline-block;
 }
-div.wallet{
-  margin:2px;
-  padding:5px;
+div.wallet {
+  margin: 2px;
+  padding: 5px;
   background-color: rgb(238, 238, 238);
-  display:inline-block;
+  display: inline-block;
 }
 
-div.balance-bars, div.wallet-histories, div.wallet-summaries, table.display-wallet, div.stats, a.visit-wallet-link{
-  clear:both;
+div.balance-bars,
+div.wallet-histories,
+div.wallet-summaries,
+table.display-wallet,
+div.stats,
+a.visit-wallet-link {
+  clear: both;
 }
-a.wallet-link{
-  display:block;
+a.wallet-link {
+  display: block;
 }
 
 table.display-wallet td,
-table.display-wallet th{
-	font-size:70%;
+table.display-wallet th {
+  font-size: 70%;
 }

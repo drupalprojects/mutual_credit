@@ -1,30 +1,28 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi_signatures\SignAllConfirm
- */
-
 namespace Drupal\mcapi_signatures;
 
+use Drupal\Core\Form\FormStateInterface;
 use \Drupal\Core\Form\ConfirmFormBase;
-use \Drupal\mcapi_signatures\Signatures;
+
 /**
- * Returns responses for Wallet routes.
+ * Confirm form to add all signatures needed by a user.
+ *
+ * @todo complete this
  */
 class SignAllConfirm extends ConfirmFormBase {
 
   /**
    * {@inheritdoc}
    */
-  function getQuestion() {
+  public function getQuestion() {
 
   }
 
   /**
    * {@inheritdoc}
    */
-  function getCancelUrl() {
+  public function getCancelUrl() {
 
   }
 
@@ -35,9 +33,13 @@ class SignAllConfirm extends ConfirmFormBase {
 
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function form() {
-    debug('this page is untested');
-    
+    debug('this page is untested. Whose signatures are we signing? CurrentUser?');
+    $account = \Drupal::service('current_user');
+
     foreach (Signatures::transactionsNeedingSigOfUser($account) as $serial) {
       $unsigned[] = Transaction::loadBySerial($serial);
     }
@@ -48,25 +50,26 @@ class SignAllConfirm extends ConfirmFormBase {
 
     $form['account'] = array(
       '#type' => 'value',
-      '#value' => $account
+      '#value' => $account,
     );
     $form['buttons']['submit'] = array(
       '#type' => 'submit',
-      '#value' => t('Sign all')
+      '#value' => t('Sign all'),
     );
+    return $form;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     foreach (Signatures::transactionsNeedingSigOfUser($values['account']) as $serial) {
       $transaction = current(Transaction::loadBySerial($serial));
       Self::sign($transaction, $values['account']);
     }
     $transaction->save();
-    drupal_set_message($message);
+    drupal_set_message(t('All the transactions have been signed.'));
     $form_state->setRedirect('user.page');
   }
 

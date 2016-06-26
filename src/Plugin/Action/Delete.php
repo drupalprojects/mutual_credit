@@ -1,14 +1,9 @@
 <?php
 
-/**
- * @file
- *  Contains Drupal\mcapi\Plugin\Action\Delete
- */
-
 namespace Drupal\mcapi\Plugin\Action;
 
+use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Form\FormStateInterface;
-
 
 /**
  * Removes a transaction from the db.
@@ -20,7 +15,7 @@ use Drupal\Core\Form\FormStateInterface;
  *   confirm_form_route_name = "mcapi.transaction.operation"
  * )
  */
-class Delete extends \Drupal\mcapi\Plugin\TransactionActionBase {
+class Delete extends TransactionActionBase {
 
   /**
    * {@inheritdoc}
@@ -28,9 +23,9 @@ class Delete extends \Drupal\mcapi\Plugin\TransactionActionBase {
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $elements = parent::buildConfigurationForm($form, $form_state);
     unset($elements['access']['erased']);
-    //if the transaction no longer exists there's nothing to configure for the final step
+    // If transaction no longer exists we can't redirect to its canonical page.
     unset($elements['feedback']['redirect']['#states']);
-    //because after a transaction is deleted, you can't very well go and visit it.
+    // After a transaction is deleted, you can't very well go and visit it.
     $elements['feedback']['redirect']['#required'] = TRUE;
     return $elements;
   }

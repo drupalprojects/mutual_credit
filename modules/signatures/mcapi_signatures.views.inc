@@ -1,14 +1,20 @@
 <?php
 
-/*
- * Implements views hook_views_data
+/**
+ * @file
+ * Views hooks.
+ */
+
+/**
+ * Implements hook_views_data().
  */
 function mcapi_signatures_views_data() {
-
-  //@todo in alpha12, judging by node revisions, I don't see a way for secondary table to conjure up entities, except as a field
+  // @todo In alpha12, judging by node revisions, I don't see a way for
+  // secondary table to conjure up entities, except as a field
   $data['mcapi_signatures']['table'] = [
     'group'  => t('Signatures'),
-    //'entity type' => 'mcapi_transaction',//This adds xid to the field list for the current table, so we don't want it
+    // This adds xid to the field list for the current table, so not needed.
+    'entity type not used' => 'mcapi_transaction',
     'access query tag' => 'mcapi_views_access',
     'base' => [
       'field' => 'serial',
@@ -23,14 +29,14 @@ function mcapi_signatures_views_data() {
         'left_field' => 'serial',
         'field' => 'serial',
       ],
-    ]
+    ],
   ];
 
   $data['mcapi_signatures']['serial'] = [
     'title' => t('Serial'),
     'help' => t("The serial number of the transaction"),
     'field' => [
-      'id' => 'standard'
+      'id' => 'standard',
     ],
     'argument' => [
       'id' => 'standard',
@@ -41,7 +47,7 @@ function mcapi_signatures_views_data() {
       'base field' => 'serial',
       'field' => 'serial',
       'label' => t('Transaction'),
-      'relationship field' => 'serial'
+      'relationship field' => 'serial',
     ],
   ];
 
@@ -49,12 +55,12 @@ function mcapi_signatures_views_data() {
     'title' => t('Signatory'),
     'help' => t("The user whose signature is required"),
     'field' => [
-      'id' => 'standard'
+      'id' => 'standard',
     ],
     'filter' => [
       'title' => t('User is a signatory'),
       'help' => t('transactions on which the current user is / is not a signatory'),
-      'id' => 'user_current'
+      'id' => 'user_current',
     ],
     'argument' => [
       'title' => t('User is a signatory'),
@@ -65,7 +71,7 @@ function mcapi_signatures_views_data() {
       'base' => 'users',
       'field' => 'uid',
       'label' => t('Signatory'),
-      'relationship field' => 'uid'
+      'relationship field' => 'uid',
     ],
   ];
   $data['mcapi_signatures']['signed'] = [
@@ -75,7 +81,7 @@ function mcapi_signatures_views_data() {
       'id' => 'signed_date',
     ],
     'sort' => [
-      'id' => 'date'
+      'id' => 'date',
     ],
     'filter' => [
       'id' => 'date',
@@ -84,10 +90,14 @@ function mcapi_signatures_views_data() {
   return $data;
 }
 
-
+/**
+ * Implements hook_views_data().
+ *
+ * @deprecated
+ */
 function mcapi_signatures_views_data_alter(&$data) {
+
   return;
-  // For other base tables, explain how we join
   $data['mcapi_transaction']['table']['join']['mcapi_signatures'] = [
     'left_table' => 'mcapi_signatures',
     'left_field' => 'serial',

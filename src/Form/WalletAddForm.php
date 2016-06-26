@@ -1,11 +1,5 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi\Form\WalletAddForm.
- * Add a new wallet from url parameters
- */
-
 namespace Drupal\mcapi\Form;
 
 use Drupal\mcapi\Mcapi;
@@ -14,6 +8,9 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ * Form builder to create a new wallet for a given ContentEntity.
+ */
 class WalletAddForm extends ContentEntityForm {
 
   private $holder;
@@ -67,28 +64,27 @@ class WalletAddForm extends ContentEntityForm {
     return
       $this->t("New wallet for @entity_type '%title'",
       [
-       '@entity_type' => $this->holder->getEntityType()->getLabel(),
-       '%title' => $this->holder->label()
+        '@entity_type' => $this->holder->getEntityType()->getLabel(),
+        '%title' => $this->holder->label(),
       ]
-    );
+      );
   }
 
   /**
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-
     $form['wid'] = [
       '#type' => 'value',
       '#value' => NULL,
     ];
     $form['holder_entity_type'] = [
       '#type' => 'value',
-      '#value' => $this->holder->getEntityTypeId()
+      '#value' => $this->holder->getEntityTypeId(),
     ];
     $form['holder_entity_id'] = [
       '#type' => 'value',
-      '#value' => $this->holder->id()
+      '#value' => $this->holder->id(),
     ];
     $form['name'] = [
       '#type' => 'textfield',
@@ -97,7 +93,7 @@ class WalletAddForm extends ContentEntityForm {
       '#required' => '',
     ];
 
-    if (Mcapi::maxWalletsOfBundle($this->holder->getEntityTypeId(), $this->holder->bundle())==1) {
+    if (Mcapi::maxWalletsOfBundle($this->holder->getEntityTypeId(), $this->holder->bundle()) == 1) {
       $form['name']['#access'] = FALSE;
     }
     return $form;
@@ -115,19 +111,17 @@ class WalletAddForm extends ContentEntityForm {
   /**
    * {@inheritdoc}
    */
-  function validateForm(array &$form, FormStateInterface $form_state) {
-    //just check that the name isn't the same
-    //if there was a wallet storage controller this unique checking would happen there.
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    // Just check that the name isn't the same.
+    // This unique check would be better in a walletStorageController.
     $values = $form_state->getValues();
-    $query = $this->database->select('mcapi_wallet', 'w')
-    ->fields('w', ['wid'])
-    ->condition('name', $values['name']);
+    $query = $this->walletQuery->condition('name', $values['name'])->execute();
 
     if (!\Drupal::config('mcapi.settings')->get('unique_names')) {
       $query->condition('holder_entity_id', $values['holder_entity_id']);
       $query->condition('holder_entity_type', $values['holder_entity_type']);
     }
-    if ($query->execute()->fetchField()) {
+    if ($query->execute()) {
       $form_state->setErrorByName(
         'name',
         t("The wallet name '%name' is already used.", ['%name' => $values['name']])

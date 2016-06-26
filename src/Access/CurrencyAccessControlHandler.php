@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Access\CurrencyAccessControlHandler.
- */
-
 namespace Drupal\mcapi\Access;
 
 use Drupal\Core\Entity\EntityAccessControlHandler;
@@ -13,7 +8,7 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessResult;
 
 /**
- * Defines an access controller for the Currency entity
+ * Defines an access controller for the Currency entity.
  *
  * @see \Drupal\mcapi\Entity\Currency.
  */
@@ -27,12 +22,14 @@ class CurrencyAccessControlHandler extends EntityAccessControlHandler {
     switch ($operation) {
       case 'view':
         return AccessResult::allowed()->cachePerPermissions();
+
       case 'create':
       case 'update':
         if ($account->hasPermission('configure mcapi')) {
           return AccessResult::allowed()->cachePerPermissions();
         }
-        elseif ($entity->id()) {//i.e it is already saved
+        // i.e it is already saved.
+        elseif ($entity->id()) {
           if ($account->id() == $entity->getOwnerId()) {
             $result = AccessResult::allowed()->cachePerUser();
           }
@@ -41,13 +38,14 @@ class CurrencyAccessControlHandler extends EntityAccessControlHandler {
           }
         }
         else {
-          //who can create new currencies?
-          drupal_set_message('Need to sort out Currency create access script');
+          // Who can create new currencies?
+          debug('Need to sort out Currency create access script');
           $result = AccessResult::forbidden()->cachePerUser();
         }
         break;
+
       case 'delete':
-        //@todo inject service entity.query.config
+        // @todo inject service entity.query.config
         $count = \Drupal::entityQuery('mcapi_transaction')
           ->condition('worth.curr_id', $entity->id())
           ->count()

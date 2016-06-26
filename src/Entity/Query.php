@@ -1,18 +1,13 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Entity\Query.
- *
- * @todo decide whether to separate this into one for each entityType
- */
-
 namespace Drupal\mcapi\Entity;
+
+use Drupal\Core\Entity\Query\Sql\Query as BaseQuery;
 
 /**
  * The SQL storage entity query class.
  */
-class Query extends \Drupal\Core\Entity\Query\Sql\Query {
+class Query extends BaseQuery {
 
   /**
    * {@inheritdoc}
@@ -21,18 +16,22 @@ class Query extends \Drupal\Core\Entity\Query\Sql\Query {
     if ($this->entityTypeId == 'mcapi_transaction') {
       return $this->prepareTransaction();
     }
-    else return parent::prepare();
+    else {
+      return parent::prepare();
+    }
   }
 
   /**
+   * Build an entityQuery for transactions.
    *
    * @return \Drupal\mcapi\Entity\Query
+   *   A transaction entityQuery object.
+   *
    * @note The query returns an array of serial numbers keyed by xid
    */
   private function prepareTransaction() {
-    $base_table = 'mcapi_transaction';
     $this->sqlQuery = $this->connection
-      ->select($base_table, 'base_table', ['conjunction' => $this->conjunction]);
+      ->select('mcapi_transaction', 'base_table', ['conjunction' => $this->conjunction]);
 
     // When there is no revision support, the key field is the entity key.
     $this->sqlFields["base_table.xid"] = ['base_table', 'xid'];
@@ -62,7 +61,6 @@ class Query extends \Drupal\Core\Entity\Query\Sql\Query {
     // This now contains first the table containing entity properties and
     // last the entity base table. They might be the same.
     $this->sqlQuery->addMetaData('entity_type', $this->entityTypeId);
-    $this->sqlQuery->addMetaData('all_revisions', $this->allRevisions);
     $this->sqlQuery->addMetaData('simple_query', TRUE);
     return $this;
   }
@@ -71,17 +69,17 @@ class Query extends \Drupal\Core\Entity\Query\Sql\Query {
    * {@inheritdoc}
    */
   public function condition($property, $value = NULL, $operator = NULL, $langcode = NULL) {
-    //need to add some special conditions
+    // Need to add some special conditions.
     switch ($property) {
       case 'involving':
         $group = $this->orConditionGroup()
-          ->condition('payer', (array)$value, 'IN')
-          ->condition('payee', (array)$value, 'IN');
+          ->condition('payer', (array) $value, 'IN')
+          ->condition('payee', (array) $value, 'IN');
         $this->condition($group);
         break;
 
       default:
-        //copied from the parent
+        // Copied from the parent.
         $this->condition->condition($property, $value, $operator);
     }
 

@@ -2,91 +2,15 @@
 
 /**
  * @file
- * theme preprocessor functions
+ * Theme preprocessor functions.
  */
+
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Render\Element;
 
-function _mcapi_theme($existing, $type, $theme, $path) {
-  $file = ['file' => 'mcapi.theme.inc'];//which actually this file
-  $items['worths'] = [
-    'variables' => [
-      'values' => [],
-      'separator' => ''
-    ]
-  ] + $file;
-  $items['worth'] = [
-    'render element' => 'worth'
-  ] + $file;
-  $items['mcapi_transaction'] = [
-    'render element' => 'transaction',
-    'template' => 'transaction'
-  ] + $file;
-  //the above is the theme wrapper for the below
-  //so they both take the same render_element
-  $items['certificate'] = [
-    'render element' => 'transaction',
-    'template' => 'certificate',
-    'pattern' => 'certificate__'
-  ] + $file;
-  $items['mcapi_transaction_twig'] = [//experimental
-    //when we call this we have to set the $transaction->twig property first
-    'render element' => 'transaction',
-    'function' => 'theme_mcapi_transaction_twig',
-  ] + $file;
-  $items['sentence'] = [
-    'render element' => 'transaction'
-  ] + $file;
-  $items['mcapi_currency'] = [
-    'render element' => 'currency',
-    'template' => 'currency'
-  ] + $file;
-  $items['mcapi_timeline'] = [
-    'variables' => [
-      'title' => '',
-      'width' => 0,
-      'height' => 0,
-      'points' => [],
-      'currency' => NULL,///used for formatting
-      'vaxislabels' => []//optional
-    ]
-  ];
-  $wallet_callbacks = [
-    'mcapi_wallet',
-    'mcapi_wallet_component',
-    'wallet_balances',
-    'wallet_balance_bars',
-    'wallet_stats',
-  ];
-  foreach ($wallet_callbacks as $callback) {
-    $items[$callback] = [
-      'render element' => 'element',
-    ] + $file;
-  }
-
-  $items['mcapi_extreme_balances'] = [//this might just be a ul
-    'variables' => [
-      'largest' => 0,
-      'tops' => [],
-      'bottoms' => []
-    ]
-  ] + $file;
-  $items['ordered_wallets'] = [
-    'variables' => [
-      'id' => '',
-      'title' => '',
-      'values' => [],
-      'width' => 0,
-      'height' => 0
-    ]
-  ] + $file;
-  return $items;
-}
-
-
 /**
- * theme preprocessor for 'wallet_stats'
+ * Theme preprocessor for 'wallet_stats'.
  */
 function template_preprocess_wallet_stats(&$vars) {
   $wallet = $vars['element']['#wallet'];
@@ -106,7 +30,7 @@ function template_preprocess_wallet_stats(&$vars) {
 }
 
 /**
- * default preprocessor for theme wrapper callback 'wallet_wrapper'
+ * Theme preprocessor for  'wallet_wrapper'.
  */
 function template_preprocess_mcapi_wallet(&$vars) {
   $wallet = $vars['element']['#mcapi_wallet'];
@@ -115,31 +39,30 @@ function template_preprocess_mcapi_wallet(&$vars) {
   }
   $vars['canonical'] = $wallet->toUrl('canonical')->toString();
   $vars['attributes'] = [
-    'class' => "wallet ".$vars['element']['#view_mode']
+    'class' => "wallet " . $vars['element']['#view_mode'],
   ];
 }
 
 /**
- * default preprocessor for theme wrapper callback 'wallet_wrapper'
+ * Theme preprocessor for 'wallet_wrapper'.
  */
 function template_preprocess_mcapi_wallet_component(&$vars) {
   $vars['title'] = $vars['element']['#title'];
 }
 
 /**
- * Theme preprocessor for all of an entity's wallets
-
+ * Theme preprocessor for all of an entity's wallets.
  */
 function template_preprocess_mcapi_wallets(&$vars) {
-  $viewbuilder =\Drupal::entityTypeManager()->getViewBuilder('mcapi_wallet');
-  //convert each wallet into a render array
+  $viewbuilder = \Drupal::entityTypeManager()->getViewBuilder('mcapi_wallet');
+  // Convert each wallet into a render array.
   foreach ($vars['wallets'] as $key => $wallet) {
     $vars['wallets'][$key] = $viewbuilder->view($wallet, $vars['view_mode']);
   }
 }
 
 /**
- * theme preprocessor for balances
+ * Theme preprocessor for 'balances'.
  */
 function template_preprocess_wallet_balances(&$vars) {
   $unused = \Drupal::config('mcapi.settings')->get('render_unused');
@@ -150,7 +73,8 @@ function template_preprocess_wallet_balances(&$vars) {
       $currency = Currency::load($curr_id);
       $vars['currencies'][$curr_id]['label'] = $currency->label();
       $balance = $currency->format($data['balance'], Currency::DISPLAY_NORMAL);
-      $vars['currencies'][$curr_id]['balance'] = strip_tags($balance);//@todo even better if we can let the html through
+      // @todo even better if we can let the html through
+      $vars['currencies'][$curr_id]['balance'] = strip_tags($balance);
       $vars['delimited'][] = strip_tags($balance);
     }
   }
@@ -161,13 +85,15 @@ function template_preprocess_wallet_balances(&$vars) {
 }
 
 /**
- * theme preprocessor for balance_bars
+ * Theme preprocessor for 'balance_bars'.
  */
 function template_preprocess_wallet_balance_bars(&$vars) {
   $wallet = $vars['element']['#wallet'];
   foreach ($wallet->getSummaries() as $curr_id => $data) {
     $currency = Currency::load($curr_id);
-    //if ($vars['data']['gross_in'] == 0 && $vars['data']['gross_out']) return;
+    if (!$vars['data']['gross_in'] && !$vars['data']['gross_out']) {
+      return;
+    }
     $id = "given-received-" . $curr_id . '-' . $wallet->id();
     $max = _mcapi_get_axis_max(max($data['gross_in'], $data['gross_out']));
     $vars['currencies'][$curr_id] = [
@@ -182,14 +108,29 @@ function template_preprocess_wallet_balance_bars(&$vars) {
       'received' => t('Received'),
       'max' => $max,
       'vaxislabels' => [
-        ['value' => 0, 'label' => strip_tags($currency->format(0, Currency::DISPLAY_NORMAL))],
-        ['value' => $max / 2, 'label' => strip_tags($currency->format(intval($max / 2), Currency::DISPLAY_NORMAL))],
-        ['value' => $max, 'label' => strip_tags($currency->format($max)), Currency::DISPLAY_NORMAL]
-      ]
+        [
+          'value' => 0,
+          'label' => strip_tags($currency->format(0, Currency::DISPLAY_NORMAL)),
+        ],
+        [
+          'value' => $max / 2,
+          'label' => strip_tags($currency->format(intval($max / 2), Currency::DISPLAY_NORMAL)),
+        ],
+        [
+          'value' => $max,
+          'label' => strip_tags($currency->format($max, Currency::DISPLAY_NORMAL)),
+        ],
+      ],
     ];
   }
 }
 
+/**
+ * Helper.
+ *
+ * @param int $val
+ *   The max value to represent in the chart.
+ */
 function _mcapi_get_axis_max($val) {
   $scale = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 10000, 25000, 50000, 100000, 250000, 500000, 1000000, 5000000];
   $scale[] = $val;
@@ -197,20 +138,21 @@ function _mcapi_get_axis_max($val) {
   return $scale[array_search($val, $scale) + 1];
 }
 
-
 /**
- * Implements template_preprocess_THEMEHOOK for theme callback 'mcapi_transaction'
- * DO NOT OVERRIDE, javascript transaction operations depend on the classes defined here
- * override certificate or change the mcapi_sentence variable instead
+ * Theme preprocessor for 'mcapi_transaction'.
+ *
+ * @note DO NOT OVERRIDE, javascript transaction operations depend on classes
+ * defined herin. Override certificate or change the mcapi_sentence variable
+ * instead.
  */
 function template_preprocess_mcapi_transaction(&$vars, $hook, $info) {
   $element = $vars['transaction'];
-  $transaction = $element['#mcapi_transaction'];
-  //don't know if this is needed in d8
+  // don't know if this is needed in d8.
   Element::setAttributes($element, ['class', 'id']);
-  //if the view mode is not itself a template (matslats improvisation), include it as a class
+  // If the view mode is not itself a template (matslats improvisation), include
+  // it as a class.
   if (!strpos($element['#view_mode'], ' ')) {
-    $vars['attributes']['class'][] = 'mode-'.$element['#view_mode'];
+    $vars['attributes']['class'][] = 'mode-' . $element['#view_mode'];
   }
   if ($element['#view_mode'] == 'certificate') {
     foreach (['watermark', 'stamp'] as $overlay) {
@@ -223,9 +165,8 @@ function template_preprocess_mcapi_transaction(&$vars, $hook, $info) {
   $vars['links'] = render($element['links']);
 }
 
-
 /**
- * Implements template_preprocess_THEMEHOOK for theme callback 'mcapi_transaction_twig'
+ * Theme preprocessor for 'mcapi_transaction_twig'.
  */
 function template_preprocess_mcapi_transaction_twig(&$vars) {
   $elements = $vars['transaction'];
@@ -250,51 +191,55 @@ function template_preprocess_mcapi_transaction_twig(&$vars) {
   }
 }
 
-//experimental
+/**
+ * Experimental.
+ */
 function theme_mcapi_transaction_twig($vars) {
   $renderable = [
     '#type' => 'inline_template',
     '#template' => $vars['transaction']['#mcapi_transaction']->twig,
-    '#context' => $vars
+    '#context' => $vars,
   ];
   return \Drupal::service('renderer')->render($renderable);
 }
 
 /**
- * Implements hook_preprocess_THEMEHOOK for wallet_histories
- * adds a column to the data with the formatted currency value
+ * Theme preprocessor for 'mcapi_transaction_twig'.
+ *
+ * Adds a column to the data with the formatted currency value.
  */
 function mcapi_preprocess_mcapi_timeline(&$vars) {
   $vars['id'] = preg_replace('/[^a-z0-9_]+/', '_', strtolower($vars['title']));
 
   foreach ($vars['points'] as $timestamp => $val) {
     $vars['daterows'][] = [
-      date('Y,m,d', $timestamp),//format for javascript dates
-      $val
+    // Format for javascript dates.
+      date('Y,m,d', $timestamp),
+      $val,
     ];
   }
   $currency = $vars['currency'];
-  //TEMP until gcharts works better. Force some formatted values on the axis
+  // TEMP until gcharts works better. Force some formatted values on the axis.
   if (isset($vars['currency'])) {
-    if ($currency->issuance == \Drupal\mcapi\Entity\Currency::TYPE_PROMISE) {
-      //make symmetrical axes for mutual credit
-      //@note its pretty difficult to give the axes nice limits if the native currency
-      //val bears no resemblance to the display value
-      //@note this data is v specific to gCharts
+    if ($currency->issuance == Currency::TYPE_PROMISE) {
+      // Make symmetrical axes for mutual credit.
+      // @note its pretty difficult to give the axes nice limits if the native currency
+      // val bears no resemblance to the display value.
+      // @note this data is v specific to gCharts
       $max = _mcapi_get_axis_max(max(max($vars['points']), abs(min($vars['points']))));
       $vars['vaxislabels'] = [
         [
           'value' => -$max,
-          'label' => $currency->format(-$max, Currency::DISPLAY_NORMAL, FALSE)
+          'label' => $currency->format(-$max, Currency::DISPLAY_NORMAL, FALSE),
         ],
         [
           'value' => 0,
-          'label' => $currency->format(0, Currency::DISPLAY_NORMAL, FALSE)
+          'label' => $currency->format(0, Currency::DISPLAY_NORMAL, FALSE),
         ],
         [
           'value' => $max,
-          'label' => $currency->format($max, Currency::DISPLAY_NORMAL, FALSE)
-        ]
+          'label' => $currency->format($max, Currency::DISPLAY_NORMAL, FALSE),
+        ],
       ];
     }
     else {
@@ -302,20 +247,20 @@ function mcapi_preprocess_mcapi_timeline(&$vars) {
       $vars['vaxislabels'] = [
         [
           'value' => $min,
-          'label' => $currency->format($min, Currency::DISPLAY_NORMAL, FALSE)
+          'label' => $currency->format($min, Currency::DISPLAY_NORMAL, FALSE),
         ],
         [
           'value' => $middle,
-          'label' => $currency->format($middle, Currency::DISPLAY_NORMAL, FALSE)
+          'label' => $currency->format($middle, Currency::DISPLAY_NORMAL, FALSE),
         ],
         [
           'value' => $max,
-          'label' => $currency->format($max, Currency::DISPLAY_NORMAL, FALSE)
-        ]
+          'label' => $currency->format($max, Currency::DISPLAY_NORMAL, FALSE),
+        ],
       ];
     }
   }
-  //@todo is there a way to have html labels in google charts?
+  // @todo is there a way to have html labels in google charts?
   if ($vars['vaxislabels']) {
     foreach ($vars['vaxislabels'] as &$tick) {
       $tick['label'] = strip_tags($tick['label']);
@@ -324,12 +269,13 @@ function mcapi_preprocess_mcapi_timeline(&$vars) {
 }
 
 /**
- * Calculate some good axis labels, using the min & max balance extents
+ * Calculate some good axis labels, using the min & max balance extents.
  *
  * @param array $vals
- *   the $points history of balances keyed by unixtimes
+ *   The $points history of balances keyed by unixtimes.
+ *
  * @return array
- *   values keyed by min, 0 & max
+ *   Values keyed by min, 0 & max.
  */
 function gchart_axes($vals) {
   $max = max($vals);

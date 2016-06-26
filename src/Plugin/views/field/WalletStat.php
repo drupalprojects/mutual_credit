@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi\Plugin\views\field\WalletStat.
- */
-
 namespace Drupal\mcapi\Plugin\views\field;
 
 use Drupal\views\ResultRow;
@@ -13,7 +8,8 @@ use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Wallet;
 
 /**
- * Field handler to provide current stat for a given wallet via Wallet::getStatAll
+ * Field handler provides current stat for given wallet via Wallet::getStatAll.
+ *
  * @note reads from the transaction index table
  *
  * @ingroup views_field_handlers
@@ -38,7 +34,9 @@ class WalletStat extends FieldPluginBase {
       $entities = Mcapi::walletsOf($entity);
       $wallet = Wallet::load(reset($entities));
     }
-    else $wallet = $entity;
+    else {
+      $wallet = $entity;
+    }
     $stat = $this->definition['stat'];
     $val = $wallet->getStatAll($stat);
     switch ($stat) {
@@ -48,8 +46,9 @@ class WalletStat extends FieldPluginBase {
       case 'balance':
         return [
           '#type' => 'worths_view',
-          '#worths' => $val
+          '#worths' => $val,
         ];
+
       case 'trades':
       case 'partners':
         return $val;

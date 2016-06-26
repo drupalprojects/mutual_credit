@@ -1,19 +1,13 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi_limits\Plugin\views\field\Limits.
- */
-
 namespace Drupal\mcapi_limits\Plugin\views\field;
 
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
-use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Exchange;
 
 /**
- * Field handler to show a user's balance limits
+ * Field handler to show a user's balance limits.
  *
  * @ingroup views_field_handlers
  *
@@ -21,7 +15,9 @@ use Drupal\mcapi\Exchange;
  */
 class Limits extends FieldPluginBase {
 
-
+  /**
+   * {@inheritdoc}
+   */
   protected function defineOptions() {
     $options = parent::defineOptions();
     $options['currencies'] = array('default' => []);
@@ -29,6 +25,9 @@ class Limits extends FieldPluginBase {
     return $options;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function buildOptionsForm(&$form, $form_state) {
     $form['currencies'] = array(
       '#title' => t('Currencies'),
@@ -46,7 +45,7 @@ class Limits extends FieldPluginBase {
         'relative' => t('Show limits for earning and spending, relative to balance'),
       ),
       '#default_value' => $this->options['absolute'],
-      '#weight' => '5'
+      '#weight' => '5',
     );
     parent::buildOptionsForm($form, $form_state);
   }
@@ -62,11 +61,11 @@ class Limits extends FieldPluginBase {
    * {@inheritdoc}
    */
   public function render(ResultRow $values) {
-    $account = $this->getEntity($values);
+    $wallet = $this->getEntity($values);
     if (empty($this->options['currencies'])) {
       $this->options['currencies'] = Exchange::ownerEntityCurrencies($account);
     }
-    drupal_set_message('check Drupal\mcapi_limits\Plugin\views\field\Limits.');
+    debug('check Drupal\mcapi_limits\Plugin\views\field\Limits.');
 
     module_load_include('inc', 'mcapi_limits');
     return mcapi_view_limits($wallet);

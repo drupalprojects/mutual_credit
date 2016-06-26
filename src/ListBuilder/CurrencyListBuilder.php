@@ -1,10 +1,5 @@
 <?php
 
-/**
- * Definition of Drupal\mcapi\ListBuilder\CurrencyListBuilder.
- * @todo inject current_user and entity_type.manager
- */
-
 namespace Drupal\mcapi\ListBuilder;
 
 use Drupal\Core\Config\Entity\DraggableListBuilder;
@@ -13,14 +8,14 @@ use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Render\Element;
 
 /**
- * Provides a listing of currencies
+ * Provides a listing of currencies.
  */
 class CurrencyListBuilder extends DraggableListBuilder {
 
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'currencies_list';
   }
 
@@ -37,7 +32,6 @@ class CurrencyListBuilder extends DraggableListBuilder {
 
   /**
    * {@inheritdoc}
-   *
    */
   public function buildRow(EntityInterface $entity) {
     $actions = parent::buildRow($entity);
@@ -48,30 +42,31 @@ class CurrencyListBuilder extends DraggableListBuilder {
 
     $stats = \Drupal::entityTypeManager()
         ->getStorage('mcapi_transaction')
-        ->ledgerState($entity->id())
+        ->ledgerStateQuery($entity->id(), [])
         ->execute()
         ->fetch();
-    //this includes deleted transactions
+    print_r($stats);
+    // This includes deleted transactions.
     $row['transactions'] = [
-      '#markup' => $stats->trades
+      '#markup' => $stats->trades,
     ];
 
-    //this includes deleted transactions
+    // This includes deleted transactions.
     $row['volume'] = [
-      '#markup' => $entity->format($stats->volume(['state' => NULL]))
+      '#markup' => $entity->format($stats->volume),
     ];
     $row['issuance'] = [
       '#markup' => Currency::issuances()[$entity->issuance],
     ];
-    //make sure that a currency with transactions in the database can't be deleted.
-    if ($count) {
+    // A currency with transactions in the database must not be deleted.
+    if ($stats->trades) {
       unset($actions['operations']['data']['#links']['delete']);
     }
     return $row + $actions;
   }
 
-  /*
-   * remove the delete link if there is only one currency
+  /**
+   * Remove the delete link if there is only one currency.
    */
   public function render() {
     $build = parent::render();
@@ -88,24 +83,25 @@ class CurrencyListBuilder extends DraggableListBuilder {
    * {@inheritdoc}
    */
   public function load() {
-    //just show the currencies the current user has permission to edit
-    //get the currencies in all exchanges of which current user is manager
-    //if (\Drupal::currentUser()->hasPermission('manage mcapi')) {
-      $curr_ids = $this->getStorage()->getQuery()
+    // Just show the currencies the current user has permission to edit
+    // get the currencies in all exchanges of which current user is manager
+    // if (\Drupal::currentUser()->hasPermission('manage mcapi')) {.
+    $curr_ids = $this->getStorage()->getQuery()
         ->sort('name')
         ->execute();
-    //}
+    // }
     /*
     else {
-      $exchange_ids = \Drupal::entityTypeManager()
-        ->getStorage('mcapi_exchange')->getQuery()
-        ->condition('manager', $currentUser->id())
-        ->execute();
-      $curr_ids = Exchanges::getCurrenciesOfExchanges($exchange_ids);
+    $exchange_ids = \Drupal::entityTypeManager()
+    ->getStorage('mcapi_exchange')->getQuery()
+    ->condition('manager', $currentUser->id())
+    ->execute();
+    $curr_ids = Exchanges::getCurrenciesOfExchanges($exchange_ids);
     }
      *
      */
-    return $this->storage->loadMultiple($curr_ids);//no sort has been applied
+    // no sort has been applied.
+    return $this->storage->loadMultiple($curr_ids);
   }
 
 }

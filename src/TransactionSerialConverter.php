@@ -1,12 +1,9 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\TransactionSerialConverter.
- */
-
 namespace Drupal\mcapi;
 
+use Drupal\mcapi\Entity\Transaction;
+use Drupal\Core\ParamConverter\EntityConverter;
 use Symfony\Component\Routing\Route;
 
 /**
@@ -25,21 +22,22 @@ use Symfony\Component\Routing\Route;
  * value for {bar}.
  * If transaction_serial is 0, the transaction will be pulled from the tempstore
  */
-class TransactionSerialConverter extends \Drupal\Core\ParamConverter\EntityConverter {
+class TransactionSerialConverter extends EntityConverter {
 
   /**
-   * don't bother injecting EntityTypeManager as the parent expects
+   * Don't bother injecting EntityTypeManager as the parent expects.
    */
-  function __construct(){}
+  public function __construct(){}
 
   /**
    * {@inheritdoc}
    */
   public function convert($value, $definition, $name, array $defaults) {
-    //a $value of zero means that this is the are-you-sure page before the transaction has been saved
-    //the transaction is retrieved therefore not in the normal way from the database but from the tempstore
+    // A $value of zero means that this is the are-you-sure page before the
+    // transaction has been saved. The transaction is retrieved therefore not in
+    // the normal way from the database but from the tempstore.
     if ($value) {
-      return \Drupal\mcapi\Entity\Transaction::loadBySerial($value);
+      return Transaction::loadBySerial($value);
     }
     return \Drupal::service('user.private_tempstore')
       ->get('TransactionForm')
@@ -52,4 +50,5 @@ class TransactionSerialConverter extends \Drupal\Core\ParamConverter\EntityConve
   public function applies($definition, $name, Route $route) {
     return $name == 'mcapi_transaction' && !empty($definition['serial']);
   }
+
 }

@@ -1,9 +1,5 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi\Form\OperationForm.
- */
 namespace Drupal\mcapi\Form;
 
 use Drupal\mcapi\Mcapi;
@@ -13,8 +9,16 @@ use Drupal\Core\Entity\ContentEntityConfirmFormBase;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Entity\EntityTypeManager;
+use Drupal\Core\Routing\CurrentRouteMatch;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher;
+use Drupal\Core\Render\Renderer;
+use Drupal\Core\Utility\Token;
 
-//I don't know if it is a good idea to extend the confirm form if we want ajax.
+/**
+ * I don't know if it is a good idea to extend the confirm form if we want ajax.
+ */
 class OperationForm extends ContentEntityConfirmFormBase {
 
   private $action;
@@ -23,19 +27,27 @@ class OperationForm extends ContentEntityConfirmFormBase {
   private $eventDispatcher;
   private $renderer;
   private $destination;
-  protected $viewBuilder;//see parent
+  // See parent.
+  protected $viewBuilder;
 
   /**
+   * Constructor.
    *
-   * @param \Drupal\mcapi\ViewBuilder\TransactionViewBuilder $transactionViewBuilder
-   * @param \Drupal\Core\Routing\RouteMatch $route_match
+   * @param \Drupal\Entity\EntityTypeManager $entity_type_manager
+   *   The transaction viewBuilder object.
+   * @param \Drupal\Core\Routing\CurrentRouteMatch $route_match
+   *   The routematching service.
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
+   *   The request stack.
    * @param \Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher $event_dispatcher
+   *   The event dispatcher service.
    * @param \Drupal\Core\Render\Renderer $renderer
+   *   The renderer service.
    * @param \Drupal\Core\Utility\Token $token
+   *   The token service.
    */
-  function __construct($transaction_view_builder, $route_match, $request_stack, $event_dispatcher, $renderer, $token) {
-    $this->viewBuilder = $transaction_view_builder;
+  public function __construct(EntityTypeManager $entity_type_manager, CurrentRouteMatch $route_match, RequestStack $request_stack, ContainerAwareEventDispatcher $event_dispatcher, Renderer $renderer, Token $token) {
+    $this->viewBuilder = $entity_type_manager->getViewBuilder('mcapi_transaction');
     $this->action = Mcapi::transactionActionLoad($route_match->getparameter('operation'));
     $this->plugin = $this->action->getPlugin();
     $this->config = $this->plugin->getConfiguration();
@@ -53,7 +65,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity_type.manager')->getViewBuilder('mcapi_transaction'),
+      $container->get('entity_type.manager'),
       $container->get('current_route_match'),
       $container->get('request_stack'),
       $container->get('event_dispatcher'),
@@ -65,8 +77,8 @@ class OperationForm extends ContentEntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
-    return 'mcapi_'.$this->action->id().'_form';
+  public function getFormId() {
+    return 'mcapi_' . $this->action->id() . '_form';
   }
 
   /**
@@ -77,15 +89,14 @@ class OperationForm extends ContentEntityConfirmFormBase {
   }
 
   /**
-   * we could add this to the plugin options.
-   * although of course users don't know route names so there would be some complexity
-   * How do we go back
+   * {@inheritdoc}
    */
   public function getCancelUrl() {
-    if ($this->plugin->getPluginId() == 'mcapi_transaction.save_action') {//the transaction hasn't been created yet
-      //we really want to go back the populated transaction form using the back button in the browser
-      //failing that we want to go back to whatever form it was, fresh
-      //failing that we go to the user page user.page
+    // The transaction hasn't been created yet.
+    if ($this->plugin->getPluginId() == 'mcapi_transaction.save_action') {
+      // We really want to go back the populated transaction form using the back
+      // button in the browser. Failing that we want to go back to whatever form
+      // it was, fresh failing that we go to the user page user.page.
       return new Url('user.page');
     }
     return $this->entity->toUrl();
@@ -95,17 +106,17 @@ class OperationForm extends ContentEntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelText() {
-    return $this->config['cancel_link'] ? : '';
+    return $this->config['cancel_link'] ?: '';
   }
 
   /**
    * {@inheritdoc}
    */
   public function getDescription() {
-    //this provides the transaction_view part of the form as defined in the action settings
+    // Provides the transaction_view part of the form from the action's config.
     $format = $this->config['format'];
     if ($format == 'twig') {
-      //module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');
+      // module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');.
       $renderable = [
         '#type' => 'inline_template',
         '#template' => $this->config['twig'],
@@ -113,7 +124,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
           $this->config['twig'],
           ['mcapi_transaction' => $this->entity],
           ['sanitize' => TRUE]
-        )
+        ),
       ];
     }
     else {
@@ -128,7 +139,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildForm($form, $form_state);
     $form['description']['#weight'] = -1;
-    //not sure why this is sometimes not included from TransactionViewBuilder
+    // Not sure why this is sometimes not included from TransactionViewBuilder.
     $form['#attached']['library'][] = 'mcapi/mcapi.transaction';
     $form['#attributes']['class'][] = 'transaction-operation-form';
     $form['actions']['submit']['#value'] = $this->config['button'];
@@ -139,21 +150,23 @@ class OperationForm extends ContentEntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    //sets this->entity based on $form_state
+    // Sets this->entity based on $form_state.
     parent::submitForm($form, $form_state);
     $this->entity->setValidationRequired(FALSE);
     try {
-      //the op might have injected values into the form, so it needs to be able to access them
+      // The op might have injected values into the form, so it needs to be able
+      // to access them.
       $this->plugin->execute($this->entity);
       if ($this->action->id() == 'transaction_delete') {
         if (!$this->destination) {
-          $this->destination = '/';//front page
+          // Front page.
+          $this->destination = '/';
         }
       }
       $args = [
         'values' => $form_state->getValues(),
         'old_state' => $this->entity->state->value,
-        'action' => $this->action
+        'action' => $this->action,
       ];
       $events = new TransactionSaveEvents(clone($this->entity), $args);
       $events->setMessage($this->config['message']);
@@ -164,7 +177,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
         "Error performing @action action: @error",
         [
           '@action' => $this->config['title'],
-          '@error' => $e->getMessage()
+          '@error' => $e->getMessage(),
         ]
       ), 'error');
       return;
@@ -178,11 +191,9 @@ class OperationForm extends ContentEntityConfirmFormBase {
       $path = $this->destination;
     }
     else {
-      $path = 'transaction/'.$this->entity->serial->value;
+      $path = 'transaction/' . $this->entity->serial->value;
     }
-    $form_state->setRedirectUrl(Url::fromUri('base:'.$path));
+    $form_state->setRedirectUrl(Url::fromUri('base:' . $path));
   }
 
-
 }
-

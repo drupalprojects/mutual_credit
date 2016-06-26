@@ -1,17 +1,11 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\Validation\Constraint\CanPayout.
- * Combined Constraint / Constraintvalidator
- */
-
 namespace Drupal\mcapi\Plugin\Validation\Constraint;
 
 use Symfony\Component\Validator\Constraint;
 
 /**
- * Checks if the current user is authorised to pay out of the payer wallet
+ * Checks if the current user is authorised to pay out of the payer wallet.
  *
  * @Constraint(
  *   id = "CanPayout",
@@ -32,14 +26,15 @@ class CanPayout extends CanPay {
    */
   public function validate($items, Constraint $constraint) {
     if ($items->restricted) {
-      //$items is the payer wallet listfield
+      // $items is the payer wallet listfield.
       $eligible = \Drupal::entityTypeManager()
         ->getStorage('mcapi_wallet')
         ->whichWalletsQuery('payout', \Drupal::currentUser()->id());
 
       if (!in_array($items->target_id, $eligible)) {
-        $this->context->addViolation($this->message, ['@uid' => $items->target_id]);
+        $this->addViolation($this->message, ['@uid' => $items->target_id]);
       }
     }
   }
+
 }

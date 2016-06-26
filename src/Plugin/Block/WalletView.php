@@ -1,13 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\Block\WalletView
- */
-
 namespace Drupal\mcapi\Plugin\Block;
 
-use Drupal\mcapi\Entity\Wallet;
+use \Drupal\mcapi\Mcapi;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Session\AccountInterface;
@@ -16,8 +11,10 @@ use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Displays all the wallets of the current user OR the entity being viewed using
- * view mode 'mini'
+ * Displays all the wallets of an entity.
+ *
+ * Entity being either the current user OR the entity being viewed. Shows the
+ * wallet view mode 'mini'.
  *
  * @Block(
  *   id = "mcapi_wallet_mini",
@@ -25,11 +22,10 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   category = @Translation("Community Accounting")
  * )
  */
-
 class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
 
-  protected $holder_entity;
-  
+  protected $holderEntity;
+
   const MCAPIBLOCK_MODE_CONTEXT = 0;
   const MCAPIBLOCK_MODE_CURRENTUSER = 1;
 
@@ -39,18 +35,21 @@ class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
   public function __construct(array $configuration, $plugin_id, $plugin_definition, $entity_type_manager, $request) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->entityTypeManager = $entity_type_manager;
-    
-    if($this->configuration['user_source'] == SELF::MCAPIBLOCK_MODE_CONTEXT) {
+
+    if ($this->configuration['user_source'] == SELF::MCAPIBLOCK_MODE_CONTEXT) {
       if ($request->attributes->has('_entity')) {
-        $this->holder_entity = $request->attributes->get('_entity');
+        $this->holderEntity = $request->attributes->get('_entity');
       }
     }
     else {
-      $this->holder_entity = \Drupal::currentUser();
+      $this->holderEntity = \Drupal::currentUser();
     }
   }
 
-  static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+  /**
+   * Injection.
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
     return new static(
       $configuration,
       $plugin_id,
@@ -59,13 +58,14 @@ class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
       $container->get('request_stack')->getCurrentRequest()
     );
   }
-  
+
   /**
    * {@inheritdoc}
+   *
    * @todo check this isn't causing a problem with caching between different pages and users
    */
   public function blockAccess(AccountInterface $account) {
-    return isset($this->holder_entity) ?  AccessResult::allowed(): AccessResult::forbidden();
+    return isset($this->holderEntity) ? AccessResult::allowed() : AccessResult::forbidden();
   }
 
   /**
@@ -87,9 +87,9 @@ class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
       '#type' => 'radios',
       '#options' => [
         SELF::MCAPIBLOCK_MODE_CONTEXT => $this->t('Show as part of profile being viewed'),
-        SELF::MCAPIBLOCK_MODE_CURRENTUSER => $this->t('Show for logged in user')
+        SELF::MCAPIBLOCK_MODE_CURRENTUSER => $this->t('Show for logged in user'),
       ],
-      '#default_value' => $this->configuration['user_source']
+      '#default_value' => $this->configuration['user_source'],
     ];
     return $form;
   }
@@ -112,10 +112,9 @@ class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
     return $this->entityTypeManager
       ->getViewBuilder('mcapi_wallet')
       ->viewMultiple(
-        \Drupal\mcapi\Mcapi::walletsOf($this->holder_entity, TRUE), 
+        Mcapi::walletsOf($this->holderEntity, TRUE),
         'mini'
       );
   }
 
 }
-

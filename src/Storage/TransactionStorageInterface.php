@@ -1,138 +1,155 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Storage\TransactionStorageInterface.
- */
-
 namespace Drupal\mcapi\Storage;
 
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\mcapi\Entity\WalletInterface;
 
+/**
+ * Interface for the transaction storage controller.
+ */
 interface TransactionStorageInterface extends EntityStorageInterface {
 
   /**
-   * truncate and rebuild the index table
+   * Truncate and rebuild the index table.
    */
-  function indexRebuild();
+  public function indexRebuild();
 
   /**
-   * Check the integrity of the index table
+   * Check the integrity of the index table.
    *
-   * @return boolean
-   *   TRUE if the table is integral
+   * @return bool
+   *   TRUE if the table is integral.
    */
-  function indexCheck();
+  public function indexCheck();
 
   /**
-   * When a transaction is deleted, remove it from the index table
+   * When a transaction is deleted, remove it from the index table.
    *
    * @param array $serials
+   *   An array of serial numbers to drop from the index.
    */
-  function indexDrop(array $serials);
-
+  public function indexDrop(array $serials);
 
   /**
-   * Get some gerneral purpose stats by adding up the transactions for a given wallet
-   * This could be cached but remember it is possible to generate all kinds of stats, between any dates
-   * Because this uses the index table, it knows nothing of transactions with state not 'done'
-   * All this can be accomplished with views but this is one handy method
+   * Get some gerneral purpose stats by adding up the transactions for a wallet.
+   *
+   * Because this uses the index table, it knows nothing of transactions with
+   * state not 'done'. All this can be accomplished with views but this is one
+   * handy method.
    *
    * @param string $curr_id
-   *
-   * @param integer $wallet_id
-   *
+   *   The ID of a currency.
+   * @param int $wallet_id
+   *   The wid of a wallet.
    * @param array $filters
+   *   Conditions keyed by property name suitable for getMcapiIndexQuery().
    *
    * @return array
-   *   keys are trades, gross_in, gross_out, balance, volume, partners
+   *   keys are trades, gross_in, gross_out, balance, volume, partners.
    *
    * @see \Drupal\mcapi\Entity\WalletInterface::getSummaries()
+   *
+   * @note This could be cached but remember it is possible to generate all kinds of stats, between any dates
    */
-  function walletSummary($curr_id, $wallet_id, array $filters);
+  public function walletSummary($curr_id, $wallet_id, array $filters);
 
   /**
-   * Retrieve the full balance history
-   * N.B if caching running balances remember to clear the cache whenever a transaction changes state or is deleted.
+   * Retrieve the full balance history.
+   *
+   * N.B if caching running balances remember to clear the cache whenever a
+   * transaction changes state or is deleted.
    *
    * @param int $wallet_id
-   *
+   *   The wid of a wallet.
    * @param string $curr_id
-   *
-   * @param integer $since
-   *   A unixtime before which to exclude the transactions.
-   *   Note that whole history needs to be loaded in order to calculate a running balance
+   *   The ID of a currency.
+   * @param int $since
+   *   A unixtime before which to exclude the transactions. Note that whole
+   *   history needs to be loaded in order to calculate a running balance.
    *
    * @return array
-   *   Balances keyed by timestamp
+   *   Balances keyed by timestamp.
    */
-  function historyOfWallet($wallet_id, $curr_id, $since);
+  public function historyOfWallet($wallet_id, $curr_id, $since);
 
   /**
-   * Return the ids of all the wallets which HAVE USED this currency
+   * Return the ids of all the wallets which HAVE USED this currency.
    *
-   * @param type $curr_id
-   *
-   * @param type $conditions
+   * @param string $curr_id
+   *   The ID of a currency.
+   * @param array $conditions
+   *   Conditions keyed by property name suitable for getMcapiIndexQuery().
    */
-  function wallets($curr_id, $conditions = []);
+  public function wallets($curr_id, $conditions = []);
 
   /**
-   * get the balance of a given wallet, up to a given transaction id, for a
-   * given currency
+   * Get the balance of a given wallet, up to a given transaction id.
    *
-   * @param integer $wid
-   *
-   * @param integer $xid
-   *
-   * @param integer $until
-   *   the meaning of this depends on the $sort_field
-   *
+   * @param int $wid
+   *   A wallet ID.
+   * @param string $curr_id
+   *   The ID of a currency.
+   * @param int $until
+   *   The meaning of this depends on the $sort_field.
    * @param string $sort_field
-   *   the field by which it should be less than, and sort descending. Note this
-   *   only works with fields in the base table coz its too complex for EntityQuery
+   *   The field by which it should be less than, and sort descending. Note this
+   *   only works with fields in the base table coz its too complex for
+   *   EntityQuery.
    *
-   * @return integer raw currency value
-   *
+   * @return int
+   *   Raw currency value.
    */
-  function runningBalance($wid, $curr_id, $until, $sort_field = 'xid');
+  public function runningBalance($wid, $curr_id, $until, $sort_field = 'xid');
 
   /**
-   * get all the balances at the moment of the timestamp,
-   * which means adding all transactions from the beginning until then
-   * This provides a short of snapshot of the system
+   * Get all the balances at the moment of the timestamp.
+   *
+   * Which means adding all transactions from the beginning until then
+   * This provides a short of snapshot of the system.
    *
    * @param string $curr_id
+   *   The ID of a currency.
    * @param array $conditions
-   * @return various stats, keyed by wallet id
+   *   Conditions keyed by property name suitable for getMcapiIndexQuery().
+   *
+   * @return array
+   *   Various stats, keyed by wallet id.
    */
-  function ledgerStateByWallet($curr_id, array $conditions);
+  public function ledgerStateByWallet($curr_id, array $conditions);
 
   /**
-   * get all the balances at the moment of the timestamp,
-   * which means adding all transactions from the beginning until then
-   * This provides a short of snapshot of the system
+   * Build a query on the transaction index table.
+   *
    * @param string $curr_id
+   *   The ID of a currency.
    * @param array $conditions
-   * @return Query
+   *   Conditions keyed by property name suitable for getMcapiIndexQuery().
+   *
+   * @return Drupal\Core\Database\Query\Query
+   *   An unexecuted db query.
    */
-  function ledgerStateQuery($curr_id, array $conditions);
+  public function ledgerStateQuery($curr_id, array $conditions);
 
   /**
+   * Get a load of transaction stats per day, week, month or year.
    *
    * @param string $period
-   *   day, week, month, or year
+   *   Day, week, month, or year.
    * @param array $conditions
-   *   must contain at least a curr_id
+   *   Must contain at least a curr_id.
    *
    * @return array
-   *   an array of dates, volumes trades, num wallets used in the periods preceding those dates
+   *   An array of dates, volumes trades, num wallets used in the periods
+   *   preceding those dates.
    */
-  function historyPeriodic($curr_id, $period, $conditions);
+  public function historyPeriodic($curr_id, $period, $conditions);
 
   /**
    * Get all the currencies which the wallet has ever used.
+   *
+   * @param int $wid
+   *   The wallet ID.
    */
-  function currenciesUsed($wid);
+  public function currenciesUsed($wid);
+
 }

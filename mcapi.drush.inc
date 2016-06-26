@@ -1,10 +1,21 @@
 <?php
 
 /**
+ * @file
+ * Drush commands for mcapi module.
+ */
+
+use Drupal\mcapi\Entity\Transaction;
+
+/**
  * Implementation of hook_drush_command().
- * 
+ *
  * @return
  *   An associative array describing your command(s).
+ */
+
+/**
+ * Implements hook_drush_command().
  */
 function mcapi_drush_command() {
   $items['generate-transactions'] = [
@@ -18,11 +29,11 @@ function mcapi_drush_command() {
     ],
     'options' => [
       'kill' => 'Delete all transactions before generating new ones.',
-      'type' => 'Specify the transaction type - may affect signatures)'
+      'type' => 'Specify the transaction type - may affect signatures)',
     ],
     'drupal dependencies' => [
-      'devel-generate'
-    ]
+      'devel-generate',
+    ],
   ];
   $items['mcapi-wipeslate'] = [
     'callback' => 'drush_mcapi_wipeslate',
@@ -31,15 +42,19 @@ function mcapi_drush_command() {
       'curr_id' => 'The machine name of the currency',
     ],
     'drupal dependencies' => [
-      'devel'//not a real dependency but should reduce the chance of accidents!
-    ]
+    // Not a real dependency but should reduce the chance of accidents!
+      'devel',
+    ],
   ];
   return $items;
 }
 
 /**
- * Delete all transactions of a certain currency
- * @param type $curr_id
+ * Delete all transactions of a certain currency.
+ *
+ * @param string $curr_id
+ *   A currency ID.
+ *
  * @todo make this work for every entityType with Worth field storage
  */
 function drush_mcapi_wipeslate($curr_id) {
@@ -50,9 +65,9 @@ function drush_mcapi_wipeslate($curr_id) {
   $q->leftjoin('mcapi_transaction__worth', 'w', 'w.entity_id = t.xid');
   $q->condition('w.entity_id', NULL, 'IS');
   $xids = $q->execute()->fetchCol();
-  //chunk it to save memory
-  foreach (array_chunk($xids, 100) as $chunk)  {
-    foreach (\Drupal\mcapi\Entity\Transaction::loadMultiple($chunk) as $t) {
+  // Chunk it to save memory.
+  foreach (array_chunk($xids, 100) as $chunk) {
+    foreach (Transaction::loadMultiple($chunk) as $t) {
       $t->delete();
     }
   }

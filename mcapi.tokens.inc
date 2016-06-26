@@ -1,8 +1,12 @@
 <?php
 
-/*
+/**
+ * @file
+ * Token hooks.
+ */
+
+/**
  * Implements hook_tokens().
- * tokens apply to transaction entity only
  */
 function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
 
@@ -18,35 +22,43 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
         case 'state':
           $replacements[$original] = $transaction->state->entity->label();
           break;
+
         case 'type':
           $replacements[$original] = $transaction->type->entity->label();
           break;
+
         case 'payer':
           $replacements[$original] = $transaction->payer->entity->getHolder()->toLink()->toString();
           break;
+
         case 'payee':
           $replacements[$original] = $transaction->payee->entity->getHolder()->toLink()->toString();
           break;
+
         case 'creator':
           $replacements[$original] = $transaction->creator->entity->toLink()->toString();
           break;
+
         case 'description':
           $replacements[$original] = $transaction->description->getString();
           break;
+
         case 'created':
           $replacements[$original] = format_date($transaction->created->value, 'medium');
           break;
+
         case 'url':
           $replacements[$original] = $transaction->toUrl();
           break;
-        //the field module did this in d7 but can't find where to debug in d8
+
+        // The field module did this in d7 but can't find where to debug in d8.
         case 'worth':
           $replacements[$original] = $transaction->worth->getString();
       }
     }
 
-    //handle any entity references - tokens within tokens
-    //@todo test this
+    // Handle any entity references - tokens within tokens.
+    // @todo test this
     $token_service = \Drupal::token();
     if ($payer_tokens = $token_service->findWithPrefix($tokens, 'payer')) {
       $replacements += $token_service->generate(
@@ -88,18 +100,23 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
         case 'owner':
           $replacements[$original] = $wallet->getOwner()->label();
           break;
+
         case 'owner-link':
           $replacements[$original] = $wallet->getOwner()->toLink(NULL, NULL, ['absolute' => TRUE]);
           break;
+
         case 'holder':
           $replacements[$original] = $wallet->getHolder()->label();
           break;
+
         case 'holder-link':
           $replacements[$original] = $wallet->getHolder()->toLink(NULL, NULL, ['absolute' => TRUE]);
           break;
+
         case 'name':
           $replacements[$original] = $wallet->label();
           break;
+
         case 'link':
           $replacements[$original] = $wallet->toLink(NULL, NULL, ['absolute' => TRUE]);
           break;
@@ -114,7 +131,7 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
 /**
  * Implements hook_token_info().
  *
- * @todo entity token generation should be more automated
+ * @todo entity token generation should be more automated.
  */
 function mcapi_token_info() {
   $info = [
@@ -127,20 +144,20 @@ function mcapi_token_info() {
       'wallet' => [
         'name' => t('Wallet'),
         'description'  => t('Wallet'),
-        'needs_data' => 'mcapi_wallet'
-      ]
-    ]
+        'needs_data' => 'mcapi_wallet',
+      ],
+    ],
   ];
   $definitions = \Drupal::service('entity_field.manager')
     ->getFieldDefinitions('mcapi_transaction', 'mcapi_transaction');
-  //chance to remove some tokens here using unset($definitions['uuid']).
+  // Chance to remove some tokens here using unset($definitions['uuid']).
   unset($definitions['parent'], $definitions['uuid'], $definitions['xid']);
 
-  //see node_token_info();
+  // See node_token_info();
   foreach ($definitions as $key => $def) {
     $info['tokens']['xaction'][$key] = [
       'name' => $def->getLabel(),
-      'description' => $def->getDescription()
+      'description' => $def->getDescription(),
     ];
   }
 
@@ -150,23 +167,23 @@ function mcapi_token_info() {
 
   $info['tokens']['wallet'] = [
     'name' => [
-      'name' => t('Wallet name')
+      'name' => t('Wallet name'),
     ],
     'link' => [
-      'name' => t('Wallet link')
+      'name' => t('Wallet link'),
     ],
     'owner' => [
-      'name' => t('Owner label')
+      'name' => t('Owner label'),
     ],
     'owner-link' => [
-      'name' => t('Owner link')
+      'name' => t('Owner link'),
     ],
     'holder-name' => [
-      'name' => t('Holder label')
+      'name' => t('Holder label'),
     ],
     'holder-link' => [
-      'name' => t('Holder link')
-    ]
+      'name' => t('Holder link'),
+    ],
   ];
   return $info;
 }

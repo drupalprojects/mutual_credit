@@ -1,11 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\migrate\destination\EntityTransaction.
- * @deprecated?
- */
-
 namespace Drupal\mcapi\Plugin\migrate\destination;
 
 use Drupal\migrate\Plugin\migrate\destination\EntityContentBase;
@@ -17,7 +11,6 @@ use Drupal\migrate\Row;
  * )
  */
 class EntityTransaction extends EntityContentBase {
-
 
   /**
    * {@inheritdoc}

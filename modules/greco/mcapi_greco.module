@@ -1,9 +1,10 @@
 <?php
 
-//@todo...
+/**
+ * @file
+ * Hooks for mcapi_greco module
+ */
 
-
-define('GRECO_SAMPLE_PERIOD_DAYS', '90');
 use Drupal\mcapi\Entity\Currency;
 
 function mcapi_greco_gchart() {
@@ -34,13 +35,14 @@ function mcapi_greco_theme() {
  * Dividing the sum of all the debit balances by the average daily sales gives us the sales performance ratio for the system.
  */
 function mcapi_index_views_cron() {
+  $sample_period = 90;
   $manager = \Drupal::entityTypeManager()->getStorage('mcapi_transaction');
   foreach (Currency::loadMultiple() as $curr_id => $currency) {
     if ($currency->issuance != Currency::TYPE_PROMISE) continue;
     $sum_of_all_debit_balances = 0;
-    //get the sum of all debit balances (in this currency) of all wallets
 
-    foreach ($manager->balances($curr_id) as $wid => $balance) {
+    //get the sum of all debit balances (in this currency) of all wallets
+    foreach ($manager->balances($curr_id) as $balance) {
       if ($balance > 0) {
         $sum_of_all_debit_balances += $balance;
       }
@@ -48,9 +50,9 @@ function mcapi_index_views_cron() {
     //now get the average daily sales
     $total_daily_sales = \Drupal::entityTypeManager()->getStorage('mcapi_transaction')->volume(
       $curr_id,
-      ['since' => strtotime(-GRECO_SAMPLE_PERIOD_DAYS .' days')]
+      ['since' => strtotime(-$sample_period .' days')]
     );
-    $average_daily_sales = round($total_daily_sales / GRECO_SAMPLE_PERIOD_DAYS);
+    $average_daily_sales = round($total_daily_sales / $sample_period);
 
     if ($average_daily_sales) {
       $indicator = round($sum_of_all_debit_balances / $average_daily_sales, 1);

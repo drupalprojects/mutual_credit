@@ -1,14 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\Condition\EntityWorthMoreThan.
- *
- * @todo see https://www.drupal.org/node/2284687
- */
-
 namespace Drupal\mcapi\Plugin\Condition;
 
+use Drupal\rules\Core\RulesConditionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
 
@@ -33,10 +27,8 @@ use Drupal\Core\Session\AccountInterface;
  *     ),
  *   }
  * )
- *
  */
-
-class EntityWorthMoreThan extends \Drupal\rules\Core\RulesConditionBase {
+class EntityWorthMoreThan extends RulesConditionBase {
 
   private $worth;
 
@@ -82,7 +74,7 @@ class EntityWorthMoreThan extends \Drupal\rules\Core\RulesConditionBase {
       if (is_null($worth->value)) {
         continue;
       }
-      if ($entity->{$fieldname}->getValue($worth->curr_id)  > $worth->value) {
+      if ($entity->{$fieldname}->getValue($worth->curr_id) > $worth->value) {
         continue;
       }
       return FALSE;
@@ -90,9 +82,9 @@ class EntityWorthMoreThan extends \Drupal\rules\Core\RulesConditionBase {
     return TRUE;
   }
 
-
   /**
    * {@inheritdoc}
+   *
    * @todo
    */
   public function negate($negate = TRUE) {
@@ -100,15 +92,9 @@ class EntityWorthMoreThan extends \Drupal\rules\Core\RulesConditionBase {
   }
 
   /**
-   * Determines whether condition result will be negated.
-   *
-   * @return bool
-   *   Whether the condition result will be negated.
+   * {@inheritdoc}
    */
-  public function isNegated(){}
-
   public function refineContextDefinitions(array $selected_data){}
-
 
   /**
    * Sets the value for a provided context.
@@ -117,8 +103,6 @@ class EntityWorthMoreThan extends \Drupal\rules\Core\RulesConditionBase {
    *   The name of the provided context in the plugin definition.
    * @param mixed $value
    *   The value to set the provided context to.
-   *
-   * @return $this
    */
   public function setProvidedValue($name, $value){}
 
@@ -130,9 +114,6 @@ class EntityWorthMoreThan extends \Drupal\rules\Core\RulesConditionBase {
    *
    * @throws \Drupal\Component\Plugin\Exception\PluginException
    *   If the requested provided context is not set.
-   *
-   * @return \Drupal\Core\Plugin\Context\ContextInterface
-   *   The context object.
    */
   public function getProvidedContext($name){}
 
@@ -144,20 +125,13 @@ class EntityWorthMoreThan extends \Drupal\rules\Core\RulesConditionBase {
    *
    * @throws \Drupal\Component\Plugin\Exception\PluginException
    *   If the requested provided context is not defined.
-   *
-   * @return \Drupal\Component\Plugin\Context\ContextDefinitionInterface.
-   *   The definition of the provided context.
    */
   public function getProvidedContextDefinition($name){}
 
   /**
    * Gets the provided context definitions of the plugin.
-   *
-   * @return \Drupal\Component\Plugin\Context\ContextDefinitionInterface[]
-   *   The array of provided context definitions, keyed by context name.
    */
   public function getProvidedContextDefinitions(){}
-
 
   /**
    * Check configuration access.
@@ -167,13 +141,6 @@ class EntityWorthMoreThan extends \Drupal\rules\Core\RulesConditionBase {
    *   for the current user. Defaults to NULL.
    * @param bool $return_as_object
    *   (optional) Defaults to FALSE.
-   *
-   * @return bool|\Drupal\Core\Access\AccessResultInterface
-   *   The access result. Returns a boolean if $return_as_object is FALSE (this
-   *   is the default) and otherwise an AccessResultInterface object.
-   *   When a boolean is returned, the result of AccessInterface::isAllowed() is
-   *   returned, i.e. TRUE means access is explicitly allowed, FALSE means
-   *   access is either explicitly forbidden or "no opinion".
    */
   public function checkConfigurationAccess(AccountInterface $account = NULL, $return_as_object = FALSE){}
 

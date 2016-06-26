@@ -1,19 +1,14 @@
 <?php
 
-/**
- * @file
- *  Contains Drupal\mcapi\Plugin\Action\Save
- *
- */
-
 namespace Drupal\mcapi\Plugin\Action;
 
+use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessResult;
 use Drupal\mcapi\Mcapi;
 
 /**
- * Confirmation form for creating a transaction
+ * Confirmation form for creating a transaction.
  *
  * @Action(
  *   id = "mcapi_transaction.save_action",
@@ -21,7 +16,7 @@ use Drupal\mcapi\Mcapi;
  *   type = "mcapi_transaction"
  * )
  */
-class Save extends \Drupal\mcapi\Plugin\TransactionActionBase {
+class Save extends TransactionActionBase {
 
   /**
    * {@inheritdoc}
@@ -41,4 +36,5 @@ class Save extends \Drupal\mcapi\Plugin\TransactionActionBase {
     }
     return $result;
   }
+
 }

@@ -1,17 +1,9 @@
 <?php
 
-/**
- * @file
- *
- * Contains \Drupal\mcapi\Exchange.
- * The purpose of this class is to contain all the functions that vary when module
- * mcapi_exchanges is installed.
- * In which case this is class is replaced by \Drupal\mcapi_exchanges\Exchanges
- *
- */
-
 namespace Drupal\mcapi;
 
+use Drupal\mcapi\Entity\Wallet;
+use Drupal\user\UserInterface;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\user\EntityOwnerInterface;
@@ -19,15 +11,19 @@ use Drupal\Core\Entity\ContentEntityInterface;
 
 use Drupal\mcapi_exchanges\Exchanges;
 
-
+/**
+ * Static class relating to one or multiple exchanges.
+ */
 class Exchange {
 
   /**
-   * Load currencies for a given ownerentity
+   * Load currencies for a given ownerentity.
    *
    * @param EntityOwnerInterface $entity
+   *   The Owner Entity (not the wallet holder).
    *
    * @return Currency[]
+   *   The currencies available to that entity.
    */
   public static function ownerEntityCurrencies(EntityOwnerInterface $entity = NULL) {
     return Self::MultipleExchanges() ?
@@ -36,15 +32,15 @@ class Exchange {
   }
 
   /**
-   * get a list of all the currencies currently in a wallet's scope, ordered by weight
+   * Get a list of all the currencies currently in a wallet's scope.
    *
    * @param \Drupal\user\UserInterface $account
+   *   The user.
    *
    * @return CurrencyInterface[]
-   *   keyed by currency id
-   *
+   *   Keyed by currency id.
    */
-  public static function currenciesAvailableToUser(\Drupal\user\UserInterface $account = NULL) {
+  public static function currenciesAvailableToUser(UserInterface $account = NULL) {
     if (!$account) {
       $account = User::load(\Drupal::currentUser()->id());
     }
@@ -55,11 +51,13 @@ class Exchange {
       uasort($currencies, '\Drupal\mcapi\Mcapi::uasortWeight');
       $account->currencies_available = $currencies;
     }
-    //note this adhoc variable gives us no control over static or caching
+    // Note this adhoc variable gives us no control over static or caching.
     return $account->currencies_available;
   }
 
-
+  /**
+   * Find out whether there is more than one exchange on this site.
+   */
   private static function multipleExchanges() {
     static $multiple = NULL;
     if (!isset($multiple)) {
@@ -68,71 +66,79 @@ class Exchange {
     return $multiple;
   }
 
-
   /**
-   * Handle the deletion of the wallet's parent
-   * If the wallet has no transactions it can be deleted
-   * Otherwise make the passed exchange the parent, must be found.
+   * Handle the deletion of the wallet's parent.
+   *
+   * If the wallet has no transactions it can be deleted. Otherwise make the
+   * passed exchange the parent, must be found.
    *
    * @param ContentEntityInterface $holder
+   *   The entity being deleted.
    */
   public static function orphan(ContentEntityInterface $holder) {
-    $entityTypeManager = \Drupal::entityTypeManager();
     foreach (Mcapi::walletsOf($holder, TRUE) as $wallet) {
       if ($wallet->isUsed()) {
-        //move the wallet
+        // Move the wallet.
         $new_holder_entity = \Drupal::moduleHandler()->moduleExists('mcapi_exchanges') ?
-          Exchanges::findNewHolder($holder) : //@todo this is a bit inelegant
+        // @todo this is a bit inelegant
+          Exchanges::findNewHolder($holder) :
           User::load(1);
         $new_holder_entity = class_exists('\Drupal\mcapi_exchanges\Exchanges') ?
           Exchange::findNewHolder($holder) :
           User::load(1);
         $new_name = t(
-          "Formerly @name's wallet: @label", ['@name' => $wallet->label(), '@label' => $wallet->label(NULL, FALSE)]
+          "Formerly @name's wallet: @label",
+          ['@name' => $wallet->label(), '@label' => $wallet->label(NULL, FALSE)]
         );
         $wallet->set('name', $new_name)
           ->set('holder_entity_type', $new_holder_entity->getEntityTypeId())
           ->set('holder_entity_id', $new_holder_entity->id())
           ->save();
-        //@note this implies the number of wallets an exchange can own to be unlimited.
-        //or more likely that this max isn't checked during orphaning
+        // @note this implies the number of wallets an exchange can own to be unlimited.
+        // or more likely that this max isn't checked during orphaning
         drupal_set_message(t(
           "@name's wallets are now owned by @entity_type @entity_label", [
-          '@name' => $wallet->label(),
-          '@entity_type' => $new_holder_entity->getEntityType()->getLabel(),
-            //todo I tried toLink but it doesn't render from here
-          '@entity_label' => $new_holder_entity->label()
-            ]
+            '@name' => $wallet->label(),
+            '@entity_type' => $new_holder_entity->getEntityType()->getLabel(),
+            // Todo I tried toLink but it doesn't render from here.
+            '@entity_label' => $new_holder_entity->label(),
+          ]
         ));
         \Drupal::logger('mcapi')->notice(
           'Wallet @wid was orphaned to @entitytype @id', [
-          '@wid' => $wallet->id(),
-          '@entitytype' => $new_holder_entity->getEntityTypeId(),
-          '@id' => $new_holder_entity->id()
+            '@wid' => $wallet->id(),
+            '@entitytype' => $new_holder_entity->getEntityTypeId(),
+            '@id' => $new_holder_entity->id(),
           ]
         );
       }
       else {
-        drupal_set_message('deleting unused wallet '.$wallet->label());
+        drupal_set_message(t('Deleted unused wallet @wallet_id', ['@wallet_id'  => $wallet->label()]));
         $wallet->delete();
         return;
       }
     }
   }
 
-  static function intertradingWalletId($exchange_id= NULL) {
+  /**
+   * Identify an exchanges intertrading wallet.
+   *
+   * @param int $exchange_id
+   *   The ID of the exchange.
+   */
+  public static function intertradingWalletId($exchange_id = NULL) {
     if (Self::multipleExchanges() && $exchange_id) {
-      //there might be a better name for this method,
-      //if there were many methods that were filtering on the current user's exchange
+      // There might be a better name for this method, if there were many
+      // methods that were filtering on the current user's exchange.
       $wid = Exchanges::intertradingWalletId($exchange_id);
     }
     else {
       $wids = \Drupal::entityQuery('mcapi_wallet')
-        ->condition('payways', \Drupal\mcapi\Entity\Wallet::PAYWAY_AUTO)
+        ->condition('payways', Wallet::PAYWAY_AUTO)
         ->execute();
       $wid = reset($wids);
     }
     return $wid;
   }
-}
 
+}

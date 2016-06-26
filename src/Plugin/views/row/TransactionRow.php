@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\views\row\TransactionRow.
- */
-
 namespace Drupal\mcapi\Plugin\views\row;
 
 use Drupal\views\Plugin\views\row\EntityRow;

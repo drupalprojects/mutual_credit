@@ -1,11 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\mcapi\Plugin\TransactionActionBase.
- *
- * @todo currently there's no easy way to override the redirect in actionFormBase::Save. Might need an alter hook
- */
 namespace Drupal\mcapi\Plugin;
 
 use Drupal\mcapi\Mcapi;
@@ -17,7 +11,7 @@ use Drupal\Core\Access\AccessResult;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Base class for transaction actions
+ * Base class for transaction actions.
  */
 abstract class TransactionActionBase extends ConfigurableActionBase implements TransactionActionInterface {
 
@@ -31,7 +25,10 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
   const CONFIRM_AJAX = 1;
   const CONFIRM_MODAL = 2;
 
-  function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_form_builder, $module_handler, $transaction_relative_manager, $entity_type_manager, $entity_display_respository) {
+  /**
+   * Constructor.
+   */
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_form_builder, $module_handler, $transaction_relative_manager, $entity_type_manager, $entity_display_respository) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->entityFormBuilder = $entity_form_builder;
     $this->moduleHandler = $module_handler;
@@ -72,12 +69,14 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
   }
 
   /**
-   * Check whether this action is applicable for the current state of the transaction
+   * Determine access to transaction based on plugin configuration for states.
    *
    * @param TransactionInterface $transaction
+   *   The transaction to be accessed.
    * @param AccountInterface $account
+   *   The user trying to access it.
    *
-   * @return boolean
+   * @return bool
    *   TRUE if the transaction is in a viewable state
    */
   protected function accessState(TransactionInterface $transaction, AccountInterface $account = NULL) {
@@ -86,18 +85,19 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
   }
 
   /**
-   * Access control function to determine whether this
-   * action can be performed on a given transaction
+   * Determine access to transaction by plugin configuration for relatives.
    *
    * @param TransactionInterface $transaction
+   *   The transaction to be accessed.
    * @param AccountInterface $account
-	 *
-   * @return Boolean
-   *   TRUE if access is granted
+   *   The user trying to access it.
+   *
+   * @return bool
+   *   TRUE if access is granted.
    */
   protected function accessOp(TransactionInterface $transaction, AccountInterface $account = NULL) {
     if (!$transaction->parent->value) {
-      //children can't be edited that would be too messy
+      // Children can't be edited that would be too messy.
       return $this->transactionRelativeManager
         ->activatePlugins($this->configuration['access'])
         ->isRelative($transaction, $account);
@@ -108,7 +108,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
   /**
    * {@inheritdoc}
    */
-  public function buildConfigurationForm(array $form, FormStateInterface $form_state){
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $elements['title'] = [
       '#title' => t('Name of action to show on transaction'),
       '#type' => 'textfield',
@@ -146,47 +146,50 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
     $elements['sure'] = [
       '#title' => t('Are you sure page'),
       '#type' => 'fieldset',
-      '#weight' => 3
+      '#weight' => 3,
     ];
     $elements['sure']['page_title'] = [
       '#title' => t('Page title'),
-      '#description' => t ("Page title for the action's confirm page") .
-        ' @todo, make this use the serial number and twig.',
+      '#description' => t("Page title for the action's confirm page."),
       '#type' => 'textfield',
       '#default_value' => $this->configuration['page_title'],
       '#placeholder' => t('Are you sure?'),
       '#weight' => 4,
-      '#required' => TRUE
+      '#required' => TRUE,
     ];
+    // Temp.
+    $elements['sure']['page_title']['#description'] .= ' @todo, make this work with serial number as a token.';
+
     $elements['sure']['format'] = [
       '#title' => t('View mode'),
       '#type' => 'radios',
-      //this doesn't list all view modes because we don't want to show the operations.
-      //@todo this excludes view modes which may have been introduced by user 1 or other modules
+      // This doesn't list all view modes because we don't want to show the
+      // operations.
+      // @todo this excludes view modes which may have been introduced by user 1 or other modules
       '#options' => [
         'certificate' => $this->t('Certificate'),
-        'sentence' => $this->t('Sentence')
+        'sentence' => $this->t('Sentence'),
       ],
       '#default_value' => $this->configuration['format'],
       '#required' => TRUE,
-      '#weight' => 6
+      '#weight' => 6,
     ];
 
-    //@todo there used to be a twig view mode. Can't remember what happened to it
-    //Ideally we would be able to enter some twig to show the transaction on the confirmation page
+    // @todo there used to be a twig view mode. Can't remember what happened.
     $elements['sure']['twig'] = [
       '#title' => t('Template'),
-      '#description' => Mcapi::twigHelp(),//@note this is escaped in twig so links don't work
+    // @note this is escaped in twig so links don't work
+      '#description' => Mcapi::twigHelp(),
       '#type' => 'textarea',
       '#default_value' => $this->configuration['twig'],
       '#states' => [
         'visible' => [
           ':input[name="format"]' => [
-            'value' => 'twig'
-          ]
-        ]
+            'value' => 'twig',
+          ],
+        ],
       ],
-      '#weight' => 8
+      '#weight' => 8,
     ];
 
     $elements['sure']['display'] = [
@@ -195,10 +198,10 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
       '#options' => [
         SELF::CONFIRM_NORMAL => $this->t('Basic - Go to a fresh page'),
         SELF::CONFIRM_AJAX => $this->t('Ajax - Replace the form'),
-        SELF::CONFIRM_MODAL => $this->t('Modal - Confirm in a dialogue box')
+        SELF::CONFIRM_MODAL => $this->t('Modal - Confirm in a dialogue box'),
       ],
       '#default_value' => $this->configuration['display'],
-      '#weight' => 10
+      '#weight' => 10,
     ];
 
     $elements['sure']['button'] = [
@@ -210,7 +213,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
       '#weight' => 10,
       '#size' => 15,
       '#maxlength' => 15,
-      '#required' => TRUE
+      '#required' => TRUE,
     ];
 
     $elements['sure']['cancel_link'] = [
@@ -222,37 +225,42 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
       '#weight' => 12,
       '#size' => 15,
       '#maxlength' => 15,
-      '#required' => TRUE
+      '#required' => TRUE,
     ];
 
     $elements['message'] = [
       '#title' => $this->t('Success message'),
-      '#description' => $this->t('Appears in the message box along with the reloaded transaction certificate.') . 'TODO: put help for user and mcapi_transaction tokens, which should be working',
+      '#description' => $this->t('Appears in the message box along with the reloaded transaction certificate.'),
       '#type' => 'textfield',
       '#default_value' => $this->configuration['message'],
       '#placeholder' => $this->t('The operation was successful'),
-      '#weight' => 18
+      '#weight' => 18,
     ];
+    // Temp.
+    $elements['message']['#description'] .= 'TODO: put help for user and mcapi_transaction tokens, which should be working';
     return $elements;
   }
-
 
   /**
    * {@inheritdoc}
    */
   public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
-    //this was required by PluginFormInterface
+    // This was required by PluginFormInterface.
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitConfigurationForm(array &$form, FormStateInterface $form_state){
-    $values = array_diff_key($form_state->getValues(), array_flip(['plugin_id', 'label', 'id', 'plugin']));
+  public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
+    $values = array_diff_key(
+      $form_state->getValues(),
+      array_flip(['plugin_id', 'label', 'id', 'plugin'])
+    );
     foreach ($values as $field_name => $value) {
       $this->configuration[$field_name] = $value;
     }
-    //@todo how does this play with the views operations field which offers to add a redirect to the link to the operation?
+    // @todo how does this play with the views operations field which offers to
+    // add a redirect to the link to the operation?
     $form_state->setRedirect('mcapi.admin.workflow');
   }
 
@@ -260,7 +268,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
    * {@inheritdoc}
    */
   public function execute($object = NULL) {
-    //if this IS NOT overridden the transaction will be saved as it was loaded
+    // If this IS NOT overridden the transaction will be saved as it was loaded.
     $object->save();
     if ($this->configuration['message']) {
       drupal_set_message($this->configuration['message']);
@@ -270,9 +278,9 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
   /**
    * {@inheritdoc}
    */
-  function calculateDependencies() {
+  public function calculateDependencies() {
     return [
-      'module' => ['mcapi']
+      'module' => ['mcapi'],
     ];
   }
 

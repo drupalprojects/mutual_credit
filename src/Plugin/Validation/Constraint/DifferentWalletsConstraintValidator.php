@@ -1,28 +1,30 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\Validation\Constraint\DifferentWalletsConstraintValidator.
- */
-
 namespace Drupal\mcapi\Plugin\Validation\Constraint;
 
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Constraint;
 
+/**
+ * Check that the two wallets in the transaction are different.
+ */
 class DifferentWalletsConstraintValidator extends ConstraintValidator {
 
   /**
    * {@inheritdoc}
    */
   public function validate($transaction, Constraint $constraint) {
-    //check the payer and payee aren't the same
-    if ($transaction->payer->target_id === $transaction->payee->target_id) {
-      \Drupal::logger('mcapi')->debug($transaction->payer->target_id ."!=". $transaction->payee->target_id);
+    $payer = $transaction->payer->target_id;
+    $payee = $transaction->payee->target_id;
+    // Check the payer and payee aren't the same.
+    if ($payer === $payee) {
+      \Drupal::logger('mcapi')
+        ->debug($payer . "!=" . $payee);
       $this->context
         ->buildViolation($constraint->message)
         ->atPath('payer.0')
         ->addViolation();
     }
   }
+
 }

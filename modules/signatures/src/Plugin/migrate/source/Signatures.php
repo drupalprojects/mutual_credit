@@ -1,9 +1,5 @@
 <?php
-
-/**
- * @file
- * Contains \Drupal\mcapi_signatures\Plugin\migrate\source\Signatures.
- */
+use Drupal\migrate_drupal\Plugin\migrate\source\DrupalSqlBase;
 
 namespace Drupal\mcapi_signatures\Plugin\migrate\source;
 
@@ -14,8 +10,11 @@ namespace Drupal\mcapi_signatures\Plugin\migrate\source;
  *   id = "d7_mcapi_signatures"
  * )
  */
-class Signatures extends \Drupal\migrate_drupal\Plugin\migrate\source\DrupalSqlBase {
+class Signatures extends DrupalSqlBase {
 
+  /**
+   *
+   */
   public function query() {
     $query = $this->select('mcapi_signatures', 's')->fields('s', ['serial', 'uid', 'pending']);
     $query->join('mcapi_transaction', 't', 't.serial = s.serial');

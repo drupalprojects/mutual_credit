@@ -1,13 +1,8 @@
 <?php
 
-/**
- * @file
- *  Contains Drupal\mcapi_signatures\Plugin\Actions\Sign
- *
- */
-
 namespace Drupal\mcapi_signatures\Plugin\Action;
 
+use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -20,29 +15,28 @@ use Drupal\Core\Form\FormStateInterface;
  *   confirm_form_route_name = "mcapi.transaction.operation"
  * )
  */
-class Sign extends \Drupal\mcapi\Plugin\TransactionActionBase {
+class Sign extends TransactionActionBase {
 
-  /*
+  /**
    * {@inheritdoc}
-  */
+   */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $elements = parent::buildConfigurationForm($form, $form_state);
     $elements['states'] = [
       '#type' => 'value',
-      '#value' => ['pending' => 'pending']
+      '#value' => ['pending' => 'pending'],
     ];
     return $elements;
   }
 
-  /*
+  /**
    * {@inheritdoc}
-  */
+   */
   public function execute($transaction = NULL) {
     \Drupal::service('mcapi.signatures')
       ->setTransaction($transaction)
       ->sign();
     parent::execute($transaction);
   }
-
 
 }

@@ -1,44 +1,45 @@
 /**
  * Styling for the Currency page
  */
-table.extreme-balances, table.extreme-balances th, table.extreme-balances td{
+table.extreme-balances,
+table.extreme-balances th,
+table.extreme-balances td {
   border: 0px;
   padding: 1px;
 }
-table.extreme-balances div {
-  }
-table.extreme-balances div.negative{
-  background-color:green;
-  border:2px solid green;
-  width:50%;
-  color:white;
-  font-weight:bold;
-  display:inline-block;
-  text-align:left;
+table.extreme-balances div.negative {
+  background-color: green;
+  border: 2px solid green;
+  width: 50%;
+  color: white;
+  font-weight: bold;
+  display: inline-block;
+  text-align: left;
   -webkit-border-radius: 6px 0 0 6px;
   -moz-border-radius: 6px 0 0 6px;
   border-radius: 6px 0 0 6px;
 }
 table.extreme-balances td div.negative:hover {
-  border:2px solid #8f8;
+  border: 2px solid #8f8;
 }
-table.extreme-balances div.positive{
-  background-color:blue;
-  border:2px solid blue;
-  width:50%; color:white;
-  font-weight:bold;
-  display:inline-block;
-  text-align:right;
-  -webkit-border-radius:0 6px 6px 0 ;
-  -moz-border-radius: 0 6px 6px 0 ;
+table.extreme-balances div.positive {
+  background-color: blue;
+  border: 2px solid blue;
+  width: 50%;
+  color: white;
+  font-weight: bold;
+  display: inline-block;
+  text-align: right;
+  -webkit-border-radius: 0 6px 6px 0;
+  -moz-border-radius: 0 6px 6px 0;
   border-radius: 0 6px 6px 0;
 }
 table.extreme-balances td div.positive:hover {
-  border:2px solid #88f;
+  border: 2px solid #88f;
 }
 
-fieldset.ordered-wallets{
-  display:inline-block;
+fieldset.ordered-wallets {
+  display: inline-block;
   list-style-position: inside;
   width: 40%;
 }

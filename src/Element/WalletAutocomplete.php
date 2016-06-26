@@ -1,23 +1,15 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Element\WalletAutocomplete
- * @todo would be nice to use the #NUM as the wallet identifier,
- * but this would mean overwriting another class
- * @todo this doesn't support the exclude setting yet
- */
-
 namespace Drupal\mcapi\Element;
 
 use Drupal\Core\Entity\Element\EntityAutocomplete;
 
 /**
- * Provides a widget to select wallet references by name, using autocomplete
- * Its really just EntityAutocomplete with a lot of defaults
+ * Provides a widget to select wallet references by name, using autocomplete.
+ *
+ * Its really just EntityAutocomplete with a lot of defaults.
  *
  * @FormElement("wallet_entity_auto")
- *
  */
 class WalletAutocomplete extends EntityAutocomplete {
 
@@ -33,9 +25,9 @@ class WalletAutocomplete extends EntityAutocomplete {
     $info['#exclude'] = [];
     $info['#hidden'] = FALSE;
     $info['#maxlength'] = 64;
-    $info['#size'] = 60;//appearance should be managed with css
+    // Appearance should be managed with css.
+    $info['#size'] = 60;
     return $info;
   }
-
 
 }

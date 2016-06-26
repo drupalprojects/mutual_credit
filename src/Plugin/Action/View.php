@@ -1,18 +1,13 @@
 <?php
 
-/**
- * @file
- *  Contains Drupal\mcapi\Plugin\Action\View
- *
- */
-
 namespace Drupal\mcapi\Plugin\Action;
 
+use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
 
 /**
- * Canonical viewing of a transaction
+ * Canonical viewing of a transaction.
  *
  * @Action(
  *   id = "mcapi_transaction.view_action",
@@ -20,7 +15,7 @@ use Drupal\Core\Session\AccountInterface;
  *   type = "mcapi_transaction"
  * )
  */
-class View extends \Drupal\mcapi\Plugin\TransactionActionBase {
+class View extends TransactionActionBase {
 
   /**
    * {@inheritdoc}
@@ -31,14 +26,14 @@ class View extends \Drupal\mcapi\Plugin\TransactionActionBase {
     $elements['sure']['format']['#value'] = 'twig';
     $elements['sure']['format']['#type'] = 'hidden';
 
-    $elements['sure']['page_title']['#access'] = FALSE;//@todo enable this with tokens
+    // @todo enable this with tokens
+    $elements['sure']['page_title']['#access'] = FALSE;
     $elements['sure']['format']['#access'] = FALSE;
     $elements['sure']['button']['#access'] = FALSE;
     $elements['sure']['cancel_link']['#access'] = FALSE;
     $elements['message']['#access'] = FALSE;
     return $elements;
   }
-
 
   /**
    * {@inheritdoc}
@@ -48,7 +43,6 @@ class View extends \Drupal\mcapi\Plugin\TransactionActionBase {
       $account = \Drupal::currentUser();
     }
     $result = parent::access($object, $account, $return_as_object);
-    $name = 'entity.mcapi_transaction.canonical';
     $params = \Drupal::routeMatch()->getRawParameters()->all();
     if ($return_as_object) {
       if ($result->isAllowed()) {

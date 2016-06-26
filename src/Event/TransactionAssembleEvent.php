@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Event\TransactionAssembleEvent.
- */
-
 namespace Drupal\mcapi\Event;
 
 use Drupal\mcapi\Entity\Transaction;
@@ -17,11 +12,14 @@ use Symfony\Component\EventDispatcher\GenericEvent;
  */
 class TransactionAssembleEvent extends GenericEvent {
 
-  const EVENT_NAME = 'mcapi_transaction.assemble';//I think this is used by rules module
+  // I think this is used by rules module.
+  const EVENT_NAME = 'mcapi_transaction.assemble';
 
   /**
+   * Add a child transaction.
    *
    * @param Transaction $transaction
+   *   The new child transaction.
    */
   public function addChild(Transaction $transaction) {
     $this->getSubject()->children[] = $transaction;

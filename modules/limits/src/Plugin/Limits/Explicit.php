@@ -1,19 +1,13 @@
 <?php
 
-/**
- * @file
- *  Contains Drupal\mcapi_limits\Plugin\Limits\Explicit
- *
- */
-
 namespace Drupal\mcapi_limits\Plugin\Limits;
 
 use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\Core\Form\FormStateInterface;
-Use Drupal\mcapi_limits\Plugin\McapiLimitsBase;
+use Drupal\mcapi_limits\Plugin\McapiLimitsBase;
 
 /**
- * No balance limits
+ * No balance limits.
  *
  * @Limits(
  *   id = "explicit",
@@ -27,27 +21,26 @@ class Explicit extends McapiLimitsBase {
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    $args = func_get_args();
     $subform = [
       'min' => [
         '#title' => $this->t('Min'),
-        '#description' =>  t('Leave blank for no minimum limit'),
+        '#description' => t('Leave blank for no minimum limit'),
         '#type' => 'worth_form',
         '#weight' => 0,
         '#default_value' => $this->configuration['min'] ? $this->configuration['min']['value'] : '',
         '#allowed_curr_ids' => [$this->currency->id],
         '#config' => TRUE,
-        '#minus' => TRUE
+        '#minus' => TRUE,
       ],
       'max' => [
         '#title' => $this->t('Max'),
-        '#description' =>  t('Leave blank for no maximum limit'),
+        '#description' => t('Leave blank for no maximum limit'),
         '#type' => 'worth_form',
         '#weight' => 1,
         '#default_value' => $this->configuration['max'] ? $this->configuration['max']['value'] : '',
         '#allowed_curr_ids' => [$this->currency->id],
-        '#config' => TRUE
-      ]
+        '#config' => TRUE,
+      ],
     ];
 
     $subform += parent::buildConfigurationForm($form, $form_state);
@@ -58,11 +51,10 @@ class Explicit extends McapiLimitsBase {
    * {@inheritdoc}
    */
   public function getLimits(WalletInterface $wallet) {
-    $curr_id = $this->currency->id();
-    //the format is a bit inelegant because it is saved directly from the minmax widget
+    // Format is inelegant because it is saved directly from the minmax widget.
     return [
       'min' => $this->configuration['min']['value'],
-      'max' => $this->configuration['max']['value']
+      'max' => $this->configuration['max']['value'],
     ];
   }
 
@@ -72,8 +64,8 @@ class Explicit extends McapiLimitsBase {
   public function defaultConfiguration() {
     $defaults = parent::defaultConfiguration();
     return $defaults + [
-        'min' => ['value' => -1000],
-        'max' => ['value' => 1000]
+      'min' => ['value' => -1000],
+      'max' => ['value' => 1000],
     ];
   }
 

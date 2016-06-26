@@ -1,11 +1,5 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi\Form\WalletForm.
- * Edit all the fields on a wallet
- */
-
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Entity\ContentEntityForm;
@@ -15,16 +9,28 @@ use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Wallet;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ * Build form to edit, not create, the wallet entity.
+ */
 class WalletForm extends ContentEntityForm {
 
-  private $walletConfig;
 
   /**
+   * The wallet settings.
    *
    * @var /Drupal/Core/Entity/EntityTypeManager
    */
-  ///private $entityTypeManager;
+  private $walletConfig;
 
+  /**
+   * The entityTypeManager service.
+   *
+   * @var /Drupal/Core/Entity/EntityTypeManager
+   */
+
+  /**
+   * Constructor.
+   */
   public function __construct($config_factory, $entity_type_manager) {
     $this->walletConfig = $config_factory->get('mcapi.settings');
     $this->entityTypeManager = $entity_type_manager;
@@ -40,6 +46,9 @@ class WalletForm extends ContentEntityForm {
     );
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getFormId() {
     return 'wallet_form';
   }
@@ -51,7 +60,7 @@ class WalletForm extends ContentEntityForm {
 
     $form = parent::form($form, $form_state);
 
-    if (!$this->entity->isAutonamed()) {
+    if (!$this->entity->autoName()) {
       $form['name'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Name or purpose of wallet'),
@@ -59,7 +68,7 @@ class WalletForm extends ContentEntityForm {
         '#placeholder' => t('My excellent wallet'),
         '#required' => FALSE,
         '#maxlength' => 48,
-        '#size' => 48
+        '#size' => 48,
       ];
     }
 
@@ -77,35 +86,36 @@ class WalletForm extends ContentEntityForm {
         '#options' => $types,
         '#default_value' => $this->entity->holder_entity_type->value,
         '#required' => FALSE,
-        '#access' => $this->currentUser()->haspermission('manage exchange') && count($types) > 1
-      ]
+        '#access' => $this->currentUser()->haspermission('manage exchange') && count($types) > 1,
+      ],
     ];
 
     foreach ($walletableBundles as $entity_type_id => $bundles) {
-      $form['transfer'][$entity_type_id .'_entity_id'] = [
+      $form['transfer'][$entity_type_id . '_entity_id'] = [
         '#title' => t('Name or unique ID'),
         '#type' => 'entity_autocomplete',
         '#placeholder' => t('@entityname name...', ['@entityname' => $types[$entity_type_id]]),
         '#states' => [
           'visible' => [
-            ':input[name="holder_entity_type"]' => ['value' => $entity_type_id]
-          ]
+            ':input[name="holder_entity_type"]' => ['value' => $entity_type_id],
+          ],
         ],
         '#autocomplete_route_name' => 'system.entity_autocomplete',
         '#target_type' => $entity_type_id,
-        '#selection_handler' => 'default',//might want to change this but what are the options?
+        // Might want to change this but what are the options?
+        '#selection_handler' => 'default',
         '#selection_settings' => [
-          'target_bundles' => $bundles
-        ]
+          'target_bundles' => $bundles,
+        ],
       ];
     }
 
     if (in_array($this->entity->payways->value, [Wallet::PAYWAY_ANYONE_OUT, Wallet::PAYWAY_ANYONE_BI])) {
-      //that means anyone can pay out, so no need to nominate friends
+      // That means anyone can pay out, so no need to nominate friends.
       $form['payers']['#access'] = FALSE;
     }
     if (in_array($this->entity->payways->value, [Wallet::PAYWAY_ANYONE_IN, Wallet::PAYWAY_ANYONE_BI])) {
-      //that means anyone can pay in, so no need to nominate friends
+      // That means anyone can pay in, so no need to nominate friends.
       $form['payees']['#access'] = FALSE;
     }
 
@@ -115,23 +125,21 @@ class WalletForm extends ContentEntityForm {
   /**
    * {@inheritdoc}
    */
-  function save(array $form, FormStateInterface $form_state) {
+  public function save(array $form, FormStateInterface $form_state) {
     $wallet = $this->entity;
 
     $values = $form_state->getValues();
-    //update the wallet with any change of access
-
-
-    //check for the change of holdership
+    // Update the wallet with any change of access
+    // check for the change of holdership.
     $key = $values['holder_entity_type'] . '_entity_id';
     if ($values[$key]) {
-      //invalidate cache tags on the current parent.
-      //@see Wallet::invalidateTagsOnSave to invalidate tags on the new parent.
+      // Invalidate cache tags on the current parent.
+      // @see Wallet::invalidateTagsOnSave to invalidate tags on the new parent.
       Cache::invalidateTags([$wallet->holder_entity_type->value . ':' . $wallet->holder_entity_id->value]);
 
       $wallet->set('holder_entity_type', $values['holder_entity_type'])
         ->set('holder_entity_id', $values[$key]);
-      //@todo need to clear the walletaccess cache for both users
+      // @todo need to clear the walletaccess cache for both users
       drupal_set_message(
         t('Wallet has been transferred to %name', ['%name' => $wallet->getOwner()->label()])
       );
@@ -144,10 +152,13 @@ class WalletForm extends ContentEntityForm {
   }
 
   /**
+   * Get a list of user names from the user IDs.
    *
    * @param array $uids
+   *   User IDs.
+   *
    * @return string
-   *   comma separated usernames
+   *   Comma separated usernames.
    */
   private function getUsernames($uids) {
     $names = [];

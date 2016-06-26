@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi\Plugin\views\field\WalletHolder.
- */
-
 namespace Drupal\mcapi\Plugin\views\field;
 
 use Drupal\views\Plugin\views\field\Standard;
@@ -12,7 +7,7 @@ use Drupal\views\ResultRow;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Field handler to link the transaction description to the transaction itself
+ * Field handler to link the transaction description to the transaction itself.
  *
  * @ingroup views_field_handlers
  *
@@ -20,6 +15,9 @@ use Drupal\Core\Form\FormStateInterface;
  */
 class WalletHolder extends Standard {
 
+  /**
+   * {@inheritdoc}
+   */
   protected function defineOptions() {
     $options = parent::defineOptions();
     $options['owner'] = array('default' => '');
@@ -27,8 +25,7 @@ class WalletHolder extends Standard {
   }
 
   /**
-   * Default options form that provides the label widget that all fields
-   * should have.
+   * {@inheritdoc}
    */
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     parent::buildOptionsForm($form, $form_state);
@@ -36,7 +33,7 @@ class WalletHolder extends Standard {
       '#title' => $this->t('Show the wallet owner'),
       '#description' => $this->t('The holder can be any entity but the owner is always a user'),
       '#type' => 'checkbox',
-      '#default_value' => $this->options['owner']
+      '#default_value' => $this->options['owner'],
     ];
   }
 
@@ -44,15 +41,15 @@ class WalletHolder extends Standard {
    * {@inheritdoc}
    */
   public function query() {
-    //$this->addAdditionalFields();
+    // $this->addAdditionalFields();
   }
 
   /**
    * {@inheritdoc}
    */
-  function render(ResultRow $values) {
+  public function render(ResultRow $values) {
     $wallet = $this->getEntity($values);
-    
+
     $entity = $this->options['owner'] ?
       $wallet->getHolder()->getOwner() :
       $wallet->getHolder();

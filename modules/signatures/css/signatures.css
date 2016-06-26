@@ -1,33 +1,34 @@
+#pending-signatures {
+  float: right;
+}
 
-#pending-signatures{float:right;}
-
-div.state-pending{
-   margin: 0px 0 0 0px;
-   position: relative;
-   font-family:arial, helvetica;
-   font-size:50pt;
-   font-weight:bold;
-   color: transparent;
-   text-shadow: 0 0 2px rgba(0,0,0,0.07);
-   -webkit-transform: rotate(-25deg);
-   -moz-transform: rotate(-25deg);
-   -ms-transform: rotate(-25deg);
-   -o-transform: rotate(-25deg);
-   filter: progid:DXImageTransform.Microsoft.Alpha(opacity=8);
-   top:1em;
+div.state-pending {
+  margin: 0px 0 0 0px;
+  position: relative;
+  font-family: arial, helvetica;
+  font-size: 50pt;
+  font-weight: bold;
+  color: transparent;
+  text-shadow: 0 0 2px rgba(0,0,0,0.07);
+  -webkit-transform: rotate(-25deg);
+  -moz-transform: rotate(-25deg);
+  -ms-transform: rotate(-25deg);
+  -o-transform: rotate(-25deg);
+  filter: progid:DXImageTransform.Microsoft.Alpha(opacity=8);
+  top: 1em;
 }
 
 .transaction.erased div.pending-bgstamp {
   display: none !important;
 }
 /* the watermark on the pending transaction certificate. NB this creates a big space at the top of the certificate */
-div.pending-bgstamp{
+div.pending-bgstamp {
   float: left;
   margin: 0px 0 0 0px;
   position: relative;
-  font-family:arial, helvetica;
-  font-size:50pt;
-  font-weight:bold;
+  font-family: arial, helvetica;
+  font-size: 50pt;
+  font-weight: bold;
   color: transparent;
   text-shadow: 0 0 2px rgba(0,0,0,0.07);
   -webkit-transform: rotate(-25deg);
@@ -39,25 +40,27 @@ div.pending-bgstamp{
   z-index: -10;
 }
 
-#pending-signatures{float:right;}
+#pending-signatures {
+  float: right;
+}
 
-div.transaction.certificate td{
-  width:32px;
-  height:32px;
+div.transaction.certificate td {
+  width: 32px;
+  height: 32px;
   background-repeat: no-repeat;
   background-position: center;
   background-size: 32px;
 }
 
-div.transaction.certificate td.signature.signed{
+div.transaction.certificate td.signature.signed {
   background-image: url("finished.png");
 }
-div.transaction.certificate td.signature.pending{
+div.transaction.certificate td.signature.pending {
   background-image: url("pending.png");
 }
 
 /* the transaction operations flow on from the sentence in the pending view of transactions as sentences */
 div.view-mcapi-pending-signatures div.mcapi_transaction-sentence,
 div.view-mcapi-pending-signatures div.item-list {
-  display:inline;
+  display: inline;
 }

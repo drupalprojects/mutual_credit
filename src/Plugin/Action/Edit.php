@@ -1,16 +1,13 @@
 <?php
 
-/**
- * @file
- *  Contains Drupal\mcapi\Plugin\Action\Edit
- */
-
 namespace Drupal\mcapi\Plugin\Action;
 
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Action which leads to the entity edit form
+ * Action which leads to the entity edit form.
  *
  * @Action(
  *   id = "mcapi_transaction.edit_action",
@@ -19,7 +16,7 @@ use Drupal\Core\Form\FormStateInterface;
  *   confirm_form_route_name = "entity.mcapi_transaction.edit_form"
  * )
  */
-class Edit extends \Drupal\mcapi\Plugin\TransactionActionBase implements \Drupal\Core\Plugin\ContainerFactoryPluginInterface{
+class Edit extends TransactionActionBase implements ContainerFactoryPluginInterface {
 
   /**
    * {@inheritdoc}
@@ -27,7 +24,8 @@ class Edit extends \Drupal\mcapi\Plugin\TransactionActionBase implements \Drupal
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $elements = parent::buildConfigurationForm($form, $form_state);
     $elements['states']['erased'] = [
-      '#disabled' => TRUE,//setting #default value seems to have no effect
+    // Setting #default value seems to have no effect.
+      '#disabled' => TRUE,
     ];
     return $elements;
   }
@@ -38,6 +36,5 @@ class Edit extends \Drupal\mcapi\Plugin\TransactionActionBase implements \Drupal
   public function execute($object = NULL) {
 
   }
-
 
 }

@@ -1,14 +1,9 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\McapiLimitsEvents.
- */
-
 namespace Drupal\mcapi_limits;
 
 /**
- * Contains all events relating to transaction limits
+ * Contains all events relating to transaction limits.
  */
 final class McapiLimitsEvents {
 

@@ -1,18 +1,13 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Element\IntertradingWallet.
- * @deprecated
- */
-
 namespace Drupal\mcapi\Element;
 
+use Drupal\mcapi\Exchange;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\Radios;
 
 /**
- * Provides a form element which returns the appropriate intertrading wallets as a hidden field
+ * A hidden form element with the appropriate intertrading wallets.
  *
  * @FormElement("intertrading_wallet")
  */
@@ -27,26 +22,31 @@ class IntertradingWallet extends Radios {
       '#input' => TRUE,
       '#process' => [
         [$class, 'processTypes'],
-      ]
+      ],
     ];
   }
 
   /**
-   * process callback for mcapi_types form element
+   * Process callback for mcapi_types form element.
    *
    * @return array
-   *   the processed $element
+   *   The processed $element.
    */
-  static function processTypes($element, $form_state) {
+  public static function processTypes($element, $form_state) {
     $element = [
       '#type' => 'value',
-      '#value' => \Drupal\mcapi\Exchange::intertradingWalletId()
+      '#value' => Exchange::intertradingWalletId(),
     ];
     return $element;
   }
 
+  /**
+   * Value callback.
+   */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
-    if ($input == NULL) return;
+    if ($input == NULL) {
+      return;
+    }
     return $input;
   }
 

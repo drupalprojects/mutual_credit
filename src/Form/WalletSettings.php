@@ -2,6 +2,7 @@
 
 namespace Drupal\mcapi\Form;
 
+use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Cache\Cache;
@@ -10,20 +11,39 @@ use Drupal\Core\Link;
 use Drupal\mcapi\Entity\Wallet;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ * Form builder for wallet settings.
+ */
 class WalletSettings extends ConfigFormBase {
 
-  private $entityTypeManager;
+  /**
+   * The entityTypeManager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
 
+  /**
+   * The entity type bundle info service.
+   *
+   * @var type
+   */
+  protected $entityTypeBundleInfo;
+
+  /**
+   * Construct.
+   */
   public function __construct($configFactory, $entityTypeManager, $entity_type_bundle_info) {
     $this->setConfigFactory($configFactory);
     $this->entityTypeManager = $entityTypeManager;
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
 
   }
+
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'mcapi_wallet_settings_form';
   }
 
@@ -42,20 +62,20 @@ class WalletSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    //display a warning message
-    $display = \Drupal\Core\Entity\Entity\EntityFormDisplay::load('mcapi_wallet.mcapi_wallet.default');
-    if (!$display or !$display->getComponent('payees') or !$display->getComponent('payers')) {
+    // Display a warning message.
+    $display = EntityFormDisplay::load('mcapi_wallet.mcapi_wallet.default');
+    if (!$display or (!$display->getComponent('payees') and !$display->getComponent('payers'))) {
       drupal_set_message($this->t('Field payers OR payees needs to be visible in the wallet form display.'), 'warning');
       if (!\Drupal::moduleHandler()->moduleExists('field_ui')) {
-        //todo improve this message
+        // Todo improve this message.
         drupal_set_message($this->t('Enable the Field UI module edit the form display.'), 'warning');
       }
     }
 
     $config = $this->configFactory()->get('mcapi.settings');
 
-    //A wallet can be attached to any entity with an entity reference field pointing towards the exchange entity
-    //OR to an exchange entity itself
+    // A wallet can be attached to any entity with an entity reference field
+    // pointing towards the exchange entity OR to an exchange entity itself.
     $link = Link::fromTextAndUrl(
       'EntityOwnerInterface',
       Url::fromUri('https://api.drupal.org/api/drupal/core!modules!user!src!EntityOwnerInterface.php/interface/EntityOwnerInterface/8')
@@ -68,34 +88,40 @@ class WalletSettings extends ConfigFormBase {
       ),
       '#type' => 'fieldset',
       '#weight' => 2,
-      '#tree' => TRUE
+      '#tree' => TRUE,
     ];
 
-    //@todo alter this in the exchanges module so that only bundles with an entity reference to an exchange are listed
+    // @todo alter this in the exchanges module so that only bundles with an
+    // entity reference to an exchange are listed
     foreach ($this->entityTypeManager->getDefinitions() as $entity_type_id => $entity_type) {
       if (($entity_type->isSubclassOf('\Drupal\User\EntityOwnerInterface') || $entity_type_id == 'user')
-        && $entity_type->getLinkTemplate('canonical')//otherwise where to put the wallet!
+      // Otherwise where to put the wallet!
+        && $entity_type->getLinkTemplate('canonical')
         ) {
         $bundles = $this->entityTypeBundleInfo->getBundleInfo($entity_type_id);
         $entity_label = (count($bundles) > 1)
-          ? $entity_type->getLabel() .': '
+          ? $entity_type->getLabel() . ': '
           : '';
         foreach ($bundles as $bundle_name => $bundle_info) {
           $val = $config->get("entity_types.$entity_type_id:$bundle_name");
+          /* @var $bundle_name string */
           $form['entity_types']["$entity_type_id:$bundle_name"] = [
-            '#title' => $entity_label.$bundle_info['label'],
+            '#title' => $entity_label . $bundle_info['label'],
             '#type' => 'number',
             '#min' => $val,
             '#default_value' => $val,
             '#size' => 2,
-            '#max_length' => 2
+            '#max_length' => 2,
           ];
         }
       }
     }
     $form['autoadd'] = [
       '#title' => $this->t('Auto-create'),
-      '#description' => $this->t('A wallet will be auto-created for when entities of each wallet-holding type above is created.') .' '.t('This is not retroactive'),
+      '#description' => implode(' ', [
+        $this->t('A wallet will be auto-created for when entities of each wallet-holding type above is created.'),
+        $this->t('This is not retroactive.'),
+      ]),
       '#type' => 'checkbox',
       '#default_value' => $config->get('autoadd'),
       '#weight' => 5,
@@ -110,22 +136,22 @@ class WalletSettings extends ConfigFormBase {
 
     $form['payways'] = [
       '#title' => $this->t('Default payment direction'),
-      '#description' => 'Setting given to new wallets',
+      '#description' => $this->t('Setting given to new wallets'),
       '#type' => 'radios',
       '#options' => Wallet::payWays(),
       '#default_value' => $config->get('payways'),
-      '#weight' => 9
+      '#weight' => 9,
     ];
     $form['public'] = [
       '#title' => $this->t('Default wallet visibility'),
-      '#description' => 'Setting given to new wallets',
+      '#description' => $this->t('Setting given to new wallets'),
       '#type' => 'radios',
       '#options' => [
         0 => $this->t('Can only be seen by the owners and admins'),
-        1 => $this->t("Can be seen by anybody with 'view public wallets' permission")
+        1 => $this->t("Can be seen by anybody with 'view public wallets' permission"),
       ],
       '#default_value' => $config->get('payways'),
-      '#weight' => 9
+      '#weight' => 9,
     ];
 
     $form['user_interface'] = [
@@ -143,7 +169,7 @@ class WalletSettings extends ConfigFormBase {
         '#type' => 'number',
         '#default_value' => $config->get('wallet_widget_max_select'),
       ],
-      '#weight' => 12
+      '#weight' => 12,
     ];
 
     $form['user_interface']['wallet_tab'] = [
@@ -195,7 +221,9 @@ class WalletSettings extends ConfigFormBase {
 
     parent::submitForm($form, $form_state);
 
-    Cache::invalidateTags(['mcapi_wallet_values', 'mcapi_wallet_view', 'walletable_bundles']);
+    Cache::invalidateTags(
+      ['mcapi_wallet_values', 'mcapi_wallet_view', 'walletable_bundles']
+    );
 
     $form_state->setRedirect('mcapi.admin');
   }
@@ -208,6 +236,3 @@ class WalletSettings extends ConfigFormBase {
   }
 
 }
-
-
-

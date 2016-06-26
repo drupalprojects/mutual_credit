@@ -1,15 +1,6 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\Block\Greco
- */
-
-
 namespace Drupal\mcapi\Plugin\Block;
-
-use Drupal\mcapi\Plugin\Block\McapiBlockBase;
-
 
 /**
  * Provides a user balances block.
@@ -19,21 +10,25 @@ use Drupal\mcapi\Plugin\Block\McapiBlockBase;
  *   admin_label = @Translation("Greco index over time"),
  *   category = @Translation("Community Accounting")
  * )
+ *
+ * @todo: How do we calculate the block title?
  */
 class Greco extends McapiBlockBase {
 
-  //@todo: How do we calculate the block title?
-  //This needs to be singular or plural, for example
+  /**
+   * This needs to be singular or plural, for example.
+   */
   public function getTitle() {
     return $this->label();
   }
 
   /**
    * {@inheritdoc}
-   * return a render array
+   * 
+   * return a render array.
    */
   public function build() {
     return mcapi_greco_gchart();
   }
-}
 
+}

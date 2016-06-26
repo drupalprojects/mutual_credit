@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\Field\FieldType\WorthItem.
- */
-
 namespace Drupal\mcapi\Plugin\Field\FieldType;
 
 use Drupal\Core\Field\FieldItemBase;
@@ -37,6 +32,9 @@ use Drupal\Core\TypedData\DataReferenceDefinition;
  */
 class WorthItem extends FieldItemBase {
 
+  /**
+   * {@inheritdoc}
+   */
   public static function propertydefinitions(FieldStorageDefinitionInterface $field_definition) {
     $properties['curr_id'] = DataDefinition::create('string')
       ->setLabel(t('@label ID', ['Currency']));
@@ -47,9 +45,10 @@ class WorthItem extends FieldItemBase {
       ->setComputed(TRUE)
       ->setClass('\Drupal\mcapi\CurrencyComputed')
       ->setSetting('currency source', 'curr_id');
-      //don't know why a special class is needed when its not in \Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem::propertyDefinitions
-      //->setTargetDefinition(EntityDataDefinition::create('mcapi_currency'))
-      //->addConstraint('EntityType', 'mcapi_currency')
+    // don't know why a special class is needed when its not in
+    // EntityReferenceItem::propertyDefinitions
+    // ->setTargetDefinition(EntityDataDefinition::create('mcapi_currency'))
+    // ->addConstraint('EntityType', 'mcapi_currency')
     return $properties;
   }
 
@@ -69,8 +68,8 @@ class WorthItem extends FieldItemBase {
           'type' => 'int',
           'size' => 'normal',
           'not null' => TRUE,
-          'default' => 0
-        ]
+          'default' => 0,
+        ],
       ],
     ];
   }
@@ -78,7 +77,7 @@ class WorthItem extends FieldItemBase {
   /**
    * {@inheritdoc}
    */
-  public function setValue($value, $notify = true) {
+  public function setValue($value, $notify = TRUE) {
     if (!isset($value['value'])) {
       return;
     }
@@ -106,7 +105,7 @@ class WorthItem extends FieldItemBase {
   public static function generateSampleValue(FieldDefinitionInterface $field_definition) {
     return [
       'value' => $field_definition->currency->sampleValue(),
-      'curr_id' => $field_definition->currency->id
+      'curr_id' => $field_definition->currency->id,
     ];
   }
 
@@ -117,6 +116,9 @@ class WorthItem extends FieldItemBase {
     return 'value';
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function onChange($property_name, $notify = TRUE) {
     if ($property_name == 'currency') {
       $this->curr_id = $this->currency->id;
@@ -124,7 +126,11 @@ class WorthItem extends FieldItemBase {
     parent::onChange($property_name, $notify);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getString() {
     return $this->currency->format($this->value, 'normal');
   }
+
 }

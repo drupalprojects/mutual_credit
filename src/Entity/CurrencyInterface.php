@@ -1,14 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Entity\CurrencyInterface.
- */
-
 namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
-use Drupal\Core\Session\AccountInterface;
 
 /**
  * Provides an interface defining a currency configuration entity.
@@ -16,55 +10,59 @@ use Drupal\Core\Session\AccountInterface;
 interface CurrencyInterface extends ConfigEntityInterface {
 
   /**
-   * return the number of transactions, in all states
+   * Return the number of transactions, in all states.
    *
    * @param array $conditions
-   *   an array of conditions to meet, keyed by mcapi_entity property name
-   * @param boolean $serial
-   *   whether to return the number of serials, or the number of xids
+   *   An array of conditions to meet, keyed by mcapi_entity property name.
    *
    * @return integer.
+   *   The number of transactions.
    */
-  function transactionCount(array $conditions = []);
+  public function transactionCount(array $conditions = []);
 
   /**
-   * return the sum of all transactions, in all states
+   * Return the sum of all transactions, in all states.
    *
    * @param array $conditions
-   *   an array of conditions to meet, keyed by mcapi_entity property name
+   *   An array of conditions to meet, keyed by mcapi_entity property name.
    *
-   * @return integer
-   *   raw quantity which should be formatted using currency->format($value);
+   * @return int
+   *   Raw quantity which should be formatted using currency->format($value).
    */
-  function volume(array $conditions = []);
+  public function volume(array $conditions = []);
 
   /**
-   * Format the database integer value according to the formatting string in $currency->format.
+   * Format the database integer value according to the formatting string.
    *
-   * @param integer $raw_num
-   *   the value stored in the worth field 'value' column
+   * @param int $raw_num
+   *   The value stored in the worth field 'value' column.
    *
    * @return string
-   *   #markup containing the formatted value
+   *   Markup containing the formatted value.
    */
-  function format($raw_num);
+  public function format($raw_num);
 
   /**
-   * Check whether it is allowed to deleted this currency, which means deleting
-   * all transactions in it
+   * Determine whether it is allowed to deleted this currency.
    *
-   * @return boolean
+   * @return bool
+   *   TRUE if the currency is deleted at this time by the current user.
+   *
+   * @note deleting means deleting all transactions using this currency.
+   *
+   * @todo shouldn't this be in an access controller?
    */
-  function deletable();
+  public function deletable();
 
   /**
-   * break up a native quantity into the parts
-   * @param integer
-   *   the stored value
+   * Break up a native quantity into the parts.
+   *
+   * @param int $raw_num
+   *   The stored value.
+   *
    * @return array
-   *   the value expressed in parts, e.g. pounds, shillings and pence
+   *   The value expressed in parts, e.g. pounds, shillings and pence.
    */
-  function formattedParts($raw_num);
+  public function formattedParts($raw_num);
 
 }
-

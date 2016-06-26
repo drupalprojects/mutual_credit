@@ -2,39 +2,16 @@
 
 /**
  * @file
- * mcapi.module
+ * Hooks and common functions for Community Accounting.
  */
 
 use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Exchange;
+use Drupal\system\Entity\Action;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
 use Drupal\Core\Entity\ContentEntityInterface;
-
-/**
- * Implements hook_requirements().
- */
-function mcapi_requirements($phase) {
-  if ($phase == 'runtime') {
-    $result = [
-      'title' => t('Transaction index table'),
-    ];
-    //check that the index table is integral
-    if (\Drupal::entityTypeManager()->getStorage('mcapi_transaction')->indexCheck()) {
-      $result['severity'] = REQUIREMENT_OK;
-      $result['description'] = t('Index table adds up');
-    }
-    else {
-      $result['severity'] = REQUIREMENT_ERROR;
-      $result['description'] = t(
-        'Index table does not add up. Try rebuilding it at %link',
-        ['%link' => Link::fromTextAndUrl('admin/accounting/misc', Url::fromRoute('mcapi.admin_misc'))]
-      );
-    }
-    return [$result];
-  }
-  return [];
-}
 
 /**
  * Implements hook_help().
@@ -47,6 +24,7 @@ function mcapi_help($route_name) {
         t('Retired currencies can no longer be used, but transactions are still visible.'),
         t('Only unused currencies can be deleted.'),
       ]);
+
     case 'mcapi.admin.workflow':
       $help = [
         t("Special 'actions' move transactions of various types between states, except for 'view', which is special"),
@@ -56,6 +34,7 @@ function mcapi_help($route_name) {
         $help[] = t("N.B. 'Manage display' tab is hidden because transaction displays are all handled through configurable templates.");
       }
       return implode(' ', $help);
+
     case 'entity.mcapi_transaction.field_ui_fields':
       $settings_url = Url::fromRoute('mcapi.admin_misc');
       $action_url = Url::fromRoute('mcapi.admin.workflow');
@@ -77,14 +56,15 @@ function mcapi_help($route_name) {
 
 /**
  * Implements hook_entity_view().
- * add a wallet summary view to wallet-enabled entities
  *
- * @todo check the cache contexts because this contains a link to wallet creation.
+ * Add a wallet summary view to wallet-enabled entities.
+ *
+ * @todo check cache contexts because this contains a link to wallet creation.
  */
 function mcapi_entity_view(array &$build, $entity, $display) {
   if ($display->getComponent('wallets_summaries')) {
     $wallets = [];
-    foreach (Mcapi::walletsOf($entity, TRUE) as $wid => $wallet) {
+    foreach (Mcapi::walletsOf($entity, TRUE) as $wallet) {
       if ($wallet->access('view') && !$wallet->orphaned->value) {
         $wallets[] = $wallet;
       }
@@ -93,7 +73,8 @@ function mcapi_entity_view(array &$build, $entity, $display) {
       $build += [
         'wallets_summaries' => \Drupal::entityTypeManager()
           ->getViewBuilder('mcapi_wallet')
-          //the wallet 'summary' view mode is provided in this module's default config
+          // The wallet 'summary' view mode is provided in this module's default
+          // config.
           ->viewMultiple($wallets, 'summary'),
       ];
     }
@@ -102,37 +83,42 @@ function mcapi_entity_view(array &$build, $entity, $display) {
 
 /**
  * Implements hook_element_info_alter().
- * adds the 'balances' icon via css
+ *
+ * Adds the 'balances' icon via css.
  */
 function mcapi_element_info_alter(&$items) {
   $items['toolbar']['#attached']['library'][] = 'mcapi/mcapi.toolbar';
 }
 
 /**
- * Implements hook_entity_presave()
- * rename the entity's wallet in case the entity's name is changed
+ * Implements hook_entity_presave().
+ *
+ * Rename the entity's wallet in case the entity's name is changed.
  */
 function mcapi_entity_presave($entity) {
-  if ($entity instanceOf ContentEntityInterface && Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())==1) {
-    //get the entity's one wallet, and rename it.
+  if ($entity instanceof ContentEntityInterface && Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle()) == 1) {
+    // Get the entity's one wallet, and rename it.
     if ($wids = Mcapi::walletsOf($entity)) {
-      $wallet = Wallet::load(reset($wids))->setHolder($entity)->save();
+      Wallet::load(reset($wids))->setHolder($entity)->save();
     }
   }
 }
 
 /**
- * Implements hook_entity_insert()
- * give a new wallet to new entities, if the settings require
+ * Implements hook_entity_insert().
+ *
+ * Give a new wallet to new entities, if the settings require.
  */
 function mcapi_entity_insert($entity) {
   $config = \Drupal::config('mcapi.settings');
-  //note that intertrading wallets are created not here but in Exchange::postSave
+  //
+  // Note that intertrading wallets are created in Exchange::postSave.
   if ($config->get('autoadd')) {
     $type = $entity->getEntityTypeId();
-    //NB autoadd applies to ALL entity types or to none
+    // NB autoadd applies to ALL entity types or to none.
     if (Mcapi::maxWalletsOfBundle($type, $entity->bundle())) {
-      //no need to check what the max is, since this is the first wallet created for this entity
+      // No need to check what the max is; this is the first wallet created for
+      // this entity.
       Wallet::create([
         'holder' => $entity,
         'name' => t('Default'),
@@ -148,20 +134,20 @@ function mcapi_entity_insert($entity) {
 /**
  * Implements hook_entity_predelete().
  *
- * orphan any wallets owned by the deleted entity.
+ * Orphan any wallets owned by the deleted entity.
  */
 function mcapi_entity_predelete($entity) {
-  if ($entity instanceOf ContentEntityInterface) {
+  if ($entity instanceof ContentEntityInterface) {
     if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())) {
-      \Drupal\mcapi\Exchange::orphan($entity);
+      Exchange::orphan($entity);
     }
   }
 }
 
 /**
  * Implements hook_entity_type_alter().
- * @param \Drupal\Core\Entity\EntityTypeInterface[] $entity_types
- * Change the action list controller to a wrapper which hides this modules operation actions
+ *
+ * Change the action list controller to a wrapper which hides operation actions.
  */
 function mcapi_entity_type_alter(array &$entity_types) {
   $entity_types['action']
@@ -171,130 +157,65 @@ function mcapi_entity_type_alter(array &$entity_types) {
 
 /**
  * Implements hook_entity_operation_alter().
- * prevent the transaction view modes from being tampered with
+ *
+ * Prevent the transaction view modes from being tampered with.
+ *
  * @todo check these view modes all still exist
  */
 function mcapi_entity_operation_alter(&$operations, $entity) {
-  if (in_array('mcapi_transaction.'.$entity->id(), ['certificate', 'sentence'])) {
+  if (in_array('mcapi_transaction.' . $entity->id(), ['certificate', 'sentence'])) {
     $operations = [];
   }
 }
 
-/*
+/**
  * Implements hook_form_field_config_edit_form_alter().
+ *
+ * @see Drupal\mcapi\Form\CurrencyForm::save
  */
 function mcapi_form_field_config_edit_form_alter(&$form, &$form_state) {
   if ($form_state->getFormObject()->getEntity()->getEntityTypeId() == 'mcapi_transaction') {
-    //@see Drupal\mcapi\Form\CurrencyForm::save
     unset($form['required']);
   }
 }
 
 /**
  * Implements hook_entity_extra_field_info().
- * @todo move this to another file i.e.. call another function _mcapi_entity_extra_field_info()
  */
 function mcapi_entity_extra_field_info() {
-  //go through all the bundles which are configured to hold wallets
-  foreach(Mcapi::walletableBundles() as $entity_type => $bundles) {
-    foreach ($bundles as $bundle => $max) {
-      $extra[$entity_type] = [
-        $bundle => [
-          'display' => [
-            'wallets_summaries' => [
-              'label' => t('Wallets summaries'),
-              'description' => t("The 'summary' view of all the entity's wallets."), //' '.l('admin/accounting/wallets/fields', Url::fromUri('admin/accounting/wallets/fields'),
-              'weight' => 5,
-            ]
-          ]
-        ]
-      ];
-    }
-  }
-  $extra['mcapi_wallet']['mcapi_wallet']['display'] = [];
-  $wallet_display = &$extra['mcapi_wallet']['mcapi_wallet']['display'];
-
-  $wallet_display = [
-    'stats' => [
-      'label' => t('Trading stats'),
-      'description' => t('Grid showing trading stats for all currencies'),
-      'weight' => 5
-    ],
-    'balances' => [
-      'label' => t('Balance'),
-      'description' => t('Small thingy showing balances of all currencies'),
-      'weight' => 6
-    ],
-    'histories' => [
-      'label' => t('History chart'),
-      'description' => t('One line chart per currency showing balance over time.'),
-      'weight' => 7
-    ],
-    'balance_bars' => [
-      'label' => t('Given & received'),
-      'description' => t('One barchart per currency showing incoming and outgoing volumes'),
-      'weight' => 8
-    ],
-    'canonical_link' => [
-      'label' => t("Link to canonical view"),
-      'description' => t("Link to canonical view"),
-      'weight' => 11
-    ],
-    'holder_link' => [
-      'label' => t("Link to holder"),
-      'description' => t("Each wallet is owned by a content entity"),
-      'weight' => 14,
-      'visible' => FALSE
-    ]
-  ];
-  $route_provider = \Drupal::service('router.route_provider');
-  //we don't want this to break if these views are not present, for any reason
-  if ($route_provider->getRoutesByNames(['view.wallet_transactions.page'])) {
-    $wallet_display['link_transactions'] = [
-      'label' => t("Link to this wallet's transactions"),
-      'description' => t("A page generated by views"),
-      'weight' => 9
-    ];
-  }
-
-  if ($route_provider->getRoutesByNames(['view.income_expenditure.income_page'])) {
-    $wallet_display['link_income_expenditure'] = [
-      'label' => t('Link to Income & expenditure'),
-      'description' => t('Two tables showing transactions in either direction'),
-      'weight' => 10
-    ];
-  }
-
-  return $extra;
+  module_load_include('inc', 'mcapi');
+  return _mcapi_entity_extra_field_info();
 }
 
 /**
  * Implements hook_theme().
  */
 function mcapi_theme($existing, $type, $theme, $path) {
-  module_load_include('theme.inc', 'mcapi');
+  module_load_include('inc', 'mcapi');
   return _mcapi_theme($existing, $type, $theme, $path);
 }
 
 /**
- * implement mcapi hook_mcapi_form_list().
- * return a list of transaction forms declared in this module.
+ * Implements mcapi hook_mcapi_form_list().
+ *
+ * Return a list of transaction forms declared in this module.
  * each item must e an array with the following keys
  * - 'link' => <a href="">whatever</a>
- * - 'operations' => [Url::fromPath('blah')] an array of items, each with title and path
+ * - 'operations' => [Url::fromPath('blah')] item array, each with title & path.
+ *
+ * @todo get the title from the route.
  */
 function mcapi_mcapi_form_list() {
-  //@todo get the title from the route.
   $forms['12many'] = [
-    'link' => Link::fromTextAndUrl(t('One to many'), \Drupal\Core\Url::fromRoute('mcapi.masspay.12many', [])),
-    'operations' => []
+    'link' => Link::fromTextAndUrl(t('One to many'), Url::fromRoute('mcapi.masspay.12many', [])),
+    'operations' => [],
   ];
   $forms['many21'] = [
-    'link' => Link::fromTextAndUrl(t('Many to one'), \Drupal\Core\Url::fromRoute('mcapi.masspay.many21', [])),
-    'operations' => []
+    'link' => Link::fromTextAndUrl(t('Many to one'), Url::fromRoute('mcapi.masspay.many21', [])),
+    'operations' => [],
   ];
   $forms['default'] = [
-    'link' => Link::fromTextAndUrl(t('3rd party'), \Drupal\Core\Url::fromRoute('entity.mcapi_transaction.add_form')),
+    'link' => Link::fromTextAndUrl(t('3rd party'), Url::fromRoute('entity.mcapi_transaction.add_form')),
     'operations' => [],
   ];
   return $forms;
@@ -302,20 +223,11 @@ function mcapi_mcapi_form_list() {
 
 /**
  * Implements hook_entity_form_display_alter().
- * Ensure on startup that the worth field is visible in the entity form
- * this is nasty but there was no other way
+ *
+ * Ensure on startup that the worth field is visible in the entity form. This is
+ * nasty but there was no other way.
  */
-function mcapi_entity_form_display_alter($display, $display_context){
-  if ($display_context['bundle'] == 'mcapi_transaction') {
-    $settings = $display->getComponent('worth');
-    $settings['visible'] = TRUE;
-    $display->setComponent('worth', $settings);
-  }
-}
-/**
- * Implements hook_entity_view_display_alter().
- */
-function mcapi_entity_view_display_alter($display, $display_context){
+function mcapi_entity_form_display_alter($display, $display_context) {
   if ($display_context['bundle'] == 'mcapi_transaction') {
     $settings = $display->getComponent('worth');
     $settings['visible'] = TRUE;
@@ -324,48 +236,60 @@ function mcapi_entity_view_display_alter($display, $display_context){
 }
 
 /**
- * utility to retrieve any enabled views 'embed' displays which takes a wallet id as its first argument
- * @todo make some settings here, or some responsivness to the actual views, then cache it
+ * Implements hook_entity_view_display_alter().
+ */
+function mcapi_entity_view_display_alter($display, $display_context) {
+  if ($display_context['bundle'] == 'mcapi_transaction') {
+    $settings = $display->getComponent('worth');
+    $settings['visible'] = TRUE;
+    $display->setComponent('worth', $settings);
+  }
+}
+
+/**
+ * Retrieve any enabled views 'embed' displays for which arg 1 is a wallet_id.
+ *
+ * @todo make some settings here, or some responsivness to the actual views,
+ * then cache it
  */
 function mcapi_one_wallet_entity_views_displays() {
-  //probably also need to return a path component and the menu link title
+  // Probably also need to return a path component and the menu link title.
   return [
-    //'entity_transactions' => 'embed',
     'wallet_transactions' => [
       'display_id' => 'embed',
       'path' => 'transactions',
-      'title' => t('Transactions')//might be a good idea to get this from the views display, translated
+      // Might be a good idea to get this from the views display, translated.
+      'title' => t('Transactions'),
     ],
     'income_expenditure' => [
-      'display_id' => 'embed_1',//can't seem to attach the outgoing transactions to an embed
+      // Can't seem to attach the outgoing transactions to an embed.
+      'display_id' => 'embed_1',
       'path' => 'inex',
-      'title' => t('Income & Expenditure')//might be a good idea to get this from the views display, translated
-    ]
+      // Might be a good idea to get this from the views display, translated.
+      'title' => t('Income & Expenditure'),
+    ],
   ];
 }
 
 /**
  * Implements hook_query_MCAPI_TRANSACTION_ACCESS_alter().
  *
- * Per-transaction access control on transaction views
- * on the basis of only relatives being able to see it
- * relatives are defined in the transaction_view action configuration
- *
- * @param Drupal\views\Plugin\views\query\QueryPluginBase $query
+ * Per-transaction access control on transaction views on the basis of only
+ * relatives being able to see it. Relatives are defined in the transaction_view
+ * action configuration.
  *
  * @note this hook doesn't work when placed in mcapi.views_execution.inc
- *
  */
-function mcapi_query_mcapi_transaction_access_alter(Drupal\Core\Database\Query\AlterableInterface $query) {
+function mcapi_query_mcapi_transaction_access_alter($query) {
   if (\Drupal::currentUser()->hasPermission('view all transactions')) {
     return;
   }
   $tables = $query->getTables();
   $table = reset($tables)['table'];
 
-  $relatives_plugins = \Drupal\system\Entity\Action::load('transaction_view')->getPlugin()->getConfiguration()['access'];
-  $relative_plugins = \Drupal\mcapi\Mcapi::transactionRelatives($relatives_plugins)->getActivePlugins();
-  //we filter transactions using one relative OR another
+  $relatives_plugins = Action::load('transaction_view')->getPlugin()->getConfiguration()['access'];
+  $relative_plugins = Mcapi::transactionRelatives($relatives_plugins)->getActivePlugins();
+  // We filter transactions using one relative OR another.
   $or_group = $query->orConditionGroup();
 
   foreach ($relative_plugins as $plugin) {
@@ -373,21 +297,23 @@ function mcapi_query_mcapi_transaction_access_alter(Drupal\Core\Database\Query\A
       $plugin->entityViewsCondition($query, $or_group, \Drupal::currentUser()->id());
     }
     elseif ($table = 'mcapi_transactions_index') {
-      drupal_set_message('@todo check whether per-transaction access control is desirable on the index table');
+      debug('@todo check whether per-transaction access control is desirable on the index table');
       $plugin->indexViewsCondition($query, $or_group, \Drupal::currentUser()->id());
     }
   }
-  if ($plugin) {//this should always be the case
+  // This should always be the case.
+  if ($plugin) {
     $query->condition($or_group);
   }
 }
+
 /**
- * take a worth value, typically from config and return true if all the
- *  currencies in it are zero
+ * Determine if a worth field is zero, including non-numeric config.
+ *
  * @param array $worth
- *   a worth value expressed as an array of arrays with curr_id & value
+ *   A worth value expressed as an array of arrays with curr_id & value.
  * @return boolean
- *   TRUE if all the items have a worth of zero
+ *   TRUE if all the items have a worth of zero.
  */
 function empty_worths_config(array $worth) {
   foreach ($worth as $item) {
@@ -398,14 +324,17 @@ function empty_worths_config(array $worth) {
   return TRUE;
 }
 
+
 /**
- * Implements hook_mail
+ * Implements hook_mail().
+ *
+ * @temp until rules is integrated.
  */
 function mcapi_mail($key, &$message, $params) {
-  if ($key == 'mass') {//@todo replace this with rules?
-    //$params are body and $recipient_id, serial
+  if ($key == 'mass') {
+    // $params are body and $recipient_id, serial.
     $message['subject'] = $params['subject'];
-    //not using the whole token system, right now, just [user:name]
+    // Not using the whole token system, right now, just [user:name].
     $message['body'] = str_replace('[user:name]', User::load($params['recipient_id'])->getDisplayName(), $params['body']);
   }
 }

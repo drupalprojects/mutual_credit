@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Controller\AccountingAdmin.
- */
-
 namespace Drupal\mcapi\Controller;
 
 use Drupal\system\Controller\SystemController;
@@ -19,7 +14,7 @@ class AccountingAdmin extends SystemController {
   /**
    * {@inheritdoc}
    */
-  function systemAdminMenuBlockPage() {
+  public function systemAdminMenuBlockPage() {
     if (!Mcapi::enoughWallets($this->currentUser()->id())) {
       $message[] = $this->t("There aren't enough wallets for you to create a transaction.");
       if (Mcapi::maxWalletsOfBundle('user', 'user') == 1) {
@@ -34,12 +29,15 @@ class AccountingAdmin extends SystemController {
           Url::fromRoute('mcapi.wallet.add.user', ['user' => $this->currentUser()->id()])
         );
       }
-      //don't both checking for create user access
+      // don't both checking for create user access.
       $message[] = $this->l(
         $this->t("Or create another user."),
         Url::fromRoute('user.admin_create')
       );
-      $renderable['warning'] = ['#markup' => implode(' ', $message), '#weight' => -1];
+      $renderable['warning'] = [
+        '#markup' => implode(' ', $message),
+        '#weight' => -1,
+      ];
     }
     $renderable[] = parent::systemAdminMenuBlockPage();
     return $renderable;

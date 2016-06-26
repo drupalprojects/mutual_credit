@@ -1,12 +1,8 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi\ViewBuilder\WalletViewBuilder.
- */
-
 namespace Drupal\mcapi\ViewBuilder;
 
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\EntityViewBuilder;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -34,12 +30,12 @@ class WalletViewBuilder extends EntityViewBuilder {
    *   The language manager.
    */
   public function __construct(EntityTypeInterface $entity_type, EntityTypeManagerInterface $entity_type_manager, LanguageManagerInterface $language_manager, $local_task_manager, $access_manager, $entity_manager) {
-    //@todo use the parent when the entityTypeManager is applied
+    // @todo use the parent when the entityTypeManager is applied
     $this->entityTypeId = $entity_type->id();
     $this->entityType = $entity_type;
     $this->entityManager = $entity_manager;
     $this->languageManager = $language_manager;
-    //parent::__construct($entity_type, $entity_type_manager, $language_manager);
+    // parent::__construct($entity_type,$entity_type_manager,$language_manager).
     $this->localTaskManager = $local_task_manager;
     $this->accessManager = $access_manager;
   }
@@ -54,40 +50,43 @@ class WalletViewBuilder extends EntityViewBuilder {
       $container->get('language_manager'),
       $container->get('plugin.manager.menu.local_task'),
       $container->get('access_manager'),
-      $container->get('entity.manager')//deprecated
+    // Deprecated.
+      $container->get('entity.manager')
     );
   }
 
-
   /**
    * {@inheritdoc}
-   * For multiple nice wallets see theme callback 'mcapi_wallets'
+   *
+   * For multiple nice wallets see theme callback 'mcapi_wallets'.
    */
   protected function getBuildDefaults(EntityInterface $entity, $view_mode) {
     $build = parent::getBuildDefaults($entity, $view_mode);
-    //add the css
+    // Add the css.
     $build['#attached'] = ['library' => ['mcapi/mcapi.wallets']];
     return $build;
   }
 
   /**
-   * default Wallet entity_label_callback
+   * Default Wallet entity_label_callback.
    *
-   * put the Holder entity's name with the wallet name in brackets if there is one
+   * Put the Holder entity's name with the wallet name in brackets.
    */
   public static function defaultLabel($wallet) {
-    if ($wallet->payways == \Drupal\mcapi\Entity\Wallet::PAYWAY_AUTO) {
+    if ($wallet->payways == Wallet::PAYWAY_AUTO) {
       return t('Import/Export');
     }
     $name = $wallet->name->value;
     $holdername = $wallet->getHolder()->label();
     if ($name) {
-      return  $holdername .' ('.$name.')';
+      return $holdername . ' (' . $name . ')';
     }
-    else return $holdername;
+    else {
+      return $holdername;
+    }
   }
 
-   /**
+  /**
    * {@inheritdoc}
    */
   public function buildComponents(array &$build, array $entities, array $displays, $view_mode) {
@@ -99,7 +98,7 @@ class WalletViewBuilder extends EntityViewBuilder {
         if ($info = $display->getComponent($component)) {
           $build[$key][$component] = [
             '#title' => $extra[$component]['label'],
-            '#theme' => 'wallet_'.$component,
+            '#theme' => 'wallet_' . $component,
             '#wallet' => $wallet,
             '#attributes' => ['class' => ['component', $component]],
             '#theme_wrappers' => ['mcapi_wallet_component'],
@@ -110,7 +109,8 @@ class WalletViewBuilder extends EntityViewBuilder {
       foreach (['histories'] as $component) {
         if ($info = $display->getComponent($component)) {
           $build[$key][$component] = [
-            '#title' => t('Balance history'),//only used if we add theme wrappers
+          // Only used if we add theme wrappers.
+            '#title' => t('Balance history'),
             '#type' => 'balance_histories',
             '#wallet' => $wallet,
             '#attributes' => ['class' => ['component', $component]],
@@ -126,7 +126,7 @@ class WalletViewBuilder extends EntityViewBuilder {
           '#url' => Url::fromRoute('view.income_expenditure.income_page', ['mcapi_wallet' => $wallet->id()]),
           '#attributes' => ['class' => 'wallet-link'],
         ];
-        //views_embed_view('income_expenditure', 'income_embed', $wallet->id());
+        // views_embed_view('income_expenditure', 'income_embed',$wallet->id());
       }
       if ($info = $display->getComponent('link_transactions')) {
         $build[$key]['link_transactions'] = [
@@ -142,7 +142,7 @@ class WalletViewBuilder extends EntityViewBuilder {
           '#title' => $this->t('more...'),
           '#url' => Url::fromRoute('entity.mcapi_wallet.canonical', ['mcapi_wallet' => $wallet->id()]),
           '#attributes' => ['class' => 'wallet-link'],
-          '#weight' => $info['weight']
+          '#weight' => $info['weight'],
         ];
       }
       if ($info = $display->getComponent('holder_link')) {
@@ -152,12 +152,13 @@ class WalletViewBuilder extends EntityViewBuilder {
           '#title' => $this->t('Held by %name', ['%name' => $holder->label()]),
           '#url' => $holder->toUrl('canonical'),
           '#attributes' => ['class' => 'wallet-link'],
-          '#weight' => $info['weight']
+          '#weight' => $info['weight'],
         ];
       }
     }
-    //@todo this should probably go elsewhere, and only on non-canonical pages
-//    $build['#prefix'] = '<div class="wallets">';
-//    $build['#suffix'] = '</div>';
+    // @todo this should probably go elsewhere, and only on non-canonical pages
+    // $build['#prefix'] = '<div class="wallets">';
+    // $build['#suffix'] = '</div>';
   }
+
 }

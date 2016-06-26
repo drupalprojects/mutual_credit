@@ -1,25 +1,22 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Annotation\TransactionRelative
- */
-
 namespace Drupal\mcapi\Annotation;
+
+use Drupal\Component\Annotation\Plugin;
 
 /**
  * Defines a user relative to a Transaction entity.
  *
  * @Annotation
  */
-class TransactionRelative extends \Drupal\Component\Annotation\Plugin {
+class TransactionRelative extends Plugin {
 
   public $id;
 
   public $label;
 
   public $description;
-  
+
   public $weight;
 
 }

@@ -1,11 +1,10 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\EntityReferenceSelection\WalletSelection.
- */
-
 namespace Drupal\mcapi\Plugin\EntityReferenceSelection;
+
+use Drupal\mcapi\Mcapi;
+use Drupal\Component\Utility\Html;
+use Drupal\Core\Entity\Plugin\EntityReferenceSelection\DefaultSelection;
 
 /**
  * Provide default Wallet selection handler.
@@ -17,13 +16,10 @@ namespace Drupal\mcapi\Plugin\EntityReferenceSelection;
  *   group = "default"
  * )
  */
-class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelection\DefaultSelection {
+class WalletSelection extends DefaultSelection {
 
   /**
-   *
-   * @param type $match
-   * @param type $match_operator IS IGNORED
-   * @param type $limit
+   * {@inheritdoc}
    */
   public function getReferenceableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
     $wids = $this->queryEntities($match);
@@ -36,7 +32,7 @@ class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelectio
 
     $options = [];
     foreach ($entities as $entity_id => $entity) {
-      $options['mcapi_wallet'][$entity_id] = \Drupal\Component\Utility\Html::escape($entity->label());
+      $options['mcapi_wallet'][$entity_id] = Html::escape($entity->label());
     }
     return $options;
   }
@@ -53,7 +49,7 @@ class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelectio
    * {@inheritdoc}
    */
   public function validateReferenceableEntities(array $ids) {
-    //user 1 skips validation. this is helpful for importing
+    // User 1 skips validation. this is helpful for importing.
     if (\Drupal::currentUser()->id() != 1) {
       $ids = array_intersect($ids, $this->queryEntities());
     }
@@ -61,18 +57,19 @@ class WalletSelection extends \Drupal\Core\Entity\Plugin\EntityReferenceSelectio
   }
 
   /**
-   * @param type $match
-   * @param type $match_operator
+   * Identify wallet IDs based on the string and direction.
+   *
+   * @param string $match
+   *   A fragment of the wallet name.
    *
    * @return integer[]
    *   wallet ids
    */
   private function queryEntities($match = NULL) {
-    return \Drupal\mcapi\Mcapi::getWalletSelection(
+    return Mcapi::getWalletSelection(
       $match,
       $this->configuration['handler_settings']['direction']
     );
   }
 
 }
-

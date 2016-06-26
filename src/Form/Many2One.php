@@ -1,24 +1,25 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi\Form\Many2One.
- * Create a cluster of payments, all into one wallet
- *
- */
-
 namespace Drupal\mcapi\Form;
 
 use Drupal\Core\Form\FormStateInterface;
 
+/**
+ * Form builder to pay from many wallets to one wallet.
+ */
 class Many2One extends MassPayBase {
 
-
+  /**
+   * {@inheritdoc}
+   */
   public function getFormId() {
     return 'mcapi_many21';
   }
 
-  public function step_1(array &$form, FormStateInterface $form_state) {
+  /**
+   * {@inheritdoc}
+   */
+  public function step1(array &$form, FormStateInterface $form_state) {
     parent::step_1($form, $form_state);
     if (empty($form_state->get('confirmed'))) {
       $form['payee']['#title'] = $this->t('The one payee');
@@ -31,6 +32,5 @@ class Many2One extends MassPayBase {
       $form['mode']['#title'] = $this->t('Will receive');
     }
   }
-
 
 }

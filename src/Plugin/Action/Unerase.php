@@ -1,13 +1,8 @@
 <?php
 
-/**
- * @file
- *  Contains Drupal\mcapi\Plugin\Action\Unerase
- *
- */
-
 namespace Drupal\mcapi\Plugin\Action;
 
+use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -21,11 +16,14 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   confirm_form_route_name = "mcapi.transaction.operation"
  * )
  */
-class Unerase extends \Drupal\mcapi\Plugin\TransactionActionBase {
+class Unerase extends TransactionActionBase {
 
   private $keyValue;
 
-  function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_type_manager, $entity_display_respository, $key_value) {
+  /**
+   * Constructor.
+   */
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_type_manager, $entity_display_respository, $key_value) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_type_manager, $entity_display_respository);
     $this->keyValue = $key_value;
   }
@@ -49,19 +47,19 @@ class Unerase extends \Drupal\mcapi\Plugin\TransactionActionBase {
 
   /**
    * {@inheritdoc}
-  */
+   */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $elements = parent::buildConfigurationForm($form, $form_state);
     $elements['states'] = [
       '#type' => 'value',
-      '#value' => ['erased' => 'erased']
+      '#value' => ['erased' => 'erased'],
     ];
     return $elements;
   }
 
   /**
    * {@inheritdoc}
-  */
+   */
   public function execute($object = NULL) {
     $store = $this->keyValue->get('mcapi_erased');
     $object->set('state', $store->get($object->serial->value, 'done'));

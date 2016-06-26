@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\taxonomy\Plugin\migrate\cckfield\Worth.
- */
-
 namespace Drupal\mcapi\Plugin\migrate\cckfield;
 
 use Drupal\migrate\Entity\MigrationInterface;
@@ -21,7 +16,7 @@ class Worth extends CckFieldPluginBase {
    * {@inheritdoc}
    */
   public function getFieldFormatterMap() {
-    //only used in d6
+    // Only used in d6.
     return [];
   }
 
@@ -53,11 +48,10 @@ class Worth extends CckFieldPluginBase {
         'value' => [
           'plugin' => 'worth',
           'source' => $field_name,
-        ]
+        ],
       ],
     ];
     $migration->mergeProcessOfProperty($field_name, $process);
   }
-
 
 }

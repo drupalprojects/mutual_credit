@@ -1,22 +1,15 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\Action\TransactionNotification.
- */
-
 namespace Drupal\mcapi\Plugin\Action;
-
 
 use Drupal\rules\Core\RulesActionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Pays or charges an entity a fixed amount IF the specified currency is available.
+ * Send an email tell the user about a newly created transaction.
  *
  * @Action(
  *   id = "transaction_notification",
@@ -40,12 +33,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *       default_value = NULL,
  *       required = FALSE,
  *     ),
- *     "language" = @ContextDefinition("language",
- *       label = @Translation("Language"),
- *       description = @Translation("If specified, the language used for getting the mail message and subject."),
- *       default_value = NULL,
- *       required = FALSE,
- *     ),
  *     "ccs" = @ContextDefinition("string",
  *       label = @Translation("CCs"),
  *       description = @Translation("Tokens should be available")
@@ -57,7 +44,10 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   }
  * )
  */
-class TransactionNotification extends RulesActionBase {//implements ContainerFactoryPluginInterface {
+/**
+ * Implements ContainerFactoryPluginInterface.
+ */
+class TransactionNotification extends RulesActionBase {
 
   /**
    * The logger channel the action will write log messages to.
@@ -65,12 +55,13 @@ class TransactionNotification extends RulesActionBase {//implements ContainerFac
    * @var \Psr\Log\LoggerInterface
    */
   protected $logger;
-  
+
   /**
+   * The mail manager service.
+   *
    * @var \Drupal\Core\Mail\MailManagerInterface
    */
   protected $mailManager;
-
 
   /**
    * Constructs a SendEmail object.
@@ -104,13 +95,9 @@ class TransactionNotification extends RulesActionBase {//implements ContainerFac
       $container->get('plugin.manager.mail')
     );
   }
-  
+
   /**
-   * 
-   * @param type $object
-   * @param AccountInterface $account
-   * @param type $return_as_object
-   * 
+   * {@inheritdoc}
    */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
     // Just allow access per default for now.
@@ -119,21 +106,43 @@ class TransactionNotification extends RulesActionBase {//implements ContainerFac
     }
     return TRUE;
   }
-  
-  protected function doExecute($recipient, $subject, $message, $reply = NULL, LanguageInterface $language = NULL, $ccs, $transaction) {
-    
-    $langcode = isset($language) ? $language->getId() : LanguageInterface::LANGCODE_SITE_DEFAULT;
-    $params = [
-      'subject' => $subject,
-      'message' => $message,
-      'ccs' => $ccs
-    ];
 
+  /**
+   * Send the mail notification.
+   *
+   * @param AccountInterface $recipient
+   *   The user who will receive the email.
+   * @param string $subject
+   *   The subject line of the email.
+   * @param array $message
+   *   Paragraphs of the email. Don't know whether translated.
+   * @param string $reply
+   *   The reply-to: address.
+   * @param array $ccs
+   *   Email addresses to cc the message to.
+   * @param Transaction $transaction
+   *   The transaction the email is concerned about.
+   */
+  protected function doExecute(AccountInterface $recipient, $subject, $message, $reply, $ccs, Transaction $transaction) {
     $recipients = implode(', ', $to);
-    //@todo implement mcapi_rules to do token replacement and CCs on the mail
-    $message = $this->mailManager->mail('mcapi', 'rules', $recipients, $langcode, $params, $reply);
+    // @todo implement mcapi_rules to do token replacement and CCs on the mail
+    $message = $this->mailManager->mail(
+      'mcapi',
+      'rules',
+      $recipient->getEmail(),
+      $recipient->getPreferredLangcode(TRUE),
+      [
+        'subject' => $subject,
+        'message' => $message,
+        'ccs' => $ccs,
+      ],
+      $reply
+    );
     if ($message['result']) {
-      $this->logger->notice('Successfully sent email to %recipient', ['%recipient' => $recipients]);
+      $this->logger->notice('Successfully sent email to %recipient.', ['%recipient' => $recipients]);
+    }
+    else {
+      $this->logger->error('Failed to notify %recipient of transaction.', ['%recipient' => $recipients]);
     }
   }
 
@@ -145,7 +154,7 @@ class TransactionNotification extends RulesActionBase {//implements ContainerFac
       'subject' => t('New transaction on [site:name]'),
       'body' => 'A transaction for [mcapi_transaction:worth] was created between [mcapi_transaction:payer] and [mcapi_transaction:payee]',
       'recipients' => '[mcapi_transaction:payee:mail]',
-      'ccs' => ''
+      'ccs' => '',
     );
   }
 
@@ -153,44 +162,45 @@ class TransactionNotification extends RulesActionBase {//implements ContainerFac
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    drupal_set_message('At time of writing (d8 alpha 14) there is no way to trigger actions so this action is untested');
+    debug('At time of writing (d8 alpha 14) there is no way to trigger actions so this action is untested');
     $w = 0;
     $form['direction'] = array(
       '#title' => t('Direction'),
       '#type' => 'radios',
       '#options' => array(
-          'entitypays' => t('User pays reservoir account'),
-          'paysentity' => t('Reservoir account pays user')
+        'entitypays' => t('User pays reservoir account'),
+        'paysentity' => t('Reservoir account pays user'),
       ),
       '#default_value' => $this->configuration['direction'],
-    	'#weight' => $w++
+      '#weight' => $w++,
     );
     $form['otherwallet'] = array(
-    	'#title' => $this->t('Other wallet'),
-    	'#type' => 'wallet_reference_autocomplete',
-    	'#default_value' => $this->configuration['otherwallet'],
-    	'#weight' => $w++
+      '#title' => $this->t('Other wallet'),
+      '#type' => 'wallet_reference_autocomplete',
+      '#default_value' => $this->configuration['otherwallet'],
+      '#weight' => $w++,
     );
 
-    $currencies = Currency::loadMultiple();
     $form['worth_items'] = array(
       '#title' => t('Worth'),
       '#type' => 'fieldset',
-      '#name' => 'worth_items',//this helps in the fieldset validation
+    // This helps in the fieldset validation.
+      '#name' => 'worth_items',
       '#description' => t('If either wallet cannot access a currency, an intertrading transaction will be attempted. Failre will produce a warning on screen and in the log.'),
       'worth' => array(
-        //'#title' => t('Worths'),
+        // '#title' => t('Worths'),.
         '#type' => 'worth',
         '#default_value' => $this->configuration['worth'],
-        '#preset' => TRUE,//ensures that all currencies are rendered
+    // Ensures that all currencies are rendered.
+        '#preset' => TRUE,
       ),
-    	'#weight' => $w++
+      '#weight' => $w++,
     );
     $form['description'] = array(
       '#title' => t('Transaction description text'),
       '#type' => 'textfield',
       '#default_value' => $this->configuration['description'],
-    	'#weight' => $w++
+      '#weight' => $w++,
     );
     return $form;
   }
@@ -200,8 +210,9 @@ class TransactionNotification extends RulesActionBase {//implements ContainerFac
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     $form_state->cleanValues();;
-    foreach ($form_state->getValues() as $key => $val)
-    $this->configuration['key'] = $val;
+    foreach ($form_state->getValues() as $key => $val) {
+      $this->configuration[$key] = $val;
+    }
   }
 
 }

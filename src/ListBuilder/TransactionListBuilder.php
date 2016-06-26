@@ -1,18 +1,12 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\listBuilder\TransactionListBuilder.
- * @todo @deprecated I think
- */
-
 namespace Drupal\mcapi\ListBuilder;
 
 use Drupal\Core\Entity\EntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 
 /**
- * build a listing of transactions.
+ * Build a listing of transactions.
  *
  * @ingroup entity_api
  */
@@ -25,12 +19,11 @@ class TransactionListBuilder extends EntityListBuilder {
     $build = array(
       '#type' => 'operations',
       '#links' => $this->getOperations($entity),
-      //same as parent but without caching.
-      '#cache' => []
+      // Same as parent but without caching.
+      '#cache' => [],
     );
     return $build;
   }
-
 
   /**
    * {@inheritdoc}

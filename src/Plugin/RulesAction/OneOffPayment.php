@@ -1,20 +1,13 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\Action\OneOffPayment.
- */
-
 namespace Drupal\mcapi\Plugin\Action;
 
-
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\rules\Core\RulesActionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Currency;
 
 /**
- * Pays or charges an entity a fixed amount IF the specified currency is available.
+ * Pays or charges an entity a fixed amount IF the currency is available.
  *
  * @Action(
  *   id = "one_off_payment",
@@ -35,7 +28,10 @@ use Drupal\mcapi\Entity\Currency;
  *   }
  * )
  */
-class OneOffPayment extends RulesActionBase {//implements ContainerFactoryPluginInterface {
+/**
+ * Implements ContainerFactoryPluginInterface {.
+ */
+class OneOffPayment extends RulesActionBase {
 
   /**
    * {@inheritdoc}
@@ -44,14 +40,15 @@ class OneOffPayment extends RulesActionBase {//implements ContainerFactoryPlugin
     $description = $this->getContextValue('description');
     $type = $this->getContextValue('type');
     $otherwallet = $this->getContextValue('otherwallet');
-
+    debug('unused variables $description, $type, $otherwallet');
     $values = array(
-      //allow a price to be fixed on the entity using the worth field.
+      // Allow a price to be fixed on the entity using the worth field.
       'worth' => $this->configuration['worth'],
       'type' => 'auto',
       'state' => 'done',
-      'description' => $this->configuration['description']
+      'description' => $this->configuration['description'],
     );
+    debug('underfined variable $direction');
     if ($direction == 'entitypays') {
       $values['payee'] = $this->configuration['otherwallet'];
       $values['payer'] = $wallet->id();
@@ -60,7 +57,7 @@ class OneOffPayment extends RulesActionBase {//implements ContainerFactoryPlugin
       $values['payee'] = $wallet->id();
       $values['payer'] = $this->configuration['otherwallet'];
     }
-    try{
+    try {
       $transaction = entity_create('transaction', $values);
       if ($warnings = $transaction->save()) {
         foreach ($warnings as $warning) {
@@ -81,7 +78,7 @@ class OneOffPayment extends RulesActionBase {//implements ContainerFactoryPlugin
       'description' => '',
       'direction' => 'entitypays',
       'worth' => array(0 => array('curr_id' => 'cc', 'value' => 0)),
-      'otherwallet' => ''
+      'otherwallet' => '',
     );
   }
 
@@ -95,38 +92,40 @@ class OneOffPayment extends RulesActionBase {//implements ContainerFactoryPlugin
       '#title' => t('Direction'),
       '#type' => 'radios',
       '#options' => array(
-          'entitypays' => t('User pays reservoir account'),
-          'paysentity' => t('Reservoir account pays user')
+        'entitypays' => t('User pays reservoir account'),
+        'paysentity' => t('Reservoir account pays user'),
       ),
       '#default_value' => $this->configuration['direction'],
-    	'#weight' => $w++
+      '#weight' => $w++,
     );
     $form['otherwallet'] = array(
-    	'#title' => $this->t('Other wallet'),
-    	'#type' => 'wallet_reference_autocomplete',
-    	'#default_value' => $this->configuration['otherwallet'],
-    	'#weight' => $w++
+      '#title' => $this->t('Other wallet'),
+      '#type' => 'wallet_reference_autocomplete',
+      '#default_value' => $this->configuration['otherwallet'],
+      '#weight' => $w++,
     );
 
     $currencies = Currency::loadMultiple();
     $form['worth_items'] = array(
       '#title' => t('Worth'),
       '#type' => 'fieldset',
-      '#name' => 'worth_items',//this helps in the fieldset validation
+    // This helps in the fieldset validation.
+      '#name' => 'worth_items',
       '#description' => t('If either wallet cannot access a currency, an intertrading transaction will be attempted. Failre will produce a warning on screen and in the log.'),
       'worth' => array(
-        //'#title' => t('Worths'),
+        // '#title' => t('Worths'),.
         '#type' => 'worth',
         '#default_value' => $this->configuration['worth'],
-        '#preset' => TRUE,//ensures that all currencies are rendered
+    // Ensures that all currencies are rendered.
+        '#preset' => TRUE,
       ),
-    	'#weight' => $w++
+      '#weight' => $w++,
     );
     $form['description'] = array(
       '#title' => t('Transaction description text'),
       '#type' => 'textfield',
       '#default_value' => $this->configuration['description'],
-    	'#weight' => $w++
+      '#weight' => $w++,
     );
     return $form;
   }
@@ -136,8 +135,9 @@ class OneOffPayment extends RulesActionBase {//implements ContainerFactoryPlugin
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     $form_state->cleanValues();;
-    foreach ($form_state->getValues() as $key => $val)
-    $this->configuration['key'] = $val;
+    foreach ($form_state->getValues() as $key => $val) {
+      $this->configuration['key'] = $val;
+    }
   }
 
 }

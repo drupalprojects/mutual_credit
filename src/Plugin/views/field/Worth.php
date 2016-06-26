@@ -1,17 +1,5 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi\Plugin\views\field\Worth.
- * renders worth values on the transactionIndex table
- *
- * @todo in \Drupal\views\Plugin\views\display\DisplayPluginBase::gethandlers
- * this handler is automatically overridden to be numeric in group queries which
- * means there's currently no way to format worth values in aggregate queries
- * @see coming new plugin type https://www.drupal.org/node/2662548
- * @see https://api.drupal.org/api/drupal/core!modules!views!src!Plugin!views!query!Sql.php/function/Sql%3A%3AgetAggregationInfo/8
- */
-
 namespace Drupal\mcapi\Plugin\views\field;
 
 use Drupal\views\Plugin\views\field\FieldPluginBase;
@@ -20,8 +8,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Currency;
 
 /**
- * When we look at transaction index table, we need to view one worth at a time
- * deriving the currency from a separate field
+ * When we look at transaction index table, we need to view one worth at a time.
  *
  * @ingroup views_field_handlers
  *
@@ -42,7 +29,7 @@ class Worth extends FieldPluginBase {
    * {@inheritdoc}
    */
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
-     $form['format'] = array(
+    $form['format'] = array(
       '#title' => t('Format'),
       '#decriptions' => $this->t('Not all formats support multiple cardinality.'),
       '#type' => 'radios',
@@ -53,14 +40,17 @@ class Worth extends FieldPluginBase {
   }
 
   /**
-   * @note aggregation may cause problems with formatting
+   * {@inheritdoc}
+   *
+   * @note aggregation may cause problems with formatting.
+   *
    * @todo if there is a currency filter on this view, we would want to only show that currency part of each worth value
    */
   public function render(ResultRow $values) {
     $curr_id = $this->getValue($values, 'curr_id');
-    if (!$curr_id){
-      //implies there was no result
-      //can't format zero without knowing the currency
+    if (!$curr_id) {
+      // Implies there was no result
+      // can't format zero without knowing the currency.
       return;
     }
     return Currency::load($curr_id)

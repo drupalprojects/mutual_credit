@@ -1,16 +1,5 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi\Form\MassPayBase.
- * Create a cluster of transactions, based on a single entity form
- * N.B. This could be an entity form for Transaction OR Exchange.
- * If the latter, it will be appropriately populated.
- *
- * @todo access for this form depends on having currenciesAvailableToUser as well as permission
- *
- */
-
 namespace Drupal\mcapi\Form;
 
 use Drupal\mcapi\Entity\Transaction;
@@ -20,6 +9,9 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\ContentEntityForm;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ * Form builder for multiple payments between one and many wallets.
+ */
 class MassPayBase extends ContentEntityForm {
 
   protected $keyValue;
@@ -29,7 +21,8 @@ class MassPayBase extends ContentEntityForm {
    * Constructs a ContentEntityForm object.
    */
   public function __construct($entity_manager, $entity_type_manager, $key_value, $mail_manager) {
-    parent::__construct($entity_manager);//@todo deprecated
+    // @todo deprecated
+    parent::__construct($entity_manager);
     $this->setEntityTypeManager($entity_type_manager);
     $this->keyValue = $key_value->get('masspay');
     $this->mailManager = $mail_manager;
@@ -49,23 +42,25 @@ class MassPayBase extends ContentEntityForm {
   }
 
   /**
-   * Overrides Drupal\mcapi\Form\TransactionForm::form().
+   * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildForm($form, $form_state);
-    $form = ['submit' => [
-      '#type' => 'submit',
-      '#weight' => 50
-    ]];
+    $form = [
+      'submit' => [
+        '#type' => 'submit',
+        '#weight' => 50,
+      ],
+    ];
     if (empty($form_state->get('validated_transactions'))) {
-      //we have to mimic some part of the normal entity form preparation.
-      //@todo on the rebuilt form we need to make a default entity.
-      //But how to get the submitted values from $form_state?
-      //$this->entity = Transaction::create([]);
-      //$form = parent::form($form, $form_state);
+      // We have to mimic some part of the normal entity form preparation.
+      // @todo on the rebuilt form we need to make a default entity.
+      // But how to get the submitted values from $form_state?
+      // $this->entity = Transaction::create([]);
+      // $form = parent::form($form, $form_state);.
       $form['submit']['#value'] = $this->t('Preview');
       if (empty($form_state->get('confirmed'))) {
-        $this->step_1($form, $form_state);
+        $this->step1($form, $form_state);
       }
     }
     else {
@@ -78,7 +73,10 @@ class MassPayBase extends ContentEntityForm {
     return $form;
   }
 
-  public function step_1(array &$form, FormStateInterface $form_state) {
+  /**
+   * {@inheritdoc}
+   */
+  public function step1(array &$form, FormStateInterface $form_state) {
 
     $this->getFormDisplay($form_state)->buildForm($this->entity, $form, $form_state);
     unset($form['type'], $form['creator'], $form['created']);
@@ -96,9 +94,9 @@ class MassPayBase extends ContentEntityForm {
     }
     $form['mode'] = [
       '#type' => 'radios',
-      //@todo start with nothing selected to force the user to choose something.
+      // @todo start with nothing selected; force the user to choose something.
       '#options' => $mode_options,
-      '#weight' => '10'
+      '#weight' => '10',
     ];
     $form['payer'] = [
       '#title' => $this->t('Payer'),
@@ -126,41 +124,47 @@ class MassPayBase extends ContentEntityForm {
     $mail_defaults = $this->keyValue->get('default');
     $form['notification'] = [
       '#title' => $this->t('Notify all parties', [], array('context' => 'accounting')),
-      //@todo decide whether to put rules in a different module
+      // @todo decide whether to put rules in a different module
       '#description' => $this->moduleHandler->moduleExists('rules') ?
-        $this->t('N.B. Ensure this mail does not clash with mails sent by the rules module.') : '',
+      $this->t('N.B. Ensure this mail does not clash with mails sent by the rules module.') : '',
       '#type' => 'fieldset',
       '#open' => TRUE,
       '#weight' => 20,
       'subject' => [
         '#title' => $this->t('Subject'),
         '#type' => 'textfield',
-        //this needs to be stored per-exchange.
-        '#default_value' => $mail_defaults['subject']
+        // This needs to be stored per-exchange.
+        '#default_value' => $mail_defaults['subject'],
       ],
       'body' => [
         '#title' => $this->t('Message'),
-        //@todo the tokens?
-        '#description' => $this->t('The following tokens are available:') .' [user:name]',
+        // @todo the tokens?
+        '#description' => $this->t('The following tokens are available: [user:name]'),
         '#type' => 'textarea',
         '#default_value' => $mail_defaults['body'],
-        '#weight' => 1
-      ]
+        '#weight' => 1,
+      ],
     ];
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    if ($form_state->getErrors()) return;
-    //only validate step 1
+    if ($form_state->getErrors()) {
+      return;
+    }
+    // Only validate step 1.
     if (empty($form_state->get('validated_transactions'))) {
-      $form_state->cleanValues();;//without this, buildentity fails, but again, not so in nodeFormController
+      // Buildentity fails without this, but not so in NodeFormController.
+      $form_state->cleanValues();
 
       $form_state->setValue('creator', $this->currentUser()->id());
       $form_state->setValue('type', 'mass');
       $values = $form_state->getValues();
       $transactions = [];
-      foreach ((array)$form_state->getValue('payer') as $payer) {
-        foreach ((array)$form_state->getValue('payee') as $payee) {
+      foreach ((array) $form_state->getValue('payer') as $payer) {
+        foreach ((array) $form_state->getValue('payee') as $payee) {
           if ($payer == $payee) {
             continue;
           }
@@ -171,26 +175,30 @@ class MassPayBase extends ContentEntityForm {
       }
 
       foreach ($transactions as $transaction) {
-        //we do NOT add children
+        // We do NOT add children.
         $violations = $transaction->validate();
         foreach ($violations as $violation) {
           $form_state->setErrorByName($violation->getpropertypath(), $violation->getMessage());
         }
       }
-      //@todo update to d8
-      //drupal_set_title(t('Are you sure?'));
+      // @todo update to d8
+      // drupal_set_title(t('Are you sure?'));
       $form_state->set('validated_transactions', $transactions);
-      $form_state->set('wallets', array_unique($wallets));//mail the owners of these
+      // Mail the owners of these.
+      $form_state->set('wallets', array_unique($wallets));
     }
   }
 
-
+  /**
+   * {@inheritdoc}
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
-    //@todo how do we inject stuff into forms?
+    // @todo how do we inject stuff into forms?
     $this->keyValue->set('default', ['subject' => $values['subject'], 'body' => $values['body']]);
 
-    if (!isset($values['op'])) {//@todo what does this mean?
+    // @todo what does this mean?
+    if (!isset($values['op'])) {
       $form_state->setRebuild(TRUE);
       return;
     }
@@ -199,7 +207,7 @@ class MassPayBase extends ContentEntityForm {
     $main_transaction->children = $form_state->get('validated_transactions');
     $main_transaction->save();
 
-    //@todo make sure this is queueing
+    // @todo make sure this is queueing
     $params['subject'] = $values['subject'];
     $params['body'] = $values['body'];
     $params['serial'] = $main_transaction->serial->value;
@@ -208,7 +216,7 @@ class MassPayBase extends ContentEntityForm {
       $params['recipient_id'] = $owner->id();
       $this->mailManager->mail('mcapi', 'mass', $owner->getEmail(), user_preferred_langcode($owner), $params);
     }
-    //go to the transaction certificate
+    // Go to the transaction certificate.
     $form_state->setRedirect(
       'entity.mcapi_transaction.canonical',
       ['mcapi_transaction' => $main_transaction->serial->value]
@@ -219,27 +227,9 @@ class MassPayBase extends ContentEntityForm {
       [
         '@uid' => $this->currentUser()->id(),
         '@count' => count($form_state->get('validated_transactions')),
-        '@serial' => $this->entity->serial->value
+        '@serial' => $this->entity->serial->value,
       ]
     );
-  }
-
-  /**
-   *
-   * @param type $element
-   * @param type $input
-   * @param FormStateInterface $form_state
-   * @return type
-   * @deprecated
-   */
-  function form_type_wallet_reference_autocompletes_value(&$element, $input, FormStateInterface $form_state) {
-    if (empty($input)) {
-      return;
-    }
-    foreach (explode(', ', $input) as $val) {
-      $values[] = form_type_wallet_reference_autocomplete_value($element, $val, $form_state);
-    }
-    return $values;
   }
 
 }

@@ -1,11 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\rules\Plugin\Condition\TransactionTransgresses.
- * @todo make this work only with the transaction insert event
- */
-
 namespace Drupal\mcapi_limits\Plugin\Condition;
 
 use Drupal\mcapi\Entity\Transaction;

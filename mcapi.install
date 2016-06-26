@@ -9,41 +9,70 @@ use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Wallet;
 
 /**
+ * Implements hook_requirements().
+ */
+function mcapi_requirements($phase) {
+  if ($phase == 'runtime') {
+    $result = [
+      'title' => t('Transaction index table'),
+    ];
+    // Check that the index table is integral.
+    if (\Drupal::entityTypeManager()->getStorage('mcapi_transaction')->indexCheck()) {
+      $result['severity'] = REQUIREMENT_OK;
+      $result['description'] = t('Index table adds up');
+    }
+    else {
+      $result['severity'] = REQUIREMENT_ERROR;
+      $result['description'] = t(
+        'Index table does not add up. Try rebuilding it at %link',
+        ['%link' => Link::fromTextAndUrl('admin/accounting/misc', Url::fromRoute('mcapi.admin_misc'))]
+      );
+    }
+    return [$result];
+  }
+  return [];
+}
+
+/**
  * Implements hook_install().
  */
 function mcapi_install() {
-  module_set_weight('field_ui', -1);//mcapi has to be after field_ui for mcapi_local_tasks_alter
+  // Mcapi has to be after field_ui for mcapi_local_tasks_alter.
+  module_set_weight('field_ui', -1);
 
-  //create an intertrading wallet (on user 1 if not stated)
+  // Create an intertrading wallet (on user 1 if not stated).
   Wallet::create([
-    'payways' => Wallet::PAYWAY_AUTO
+    'payways' => Wallet::PAYWAY_AUTO,
   ])->save();
 
-  //we need to deal with existing users, especially user 1
-  //in accordance with the default wallet settings
-  //-put every user in the default exchange
+  // We need to deal with existing users, especially user 1 in accordance with
+  // the default wallet settings put every user in the default exchange.
   $users = User::loadMultiple();
   foreach ($users as $account) {
     if ($account->id() == 0) {
       continue;
     }
-    //give every existing user a wallet
-     Wallet::create([
+    // Give every existing user a wallet.
+    Wallet::create([
       'payways' => Wallet::PAYWAY_ANYONE_BI,
-      'holder' => $account
+      'holder' => $account,
     ])->save();
   }
 
-  $zero_icon_uri = '/'. drupal_get_path('module', 'mcapi') . '/templates/present.png';
-  $snippet = '<img src = "'. $zero_icon_uri .'" width = "31" />';
+  $zero_icon_uri = '/' . drupal_get_path('module', 'mcapi') . '/templates/present.png';
+  $snippet = '<img src = "' . $zero_icon_uri . '" width = "31" />';
 
-  //TEMP this won't work until we sort out the text filtering see \Drupal\mcapi\Element\WorthView
+  // @temp this won't work until we sort out the text filtering.
+  // @see \Drupal\mcapi\Element\WorthView
   $snippet = '-';
   \Drupal::configFactory()->getEditable('mcapi.settings')
     ->set('zero_snippet', $snippet)
     ->save();
 }
 
+/**
+ * Implements hook_modules_installed().
+ */
 function mcapi_modules_installed($modules) {
   if (in_array('migrate', $modules)) {
     $map_process = [
@@ -63,32 +92,24 @@ function mcapi_modules_installed($modules) {
       'source' => 'field_name',
       'map' => [
         'transaction_description' => '',
-      ]
+      ],
     ];
     $config->set('process.field_name', $process);
 
     $map = $config->get('process.type.map');
     $map['worth_field'] = 'worth';
-    $config->set('process.type.map', $map);//this will probably be automated @see d7_field.yml
-    $conifg->save();
-
-
-
+    // This will probably be automated @see d7_field.yml
+    $config->set('process.type.map', $map);
+    $config->save();
 
     $config = \Drupal::configFactory()->getEditable('migrate.migration.d7_field_instance');
     $process['source'] = 'bundle';
     $config->set('process.entity_type', $process)->set('process.bundle', $process)->save();
-    //@todo once migration has settled down
-    //\Drupal::service('plugin.manager.migration')->createInstance($id)
-    //$migration->setProcessOfProperty('entity_type', $process);
-
-    drupal_set_message("refresh user 1's wallet name to ".User::load(1)->getDisplayName());
   }
 }
 
 
 /**
-
 $worth = \Drupal\field\Entity\FieldStorageConfig::load('mcapi_transaction.worth');
 if ($worth)$worth->delete();
 $mem = \Drupal\field\Entity\FieldStorageConfig::load('mcapi_exchange.og_exchange_ref');

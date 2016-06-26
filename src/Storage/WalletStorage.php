@@ -1,22 +1,17 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Storage\WalletStorage.
- *
- */
-
 namespace Drupal\mcapi\Storage;
 
 use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\mcapi\Entity\Wallet;
 
+/**
+ * Storage controller for wallet entity.
+ */
 class WalletStorage extends SqlContentEntityStorage implements WalletStorageInterface {
 
   /**
-   *
-   * @param array $values
-   * @return type
+   * {@inheritdoc}
    */
   protected function doCreate(array $values) {
     $entity = parent::doCreate($values);
@@ -26,17 +21,19 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
 
   /**
    * {@inheritdoc}
-   * @todo this is called more than once per user per transaction form
-   * So either cache the results, with right tags, or at least save the results per $uid and operation
+   *
+   * @todo this is called more than once per user per transaction form. So
+   * either cache the results, with right tags, or at least save the results
+   * per $uid and operation.
    */
   public function whichWalletsQuery($operation, $uid, $match = '') {
     $query = $this->database->select('mcapi_wallet', 'w')
       ->fields('w', ['wid'])
       ->condition('orphaned', 0);
     if ($match) {
-      $query->condition('w.name', '%'.$this->database->escapeLike($match).'%', 'LIKE');
+      $query->condition('w.name', '%' . $this->database->escapeLike($match) . '%', 'LIKE');
     }
-    //include users who have been nominated to pay in or out of wallets
+    // Include users who have been nominated to pay in or out of wallets.
     $or = $query->orConditionGroup();
 
     if ($operation) {
@@ -53,7 +50,7 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
       }
       $or->condition($users);
     }
-    //now ensure the wallet holder is included
+    // Now ensure the wallet holder is included.
     $holder = $query->andConditionGroup();
     $holder->condition('holder_entity_type', 'user');
     $holder->condition('holder_entity_id', $uid);

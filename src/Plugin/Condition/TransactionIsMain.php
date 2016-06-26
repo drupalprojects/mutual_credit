@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\Condition\TransactionIsMain.
- */
-
 namespace Drupal\mcapi\Plugin\Condition;
 
 use Drupal\mcapi\Entity\TransactionInterface;
@@ -24,18 +19,17 @@ use Drupal\rules\Core\RulesConditionBase;
  *     )
  *   }
  * )
- *
  */
 class TransactionIsMain extends RulesConditionBase {
 
   /**
-   * Checks if a node is promoted.
+   * Checks if a transaction is the main, or parent in the cluster.
    *
-   * @param \Drupal\node\NodeInterface $node
-   *   The node to check.
+   * @param \Drupal\mcapi\Entity\TransactionInterface $transaction
+   *   The transaction to check.
    *
    * @return bool
-   *   TRUE if the node is promoted.
+   *   TRUE if the transaction is the main one in the cluster.
    */
   protected function doEvaluate(TransactionInterface $transaction) {
     return $transaction->parent->value == 0;

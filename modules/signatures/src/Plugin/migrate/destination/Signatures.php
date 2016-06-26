@@ -1,14 +1,10 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi_signatures\Plugin\migrate\destination\Signatures.
- */
-
 namespace Drupal\mcapi_signatures\Plugin\migrate\destination;
 
-use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\Core\Field\FieldTypePluginManagerInterface;
+use Drupal\migrate\Plugin\MigrationInterface;
+use Drupal\migrate\Row;
+use Drupal\migrate\Plugin\migrate\destination\DestinationBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\migrate\Entity\MigrationInterface;
 
@@ -19,10 +15,13 @@ use Drupal\migrate\Entity\MigrationInterface;
  *   id = "d7_mcapi_signatures"
  * )
  */
-class Signatures extends \Drupal\migrate\Plugin\migrate\destination\DestinationBase {
+class Signatures extends DestinationBase {
 
   private $database;
 
+  /**
+   *
+   */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration, $database) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $migration);
     $this->database = $database;
@@ -45,24 +44,26 @@ class Signatures extends \Drupal\migrate\Plugin\migrate\destination\DestinationB
   /**
    * {@inheritdoc}
    */
-  public function import(\Drupal\migrate\Row $row, array $old_destination_id_values = array()) {
+  public function import(Row $row, array $old_destination_id_values = array()) {
     $this->rollbackAction = MigrateIdMapInterface::ROLLBACK_DELETE;
 
-    //these is probably a better way than this
+    // These is probably a better way than this.
     $this->database->merge('mcapi_signatures')
       ->key([
         'serial' => $row->getSourceProperty('serial'),
         'uid' => $row->getSourceProperty('uid'),
-       ])
+      ])
       ->values([
         'created' => $row->getSourceProperty('created'),
-    ])->execute();
+      ])->execute();
 
     return TRUE;
   }
 
-
-  public function fields(\Drupal\migrate\Plugin\MigrationInterface $migration = NULL) {
+  /**
+   *
+   */
+  public function fields(MigrationInterface $migration = NULL) {
     return ['serial', 'uid', 'signed'];
   }
 
@@ -74,6 +75,5 @@ class Signatures extends \Drupal\migrate\Plugin\migrate\destination\DestinationB
     $ids['uid']['type'] = 'string';
     return $ids;
   }
-
 
 }

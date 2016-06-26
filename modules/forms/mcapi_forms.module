@@ -4,18 +4,18 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Link;
 
 
-define('MCAPI_FORMS_DIR_INCOMING', 1);
-define('MCAPI_FORMS_DIR_OUTGOING', -1);
-define('MCAPI_FORMS_DIR_BOTH', 0);
+const MCAPI_FORMS_DIR_INCOMING = 1;
+const MCAPI_FORMS_DIR_OUTGOING = -1;
+const MCAPI_FORMS_DIR_BOTH = 0;
 
 /**
  * Implements hook_entity_type_build().
  */
 function mcapi_forms_entity_type_build(array &$entity_types) {
   if (isset($entity_types['mcapi_transaction'])) {
-    foreach (mcapi_form_displays_load(TRUE) as $mode => $display) {
+    foreach (array_keys(mcapi_form_displays_load(TRUE)) as $mode) {
       $entity_types['mcapi_transaction']->setFormClass(
-        $display->get('mode'),
+        $mode,
         'Drupal\mcapi_forms\FirstPartyTransactionForm'
       );
     }
@@ -138,7 +138,7 @@ function mcapi_form_displays_load($config = FALSE) {
       ->getStorage('entity_form_display')
       ->loadByProperties(['bundle' => 'mcapi_transaction']);
     foreach ($entities as $display) {
-      if ($settings = $display->getThirdPartySettings('mcapi_forms')) {
+      if ($display->getThirdPartySettings('mcapi_forms')) {
         $displays[$display->get('mode')] = $display;
       }
     }

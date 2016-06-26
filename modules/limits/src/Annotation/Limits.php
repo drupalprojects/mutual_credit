@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Annotation\Limits.
- */
-
 namespace Drupal\mcapi_limits\Annotation;
 
 use Drupal\Component\Annotation\Plugin;

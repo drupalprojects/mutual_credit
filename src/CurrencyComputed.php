@@ -1,14 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\CurrencyComputed.
- * @deprecated
- * @see \Drupal\mcapi\Plugin\Field\FieldType\WorthItem
- */
-
 namespace Drupal\mcapi;
 
+use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\TypedData\DataDefinitionInterface;
 use Drupal\Core\TypedData\TypedDataInterface;
 use Drupal\Core\TypedData\TypedData;
@@ -17,7 +11,7 @@ use Drupal\Core\TypedData\TypedData;
  * A computed property for the loaded currency in a worth field.
  *
  * Required settings (below the definition's 'settings' key) are:
- *  - currency source: The currency
+ *  - currency source: The currency.
  */
 class CurrencyComputed extends TypedData {
 
@@ -47,7 +41,7 @@ class CurrencyComputed extends TypedData {
     }
     $source_prop = $this->definition->getSetting('currency source');
     $value = $this->getParent()->{$source_prop};
-    $this->currency = \Drupal\mcapi\Entity\Currency::load($value);
+    $this->currency = Currency::load($value);
     return $this->currency;
   }
 

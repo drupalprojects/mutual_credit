@@ -1,17 +1,13 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi\Plugin\Validation\Constraint\DifferentWalletsConstraint.
- */
-
 namespace Drupal\mcapi\Plugin\Validation\Constraint;
 
 use \Drupal\Core\Entity\Plugin\Validation\Constraint\CompositeConstraintBase;
 
 /**
- * Supports validating payer & payee of parent transactions
- *   type = "entity"...
+ * Check that the two wallets in the transaction are different.
+ *
+ * Supports validating payer & payee of parent transactions.
  *
  * @Constraint(
  *   id = "DifferentWallets",
@@ -24,7 +20,8 @@ class DifferentWalletsConstraint extends CompositeConstraintBase {
 
   /**
    * {@inheritdoc}
-   * how is this used?
+   *
+   * How is this used?
    */
   public function coversFields() {
     return ['payer', 'payee'];

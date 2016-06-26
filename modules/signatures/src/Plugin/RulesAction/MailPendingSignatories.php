@@ -1,13 +1,11 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\mcapi_signatories\Plugin\RulesAction\MailPendingSignatories.
- */
-
 namespace Drupal\rules\Plugin\RulesAction;
 
-use Drupal\Core\Language\LanguageInterface;
+use Drupal\mcapi\Entity\Transaction;
+use Drupal\user\Entity\User;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\rules\Core\RulesActionBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -35,7 +33,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @todo: Compare this with SystemSendEmail when rules is more developed
  */
-class MailPendingSignatories extends Drupal\rules\Core\RulesActionBase implements Drupal\Core\Plugin\ContainerFactoryPluginInterface {
+class MailPendingSignatories extends RulesActionBase implements ContainerFactoryPluginInterface {
 
   /**
    * The logger channel the action will write log messages to.
@@ -45,10 +43,15 @@ class MailPendingSignatories extends Drupal\rules\Core\RulesActionBase implement
   protected $logger;
 
   /**
+   * The mail manager service.
+   *
    * @var \Drupal\Core\Mail\MailManagerInterface
    */
   protected $mailManager;
 
+  /**
+   * {@inheritdoc}
+   */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, $logger, $mail_manager) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->logger = $logger;
@@ -78,10 +81,10 @@ class MailPendingSignatories extends Drupal\rules\Core\RulesActionBase implement
    * @param string $message
    *   Email message text.
    */
-  protected function doExecute($transaction, $subject, $message) {
+  protected function doExecute(Transaction $transaction, $subject, $message) {
     $uids = \Drupal::service('mcapi.signatures')->setTransaction($transaction)->waitingOn();
     foreach ($uids as $uid) {
-      $account = \Drupal\user\Entity\User::load($uid);
+      $account = User::load($uid);
       $message = $this->mailManager->mail(
         'mcapi_signatures',
         'signhere',

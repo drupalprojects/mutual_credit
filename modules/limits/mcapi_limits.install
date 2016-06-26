@@ -1,12 +1,20 @@
 <?php
 
 /**
+ * @file
+ * Installation hooks.
+ */
+
+/**
  * Implements hook_install().
  */
 function mcapi_limits_install() {
   module_set_weight('mcapi_limits', 1);
 }
 
+/**
+ * Implements hook_schema().
+ */
 function mcapi_limits_schema() {
   return array(
     'mcapi_wallets_limits' => array(
@@ -28,14 +36,14 @@ function mcapi_limits_schema() {
           'type' => 'int',
           'size' => 'normal',
           'not null' => TRUE,
-          'default' => 0
+          'default' => 0,
         ),
         'value' => array(
           'description' => 'The maximum, in native units',
           'type' => 'int',
           'size' => 'normal',
           'not null' => FALSE,
-          'default' => NULL
+          'default' => NULL,
         ),
         'editor' => array(
           'description' => 'the id of the user who saved this',
@@ -48,13 +56,13 @@ function mcapi_limits_schema() {
           'type' => 'int',
           'size' => 'normal',
           'not null' => TRUE,
-        )
+        ),
       ),
       'unique_keys' => array(
-        'wid_cur' => array('wid', 'curr_id', 'max')
-      )
-      //phpmyadmin says 'no index defined' - is an index so necessary?
-    )
+        'wid_cur' => array('wid', 'curr_id', 'max'),
+      ),
+      // Phpmyadmin says 'no index defined' - is an index so necessary?
+    ),
   );
 
 }
