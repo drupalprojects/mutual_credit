@@ -622,12 +622,14 @@ function transaction_form($form, &$form_state) {
 
 
 /**
- * implements hook_accounting_validate
- * Some wiggle room has been left in case for any reason we want to store transactions with missing fields
+ * Implements hook_accounting_validate().
+ *
+ * Some wiggle room has been left in case for any reason we want to store
+ * transactions with missing fields
  */
-function mcapi_accounting_validate($transactions){
+function mcapi_accounting_validate($cluster){
   $errors = array();
-  foreach ($transactions as $key => $transaction) {
+  foreach ($cluster as $key => $transaction) {
     //no usecase is currently envisaged where someone might pay themselves in one currency in one transaction
     if ($transaction->payer > 0) {
       if ($transaction->payer == $transaction->payee) {
@@ -635,7 +637,7 @@ function mcapi_accounting_validate($transactions){
           $errors[] = t('A transaction must involve two different users');
         }
         else {
-          unset($transactions[$key]);
+          unset($cluster[$key]);
         }
       }
     }
@@ -901,7 +903,7 @@ function transaction_view($transactions, $view_mode = 'certificate', $suppress_o
         break;
       default: //an arbitrary token string, don't forget there is a token for [transaction:links]
         $tx['#markup'] = token_replace(
-          $view_mode,
+          variable_get('mcapi_sentence', mcapi_sentence_default()),
           array('transaction' => $transaction),
           array('language' => $language, 'sanitize' => FALSE)
         );
@@ -1521,7 +1523,7 @@ function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
   $value = array();
   if ($edit) {
     foreach ($edit as $delta => $item) {
-      $val = form_type_worth_value($element[$delta], $item, $form_state);
+      $val = form_type_worth_value($element, $item, $form_state);
       if (!is_null($val)) {
         $value[] =  $val;
       }
@@ -1531,11 +1533,13 @@ function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
 }
 
 /**
- * implements form_type_ELEMENT_NAME_value
+ * Implements form_type_ELEMENT_NAME_value().
  */
-function form_type_worth_value(&$element, $edit = FALSE, &$form_state) {
+function form_type_worth_value(&$element, $edit = FALSE, &$form_state, $delta = 0) {
   if (empty($edit['currcode'])) {
+    debug($element['#default_value']);
     return $element['#default_value'];
+    return $element['#default_value'][$delta];
   }
   $item = array('currcode' => $edit['currcode']);
   if (!strlen($edit['main_quant']) && empty($edit['div_quant'])) {

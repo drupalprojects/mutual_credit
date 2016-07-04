@@ -390,7 +390,7 @@ function mcapi_dependent_transaction_action($transaction, $settings) {
   foreach ($settings['presets']['worth_items']['worths'] as $delta => $worth_formula) {
     //if this currency was in the prime transaction, pass it to the calculator
     $items = field_get_items('transaction', $transaction, 'worth');
-    $calculated = _mcapi_calc($worth_formula['main_quant'], @$items[$delta]['quantity']);
+    $calculated = _mcapi_calc($worth_formula['quantity'], @$items[$delta]['quantity']);
     if (!$calculated) continue;
     $rounded = mcapi_round($calculated, $worth_formula['currcode'], $settings['presets']['worth_items']['round'] == 'up');
     //don't save zero value auto transactions, even if the currency settings permit
@@ -620,16 +620,16 @@ function _worths_element_process($element, &$form_state) {
   //if no defaults are set then all currencies should be present
   if (!isset($element['#default_value']) || empty($element['#default_value']) || @$element['#preset']) {
     $element['#default_value'] = (array)$element['#default_value'];
-    foreach ($currencies as $currcode => $currency) {
+    foreach (array_keys($currencies) as $currcode) {
       $element['#default_value'] += array($currcode => '');
     }
   }
   $delta = 0;
-  if (variable_get('mcapi_mixed_transactions', TRUE) || @$element['#preset']) {
+  if (variable_get('mcapi_mixed_transactions', TRUE) || !empty($element['#preset'])) {
     //construct one widget for each default, each with its own currcode
     foreach($element['#default_value'] as $currcode => $quant) {
       $element[$delta]['#title'] = $currencies[$currcode]->human_name;
-      $element[$delta]['#currcodes']= array($currcode);
+      $element[$delta]['#currcodes'] = array($currcode);
       $element[$delta]['#default_value'] = array(
         'currcode' => $currcode,
         'quantity' => $quant
@@ -656,6 +656,7 @@ function _worths_element_process($element, &$form_state) {
     $element[$delta]['#calc'] = @$element['#calc'];
     $element[$delta]['#preset'] = @$element['#preset'];
   }
+
   return $element;
 }
 
@@ -851,12 +852,11 @@ function mcapi_round($quant, $currcode, $up = FALSE) {
     case CURRENCY_DIVISION_MODE_CUSTOM:
       //calculate the number of hundredths from each division to the fraction, and choose the smallest
       list($int, $fraction) = array_pad(explode('.', $quant), 2, 0);
-      foreach ($currency->display['divisions_allowed'] as $division) {
-        $diffs[$division] = abs($fraction - $division);
+      for ($i = $fraction; $i> 0; $i--) {
+        if (isset($currency->display['divisions_allowed'][$i])) {
+          return "$int.".$i;
+        }
       }
-      asort($diffs);
-      return "$int.". key($diffs);
-      break;
     case CURRENCY_DIVISION_MODE_CENTS_FIELD:
     case CURRENCY_DIVISION_MODE_CENTS_INLINE:
       $quant = round($quant, 2);
