@@ -1,15 +1,17 @@
-id: mcapi_exchange.currencies
+id: group.currencies
 status: true
 dependencies:
   module:
-    - mcapi
+    - mcapi_exchanges
+  config:
+    - group.type.exchange
 langcode: en
 field_name: currencies
-entity_type: mcapi_exchange
+entity_type: group
 type: entity_reference
 settings:
   target_type: mcapi_currency
-module: ''
+module: mcapi_exchanges
 locked: false
 cardinality: '-1'
 translatable: false

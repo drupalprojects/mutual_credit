@@ -1,20 +1,19 @@
-mcapi.exchange.list.tab:
-  route_name: mcapi.admin_exchange_list
-  title: List
-  base_route: mcapi.admin_exchange_list
-  weight: 0
-mcapi.exchange.view.tab:
-  route_name: entity.mcapi_exchange.canonical
-  title: View
-  base_route: entity.mcapi_exchange.canonical
-  weight: 0
 mcapi.exchange.mass.tab:
   route_name: mcapi.exchange.masspay
   title: Mass payment
-  base_route: entity.mcapi_exchange.canonical
+  base_route: entity.group.canonical
   weight: 1
-mcapi.exchange.edit.tab:
-  route_name: entity.mcapi_exchange.edit_form
-  title: Edit
-  base_route: entity.mcapi_exchange.canonical
-  weight: 2
+mcapi.exchange.contact.tab:
+  route_name: entity.mcapi_exchange.contact
+  title: Contact
+  base_route: entity.group.canonical
+  weight: 4
+mcapi.exchange.userregister.tab:
+  route_name: user.register
+  title: Register
+  base_route: entity.group.canonical
+  weight: 4
+
+#temp until this is added to group.links.task.yml
+group_content.dynamic:
+  deriver: '\Drupal\mcapi_exchanges\GroupContentDynamicDeriver'

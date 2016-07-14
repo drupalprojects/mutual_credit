@@ -1,0 +1,19 @@
+uuid: e8e95a8d-703d-4d9d-bea2-bb09639dbc8f
+langcode: en
+status: true
+dependencies:
+  module:
+    - group
+id: group.active
+field_name: active
+entity_type: group
+type: boolean
+settings: {  }
+module: core
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false
+

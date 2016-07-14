@@ -3,6 +3,7 @@
 namespace Drupal\mcapi\Plugin\Field\FieldWidget;
 
 use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\WidgetBase;
@@ -77,6 +78,12 @@ class WorthWidget extends WidgetBase {
     $this->getSetting('exclude');
     if ($this->getSetting('exclude')) {
       $curr_ids = array_diff(array_keys(Currency::loadMultiple()), $curr_ids);
+    }
+    elseif (\Drupal::currentUser()->id() == 1) {
+      $curr_ids = array_keys(Currency::loadMultiple());
+    }
+    else {
+      $curr_ids = array_keys(Exchange::currenciesAvailableToUser());
     }
 
     // Because this is a multiple widget, ignore delta value and put all items.

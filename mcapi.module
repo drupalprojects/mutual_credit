@@ -119,10 +119,14 @@ function mcapi_entity_insert($entity) {
     if (Mcapi::maxWalletsOfBundle($type, $entity->bundle())) {
       // No need to check what the max is; this is the first wallet created for
       // this entity.
-      Wallet::create([
+      $props = [
         'holder' => $entity,
         'name' => t('Default'),
-      ])->save();
+      ];
+      if ($entity->hasField('created')) {
+        $props['created'] = $entity->created->value;
+      }
+      Wallet::create($props)->save();
       \Drupal::logger('mcapi')->notice(
         'Wallet autocreated for new @entitytype @id',
         ['@entitytype' => $type, '@id' => $entity->id()]
@@ -196,7 +200,7 @@ function mcapi_theme($existing, $type, $theme, $path) {
 }
 
 /**
- * Implements mcapi hook_mcapi_form_list().
+ * Implements hook_mcapi_form_list().
  *
  * Return a list of transaction forms declared in this module.
  * each item must e an array with the following keys

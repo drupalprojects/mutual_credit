@@ -123,6 +123,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * {@inheritdoc}
    */
   protected function generateElements(array $values) {
+    $values['first_transaction_time'] =  $this->firstTransactionTime();
     if ($values['num'] <= 100) {
       $this->generateContent($values);
     }
@@ -135,28 +136,28 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * Method responsible for creating a small number of transactions.
    *
    * @param array $values
-   *   Kill, num.
+   *   Kill, num, first_transaction_time
    *
    * @throws \Exception
    */
-  private function generateContent($values) {
+  public function generateContent($values) {
     if (!empty($values['kill'])) {
       $this->contentKill($values);
     }
-    list($first_transaction_time, $interval) = $this->timing($values['num']);
+    $interval = $this->timing($values['first_transaction_time'], $values['num']);
     drupal_set_message(
       t(
         'Generating @num transactions starting on @date, every @count seconds',
         [
           '@num' => $values['num'],
-          '@date' => date('d M Y', $first_transaction_time),
+          '@date' => date('d M Y', $values['first_transaction_time']),
           '@interval' => $interval,
         ]
       )
     );
 
     for ($i = 1; $i <= $values['num']; $i++) {
-      $this->develGenerateTransactionAdd($values, $first_transaction_time + $interval * $i);
+      $this->develGenerateTransactionAdd($values, $values['first_transaction_time'] + $interval * $i);
     }
     if (function_exists('drush_log') && $i % drush_get_option('feedback', 1000) == 0) {
       drush_log(dt('Completed @feedback transactions ', ['@feedback' => drush_get_option('feedback', 1000)], 'ok'));
@@ -176,7 +177,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       ];
     }
     $total = $values['num'];
-    list($values['first_transaction_time'], $values['interval']) = $this->timing($values['num']);
+    $values['interval'] = $this->timing($values['first_transaction_time'], $values['num']);
     $values['num'] = 100;
     // Add the operations to create the transactions.
     for ($num = 0; $num < floor($total / 100); $num++) {
@@ -243,6 +244,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    *
    * @param array $values
    *   The input values from the settings form.
+   *
+   * @note May consume a lot of memory
    */
   protected function contentKill($values) {
     $transactions = Transaction::loadMultiple();
@@ -257,7 +260,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    *
    * @note this may attempt to send a email for pending transactions.
    */
-  protected function develGenerateTransactionAdd(&$results, $time) {
+  public function develGenerateTransactionAdd(&$results, $time) {
     list($props['payer'], $props['payee']) = $this->getWallets($time);
     $props += [
     // Auto doesn't show in the default view.
@@ -284,6 +287,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     $transaction->created->value = $time;
     // NB this could generate pending emails.
     $transaction->save();
+    //so it can be modified...
+    return $transaction;
   }
 
   /**
@@ -294,12 +299,11 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * controller, in my opinion.
    */
   public function getWallets($time) {
-    $wids = \Drupal::database()->select('mcapi_wallet', 'w')
-      ->fields('w', ['wid'])
+    $wids = \Drupal::entityQuery('mcapi_wallet')
       ->condition('created', $time, '<')
-      ->range(0, 2)->execute()->fetchCol();
+      ->execute();
     if (count($wids) < 2) {
-      throw new \Exception('Not enough wallets at time: ' . $time);
+      throw new \Exception('Not enough wallets on date: ' . date('d M Y', $time));
     }
     shuffle($wids);
 
@@ -316,16 +320,22 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    *   The unixtime of the first transaction, and the interval between
    *   subsequent transactions.
    */
-  public function timing($count) {
-    // Get the age of the second oldest wallet.
-    $first_transaction_time = \Drupal::database()
+  public function timing($since, $count) {
+    $since += 1000;
+    $period = REQUEST_TIME - $since;
+    return $period / $count;
+  }
+
+  /**
+   * Get the age of the second oldest wallet.
+   * @return int
+   *   The unixtime the first transaction time could take place.
+   */
+  private function firstTransactionTime() {
+    return \Drupal::database()
       ->select('mcapi_wallet', 'w')
       ->fields('w', ['created'])
       ->orderBy('created', 'ASC')
-      ->range(1, 2)->execute()->fetchField() + 1000;
-    $period = REQUEST_TIME - $first_transaction_time;
-    $interval = $period / $count;
-    return [$first_transaction_time, $interval];
+      ->range(1, 2)->execute()->fetchField();
   }
-
 }

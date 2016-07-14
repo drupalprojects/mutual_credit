@@ -1,15 +1,11 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi_cc\Endpoint.
- * Handles incoming requests from ClearingCentral
- */
-
 namespace Drupal\mcapi_cc;
 
-use Drupal\mcapi\Entity\Currency;
+use Drupal\Component\Utility\UrlHelper;
+use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\system\Controller\SystemController;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -26,12 +22,22 @@ class Endpoint extends SystemController {
   private $siteConfig;
   private $accountSwitcher;
   private $walletEntityQuery;
+  private $exchangeNames;
+  private $country;
+  private $intertradingSettings;
 
-  public function __construct($logger, $site_config, $account_switcher, $entity_query) {
-    $this->logger = $logger->get('clearingcentral');
-    $this->siteConfig = $site_config;
+  /**
+   * Constructs a new SystemController.
+   */
+  public function __construct($logger, $config_factory, $account_switcher, $entity_query, $key_value_store, $date) {
+    $this->logger = $logger->get('Clearing Central');
+    $this->siteConfig = $config_factory->get('system.site');
     $this->accountSwitcher = $account_switcher;
     $this->walletEntityQuery = $entity_query->get('mcapi_wallet');
+    $this->exchangeNames = $key_value_store->get('exchangeNames');
+
+    $this->country = $date->get('country.default');
+    $this->intertradingSettings = $key_value_store->get('clearingcentral');
   }
 
   /**
@@ -40,145 +46,124 @@ class Endpoint extends SystemController {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('logger.factory'),
-      $container->get('config.factory')->get('system.site'),
+      $container->get('config.factory'),
       $container->get('account_switcher'),
-      $container->get('entity.query')
+      $container->get('entity.query'),
+      $container->get('keyvalue'),
+      $container->get('system.date')
     );
   }
 
-
-
-
-  function receiver()  {
+  /**
+   * Receive the message from clearing central.
+   *
+   * Also validate, save the transaction, return transaction or an error code.
+   */
+  public function receiver() {
     $post = filter_input_array(INPUT_POST);
-    //@temp
-    if (!$post) {
-      $post = filter_input_array(INPUT_GET);
-    }
 
-    if (empty($post['saved'])) {
-      $this->makeTransaction($post, $post['outgoing'] == FALSE);
-      $response = new Response(NULL, $post['response'] == CEN_SUCCESS ? 201 : 200);
-    }
-    else {
-      $this->finalise($post);
-      //nothing should go wrong
-      $params['response'] = CEN_SUCCESS;
-      $response = new Response(NULL, 200);
-    }
-    $response->setContent(\Drupal\Component\Utility\UrlHelper::buildQuery($post));
+    // Receive the transaction as server B.
+    $this->makeTransaction($post);
+    $response = new Response(NULL, $post['response'] == CEN_SUCCESS ? 201 : 200);
+
+    $response->setContent(UrlHelper::buildQuery($post));
     $response->send();
     exit;
   }
 
   /**
-   * finalise the transaction
-   *
-   * @param type $params
-   *   incoming data from clearing central about the saved transaction
-   *
-   * @return an http status code
-   */
-  function finalise(&$params) {
-    $transaction = \Drupal::entityTypeManager()
-      ->getStorage('mcapi_transaction')
-      ->loadByProperties(['uuid' => $params['txid']]);
-    $transaction->state->target_id = 'done';
-    $transaction->save();
-    return 200;
-  }
-
-  /**
-   * create a new transaction and try to save it
+   * Create a new transaction from the sent params.
    *
    * @param array $params
-   *   data from clearing central about the proposed transaction
-   *   'outgoing' means whether the transaction was outgoing from its source
-   * @param bool $buyer_is_local
-   *
-   * @return an http status code
+   *   Data from clearing central about the proposed transaction
+   *   'outgoing' means whether the transaction was outgoing from its source.
    */
-  function makeTransaction(&$params, $buyer_is_local) {
+  public function makeTransaction(&$params) {
 
     $props = [
       'uuid' => $params['txid'],
       'type' => 'remote',
-      'description' => $params['description']
+      'description' => $params['description'],
     ];
 
-    if ($buyer_is_local) {
-      $local_exchange_id = $params['buyer_nid'];
-      $other_exchange_id = $params['seller_nid'];
-      $other_exchange_name = $params['seller_xname'];
-      $other_user_name = $params['seller_name'];
-    }
-    else {
+    if ($params['outgoing']) {
+      // Payment is going from the originating exchange to this exchange.
       $local_exchange_id = $params['seller_nid'];
       $other_exchange_id = $params['buyer_nid'];
       $other_exchange_name = $params['buyer_xname'];
       $other_user_name = $params['buyer_name'];
     }
-
-    //store this for when we need to view the transaction
-    \Drupal::keyValue('exchangeNames')
-      ->set($other_exchange_id, $other_exchange_name);
-
-    if ($intertrading_wid = $this->getIntertadingWalletFromExchangeId($local_exchange_id)) {
-      $intertrading_settings = \Drupal::keyValue('clearingcentral')->get($intertrading_wid);
-      $currency = Currency::load($intertrading_settings['curr_id']);
-      list($parts[1], $parts[3]) = explode('.', number_format($params['amount'], 2));
-      $props['worth'] = [
-        [
-          'curr_id' => $currency->id(),
-          'value' => $currency->unformat($parts)
-        ]
-      ];
-      $props['creator'] = $intertrading_wid;
-
-      $this->accountSwitcher->switchTo(\Drupal\user\Entity\User::load(1));
-      $country =\Drupal::config('system.date')->get('country.default');
-      if ($buyer_is_local) {
-        $props['payee'] = $intertrading_wid;
-        $props['payer'] = $this->walletIdFromfragment($params['buyer_id']);
-        $holder = Wallet::load($props['payer'])->getHolder();
-        $params['buyer_name'] = (string)$holder->label();
-        $params['buyer_email'] = $holder->getEmail();
-        $params['buyer_xname'] = $this->siteConfig->get('name');
-        $params['buyer_country'] = $country;
-      }
-      else {
-        $props['payer'] = $intertrading_wid;
-        $props['payee'] = $this->walletIdFromfragment($params['seller_id']);
-        $holder = Wallet::load($props['payee'])->getHolder();
-        $params['seller_name'] = (string)$holder->label();
-        $params['seller_email'] = $holder->getEmail();
-        $params['seller_xname'] = $this->siteConfig->get('name');
-        $params['seller_country'] = $country;
-      }
-      $transaction = Transaction::create($props);
-      $transaction->state->target_id = 'done';
-      $transaction->remote_exchange_id = $other_exchange_id;
-      $transaction->remote_user_id = $other_exchange_name;
-      $transaction->remote_user_name = $other_user_name;
-    }
     else {
-      $this->logger->error('Could not identify intertrading wallet connected to '.$other_exchange_id);
-      //send something back to the server
+      // Payment is going from this exchange to the originating exchange.
+      $local_exchange_id = $params['buyer_nid'];
+      $other_exchange_id = $params['seller_nid'];
+      $other_exchange_name = $params['seller_xname'];
+      $other_user_name = $params['seller_name'];
+    }
+    // Store this for when we need to view the transaction.
+    $this->exchangeNames->set($other_exchange_id, $other_exchange_name);
+    $intertrading_wid = $this->getIntertadingWalletFromExchangeId($local_exchange_id);
+
+    if (!$intertrading_wid) {
+      $this->logger->error('Could not identify intertrading wallet connected to @id', ['@id' => $other_exchange_id]);
+      // Send something back to the server.
       $params['response'] = 3;
       return;
     }
 
+    $settings = $this->intertradingSettings->get($intertrading_wid);
+    $currency = Currency::load($settings['curr_id']);
+
+    list($parts[1], $parts[3]) = explode('.', number_format($params['amount'], 2));
+    $props['worth'] = [
+      [
+        'curr_id' => $currency->id(),
+        'value' => $currency->unformat($parts),
+      ],
+    ];
+    $props['creator'] = $intertrading_wid;
+
+    $this->accountSwitcher->switchTo(User::load(1));
+
+    if ($params['outgoing']) {
+      // Props to generate a transaction.
+      $props['payer'] = $intertrading_wid;
+      $props['payee'] = $this->walletIdFromfragment($params['seller_id']);
+      // Prepare the params to send back.
+      $holder = Wallet::load($props['payee'])->getHolder();
+      $params['seller_name'] = $holder->label();
+      $params['seller_email'] = $holder->getEmail();
+      $params['seller_xname'] = $this->siteConfig->get('name');
+      $params['seller_country'] = $this->country;
+    }
+    else {
+      // Props to generate a transaction.
+      $props['payee'] = $intertrading_wid;
+      $props['payer'] = $this->walletIdFromfragment($params['buyer_id']);
+      // Prepare the params to send back.
+      $holder = Wallet::load($props['payer'])->getHolder();
+      $params['buyer_name'] = $holder->label();
+      $params['buyer_email'] = $holder->getEmail();
+      $params['buyer_xname'] = $this->siteConfig->get('name');
+      $params['buyer_country'] = $this->country;
+    }
+    $transaction = Transaction::create($props);
+    $transaction->remote_exchange_id = $other_exchange_id;
+    $transaction->remote_user_id = $other_exchange_name;
+    $transaction->remote_user_name = $other_user_name;
+
     $violations = $transaction->validate();
     if (count($violations)) {
       foreach ($violations as $violation) {
-        if ($violation->getPropertyPath() == 'payee' and $violation->getConstraint() instanceOf CanPayIn) {
+        // Skip some constraints.
+        if ($violation->getPropertyPath() == 'payee' and $violation->getConstraint() instanceof CanPayIn) {
           continue;
         }
-        elseif($violation->getPropertyPath() == 'payer' and $violation->getConstraint() instanceOf CanPayOut) {
+        elseif ($violation->getPropertyPath() == 'payer' and $violation->getConstraint() instanceof CanPayOut) {
           continue;
         }
-        $bad = TRUE;
         $this->logger->error($violation->getMessage());
+        $bad = TRUE;
       }
     }
     if (isset($bad)) {
@@ -193,27 +178,47 @@ class Endpoint extends SystemController {
 
   }
 
-  function walletIdfromFragment($fragment) {
+  /**
+   * Try to identify a wallet from a string.
+   *
+   * @param string $fragment
+   *   A bit of text.
+   */
+  public function walletIdfromFragment($fragment) {
     $wids = $this->walletEntityQuery
       ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
-      ->condition('name', '%'.$fragment.'%', 'LIKE')
+      ->condition('name', '%' . $fragment . '%', 'LIKE')
       ->execute();
     if (count($wids) > 1) {
-      $this->logger->error('Found more than one wallet matching fragment '.$fragment);
+      $this->logger->error('Found more than one wallet matching fragment %fragment', ['%fragment' => $fragment]);
     }
     elseif (empty($wids)) {
-      $this->logger->error('Found more than one wallet matching fragment '.$fragment);
+      $this->logger->error('Found no wallets matching fragment %fragment', ['%fragment' => $fragment]);
     }
     return reset($wids);
   }
 
-  //clumsy but the only other way I know is to create a new db table jsut for storing occaisional wallet settings
-  function getIntertadingWalletFromExchangeId($local_exchange_id) {
-    foreach (\Drupal::keyValue('clearingcentral')->getAll() as $wid => $settings) {
+  /**
+   * Given the exchange id, return its intertrading wallet id.
+   *
+   * Clumsy but the only other way I know is to create a new db table just for
+   * storing occasional wallet settings.
+   *
+   * @param int $local_exchange_id
+   *   Id of an exchange entity (not sure yet which type that might be).
+   *
+   * @return int
+   *   A wallet ID.
+   *
+   * @throws \Exception
+   */
+  public function getIntertadingWalletFromExchangeId($local_exchange_id) {
+    foreach ($this->intertradingSettings->getAll() as $wid => $settings) {
       if ($settings['login'] == $local_exchange_id) {
         return $wid;
       }
     }
-    throw new \Exception('No intertrading wallet for '.$local_exchange_id);
+    throw new \Exception('No intertrading wallet for ' . $local_exchange_id);
   }
+
 }

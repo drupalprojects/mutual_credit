@@ -1,0 +1,12 @@
+uuid: f9cdce69-ed7c-47cc-8309-15ee0d587f38
+langcode: en
+status: true
+dependencies:
+  config:
+    - group.type.exchange
+id: exchange-group_membership
+label: 'Group membership'
+description: 'Adds users to exchanges as members.'
+group_type: exchange
+content_plugin: group_membership
+

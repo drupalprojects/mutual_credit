@@ -1,20 +1,15 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi_exchanges\Form\Contact.
- * Edit all the fields on an exchange
- */
-
 namespace Drupal\mcapi_exchanges\Form;
 
-use Drupal\mcapi_exchanges\ExchangeInterface;
 use Drupal\user\Entity\User;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\ContentEntityForm;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
-
+/**
+ * Contact an exchange using the email specified in its email field.
+ */
 class Contact extends ContentEntityForm {
 
   protected $flood;
@@ -29,6 +24,9 @@ class Contact extends ContentEntityForm {
 
   protected $mailManager;
 
+  /**
+   * Constructor
+   */
   public function __construct($flood, $logger, $mail_handler, $date_formatter, $language_manager, $mail_manager) {
     $this->flood = $flood;
     $this->logger = $logger;
@@ -57,15 +55,13 @@ class Contact extends ContentEntityForm {
    */
   public function form(array $form, FormStateInterface $form_state) {
 
-    $user = $this->currentUser();
-
     if (count($this->languageManager->getLanguages()) > 1) {
       if (\Drupal::moduleHandler()->moduleExists('locale')) {
-        //@todo prepare languages
+        // @todo prepare languages
         $form['intro'] = [
           '#type' => 'item',
           '#value' => t('In this exchange we speak @languages', ['@languages' => implode(',', 'english')]),
-          '#weight' => -1
+          '#weight' => -1,
         ];
       }
     }
@@ -74,14 +70,16 @@ class Contact extends ContentEntityForm {
       '#title' => $this->t('Your name'),
       '#maxlength' => 255,
       '#required' => TRUE,
-      '#weight' => 0
+      '#weight' => 0,
     );
     $form['mail'] = array(
       '#type' => 'email',
       '#title' => $this->t('Your email address'),
       '#required' => TRUE,
-      '#weight' => 2
+      '#weight' => 2,
     );
+
+    $user = $this->currentUser();
     if ($user->isAnonymous()) {
       $form['#attached']['library'][] = 'core/drupal.form';
       $form['#attributes']['data-user-info-from-browser'] = TRUE;
@@ -104,12 +102,12 @@ class Contact extends ContentEntityForm {
       '#type' => 'item',
       '#title' => $this->t('To'),
       '#plain_text' => $this->t('The team @ @exchange', ['@exchange' => $this->entity->label()]),
-      '#weight' => 4
+      '#weight' => 4,
     );
     $form['message'] = [
       '#title' => $this->t('Message'),
       '#type' => 'textarea',
-      '#weight' => 6
+      '#weight' => 6,
     ];
 
     $form['copy'] = array(
@@ -118,7 +116,7 @@ class Contact extends ContentEntityForm {
       // Do not allow anonymous users to send themselves a copy, because it can
       // be abused to spam people.
       '#access' => $user->isAuthenticated(),
-      '#weight' => 8
+      '#weight' => 8,
     );
 
     $form['#attributes']['class'][] = 'contact-form';
@@ -126,11 +124,10 @@ class Contact extends ContentEntityForm {
     $form['actions']['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Send'),
-      '#weight' => 10
+      '#weight' => 10,
     ];
     return $form;
   }
-
 
   /**
    * {@inheritdoc}
@@ -150,7 +147,6 @@ class Contact extends ContentEntityForm {
       }
     }
   }
-
 
   /**
    * {@inheritdoc}
@@ -193,7 +189,7 @@ class Contact extends ContentEntityForm {
       [
         'message' => $values['message'],
         'sender' => $sender_cloned,
-        'recipient' => $this->entity->mail
+        'recipient' => $this->entity->mail,
       ],
       $sender_cloned->getEmail(),
       $headers
@@ -203,9 +199,8 @@ class Contact extends ContentEntityForm {
       '%sender-name' => $sender_cloned->getUsername(),
       '@sender-from' => $sender_cloned->getEmail(),
       '%recipient-name' => $this->entity->label(),
-      '@body' => $values['message']
+      '@body' => $values['message'],
     ]);
   }
 
 }
-

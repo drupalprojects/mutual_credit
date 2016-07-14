@@ -1,0 +1,18 @@
+uuid: 1c1fa222-0de4-4772-9c80-d83d48670c7e
+langcode: en
+status: true
+dependencies: 
+  module:
+    - mcapi_exchanges
+id: exchange
+provider: mcapi_exchanges
+label: Exchange
+description: 'A mutually exclusive group type, linked to currencies'
+content:
+  group_membership:
+    id: group_membership
+    group_type: exchange
+    data:
+      group_cardinality: 0
+      entity_cardinality: 1
+

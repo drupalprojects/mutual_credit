@@ -313,6 +313,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     $format = array_reverse($this->format_nums, TRUE);
     $raw = $divisor = 0;
     foreach ($format as $key => $value) {
+      if (!isset($parts[$key])) ;
       $raw += $parts[$key] * ($divisor + 1);
       $divisor = $value;
     }
@@ -381,8 +382,25 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       else {
         $parts[3] = rand(0, $num);
       }
+      if (isset($this->format_nums[5])) {
+        $parts[5] = 0;
+      }
     }
     return $this->unformat($parts);
+  }
+
+  /**
+   * Get usage stats for this currency.
+   *
+   * @return array
+   *   with
+   */
+  public function stats() {
+    return \Drupal::entityTypeManager()
+      ->getStorage('mcapi_transaction')
+      ->ledgerStateQuery($this->id(), [])
+      ->execute()
+      ->fetch();
   }
 
 }

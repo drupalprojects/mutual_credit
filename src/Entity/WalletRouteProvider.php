@@ -11,6 +11,10 @@ use Drupal\mcapi\Mcapi;
 
 /**
  * Provides routes for the wallet entity.
+ *
+ * Makes an add-wallet route for canonical entities of any type.
+ *
+ * @example node/1/addwallet
  */
 class WalletRouteProvider extends DefaultHtmlRouteProvider {
 

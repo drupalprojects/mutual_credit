@@ -24,7 +24,7 @@ class TransactionRouteProvider extends DefaultHtmlRouteProvider {
 
     $route_collection
       ->get('entity.mcapi_transaction.add_form')
-      ->setRequirement('_permission', 'create 3rdparty transactions');
+      ->setRequirement('_permission', 'create 3rdparty transaction');
 
     $route_collection
       ->get('entity.mcapi_transaction.canonical')

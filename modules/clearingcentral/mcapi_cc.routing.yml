@@ -1,7 +1,7 @@
 mcapi_cc.remote.bill:
   path: '/transact/remote/bill'
   defaults:
-    _entity_form: mcapi_transaction.intertrading
+    _entity_form: mcapi_transaction.remote_bill
     _title: 'Bill a remote account'
   requirements:
     _custom_access: \Drupal\mcapi_cc\IntertradeAccess::access
@@ -12,7 +12,7 @@ mcapi_cc.remote.bill:
 mcapi_cc.remote.credit:
   path: '/transact/remote/credit'
   defaults:
-    _entity_form: mcapi_transaction.intertrading
+    _entity_form: mcapi_transaction.remote_credit
     _title: 'Credit a remote account'
   requirements:
     _custom_access: \Drupal\mcapi_cc\IntertradeAccess::access
@@ -20,9 +20,17 @@ mcapi_cc.remote.credit:
     parameters:
       operation: credit
 
+#do we need to tell this to expect only POST?
 mcapi_cc.endpoint:
   path: '/clearingcentral'
   defaults:
     _controller: \Drupal\mcapi_cc\Endpoint::receiver
   requirements:
     _user_is_logged_in: 'FALSE'
+
+mcapi_cc.settings:
+  path: '/wallet/intertrading'
+  defaults:
+    _controller: \Drupal\mcapi_cc\Controller\GoSettings::walletOneEdit
+  requirements:
+    _permission: 'configure mcapi'

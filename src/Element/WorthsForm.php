@@ -103,6 +103,9 @@ class WorthsForm extends FormElement {
     if ($input === FALSE) {
       return $element['#default_value'];
     }
+    if ($input === NULL) {
+      return [];
+    }
     foreach ($input as $key => $val) {
       $output[] = WorthForm::valueCallback($element[$key], $input[$key], $form_state);
     }

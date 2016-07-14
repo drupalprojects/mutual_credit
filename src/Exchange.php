@@ -3,12 +3,11 @@
 namespace Drupal\mcapi;
 
 use Drupal\mcapi\Entity\Wallet;
-use Drupal\user\UserInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
-
 use Drupal\mcapi_exchanges\Exchanges;
 
 /**
@@ -34,13 +33,13 @@ class Exchange {
   /**
    * Get a list of all the currencies currently in a wallet's scope.
    *
-   * @param \Drupal\user\UserInterface $account
+   * @param AccountInterface $account
    *   The user.
    *
    * @return CurrencyInterface[]
    *   Keyed by currency id.
    */
-  public static function currenciesAvailableToUser(UserInterface $account = NULL) {
+  public static function currenciesAvailableToUser(AccountInterface $account = NULL) {
     if (!$account) {
       $account = User::load(\Drupal::currentUser()->id());
     }
@@ -128,9 +127,10 @@ class Exchange {
    */
   public static function intertradingWalletId($exchange_id = NULL) {
     if (Self::multipleExchanges() && $exchange_id) {
+      drupal_set_message('is this ever used?');
       // There might be a better name for this method, if there were many
       // methods that were filtering on the current user's exchange.
-      $wid = Exchanges::intertradingWalletId($exchange_id);
+      $wid = Exchanges::getIntertradingWalletId($exchange_id);
     }
     else {
       $wids = \Drupal::entityQuery('mcapi_wallet')
@@ -139,6 +139,13 @@ class Exchange {
       $wid = reset($wids);
     }
     return $wid;
+  }
+
+  /**
+   * Identify a new parent entity for a wallet.
+   */
+  public static function findNewHolder(ContentEntityInterface $previous_holder) {
+    return User::load(1);
   }
 
 }

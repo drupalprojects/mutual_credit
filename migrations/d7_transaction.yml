@@ -2,8 +2,7 @@ id: d7_transaction
 label: Transaction entity
 migration_tags:
   - Drupal 7
-#builder:
-#  plugin: d7_transaction
+provider: migrate_drupal
 source:
   plugin: d7_mcapi_transaction
 process:

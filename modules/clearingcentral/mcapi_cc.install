@@ -1,21 +1,11 @@
 <?php
 
-use \Drupal\mcapi\Entity\Wallet;
 /**
  * Implements hook_install().
  */
 function mcapi_cc_install() {
 
 }
-
-function ____mcapi_cc_uninstall() {
-  db_delete('config')->condition('name', [
-    'core.entity_form_display.mcapi_transaction.mcapi_transaction.remotecredit',
-    'core.entity_form_mode.mcapi_transaction.remotecredit'
-   ], 'IN')->execute();
-
-}
-
 
 /**
  * Implements hook_schema().

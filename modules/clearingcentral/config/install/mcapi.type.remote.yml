@@ -1,6 +1,6 @@
 id: remote
 label: Remote
 description: Transaction with another exchange via intertrading wallets and Clearing Central.
-start_state: hanging
+start_state: done
 provider: mcapi_cc
 third_party_settings: { }

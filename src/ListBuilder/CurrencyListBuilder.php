@@ -40,12 +40,8 @@ class CurrencyListBuilder extends DraggableListBuilder {
     }
     $row['title'] = ['#markup' => $entity->toLink()->toString()];
 
-    $stats = \Drupal::entityTypeManager()
-        ->getStorage('mcapi_transaction')
-        ->ledgerStateQuery($entity->id(), [])
-        ->execute()
-        ->fetch();
-    print_r($stats);
+    $stats = $entity->stats();
+    debug($stats);
     // This includes deleted transactions.
     $row['transactions'] = [
       '#markup' => $stats->trades,

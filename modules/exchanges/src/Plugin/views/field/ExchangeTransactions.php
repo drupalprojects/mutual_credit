@@ -1,23 +1,19 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi_exchanges\Plugin\views\field\ExchangeTransactions.
- */
-
 namespace Drupal\mcapi_exchanges\Plugin\views\field;
 
-use Drupal\views\Plugin\views\area\Result;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Field handler to get the transaction count from the exchange entity
+ * Field handler to get the transaction count from the exchange entity.
  *
  * @ingroup views_field_handlers
  *
  * @ViewsField("exchange_transactions")
+ *
+ * @todo This should be possible with the group module soon.
  */
 class ExchangeTransactions extends FieldPluginBase {
 
@@ -44,6 +40,7 @@ class ExchangeTransactions extends FieldPluginBase {
 
   /**
    * {@inheritdoc}
+   *
    * @todo is and empty query() needed for virtual views fields?
    */
   function query(){}
@@ -53,9 +50,9 @@ class ExchangeTransactions extends FieldPluginBase {
    */
   public function render(ResultRow $values) {
     $states = \Drupal::config('mcapi.settings')->get('counted');
-    //@todo this should be a transaction entityQuery
-    //return $this->getEntity($values)->transactionCount([state => $states]);
-
+    // @todo this should be a transaction entityQuery
+    // return $this->getEntity($values)->transactionCount([state => $states]);
+    debug($states);
     return '*0*';
   }
 

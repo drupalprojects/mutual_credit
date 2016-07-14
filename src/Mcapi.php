@@ -229,7 +229,7 @@ class Mcapi {
     if (count($payin) < 2 && count($payout) < 2) {
       // This is deliberately ambiguous as to whether you have no wallets or the
       // system has no other wallets.
-      drupal_set_message(t('There are no wallets for you to trade with', 'warning'));
+      drupal_set_message(t('There are no wallets for you to trade with'), 'warning');
       return FALSE;
     }
     // There must be at least one wallet in each (and they must be different!)

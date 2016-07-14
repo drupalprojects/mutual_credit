@@ -1,12 +1,15 @@
 <?php
 
-use Drupal\mcapi\Mcapi;
-
-
 /**
- * Implements hook_views_data_alter
+ * @file
+ */
+
+use Drupal\mcapi\Mcapi;
+/**
+ * Implements hook_views_data_alter.
+ *
  * @todo alter this when exchange is fieldAPI again.
-*/
+ */
 function mcapi_exchanges_views_data_alter(&$data) {
   foreach (Mcapi::walletableBundles() as $entity_type_id => $bundles) {
     $entity_type = \Drupal::entityTypeManager()->getDefinition($entity_type_id);
@@ -31,13 +34,13 @@ function mcapi_exchanges_views_data_alter(&$data) {
              [
                'field' => 'holder_entity_type',
                'value' => $entity_type_id,
-             ]
-          ]
+             ],
+          ],
         ),
       );
-      break;//don't repeat for multiple bundles on the same entityType
+      // don't repeat for multiple bundles on the same entityType.
+      break;
     }
   }
-  
-}
 
+}

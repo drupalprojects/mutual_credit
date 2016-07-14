@@ -28,7 +28,7 @@ class TransactionFormAccessCheck extends EntityAccessCheck {
     $mode = $route_match->getRouteObject()->getOptions()['parameters']['mode'];
     $settings = EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.' . $mode)->getThirdPartySettings('mcapi_forms');
     if (empty($settings['direction'])) {
-      return AccessResult::allowedIfHasPermission($account, 'create 3rdparty transactions');
+      return AccessResult::allowedIfHasPermission($account, 'create 3rdparty transaction');
     }
     else {
       return AccessResult::allowed();

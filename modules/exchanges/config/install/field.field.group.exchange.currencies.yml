@@ -1,19 +1,19 @@
-id: mcapi_exchange.mcapi_exchange.currencies
+id: group.exchange.currencies
 status: true
 langcode: en
 field_name: currencies
-entity_type: mcapi_exchange
-bundle: mcapi_exchange
+entity_type: group
+bundle: exchange
 label: Currency(s)
 description: 'Which currencies can be used in this exchange?'
 required: 0
 default_value: {  }
-default_value_callback: '\Drupal\mcapi_exchanges\Exchanges::defaultCurrencyId'
+default_value_callback: 'mcapi_exchanges_default_currency_id'
 settings:
   handler: default
   handler_settings:
     target_bundles: null
 dependencies:
   config:
-    - field.storage.mcapi_exchange.currencies
+    - field.storage.group.currencies
 field_type: entity_reference

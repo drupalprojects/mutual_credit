@@ -47,9 +47,9 @@ class WalletLocalAction extends DeriverBase implements ContainerDeriverInterface
       $key = "mcapi.wallet.add.{$bundle_name}.action";
       // Assumes bundle names don't clash!
       $this->derivatives[$key] = [
-        'id' => "mcapi.wallet.add." . $bundle_name . '.action',
+        'id' => "mcapi.wallet.add." . $entity_type . '.action',
       // Taken from the routesubscriber.
-        'route_name' => "mcapi.wallet.add.$bundle_name",
+        'route_name' => "mcapi.wallet.add.$entity_type",
         'title' => t('Add Wallet'),
         // Assumes this pattern for the canonical route name
         // otherwise we have to derive it somehow, and I'm not sure how.

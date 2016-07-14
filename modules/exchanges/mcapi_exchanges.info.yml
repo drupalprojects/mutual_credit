@@ -1,10 +1,9 @@
-name: Multiple exchanges
-description: Support more than one community with different currencies
+name: Exchange groups
+description: Support more than one community with separate currencies
 package: Community Accounting
-configure: mcapi.admin_exchange_list
 core: 8.x
 type: module
 dependencies:
   - mcapi
-  - og
-  - image
+  - group
+  - contact

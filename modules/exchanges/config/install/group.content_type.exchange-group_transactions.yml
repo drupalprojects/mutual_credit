@@ -1,0 +1,12 @@
+uuid: f9cdce69-ed7c-47cc-8309-153e0d577f38
+langcode: en
+status: true
+dependencies:
+  config:
+    - group.type.exchange
+id: exchange-group_transactions
+label: 'Group transactions'
+description: 'Adds transactions to exchanges'
+group_type: exchange
+content_plugin: group_transactions
+

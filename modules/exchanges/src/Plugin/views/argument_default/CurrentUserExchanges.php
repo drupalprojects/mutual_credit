@@ -1,17 +1,11 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi_exchanges\Plugin\views\argument_default\CurrentUserExchanges.
- */
-
 namespace Drupal\mcapi_exchanges\Plugin\views\argument_default;
 
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Plugin\views\argument_default\ArgumentDefaultPluginBase;
 
 /**
- * return as a views argument, the exchange ids the current user is in
+ * Return as a views argument, the exchange ids the current user is in.
  *
  * @ingroup views_argument_default_plugins
  *
@@ -19,6 +13,8 @@ use Drupal\views\Plugin\views\argument_default\ArgumentDefaultPluginBase;
  *   id = "current_user_exchanges",
  *   title = @Translation("The exchanges the viewed entity is in")
  * )
+ *
+ * @todo there is no longer a $account->exchanges field
  */
 class CurrentUserExchanges extends ArgumentDefaultPluginBase {
 
@@ -27,13 +23,13 @@ class CurrentUserExchanges extends ArgumentDefaultPluginBase {
    */
   public function getArgument() {
     $ids = [];
-    //@todo is it possible to iterate through an entity_reference field like this?
-    //can we not just pull out all the target_ids?
+    // @todo is it possible to iterate through an entity_reference field like this?
+    // can we not just pull out all the target_ids?
     foreach (\Drupal::currentUser()->exchanges->referencedEntities() as $exchange) {
       $ids[] = $exchange->id();
     }
     return implode('+', $ids);
-    //returning nothing means the view doesn't show
+    // Returning nothing means the view doesn't show.
   }
 
 }

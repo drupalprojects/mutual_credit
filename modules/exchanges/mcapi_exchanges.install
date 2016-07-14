@@ -1,163 +1,73 @@
 <?php
-use Drupal\field\Entity\FieldConfig;
+/**
+ * @file
+ * Installation hooks for mcapi_exchanges
+ */
+
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\user\Entity\User;
-use Drupal\mcapi_exchanges\Entity\Exchange;
-use Drupal\og\OgGroupAudienceHelper;
-use Drupal\mcapi\Mcapi;
-use Drupal\Core\Link;
+use Drupal\views\Entity\View;
+use Drupal\group\Entity\Group;
+use Drupal\group\Entity\GroupContent;
 
 /**
- * Implements hook_install()
+ * Implements hook_install().
  */
 function mcapi_exchanges_install() {
-  \Drupal\og\Og::groupManager()->addGroup('mcapi_exchange', 'mcapi_exchange');
 
-  //@todo test this on exchange/add
+  // Make the exchange walletable
+  $conf = \Drupal::configFactory()->getEditable('mcapi.settings');
+  $types = $conf->get('entity_types');
+  $types['group:exchange'] = 1;
+  $conf->set('entity_types', $types)->save();
+  \Drupal\Core\Cache\Cache::invalidateTags(['walletable_bundles']);
+
+  // Ensure the currencies field is visible on the exchange display.
+  // @todo test this on exchange/add
   EntityFormDisplay::create([
-    'targetEntityType' => 'mcapi_exchange',
-    'bundle' => 'mcapi_exchange',
+    'targetEntityType' => 'group',
+    'bundle' => 'exchange',
     'mode' => 'default',
     'status' => TRUE
   ])->setComponent(
     'currencies',
     ['weight'  => 10, 'type' => 'options_select', 'settings' => []]
-  );//->save();
+  )->save();
 
-  //make the exchange walletable
-  $conf = \Drupal::configFactory()->getEditable('mcapi.settings');
-  $types = $conf->get('entity_types');
-  $types['mcapi_exchange:mcapi_exchange'] = 1;
-  $conf->set('entity_types', $types)->save();
-  \Drupal\Core\Cache\Cache::invalidateTags(['walletable_bundles']);
+  // This view is overridden. note it isn't replaced if this module is disabled
+  if ($view = View::load('mcapi_transactions')) {
+    $view->delete();
+  }
+  else {
+    drupal_set_message('view mcapi_transactions not found, not removed.', 'warning');
+  }
 
-  //put the membership field on all walletable entity types
-  mcapi_exchanges_check_og_fields([], []);
-
-  //now make a default exchange
-  //Og should put the entityOwner IN the exchange automatically,
-  $exchange = Exchange::create([
-    'name' => 'Default exchange',
+  return;
+  // Now make a default exchange
+  // Groups module automatically puts the entity owner in the exchange.
+  $exchange = Group::create([
+    'label' => 'Default exchange',
     'uid' => 1,
-    'mail' => \Drupal::config('system.site')->get('mail'),
+    'type' => 'exchange',
     'currencies' => \Drupal\mcapi\Entity\Currency::loadMultiple()
   ]);
   $exchange->save();
 
-  //put other users in the default exchanges
-  //note that user 1 was put in to the exchange using the wrong default fieldname
-  //@see og_entity_insert()
+  // Put other users in the default exchanges.
   foreach (User::loadMultiple() as $account) {
     if ($account->id()){
-      //exclude user 0
-      continue;
-    }
-    //@todo there may be a way of doing this in og
-    $account->set(EXCHANGE_OG_FIELD, $exchange);
-    $account->save();
-  }
-  drupal_set_message('All other users have joined the default exchange');
-
-  $path = '/admin/structure/exchanges/display';
-  drupal_set_message(
-    t(
-      'Now show the fields on the entity displays: %link',
-      ['%link' => Link::fromTextAndUrl($path, Drupal\Core\Url::fromUserInput($path))->toString()]
-    ),
-    'warning'
-  );
-}
-
-/**
- * form submit callback for mcapi_wallet_settings_form
- */
-function mcapi_exchanges_check_og_fields($form, $form_state) {
-  foreach (Mcapi::walletableBundles(TRUE) as $entity_type_id => $bundles) {
-    if ($entity_type_id == 'mcapi_exchange') {
-      continue;
-    }
-    foreach (array_keys($bundles) as $bundle) {
-      $name = "$entity_type_id.$bundle.".EXCHANGE_OG_FIELD;
-      if ($entity = FieldConfig::load($name)) {
-        continue;
-      }
-      mcapi_exchanges_create_group_ref($entity_type_id, $bundle);
+      GroupContent::create([
+        'gid' => $exchange->id(),
+        // $exchange->getGroupType()->getContentPlugin('group_membership')->getContentTypeConfigId()
+        'type' => 'exchange-group_membership',
+        'entity_id' => $account->id(),
+      ])->save();
     }
   }
+  drupal_set_message(t('All other users have joined the default exchange'));
+
 }
 
 function mcapi_exchanges_uninstall() {
-  $settings = \Drupal::ConfigFactory()->getEditable('mcapi.settings');
-  $types = $settings->get('entity_types');
-  unset($types['mcapi_exchange:mcapi_exchange']);
-  $settings->set('entity_types', $types)->save();
+  EntityFormDisplay::load('group.exchange.default')->delete();
 }
-
-/**
- * utility function
- * add the group reference field to an entity
- *
- * @param type $entity_type
- * @param type $bundle
- *
- * @todo replace with Og::createField($plugin_id, $entity_type, $bundle, array $settings = [])
- * \Drupal\og\Og::createField(EXCHANGE_OG_FIELD, $entity_type, $bundle);
- */
-function mcapi_exchanges_create_group_ref($entity_type, $bundle) {
-  $settings = [
-    'field_name' => EXCHANGE_OG_FIELD,
-    'field_storage_config' => [
-      'locked' => FALSE,
-      'cardinality' => 1,
-      'settings' => [
-        'target_type' => 'mcapi_exchange'
-      ]
-    ],
-    'field_config'  => [
-      'label' => 'Member of exchanges',
-      'default_value_callback' => '',//we probably need this
-      'required' => TRUE,
-      'settings' => [
-        //'handler' => 'default:mcapi_exchange',@todo which is best?
-        'handler' => 'og:default',
-        'handler_settings' => [
-          'target_type' => 'mcapi_exchange',
-          'target_bundles' => NULL,
-          //'access_override' => FALSE,//don't know what this does, think not needed
-          'field_mode' => ''//this key is expected by og:default
-        ]
-      ],
-      'dependencies' => [
-        'module' => ['mcapi_exchanges']
-      ]
-    ]
-  ];
-  $field = \Drupal\og\Og::createField(OgGroupAudienceHelper::DEFAULT_FIELD, $entity_type, $bundle, $settings);
-
-  drupal_set_message("Created field for $entity_type entity, bundle $bundle membership of exchanges.");
-}
-
-
-/*
-
-Drupal::configFactory()->getEditable('core.extension')
-->clear("module.mcapi_exchanges")
-->clear("module.og")
-->clear("module.og_ui")
-->save();
-db_delete('config')->condition('name', '%exchange%', 'LIKE')->execute();
-db_delete('config')->condition('name', 'og%', 'LIKE')->execute();
-db_delete('config')->condition('name', '%og_exchange_ref', 'LIKE')->execute();
-db_drop_table('og_membership');
-db_drop_table('og_role');
-db_drop_table('og_role_permission');
-db_drop_table('og_users_roles');
-db_drop_table('mcapi_exchange');
-db_drop_table('mcapi_exchange__currencies');
-$settings = \Drupal::ConfigFactory()->getEditable('mcapi.settings');
-$types = $settings->get('entity_types');
-unset($types['mcapi_exchange:mcapi_exchange']);
-$settings->set('entity_types', $types)->save();
-\Drupal\Core\Cache\Cache::invalidateTags(['walletable_bundles']);
-drupal_flush_all_caches();
- */

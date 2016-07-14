@@ -33,6 +33,7 @@ class CurrencyViewBuilder extends EntityViewBuilder {
 
     // dsm(\Drupal::request()->query->all());
     $build['#cache_contexts'] = ['accounting'];
+    // @todo sort out the classes/attributes
     $build['#attributes'] = ['class' => 'blah', 'id' => 'blah'];
     $build['#classes'] = ['blah'];
     $build['#id'] = ['blah'];

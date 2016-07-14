@@ -1,0 +1,31 @@
+#this is needed otherwise group_roles field is hidden by default
+uuid: 9e1333e2-e08a-4e96-a24c-08d004665aaa
+langcode: en
+status: true
+dependencies:
+  module:
+    - mcapi_exchanges
+  config:
+    - field.field.group_content.exchange-group_membership.group_roles
+    - group.content_type.exchange-group_membership
+id: group_content.exchange-group_membership.default
+targetEntityType: group_content
+bundle: exchange-group_membership
+mode: default
+content:
+  entity_id:
+    type: entity_reference_autocomplete
+    weight: 5
+    settings:
+      match_operator: CONTAINS
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  group_roles:
+    type: options_buttons
+    weight: 0
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  uid: true
+

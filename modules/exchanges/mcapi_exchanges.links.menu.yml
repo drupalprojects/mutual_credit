@@ -1,13 +1,6 @@
-mcapi.admin_exchange_list:
-  title: Exchanges
-  description: The groups, communities or marketplaces where transactions happen
-  route_name: mcapi.admin_exchange_list
-  parent: system.admin_structure
-  weight: 0
-  
-mcapi.tester.dashboard:
-  title: Testing dashboard
-  description: View all the wallets with all the balances in all the exchanges
-  route_name: mcapi.exchanges.dashboard
-  parent: mcapi.admin
-  weight: -1
+#mcapi.tester.dashboard:
+#  title: Testing dashboard
+#  description: View all the wallets with all the balances in all the exchanges
+#  route_name: mcapi.exchanges.dashboard
+#  parent: mcapi.admin
+#  weight: -1

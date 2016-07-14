@@ -3,6 +3,7 @@ description: Remote transactions with Community Exchange Systems
 package: Community Accounting
 core: 8.x
 type: module
+configure: mcapi_cc.settings
 
 dependencies:
   - mcapi

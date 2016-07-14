@@ -1,0 +1,15 @@
+#todo this role may need to be granted to new users
+uuid: 459842b2-a1d3-4cc6-bd49-c2231e70200c
+langcode: en
+status: true
+dependencies:
+  config:
+    - group.type.exchange
+id: exchange-trader
+label: Trader
+weight: -100
+internal: true
+group_type: exchange
+permissions:
+  - 'view group'
+

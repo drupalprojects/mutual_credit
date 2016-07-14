@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi_exchanges\ExchangeAccessControlHandler.
- */
-
 namespace Drupal\mcapi_exchanges;
 
 use Drupal\Core\Entity\EntityAccessControlHandler;
@@ -14,23 +9,24 @@ use Drupal\Core\Access\AccessResult;
 use Drupal\user\Entity\User;
 use Drupal\mcapi_exchanges\Entity\Exchange;
 
-
 /**
  * Defines an access controller option for the mcapi_wallet entity.
  */
-class ExchangeAccessControlHandler extends EntityAccessControlHandler  {
+class ExchangeAccessControlHandler extends EntityAccessControlHandler {
 
   /**
    * {@inheritdoc}
    */
-  public function checkAccess(EntityInterface $exchange, $op, AccountInterface $account) {
+  public function checkAccess(GroupInterface $exchange, $op, AccountInterface $account) {
 
     $manager = $exchange->getOwnerId() == $account->id();
-    if ($op == 'delete' && !$exchange->deletable($exchange)) {//can't delete undeletable exchanges
+    // can't delete undeletable exchanges.
+    if ($op == 'delete' && !Exchange::deletable($exchange)) {
       $result = AccessResult::forbidden();
       $result;
     }
-    elseif ($account->hasPermission('manage mcapi') || $manager) {//site admins can do anything
+    // Site admins can do anything.
+    elseif ($account->hasPermission('manage mcapi') || $manager) {
       $result = AccessResult::allowed();
       $result->cachePerUser();
     }
@@ -39,7 +35,8 @@ class ExchangeAccessControlHandler extends EntityAccessControlHandler  {
       if (
         $visib == Exchange::VISIBILITY_TRANSPARENT ||
         ($visib == Exchange::VISIBILITY_RESTRICTED && $account->id()) ||
-        ($visib == Exchange::VISIBILITY_PRIVATE && $exchange->hasMember(User::load($account->id())))
+        //@todo
+        ($visib == Exchange::VISIBILITY_PRIVATE && Exchange::hasMember($exchange, User::load($account->id())))
         ) {
         $result = AccessResult::allowed();
       }

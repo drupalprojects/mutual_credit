@@ -24,10 +24,11 @@ function mcapi_forms_entity_type_build(array &$entity_types) {
 
 /**
  * Implements hook_menu_links_discovered_alter().
+ *
  * adds menu links where the firstparty forms specify them
  *
  * @param array $links
- *   each link is a definition array
+ *   Each link is a definition array.
  */
 function mcapi_forms_menu_links_discovered_alter(&$links) {
   foreach (mcapi_form_displays_load() as $id => $first_party_form) {

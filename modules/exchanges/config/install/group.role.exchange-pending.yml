@@ -1,0 +1,15 @@
+uuid: cdcaf8e2-2928-475f-865d-5a64cbfc120d
+langcode: en
+status: true
+dependencies:
+  config:
+    - group.type.exchange
+id: exchange-pending
+label: Pending
+weight: -98
+internal: true
+group_type: exchange
+permissions:
+  - 'edit own group_membership content'
+  - 'view group'
+

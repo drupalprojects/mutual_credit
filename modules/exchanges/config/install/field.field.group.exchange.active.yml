@@ -1,0 +1,24 @@
+uuid: 9e7d166b-a334-4da5-9894-25d563bd7dc9
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.group.active
+    - group.type.exchange
+id: group.exchange.active
+field_name: active
+entity_type: group
+bundle: exchange
+label: Active
+description: 'The exchange is in use, visible in lists and available for intertrade.'
+required: false
+translatable: false
+default_value:
+  -
+    value: 0
+default_value_callback: ''
+settings:
+  on_label: Active
+  off_label: Retired
+field_type: boolean
+

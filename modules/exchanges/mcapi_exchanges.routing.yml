@@ -1,31 +1,11 @@
-mcapi.admin_exchange_list:
-  path: '/admin/structure/exchanges'
-  defaults:
-    _entity_list: 'mcapi_exchange'
-    _title: Exchanges
-  requirements:
-    _permission: 'manage mcapi'
-  options:
-    _admin_route: TRUE
+#mcapi.exchange.register:
+#  path: '/user/register/{group}'
+#  defaults:
+#    _entity_form: user.register
+#  requirements:
+#    #this might be adjustable per-exchange
+#    _access: 'TRUE'
 
-mcapi.exchange.add:
-  path: '/exchange/add'
-  defaults:
-    _entity_form: 'mcapi_exchange.add'
-    _title: Create exchange
-  requirements:
-    _entity_create_access: mcapi_exchange
-  options:
-    _admin_route: TRUE
-    
-entity.mcapi_exchange.join:
-  path: '/exchange/{mcapi_exchange}/join'
-  defaults:
-    _entity_form: 'user.join'
-    _title: 'Join exchange'
-  requirements:
-    _access_user_register: 'TRUE'
-    
 mcapi.exchange.masspay:
   path: '/exchange/{mcapi_exchange}/masspay'
   defaults:
@@ -33,10 +13,10 @@ mcapi.exchange.masspay:
     _title: 'Mass payment'
   requirements:
     _entity_access: 'mcapi_exchange.manage'
-    
 
+#
 entity.mcapi_exchange.enable_confirm:
-  path: '/exchange/{mcapi_exchange}/enable'
+  path: '/exchange/{group}/enable'
   defaults:
     _entity_form: 'mcapi_exchange.enable'
   requirements:
@@ -45,7 +25,7 @@ entity.mcapi_exchange.enable_confirm:
     _admin_route: TRUE
 
 entity.mcapi_exchange.disable_confirm:
-  path: '/exchange/{mcapi_exchange}/disable'
+  path: '/exchange/{group}/disable'
   defaults:
     _entity_form: 'mcapi_exchange.disable'
   requirements:
@@ -53,29 +33,27 @@ entity.mcapi_exchange.disable_confirm:
   options:
     _admin_route: TRUE
 
-entity.mcapi_exchange.delete_confirm:
-  path: '/exchange/{mcapi_exchange}/delete'
-  defaults:
-    _entity_form: 'mcapi_exchange.delete'
-  requirements:
-    _permission: 'manage mcapi'
-  options:
-    _admin_route: TRUE
-
-#@todo how is this being used?
 mcapi.exchange.intertrading:
   path: '/exchange/{mcapi_exchange}/balance'
   defaults:
-    _controller: \Drupal\mcapi_exchanges\Controller\ExchangeController::intertradingWallet
-    _title_callback: \Drupal\mcapi_exchanges\Controller\ExchangeController::pageTitle
+    _controller: \Drupal\mcapi_exchanges\Controller\ExchangeController::showIntertradingWallet
+    _title_callback: \Drupal\mcapi_exchanges\Controller\ExchangeController::intertradingWalletTitle
   requirements:
     _entity_access: 'mcapi_exchange.view'
 
 #@todo how is this being used?
-mcapi.exchanges.dashboard:
-  path: '/admin/accounting/dashboard'
+#mcapi.exchanges.dashboard:
+#  path: '/admin/accounting/dashboard'
+#  defaults:
+#    _controller: 'Drupal\mcapi_exchanges\Controller\DashboardController::page'
+#    _title: 'Dashboard'
+#  requirements:
+#    _permission: 'access administration pages'
+
+entity.mcapi_exchange.contact:
+  path: '/exchange/{group}/contact'
   defaults:
-    _controller: 'Drupal\mcapi_exchanges\Controller\DashboardController::page'
-    _title: 'Dashboard'
+    _entity_form: group.contact
+    _title: 'Contact exchange'
   requirements:
-    _permission: 'access administration pages'
+    _permission: access site-wide contact form

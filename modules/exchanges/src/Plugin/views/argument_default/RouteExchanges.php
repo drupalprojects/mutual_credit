@@ -1,17 +1,12 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi_exchanges\Plugin\views\argument_default\RouteExchanges.
- */
-
 namespace Drupal\mcapi_exchanges\Plugin\views\argument_default;
 
 use Drupal\views\Plugin\views\argument_default\ArgumentDefaultPluginBase;
 use Drupal\mcapi\Mcapi;
 
 /**
- * return as a views argument, the exchanges the viewed entity is in
+ * Return as a views argument, the exchanges the viewed entity is in.
  *
  * @ingroup views_argument_default_plugins
  *
@@ -24,21 +19,22 @@ class RouteExchanges extends ArgumentDefaultPluginBase {
 
   /**
    * Return the default argument.
-   * @todo inject the service
+   *
+   * @todo inject the Routematch service
    */
   public function getArgument() {
-    //there's no validator in core either for ANY entity or for ANY contentEntity or ANY Owned Entity
-    //only for ONE given specific entityType
-    //so this function needs to decide whether to return an argument
+    // there's no validator in core either for ANY entity or for ANY contentEntity or ANY Owned Entity
+    // only for ONE given specific entityType
+    // so this function needs to decide whether to return an argument.
     $ids = [];
-    foreach (\Drupal::routeMatch()->getParameters()->all() as $key => $entity) {
+    foreach (\Drupal::routeMatch()->getParameters()->all() as $entity) {
       if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())) {
-        $ids = Exchanges::memberOf();
+        $ids = Exchanges::memberOf($entity);
         break;
       }
     }
     return implode('+', $ids);
-    //returning nothing means the view doesn't show
+    // Returning nothing means the view doesn't show.
   }
 
 }

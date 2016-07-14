@@ -1,0 +1,16 @@
+uuid: 7e8daf0d-2e74-48a8-96a7-761b0b1442e2
+langcode: en
+status: true
+dependencies:
+  config:
+    - group.type.exchange
+id: exchange-group_admin
+label: 'Group admin'
+weight: -99
+internal: true
+group_type: exchange
+permissions:
+  - 'administer group'
+  - 'edit group'
+  - 'administer members'
+

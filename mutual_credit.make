@@ -4,3 +4,4 @@ api = 2
 
 ;temp
 projects[rules][version] = "8.x-3.x-dev"
+projects[flag][version] = "8.x-4.x-dev"

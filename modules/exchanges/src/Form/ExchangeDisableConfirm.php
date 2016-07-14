@@ -1,18 +1,13 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi_exchanges\Form\ExchangeDisableConfirm.
- */
-
 namespace Drupal\mcapi_exchanges\Form;
 
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\ContentEntityConfirmFormBase;
 use Drupal\Core\Url;
-use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Builds the form to delete a currency
+ * Builds the form to delete a currency.
  */
 class ExchangeDisableConfirm extends ContentEntityConfirmFormBase {
 
@@ -40,7 +35,7 @@ class ExchangeDisableConfirm extends ContentEntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->entity->set('status', FALSE);
     $this->entity->save();
 
