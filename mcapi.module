@@ -1,7 +1,10 @@
-<?php  // $Id: mcapi.module,v 1.1.2.6 2010/12/22 19:30:29 matslats Exp $: transactions.module,v 1.1.2.4 2009/10/14 10:03:54 matslats Exp $
+<?php
+/**
+ * @file
+ *
+ */
 
-
-//delete modes
+// Delete modes
 define('MCAPI_CURRENCY_UNDO_DELETE', 0);
 define('MCAPI_CURRENCY_UNDO_ERASE', 1);
 
@@ -14,13 +17,14 @@ define('CURRENCY_TYPE_ACKNOWLEDGEMENT', 'acknowledgement');
 define('CURRENCY_TYPE_EXCHANGE', 'exchange');
 define('CURRENCY_TYPE_COMMODITY', 'commodity');
 
-//states are mutually exclusive
-//the convention is that states > 0 are counted (but sometimes you might want to count pending (-1) as well)
+// States are mutually exclusive.
+// The convention is that states > 0 are counted (but sometimes you might want
+// to count pending (-1) as well)
 define('TRANSACTION_STATE_FINISHED', 1);
-//There's a convention that says transactions are 'counted' towards the balance when their state is > 0
-//when the delete mode is to write another transaction reversing the first,
-//we don't actually want to discount the deleted transaction
-//so its state constant will be > 0
+// There's a convention that says transactions are 'counted' towards the balance
+// when their state is > 0 when the delete mode is to write another transaction
+// reversing the first we don't actually want to discount the deleted transaction
+// so its state constant will be > 0.
 //
 //depending on the delete mode, erased transactions may or may not be counted
 define('TRANSACTION_STATE_UNDONE', 0);
@@ -865,7 +869,9 @@ function currency_access($op, $currcode, $account = NULL) {
  * $view mode, defaults to token with the saved transaction sentence, but an arbitrary token string can also be used
  */
 function transaction_view($transactions, $view_mode = 'certificate', $suppress_ops = FALSE) {
-  if (!is_array($transactions))$transactions = array($transactions->xid => $transactions);
+  if (!is_array($transactions)) {
+    $transactions = array($transactions->xid => $transactions);
+  }
   global $language;
   //special case for the 'are you sure' form where the transaction was test written and deleted
   //that means the fieldAPI data cannot be retrieved the normal way
@@ -902,8 +908,10 @@ function transaction_view($transactions, $view_mode = 'certificate', $suppress_o
         $tx['#links'] = $suppress_ops ? array() : transaction_get_links($transaction, TRUE, FALSE);
         break;
       default: //an arbitrary token string, don't forget there is a token for [transaction:links]
+        $sentence = variable_get('mcapi_sentence', mcapi_sentence_default());
+        $sentence = $suppress_ops ? str_replace('[transaction:links]', '', $sentence) : $sentence;
         $tx['#markup'] = token_replace(
-          variable_get('mcapi_sentence', mcapi_sentence_default()),
+          $sentence,
           array('transaction' => $transaction),
           array('language' => $language, 'sanitize' => FALSE)
         );
@@ -1537,9 +1545,7 @@ function form_type_worths_value(&$element, $edit = FALSE, &$form_state) {
  */
 function form_type_worth_value(&$element, $edit = FALSE, &$form_state, $delta = 0) {
   if (empty($edit['currcode'])) {
-    debug($element['#default_value']);
     return $element['#default_value'];
-    return $element['#default_value'][$delta];
   }
   $item = array('currcode' => $edit['currcode']);
   if (!strlen($edit['main_quant']) && empty($edit['div_quant'])) {
