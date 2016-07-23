@@ -40,6 +40,13 @@ mcapi.admin.transaction_form.list:
   parent: mcapi.admin
   weight: 5
 
+mcapi.admin.transaction.list:
+  title: Transactions
+  description: List and configure transactions
+  route_name: mcapi.transactions.collection
+  parent: mcapi.admin
+  weight: 5
+
 mcapi.mass:
   title: Mass transactions
   description: Between one wallet and many

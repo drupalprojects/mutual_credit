@@ -4,6 +4,7 @@ namespace Drupal\mcapi\Plugin\DevelGenerate;
 
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
@@ -123,7 +124,6 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * {@inheritdoc}
    */
   protected function generateElements(array $values) {
-    $values['first_transaction_time'] =  $this->firstTransactionTime();
     if ($values['num'] <= 100) {
       $this->generateContent($values);
     }
@@ -144,20 +144,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     if (!empty($values['kill'])) {
       $this->contentKill($values);
     }
-    $interval = $this->timing($values['first_transaction_time'], $values['num']);
-    drupal_set_message(
-      t(
-        'Generating @num transactions starting on @date, every @count seconds',
-        [
-          '@num' => $values['num'],
-          '@date' => date('d M Y', $values['first_transaction_time']),
-          '@interval' => $interval,
-        ]
-      )
-    );
-
     for ($i = 1; $i <= $values['num']; $i++) {
-      $this->develGenerateTransactionAdd($values, $values['first_transaction_time'] + $interval * $i);
+      $this->develGenerateTransactionAdd($values);
     }
     if (function_exists('drush_log') && $i % drush_get_option('feedback', 1000) == 0) {
       drush_log(dt('Completed @feedback transactions ', ['@feedback' => drush_get_option('feedback', 1000)], 'ok'));
@@ -177,7 +165,6 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       ];
     }
     $total = $values['num'];
-    $values['interval'] = $this->timing($values['first_transaction_time'], $values['num']);
     $values['num'] = 100;
     // Add the operations to create the transactions.
     for ($num = 0; $num < floor($total / 100); $num++) {
@@ -212,8 +199,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   public function batchContentAddTransaction($vars, &$context) {
     $context['results']['num'] = intval($context['results']['num']);
     for ($num = 0; $num < $vars['num']; $num++) {
-      $created = $vars['first_transaction_time'] + $vars['interval'] * $num * $vars['batch'];
-      $this->develGenerateTransactionAdd($context['results'], $created);
+      $this->develGenerateTransactionAdd($context['results']);
       $context['results']['num']++;
     }
   }
@@ -260,9 +246,11 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    *
    * @note this may attempt to send a email for pending transactions.
    */
-  public function develGenerateTransactionAdd(&$results, $time) {
-    list($props['payer'], $props['payee']) = $this->getWallets($time);
-    $props += [
+  public function develGenerateTransactionAdd(&$results) {
+    $rand_wallet_ids = $this->getWallets();
+    $props = [
+      'payer' => $rand_wallet_ids[0],
+      'payee' => $rand_wallet_ids[1],
     // Auto doesn't show in the default view.
       'type' => $this->getSetting('type') ?: 'default',
       'creator' => 1,
@@ -284,7 +272,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
         }
       }
     }
-    $transaction->created->value = $time;
+    $transaction->created->value = $this->randTransactionTime($rand_wallet_ids[0], $rand_wallet_ids[1]);
     // NB this could generate pending emails.
     $transaction->save();
     //so it can be modified...
@@ -292,50 +280,41 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   }
 
   /**
-   * Get two random wallets which were created before a given date.
+   * Get two random wallets
    *
-   * @note The below functions shouldn't really access the the db directly but
-   * these are both unique function and also don't belong in the wallet storage
-   * controller, in my opinion.
+   * @param array $conditions
+   *   Conditions for the wallet entityquery
+   * @todo prevent
    */
-  public function getWallets($time) {
-    $wids = \Drupal::entityQuery('mcapi_wallet')
-      ->condition('created', $time, '<')
-      ->execute();
+  public function getWallets(array $conditions = []) {
+    $query = \Drupal::entityQuery('mcapi_wallet')
+      ->condition('payways', Wallet::PAYWAY_AUTO, '<>');
+    foreach ($conditions as $field => $value) {
+      $query->condition($field, $value);
+    }
+    $wids = $query->execute();
     if (count($wids) < 2) {
-      throw new \Exception('Not enough wallets on date: ' . date('d M Y', $time));
+      throw new \Exception('Not enough wallets to make a transaction.');
     }
     shuffle($wids);
 
-    return [reset($wids), next($wids)];
+    return array_slice($wids, -2);
   }
 
   /**
-   * Get the earliest time and an interval to generate transactions.
-   *
-   * @param int $count
-   *   The number of transactions to create.
-   *
-   * @return array
-   *   The unixtime of the first transaction, and the interval between
-   *   subsequent transactions.
+   * Get a time that a transaction could have taken place between 2 wallets
+   * @param type $wid1
+   *   The first wallet ID.
+   * @param type $wid2
+   *   The second wallet ID.
+   * @return integer
+   *   The unixtime
    */
-  public function timing($since, $count) {
-    $since += 1000;
-    $period = REQUEST_TIME - $since;
-    return $period / $count;
+  public function randTransactionTime($wid1, $wid2) {
+    //get the youngest wallet and make a time between its creation and now.
+    $wallets = Wallet::loadMultiple([$wid1, $wid2]);
+    $latest = max($wallets[$wid1]->created->value, $wallets[$wid2]->created->value);
+    return rand($latest, REQUEST_TIME);
   }
 
-  /**
-   * Get the age of the second oldest wallet.
-   * @return int
-   *   The unixtime the first transaction time could take place.
-   */
-  private function firstTransactionTime() {
-    return \Drupal::database()
-      ->select('mcapi_wallet', 'w')
-      ->fields('w', ['created'])
-      ->orderBy('created', 'ASC')
-      ->range(1, 2)->execute()->fetchField();
-  }
 }

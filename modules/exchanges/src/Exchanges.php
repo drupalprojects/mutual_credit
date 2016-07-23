@@ -41,8 +41,7 @@ class Exchanges extends Exchange {
     $memberships = \Drupal::service('group.membership_loader')->loadByUser($entity);
     $result = [];
     foreach ($memberships as $mem) {
-      $exchange = $mem->getGroup();
-      $result[$exchange->id()] = $exchange;
+      $result[] = $mem->getGroup()->id();
     }
     return $result;
   }

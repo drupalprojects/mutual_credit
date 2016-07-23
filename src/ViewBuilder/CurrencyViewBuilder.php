@@ -62,11 +62,11 @@ class CurrencyViewBuilder extends EntityViewBuilder {
 
     asort($balances_asc);
     // Get the bottom wallets.
-    for ($i = 0; $i < 10; $i++) {
+    for ($i = 0; $i < min(10, count($balances_asc)); $i++) {
       list($wid, $quant) = each($balances_asc);
       $wallet = Wallet::load($wid);
       if (!$wallet) {
-        die('No wallet in \Drupal\mcapi\Element\ExtremeBalances');
+        throw new \Exception('No wallet in \Drupal\mcapi\ViewBuilder\CurrencyViewBuilder');
       }
       $bottoms[] = [
         'raw' => abs($quant),
@@ -77,7 +77,7 @@ class CurrencyViewBuilder extends EntityViewBuilder {
     }
     // Get the top wallets.
     $balances_desc = array_reverse($balances_asc, TRUE);
-    for ($i = 0; $i < 10; $i++) {
+    for ($i = 0; $i < min(10, count($balances_asc)); $i++) {
       list($wid, $quant) = each($balances_desc);
       $wallet = Wallet::load($wid);
       $tops[] = [

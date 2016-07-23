@@ -52,7 +52,7 @@ class SameGroup extends PluginBase implements TransactionRelativeInterface {
     $query->join(
       'group_content_field_data',
       'gc',
-      'gc.type = exchange-group_transactions AND gc.entity_id = mcapi_transactions_index.xid'
+      'gc.type = exchange-transactions AND gc.entity_id = mcapi_transactions_index.xid'
     );
 
     $or_group->condition('gc.gid',  $gids, 'IN');
@@ -71,7 +71,7 @@ class SameGroup extends PluginBase implements TransactionRelativeInterface {
     $query->join(
       'group_content_field_data',
       'gc',
-      'gc.type = exchange-group_transactions AND gc.entity_id = mcapi_transaction.xid'
+      'gc.type = exchange-transactions AND gc.entity_id = mcapi_transaction.xid'
     );
     $or_group->condition('gc.gid',  $gids, 'IN');
   }

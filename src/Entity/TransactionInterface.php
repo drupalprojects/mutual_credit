@@ -12,6 +12,9 @@ interface TransactionInterface extends ContentEntityInterface {
   /**
    * Load many transactions and key them by serial number instead of xid.
    *
+   * This is usually needed when taking the transaction id from the url,
+   * otherwise, entityQuery works with the xids, same as other entities.
+   *
    * @param int $serial
    *   A serial number.
    *

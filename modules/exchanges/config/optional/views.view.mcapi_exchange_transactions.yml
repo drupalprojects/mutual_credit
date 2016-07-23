@@ -860,8 +860,8 @@ display:
               - user
           plugin_id: user_name
           provider: user
-        payer_1:
-          id: payer_1
+        payer:
+          id: payer
           table: mcapi_transaction
           field: payer
           relationship: none
@@ -872,12 +872,12 @@ display:
           group: 1
           exposed: true
           expose:
-            operator_id: payer_1_op
+            operator_id: payer_op
             label: Payer
-            description: 'this is a description'
+            description: 'Comma separated usernames'
             use_operator: false
-            operator: payer_1_op
-            identifier: payer_1
+            operator: payer_op
+            identifier: payer
             required: false
             remember: false
             multiple: false
@@ -914,7 +914,7 @@ display:
           expose:
             operator_id: payee_op
             label: Payee
-            description: 'this is a description'
+            description: 'Comma separated usernames'
             use_operator: false
             operator: payee_op
             identifier: payee
@@ -1091,7 +1091,7 @@ display:
           admin_label: 'Transaction group content'
           required: false
           group_content_plugins:
-            group_transactions: '0'
+            transactions: '0'
           entity_type: mcapi_transaction
           plugin_id: group_content_to_entity_reverse
       field_langcode: '***LANGUAGE_language_interface***'
@@ -1972,7 +1972,7 @@ display:
       menu:
         type: tab
         title: Transactions
-        description: ''
+        description: 'Transactions in your exchange'
         expanded: false
         parent: ''
         weight: 0

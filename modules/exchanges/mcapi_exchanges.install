@@ -12,6 +12,8 @@ use Drupal\group\Entity\GroupContent;
 
 /**
  * Implements hook_install().
+ *
+ * @todo delete the end of this if not needed.
  */
 function mcapi_exchanges_install() {
 
@@ -33,14 +35,6 @@ function mcapi_exchanges_install() {
     'currencies',
     ['weight'  => 10, 'type' => 'options_select', 'settings' => []]
   )->save();
-
-  // This view is overridden. note it isn't replaced if this module is disabled
-  if ($view = View::load('mcapi_transactions')) {
-    $view->delete();
-  }
-  else {
-    drupal_set_message('view mcapi_transactions not found, not removed.', 'warning');
-  }
 
   return;
   // Now make a default exchange
@@ -68,6 +62,26 @@ function mcapi_exchanges_install() {
 
 }
 
+/**
+ * Implements hook_uninstall().
+ */
 function mcapi_exchanges_uninstall() {
   EntityFormDisplay::load('group.exchange.default')->delete();
+}
+
+
+/**
+ * Implements hook_modules_installed().
+ *
+ * Delete the default transactions view
+ */
+function mcapi_exchanges_modules_installed() {
+  // This view would ideally be deleted on pre_install, but that doesn't work
+  // when this module is part of a distribution profile.
+  if ($view = View::load('mcapi_transactions')) {
+    $view->delete();
+  }
+  else {
+    drupal_set_message('view mcapi_transactions not found. Move this to the RouteSubscriber.', 'warning');
+  }
 }

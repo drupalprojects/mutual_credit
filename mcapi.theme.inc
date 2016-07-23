@@ -91,7 +91,7 @@ function template_preprocess_wallet_balance_bars(&$vars) {
   $wallet = $vars['element']['#wallet'];
   foreach ($wallet->getSummaries() as $curr_id => $data) {
     $currency = Currency::load($curr_id);
-    if (!$vars['data']['gross_in'] && !$vars['data']['gross_out']) {
+    if (!$data['gross_in'] && !$data['gross_out']) {
       return;
     }
     $id = "given-received-" . $curr_id . '-' . $wallet->id();

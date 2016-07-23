@@ -31,6 +31,12 @@ class Mcapi {
       }
       else {
         $bundles = [];
+        $types = \Drupal::Config('mcapi.settings')->get('entity_types');
+        // Having some problems on installation
+        if (!$types) {
+          debug();
+          return;// so we don't cache nothing.
+        }
         foreach (\Drupal::Config('mcapi.settings')->get('entity_types') as $entity_bundle => $max) {
           if (!$max) {
             continue;

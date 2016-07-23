@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\mcapi_exchanges\Routing;
+namespace Drupal\mcapi\Routing;
 
 use Drupal\Core\Routing\RouteSubscriberBase;
 use Drupal\Core\Routing\RoutingEvents;
@@ -17,14 +17,10 @@ class RouteSubscriber extends RouteSubscriberBase {
    * {@inheritdoc}
    */
   protected function alterRoutes(RouteCollection $collection) {
-    if (mcapi_exchanges_segregated()) {
-      $collection->get('user.register')->setPath('user/register/{group}');
+    if ($transaction_list = $collection->get('view.mcapi_transactions.admin')) {
+      $collection->add('mcapi.transactions.collection', $transaction_list);
+      $collection->remove('mcapi.admin.transaction.list');
     }
-    
-    $transaction_list = $collection->get('view.mcapi_exchange_transactions.admin');
-    $collection->add('mcapi.transactions.collection', $transaction_list);
-    $collection->remove('mcapi.mcapi_exchange_transactions.admin');
-
   }
 
   /**

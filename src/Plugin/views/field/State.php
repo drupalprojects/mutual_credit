@@ -35,8 +35,9 @@ class State extends FieldPluginBase {
    */
   public function render(ResultRow $values) {
     $raw = $this->getValue($values);
+    $label = \Drupal\mcapi\Entity\State::load($raw)->label();
     // Should be translated.
-    return ['#markup' => '<span class = "mcapi-state-' . $raw . '">' . $this->states[$raw] . '</span>'];
+    return ['#markup' => '<span class = "mcapi-state-'. $raw .'">' . $label . '</span>'];
   }
 
 }

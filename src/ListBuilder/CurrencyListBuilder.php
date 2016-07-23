@@ -16,7 +16,7 @@ class CurrencyListBuilder extends DraggableListBuilder {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'currencies_list';
+    return 'mcapi_currency_collection';
   }
 
   /**

@@ -11,8 +11,8 @@ use Drupal\Core\Session\AccountInterface;
  * Provides a content enabler for transactions.
  *
  * @GroupContentEnabler(
- *   id = "group_transactions",
- *   label = @Translation("Group transactions"),
+ *   id = "transactions",
+ *   label = @Translation("Transactions"),
  *   description = @Translation("Adds transactions to groups."),
  *   entity_type_id = "mcapi_transaction",
  *   path_key = "transactions",
@@ -53,7 +53,8 @@ class GroupTransactions extends GroupContentEnablerBase {
 
   public function getLocalActions() {
     $actions = [];
-    // Can't inherit from the parent because it adds add-form without checking whether it is used in alpha 7
+    // Can't inherit from the parent in alpha 7 because it adds add-form
+    // without checking whether it is used.
     return $actions;
   }
 

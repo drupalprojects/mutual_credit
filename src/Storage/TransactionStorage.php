@@ -76,5 +76,5 @@ class TransactionStorage extends TransactionIndexStorage {
     }
     $this->resetCache($ids);
   }
-
+  
 }

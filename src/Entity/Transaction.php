@@ -47,7 +47,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *     "uuid" = "uuid",
  *     "name" = "description"
  *   },
- *   field_ui_base_route = "view.mcapi_transactions.admin",
+ *   field_ui_base_route = "mcapi.transactions.collection",
  *   translatable = FALSE,
  *   links = {
  *     "canonical" = "/transaction/{mcapi_transaction}",
@@ -70,10 +70,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
 
   /**
    * Constructor.
+   *
+   * @note There seems to be no way to inject anything here.
+   *
+   * @see SqlContentEntityStorage::mapFromStorageRecords
    */
   public function __construct(array $values, $entity_type, $bundle = FALSE, $translations = array()) {
     parent::__construct($values, $entity_type, $bundle, $translations);
-    // There seems to be no way to inject anything here.
     $this->moduleHandler = \Drupal::moduleHandler();
     $this->eventDispatcher = \Drupal::service('event_dispatcher');
   }
@@ -82,24 +85,10 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    * {@inheritdoc}
    */
   public static function loadBySerial($serial) {
-    $children = [];
-    // Not sure which is best, this or entityQuery. This is shorter and faster
-    // and already injected.
-    $results = \Drupal::entityTypeManager()
+    $transactions = \Drupal::entityTypeManager()
       ->getStorage('mcapi_transaction')
       ->loadByProperties(['serial' => $serial]);
-
-    // Put all the transaction children under the parents.
-    foreach ($results as $entity) {
-      if ($entity->get('parent')->value) {
-        $children[] = $entity;
-      }
-      else {
-        $transaction = $entity;
-      }
-    }
-    $transaction->children = $children;
-    return $transaction;
+    return reset($transactions);
   }
 
   /**
@@ -201,12 +190,16 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
   }
 
   /**
-   * Ensure parent transactions have a 'children' property.
+   * Re-arrange transactions loaded by serial into parent/children
    */
   public static function postLoad(EntityStorageInterface $storage_controller, array &$entities) {
-    foreach ($entities as $transaction) {
-      if ($transaction->parent->value == 0) {
-        $transaction->children = [];
+    foreach ($entities as $id => $transaction) {
+      if ($parent = $transaction->parent->value) {
+        $entities[$parent]->children[] = $transaction;
+        unset($entities[$id]);
+      }
+      else {
+        $entities[$id]->children = (array)$entities[$id]->children;
       }
     }
   }

@@ -67,35 +67,6 @@ class TransactionViewsData extends EntityViewsData {
     ];
     $data['mcapi_transaction']['payee']['field']['default_formatter'] = 'entity_reference_label';
 
-    $data['mcapi_transaction']['first_wallet'] = [
-      'title' => $this->t('Involving first wallet of the passed user'),
-      'help' => $this->t('First wallet of the passed user'),
-      'argument' => [
-        'id' => 'mcapi_first_wallet',
-      ],
-      'filter' => [
-        'id' => 'first_wallet_of_user',
-      ],
-    ];
-
-    $data['mcapi_transaction']['first_payee'] = [
-      'title' => $this->t('Credited wallet'),
-      'help' => $this->t('First wallet of the passed user'),
-      'argument' => [
-        'id' => 'mcapi_first_wallet',
-        'field' => 'payee',
-      ],
-    ];
-
-    $data['mcapi_transaction']['first_payer'] = [
-      'title' => $this->t('Debited wallet.'),
-      'help' => $this->t('First wallet of the passed user'),
-      'argument' => [
-        'id' => 'mcapi_first_wallet',
-        'field' => 'payer',
-      ],
-    ];
-
     // \Drupal/views/EntityViewsData::getViewsData has no way to retrieve the
     // index table from the TransactionStorageSchema so we add the fields
     // individually here.
@@ -338,13 +309,6 @@ class TransactionViewsData extends EntityViewsData {
       'field' => [
         'id' => 'transaction_running_balance',
         'additional fields' => ['curr_id', 'wallet_id', 'serial', 'volume'],
-      ],
-    ];
-    $data['mcapi_transactions_index']['held_wallet'] = [
-      'title' => $this->t('First wallet'),
-      'help' => $this->t('Wallet held by the user'),
-      'argument' => [
-        'id' => 'mcapi_first_wallet_index',
       ],
     ];
 

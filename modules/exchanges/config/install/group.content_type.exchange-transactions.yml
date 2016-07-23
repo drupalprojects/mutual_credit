@@ -4,9 +4,9 @@ status: true
 dependencies:
   config:
     - group.type.exchange
-id: exchange-group_transactions
+id: exchange-transactions
 label: 'Group transactions'
 description: 'Adds transactions to exchanges'
 group_type: exchange
-content_plugin: group_transactions
+content_plugin: transactions
 

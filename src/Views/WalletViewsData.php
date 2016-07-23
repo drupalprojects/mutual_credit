@@ -26,6 +26,21 @@ class WalletViewsData extends EntityViewsData {
       ],
     ];
 
+
+    foreach (array_keys(\Drupal\mcapi\Mcapi::walletableBundles()) as $entity_type_id) {
+      $entity_type = \Drupal::entityTypeManager()->getDefinition($entity_type_id);
+      $data['mcapi_wallet'][$entity_type_id] = [
+        'title' => $this->t('@entitytype holder', ['@entitytype' => $entity_type->getLabel()], ['context' => 'wallet-holding entity type']),
+        'help' => $this->t('The entity which holds the wallet'),
+        'relationship' => [
+          'id' => 'mcapi_first_wallet',
+          'base' => $entity_type->getDataTable() ?  : $entity_type->getBaseTable(),
+          'base field' => $entity_type->getKey('id'),
+          'holder_entity_type' => $entity_type_id,
+        ]
+      ];
+    }
+
     $data['mcapi_wallet']['holder_entity_type']['field']['id'] = 'mcapi_holder_type';
     $data['mcapi_wallet']['holder_entity_type']['field']['help'] = $this->t("The wallet holder's translated EntityType name");
 

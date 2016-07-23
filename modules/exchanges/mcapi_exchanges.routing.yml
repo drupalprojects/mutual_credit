@@ -1,11 +1,3 @@
-#mcapi.exchange.register:
-#  path: '/user/register/{group}'
-#  defaults:
-#    _entity_form: user.register
-#  requirements:
-#    #this might be adjustable per-exchange
-#    _access: 'TRUE'
-
 mcapi.exchange.masspay:
   path: '/exchange/{mcapi_exchange}/masspay'
   defaults:

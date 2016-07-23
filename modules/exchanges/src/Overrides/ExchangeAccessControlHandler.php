@@ -29,7 +29,7 @@ class ExchangeAccessControlHandler extends GroupAccessControlHandler {
 
         case 'delete':
           // An exchange with transactions simply cannot be deleted.
-          return GroupAccessResult::forbiddenIf($entity->getContent('group_transactions'));
+          return GroupAccessResult::forbiddenIf($entity->getContent('transactions'));
       }
       return AccessResult::neutral();
     }

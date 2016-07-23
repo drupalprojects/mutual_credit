@@ -2,11 +2,11 @@
 
 namespace Drupal\mcapi_exchanges\Plugin\DevelGenerate;
 
-use Drupal\group\Entity\GroupContent;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\group\Entity\GroupContent;
+use Drupal\group\Plugin\DevelGenerate\GroupGenerate;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\devel_generate\DevelGenerateBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -25,27 +25,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  *
  */
-class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPluginInterface {
-
-  protected $entityTypeManager;
-
-  /**
-   *
-   */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_type_manager) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->entityTypeManager = $entity_type_manager;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static(
-      $configuration, $plugin_id, $plugin_definition,
-      $container->get('entity_type.manager')
-    );
-  }
+class ExchangeGenerate extends GroupGenerate implements ContainerFactoryPluginInterface {
 
   /**
    * {@inheritdoc}
@@ -84,29 +64,9 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
       '#max' => 100,
       '#default_value' => 80,
     ];
-    $form['closed'] = [
-      '#title' => $this->t('percentage which are closed'),
-      '#type' => 'number',
-      '#min' => 0,
-      '#max' => 100,
-      '#default_value' => 20,
-    ];
-    $form['deactivated'] = [
-      '#title' => $this->t('percentage which are disabled'),
-      '#type' => 'number',
-      '#min' => 0,
-      '#max' => 100,
-      '#default_value' => 20,
-    ];
-    $form['av_users'] = [
-      '#title' => $this->t('Average num of users'),
-      '#type' => 'number',
-      '#min' => 0,
-      '#max' => 500,
-      '#default_value' => 0,
-    ];
     $form['av_transactions'] = [
-      '#title' => $this->t('Average num of transactions per new user'),
+      '#title' => $this->t('Average num of transactions per exchange'),
+      '#descriptions' => $this->t('New transactions will be created between members of the same exchanges.'),
       '#type' => 'number',
       '#min' => 0,
       '#max' => 100,
@@ -121,20 +81,10 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
   }
 
   /**
-   * {@inheritdoc}
-   */
-  protected function generateElements(array $values) {
-    $this->currencies = $this->entityTypeManager->getStorage('mcapi_currency')->loadMultiple();
-    $this->generateContent($values);
-    // @todo when the batching is fixed, use batches every time.
-    // $this->generateBatchContent($values);
-  }
-
-  /**
    * Method responsible for creating a small number of exchanges.
    *
    * @param string or int or object... $values
-   *   kill, num, shared, unique, closed, deactivated, av_users, av_transactions
+   *   kill, num, shared, unique, av_users, av_transactions
    *
    * @throws \Exception
    */
@@ -142,51 +92,51 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
     if (!empty($values['kill'])) {
       $this->contentKill($values);
     }
+
+    $this->currencies = Currency::loadMultiple();
     $func = $values['num'] == 9 ? 'get9names' : 'get200names';
     for ($i = 0; $i < $values['num']; $i++) {
       $nameval = $this->$func($i);
       list($name, $currency_name) = each($nameval);
       $exchange = $this->develGenerateExchangeAdd($values, $name, $currency_name);
     }
-
-    $this->setMessage($this->formatPlural($values['num'], '1 exchange created.', 'Finished creating @count exchanges'));
   }
 
   /**
    * Method responsible for creating content when
    * the number of elements is greater than 50.
    */
-  private function generateBatchContent($values) {
-    // Add the kill operation.
-    if ($values['kill']) {
-      $operations[] = ['devel_generate_operation', [$this, 'batchContentKill', $values]];
-    }
-
-    // Add the operations to create the exchanges.
-    for ($num = 0; $num < $values['num']; $num++) {
-      $operations[] = ['devel_generate_operation', [$this, 'batchContentAddExchange', $values]];
-    }
-
-    // Start the batch.
-    $batch = [
-      'title' => $this->t('Generating Exchanges'),
-      'operations' => $operations,
-      'finished' => 'devel_generate_batch_finished',
-      'file' => drupal_get_path('module', 'devel_generate') . '/devel_generate.batch.inc',
-      'results' => [
-        'num' => 0,
-      ],
-    ];
-    batch_set($batch);
-  }
+//  private function generateBatchContent($values) {
+//    // Add the kill operation.
+//    if ($values['kill']) {
+//      $operations[] = ['devel_generate_operation', [$this, 'batchContentKill', $values]];
+//    }
+//
+//    // Add the operations to create the exchanges.
+//    for ($num = 0; $num < $values['num']; $num++) {
+//      $operations[] = ['devel_generate_operation', [$this, 'batchContentAddExchange', $values]];
+//    }
+//
+//    // Start the batch.
+//    $batch = [
+//      'title' => $this->t('Generating Exchanges'),
+//      'operations' => $operations,
+//      'finished' => 'devel_generate_batch_finished',
+//      'file' => drupal_get_path('module', 'devel_generate') . '/devel_generate.batch.inc',
+//      'results' => [
+//        'num' => 0,
+//      ],
+//    ];
+//    batch_set($batch);
+//  }
 
   /**
    *
    */
-  public function batchContentAddExchange($vars, &$context) {
-    $this->develGenerateExchangeAdd($context['results']);
-    $context['results']['num']++;
-  }
+//  public function batchContentAddExchange($vars, &$context) {
+//    $this->develGenerateExchangeAdd($context['results']);
+//    $context['results']['num']++;
+//  }
 
   /**
    * {@inheritdoc}
@@ -198,36 +148,15 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
   }
 
   /**
-   * Deletes all exchanges .
-   *
-   * @param array $values
-   *   The input values from the settings form.
+   * Create one exchange with one or more currencies.
    */
-  protected function contentKill($values) {
-    $exchanges = $this->entityTypeManager->getStorage('group')->loadByProperties(['type' => 'exchange']);
-    unset($exchanges[1]);
-    if (!empty($exchanges)) {
-      $this->entityTypeManager->getStorage('group')->delete($exchanges);
-    }
-  }
+  protected function develGenerateExchangeAdd(&$values, $exchange_name, $currency_name) {
+    $values['type'] = 'exchange';
+    $values['role'] = 'authenticated';
+    $exchange = parent::develGenerateGroupAdd($values);
 
-  /**
-   * Create one exchange. Used by both batch and non-batch code branches.
-   */
-  protected function develGenerateExchangeAdd(&$results, $exchange_name, $currency_name) {
-    // Create an exchange. All exchanges will have been created 2 years ago
-    $owner = $this->newMem();
-    $props = [
-      'label' => $exchange_name,
-      'uid' => $owner->id(),
-      'type' => 'exchange',
-      'created' => strtotime('-2 years'),
-    ];
-
-    $exchange = \Drupal\group\Entity\Group::create($props);
-
-    // Populate all fields with sample values.
-    $this->populateFields($exchange);
+    $exchange->created->value = strtotime('-2 years');
+    $exchange->label->value = $exchange_name;
 
     $currencies = $cids = [];
     if (rand(0, 99) < $results['shared']) {
@@ -257,33 +186,14 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
     $exchange->currencies->setValue($currencies);
     $exchange->save();
 
-    //randomise the number of members to add to this exchange
-    $memcount = $this->randomise($results['av_users']);
-    //$i = 1 because we already created the owner
-    for ($i = 1; $i < $memcount; $i++ ) {
-      // Borrowed from the user generator/
-      $account = $this->newMem($exchange);
-      // Now create some transactions for this exchange.
-      if ($results['av_transactions']) {
-        $transaction_generator = \Drupal::service('plugin.manager.develgenerate')->createInstance('mcapi_transaction');
-        $oneYearAgo = strtotime('-1 year');
-        $num_of_transactions = $this->randomise($results['av_transactions'] * $memcount);
-        $interval = $transaction_generator->timing($oneYearAgo, $num_of_transactions);
-        for ($j = 0; $j < $num_of_transactions; $j++) {
-          $transaction = $transaction_generator->develGenerateTransactionAdd($values, $oneYearAgo + $interval * $j);
-          GroupContent::create([
-            'gid' => $exchange->id(),
-            'type' => 'exchange-group_transactions',
-            'entity_id' => $transaction->id(),
-          ])->save();
-        }
-      }
-    }
+    // @todo vary the number of transactions
+    $this->generateTransactions($group, $values['av_transactions']);
+
     return $exchange;
   }
 
   /**
-   *
+   * Get names and currency names for each of 9 exchanges.
    */
   private function get9names($delta) {
     $results = [
@@ -300,34 +210,8 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
     return $results[$delta];
   }
 
-  private function newMem($exchange = NULL) {
-    $name = $this->getRandom()->word(mt_rand(6, 12));
-    $account = $this->entityTypeManager->getStorage('user')->create([
-      'uid' => NULL,
-      'name' => $name,
-      'pass' => 'a',
-      'mail' => $name . '@example.com',
-      'status' => 1,
-      'created' => REQUEST_TIME - rand(0, strtotime('-2 years')),
-      // A flag to let hook_user_* know that this is a generated user.
-      'devel_generate' => TRUE,
-    ]);
-    $this->populateFields($account);
-    $account->save();
-    if ($exchange) {
-      // Create memberships
-      GroupContent::create([
-        'gid' => $exchange->id(),
-        // $exchange->getGroupType()->getContentPlugin('group_membership')->getContentTypeConfigId()
-        'type' => 'exchange-group_membership',
-        'entity_id' => $account->id(),
-      ])->save();
-    }
-    return $account;
-  }
-
   /**
-   *
+   * Get a currency format at random
    */
   private function randCurrencyFormat($id) {
     $formats = [
@@ -344,11 +228,16 @@ class ExchangeGenerate extends DevelGenerateBase implements ContainerFactoryPlug
     return $rand;
   }
 
-  private function randomise($num) {
-    return rand($num/5, 9*$num/5);
+  /**
+   * Create some transactions using wallets in a group and relate them to the
+   * group.
+   *
+   * @param \Drupal\mcapi_exchanges\Plugin\DevelGenerate\Group $group
+   * @param int $num
+   */
+  private function generateTransactions(Group $group, $num) {
+
+    
   }
 
-  private function makeTransaction($group) {
-
-  }
 }

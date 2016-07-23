@@ -46,6 +46,14 @@ mcapi.admin_wallets:
   requirements:
     _permission: 'configure mcapi'
 
+mcapi.transactions.collection:
+  path: '/admin/accounting/transactions'
+  defaults:
+    _entity_list: mcapi_transaction
+    _title: 'Administer transactions'
+  requirements:
+    _permission: manage mcapi
+
 mcapi.admin.transaction_form.list:
   path: '/admin/accounting/forms'
   defaults:

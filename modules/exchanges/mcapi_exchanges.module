@@ -36,6 +36,7 @@ function mcapi_exchanges_entity_type_alter(array &$entity_types) {
   $entity_types['group']->setLinkTemplate('disable-form', '/exchange/{group}/disable');
   $entity_types['group']->setAccessClass($path.'ExchangeAccessControlHandler');
 
+
 }
 
 /**

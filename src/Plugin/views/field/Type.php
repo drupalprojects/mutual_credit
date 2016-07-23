@@ -19,23 +19,14 @@ use Drupal\views\ViewExecutable;
  */
 class Type extends FieldPluginBase {
 
-  private $types;
-
-  /**
-   * {@inheritdoc}
-   */
-  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
-    // Is this needed?
-    parent::init($view, $display, $options);
-    $this->types = Mcapi::entityLabelList('mcapi_type');
-  }
-
   /**
    * {@inheritdoc}
    */
   public function render(ResultRow $values) {
     $raw = $this->getValue($values);
-    return ['#markup' => '<span class = "' . $raw . '">' . $this->types[$raw] . '</span>'];
+
+    $label = \Drupal\mcapi\Entity\Type::load($raw)->label();
+    return ['#markup' => '<span class = "mcapi-type-'. $raw .'">' . $label . '</span>'];
   }
 
 }
