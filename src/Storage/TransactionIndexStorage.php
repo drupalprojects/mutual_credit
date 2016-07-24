@@ -353,6 +353,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * {@inheritdoc}
    */
   public function runningBalance($wid, $curr_id, $until, $sort_field = 'xid') {
+    dsm('testing running balance');
     // The running balance depends the order of the transactions. we will assume
     // the order of creation is what's wanted because that corresponds to the
     // order of the xid. NB it is possible to change the apparent creation date.

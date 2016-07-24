@@ -2,8 +2,8 @@
 
 namespace Drupal\mcapi\Plugin\views\field;
 
-use Drupal\mcapi\Entity\Transaction;
 use Drupal\views\ResultRow;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Field handler to provide running balance for a given transaction.
@@ -13,10 +13,35 @@ use Drupal\views\ResultRow;
  * @ingroup views_field_handlers
  *
  * @ViewsField("transaction_running_balance")
+ *
+ * @todo inject transaction storage controller
  */
 class RunningBalance extends Worth {
 
-  private $walletId;
+  private $transactionStorage;
+
+  /**
+   * Constructs a Handler object.
+   *
+   * @param array $configuration
+   *   A configuration array containing information about the plugin instance.
+   * @param string $plugin_id
+   *   The plugin_id for the plugin instance.
+   * @param mixed $plugin_definition
+   *   The plugin implementation definition.
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, $entity_type_manager) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->transactionStorage = $entity_type_manager->getStorage('mcapi_transaction');
+  }
+
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration, $plugin_id, $plugin_definition,
+      $container->get('entity_type.manager')
+    );
+  }
+
 
   /**
    * {@inheritdoc}
@@ -25,24 +50,7 @@ class RunningBalance extends Worth {
     // Determine the wallet id for which we want the balance.
     // It could from one of two args, or a filter.
     $this->addAdditionalFields();
-    $arg_names = array_keys($this->view->argument);
-    $arg_pos = array_search('held_wallet', $arg_names);
-    if ($arg_pos === FALSE) {
-      $arg_pos = array_search('wallet_id', $arg_names);
-    }
 
-    if ($arg_pos !== FALSE) {
-      $this->walletId = $this->view->args[$arg_pos];
-    }
-    else {
-      $arg_pos = array_search('wallet_id', array_keys($this->view->filter));
-      if ($arg_pos !== FALSE) {
-        $this->walletId = $this->view->filter['wallet_id']->value['value'];
-      }
-      else {
-        drupal_set_message("Running balance requires filter or contextual filter 'Transaction index: wallet_id'", 'error');
-      }
-    }
   }
 
   /**
@@ -50,21 +58,10 @@ class RunningBalance extends Worth {
    */
   public function render(ResultRow $values) {
     $worth_field = $this->getEntity($values)->worth;
-    // Something bizarre is happening here. sometimes the entity associated with
-    // this row has an empty worth value. but it works if we reload it.
-    if (!$worth_field->getValue()) {
-      drupal_set_message('reloading transaction ' . $values->serial, 'warning');
-      $worth_field = Transaction::load($values->serial)
-        ->worth;
-      if (!$worth_field) {
-        drupal_set_message('failed to reload ' . $values->serial, 'error');
-        return array();
-      }
-    }
     $vals = [];
     foreach ($worth_field->currencies() as $curr_id) {
-      $raw = \Drupal::entityTypeManager()->getStorage('mcapi_transaction')->runningBalance(
-        $this->walletId,
+      $raw = $this->transactionStorage->runningBalance(
+        $this->getFirstWalletFieldAlias($values),
         $curr_id,
         $values->xid,
         'xid'
@@ -74,15 +71,38 @@ class RunningBalance extends Worth {
     $worth_field->setValue($vals);
     $options = [
       'label' => 'hidden',
-      'settings' => [
-        // No need for other formats at the moment
-        // 'format' => $this->options['format'].
-      ],
+      'settings' => [],
     ];
-    if (property_exists($values, 'curr_id')) {
-      $options['settings']['curr_ids'] = [$values->curr_id];
-    }
+//    if (property_exists($values, 'curr_id')) {
+//      $options['settings']['curr_ids'] = [$values->curr_id];
+//    }
     return $worth_field->view($options);
+  }
+
+  /**
+   * helpers
+   */
+  private function getFirstWalletFieldAlias($values) {
+    static $falias;
+    if (!$falias) {
+      $q = $this->view->getQuery();
+      foreach ($q->tables as $table_name => $relations) {
+        foreach (array_keys($relations) as $alias) {
+          $info = $q->getTableInfo($alias);
+          if ($info['table'] == 'mcapi_wallet' && $info['join']->leftField == 'wallet_id') {
+            foreach ($q->fields as $falias => $f_info) {
+              if ($f_info['table'] == $info['alias']) {
+                continue 3;
+              }
+            }
+          }
+        }
+      }
+      if (!$falias) {
+        throw new \Exception('Having difficulties rendering the running balance. Best to remove it');
+      }
+    }
+    return $values->{$falias};
   }
 
 }

@@ -4,6 +4,7 @@ status: true
 dependencies:
   module:
     - mcapi
+    - user
 id: wallet_transactions
 label: 'Transactions in a wallet'
 module: mcapi
@@ -382,7 +383,7 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          label: 'Balance'
+          label: Balance
           exclude: false
           alter:
             alter_text: false
@@ -589,6 +590,23 @@ display:
           required: true
           entity_type: mcapi_transaction
           plugin_id: standard
+        wallet_id:
+          id: wallet_id
+          table: mcapi_transactions_index
+          field: wallet_id
+          relationship: none
+          group_type: group
+          admin_label: '1st wallet'
+          required: true
+          entity_type: mcapi_transaction
+          plugin_id: standard
+        user:
+          id: user
+          table: mcapi_wallet
+          field: user
+          entity_type: mcapi_wallet
+          plugin_id: mcapi_first_wallet
+          relationship: partner_id
       arguments:
         wallet_id:
           id: wallet_id
@@ -687,11 +705,11 @@ display:
         menu_name: main
       display_description: ''
       arguments:
-        held_wallet:
-          id: held_wallet
-          table: mcapi_transactions_index
-          field: held_wallet
-          relationship: none
+        uid:
+          id: uid
+          table: users_field_data
+          field: uid
+          relationship: user
           group_type: group
           admin_label: ''
           default_action: 'not found'
@@ -719,8 +737,11 @@ display:
             type: none
             fail: 'not found'
           validate_options: {  }
-          entity_type: mcapi_transaction
-          plugin_id: mcapi_first_wallet
+          break_phrase: false
+          not: false
+          entity_type: user
+          entity_field: uid
+          plugin_id: user_uid
         created_year:
           id: created_year
           table: mcapi_transactions_index
