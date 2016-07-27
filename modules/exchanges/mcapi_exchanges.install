@@ -6,7 +6,6 @@
 
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\user\Entity\User;
-use Drupal\views\Entity\View;
 use Drupal\group\Entity\Group;
 use Drupal\group\Entity\GroupContent;
 
@@ -36,7 +35,7 @@ function mcapi_exchanges_install() {
     ['weight'  => 10, 'type' => 'options_select', 'settings' => []]
   )->save();
 
-  return;
+  return; //don't forget to uninstall the default group as well
   // Now make a default exchange
   // Groups module automatically puts the entity owner in the exchange.
   $exchange = Group::create([
@@ -66,22 +65,24 @@ function mcapi_exchanges_install() {
  * Implements hook_uninstall().
  */
 function mcapi_exchanges_uninstall() {
-  EntityFormDisplay::load('group.exchange.default')->delete();
-}
-
-
-/**
- * Implements hook_modules_installed().
- *
- * Delete the default transactions view
- */
-function mcapi_exchanges_modules_installed() {
-  // This view would ideally be deleted on pre_install, but that doesn't work
-  // when this module is part of a distribution profile.
-  if ($view = View::load('mcapi_transactions')) {
-    $view->delete();
+  $configs = [
+    'field.storage.group.active',
+    'group.role.exchange-group_admin',
+    'group.role.exchange-pending',
+    'group.role.exchange-anonymous',
+    'group.role.exchange-trader',
+    'group.role.exchange-outsider',
+    'group.role.exchange-member',
+    'group.type.exchange',
+    'core.entity_form_display.group_content.exchange-group_membership.default',
+    'field.field.group.exchange.active',
+    'field.field.group.exchange.currencies',
+    'field.field.group_content.exchange-group_membership.group_roles',
+    'field.storage.group.currencies',
+    'group.content_type.exchange-group_membership'
+  ];
+  foreach ($configs as $config) {
+    if ($loaded = \Drupal::ConfigFactory()->getEditable($config)) $loaded->delete();
   }
-  else {
-    drupal_set_message('view mcapi_transactions not found. Move this to the RouteSubscriber.', 'warning');
-  }
+
 }

@@ -2,6 +2,7 @@
 
 namespace Drupal\mcapi_exchanges\Routing;
 
+use Drupal\views\Entity\View;
 use Drupal\Core\Routing\RouteSubscriberBase;
 use Drupal\Core\Routing\RoutingEvents;
 use Symfony\Component\Routing\RouteCollection;
@@ -20,10 +21,11 @@ class RouteSubscriber extends RouteSubscriberBase {
     if (mcapi_exchanges_segregated()) {
       $collection->get('user.register')->setPath('user/register/{group}');
     }
-    
-    $transaction_list = $collection->get('view.mcapi_exchange_transactions.admin');
-    $collection->add('mcapi.transactions.collection', $transaction_list);
-    $collection->remove('mcapi.mcapi_exchange_transactions.admin');
+
+    if ($transaction_list = $collection->get('view.mcapi_exchange_transactions.admin')) {
+      $collection->add('mcapi.transactions.collection', $transaction_list);
+      $collection->remove('mcapi.mcapi_exchange_transactions.admin');
+    }
 
   }
 

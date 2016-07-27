@@ -2,10 +2,11 @@
 
 namespace Drupal\mcapi_exchanges\Overrides;
 
-use Drupal\mcapi\ListBuilder\CurrencyListBuilder;
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\mcapi_exchanges\Exchanges;
+use Drupal\mcapi\ListBuilder\CurrencyListBuilder;
+use Drupal\group\Entity\Group;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -61,13 +62,15 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
     $group_ids =\Drupal::entityQuery('group')
       ->condition('currencies', $entity->id)
       ->execute();
-
     if (count($group_ids) > 1) {
       $row['exchanges']['#markup'] = $this->t('@count exchanges', array('@count' => count($group_ids)));
     }
     else {
-      $gid = reset($group_ids);
-      $row['exchanges']['#markup'] = \Drupal\group\Entity\Group::load($gid)->toLink()->toString();
+      $link = '';
+      if ($gid = reset($group_ids)) {
+        $link = Group::load($gid)->toLink()->toString();
+      }
+      $row['exchanges']['#markup'] = $link;
     }
     return parent::buildRow($entity) + $row;
   }

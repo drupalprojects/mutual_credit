@@ -21,7 +21,7 @@ class CurrencyRouteProvider extends DefaultHtmlRouteProvider {
     $route_collection->get('entity.mcapi_currency.edit_form')->setOption('_admin_route', TRUE);
     $route_collection->get('entity.mcapi_currency.delete_form')->setOption('_admin_route', TRUE);
 
-    // Curious that this isn't provided by the parent.
+    // @todo probably remove this https://www.drupal.org/node/2770845
     $route = (new Route('/admin/accounting/currencies'))
       ->setDefaults([
         '_entity_list' => 'mcapi_currency',

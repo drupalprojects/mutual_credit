@@ -4,6 +4,7 @@ namespace Drupal\mcapi\Plugin\DevelGenerate;
 
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -150,7 +151,6 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     if (function_exists('drush_log') && $i % drush_get_option('feedback', 1000) == 0) {
       drush_log(dt('Completed @feedback transactions ', ['@feedback' => drush_get_option('feedback', 1000)], 'ok'));
     }
-    $this->setMessage(t('Finished creating @count transactions', ['@count' => $values['num']]));
   }
 
   /**
@@ -246,8 +246,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    *
    * @note this may attempt to send a email for pending transactions.
    */
-  public function develGenerateTransactionAdd(&$results) {
-    $rand_wallet_ids = $this->getWallets();
+  public function develGenerateTransactionAdd(&$values) {
+    $rand_wallet_ids = $this->getWallets($values['conditions']);
     $props = [
       'payer' => $rand_wallet_ids[0],
       'payee' => $rand_wallet_ids[1],
@@ -256,9 +256,15 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       'creator' => 1,
       'description' => $this->getRandom()->sentences(1),
     ];
+    if ($curr_id = $values['curr_id']) {
+      $props['worth'] = [
+        'curr_id' => $curr_id,
+        'value' => Currency::load($curr_id)->sampleValue()
+      ];
+    }
     $transaction = Transaction::create($props);
-    // Populate all fields with sample values.
-    $this->populateFields($transaction);
+    // We're not using generateExampleData here because it makes a mess.
+    // But that means we might miss other fields on the transaction.
 
     // Change the created time of the transactions, coz they mustn't be all in
     // the same second.
@@ -290,7 +296,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     $query = \Drupal::entityQuery('mcapi_wallet')
       ->condition('payways', Wallet::PAYWAY_AUTO, '<>');
     foreach ($conditions as $field => $value) {
-      $query->condition($field, $value);
+      $query->condition($field, $value, is_array($value) ? 'IN' : '=');
     }
     $wids = $query->execute();
     if (count($wids) < 2) {

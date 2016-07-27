@@ -2,8 +2,8 @@ uuid: 1c1fa222-0de4-4772-9c80-d83d48670c7e
 langcode: en
 status: true
 dependencies: 
-  module:
-    - mcapi_exchanges
+  config:
+    - group.content_type.exchange-group_membership
 id: exchange
 provider: mcapi_exchanges
 label: Exchange

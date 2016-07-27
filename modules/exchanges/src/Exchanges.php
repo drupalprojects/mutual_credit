@@ -79,7 +79,12 @@ class Exchanges extends Exchange {
   public static function exchangeCurrencies(array $exchanges) {
     $currencies = [];
     foreach ($exchanges as $exchange) {
-      foreach ($exchange->get('currencies')->referencedEntities() as $currency) {
+      // @temp
+      if (!is_object($exchange->currencies)) {
+        drupal_set_message('Exchange has no currencies property', 'warning');
+        return;
+      }
+      foreach ($exchange->currencies->referencedEntities() as $currency) {
         $currencies[$currency->id()] = $currency;
       }
     }

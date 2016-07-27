@@ -4,7 +4,7 @@
  * @file
  * Hooks for mcapi_exchanges.module
  */
-
+use Drupal\views\Entity\View;
 use Drupal\mcapi_exchanges\Exchanges;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
@@ -36,7 +36,11 @@ function mcapi_exchanges_entity_type_alter(array &$entity_types) {
   $entity_types['group']->setLinkTemplate('disable-form', '/exchange/{group}/disable');
   $entity_types['group']->setAccessClass($path.'ExchangeAccessControlHandler');
 
-
+  // This view would ideally be deleted on pre_install, but that doesn't work
+  // when this module is part of a distribution profile.
+  //if (class_exists('Drupal\views\Entity\View') && $view = View::load('mcapi_transactions')) {
+    //$view->delete();
+  //}
 }
 
 /**
@@ -360,7 +364,7 @@ function mcapi_exchanges_segregated() {
  */
 function mcapi_exchanges_default_currency_id(ContentEntityInterface $exchange, $field_definition) {
   $output = [];
-  // Default currencies are the currencies of the exchanges of which the current user is a member.
+  // Default currencies for the currency field are all the currencies of the exchanges of which the current user is a member.
   if ($exchanges = Exchanges::memberOf(NULL, TRUE)) {
     foreach (Exchanges::exchangeCurrencies($exchanges) as $currency) {
       $output[] = $currency->id();

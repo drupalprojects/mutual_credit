@@ -41,7 +41,6 @@ class CurrencyListBuilder extends DraggableListBuilder {
     $row['title'] = ['#markup' => $entity->toLink()->toString()];
 
     $stats = $entity->stats();
-    debug($stats);
     // This includes deleted transactions.
     $row['transactions'] = [
       '#markup' => $stats->trades,

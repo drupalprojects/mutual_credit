@@ -46,6 +46,7 @@ mcapi.admin_wallets:
   requirements:
     _permission: 'configure mcapi'
 
+#todo probably remove this https://www.drupal.org/node/2770845
 mcapi.transactions.collection:
   path: '/admin/accounting/transactions'
   defaults:
