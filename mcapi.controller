@@ -92,7 +92,7 @@ class mcapiEntityController extends EntityAPIController {
       foreach ($items as $delta => $item) {
         if ($item['quantity']) {
           $worths[] = array(
-            'currcode' => $item['currcode'], 
+            'currcode' => $item['currcode'],
             'quantity' => $item['quantity']
           );
         }
@@ -135,7 +135,7 @@ class mcapiEntityController extends EntityAPIController {
         $transaction->{$desc_fieldname} = array(LANGUAGE_NONE => array(0 => array('value' => $values['description'])));
         unset($values['description']);
       }
-      elseif (isset($values[$desc_fieldname])) {        
+      elseif (isset($values[$desc_fieldname])) {
         //trying to cope with all possible fudged form structures
         if (isset($values[$desc_fieldname][LANGUAGE_NONE])) {
           $values[$desc_fieldname] = $values[$desc_fieldname][LANGUAGE_NONE];
@@ -271,8 +271,9 @@ class mcapiEntityController extends EntityAPIController {
   }
 
   /**
-   * Get a list of xids and serial numbers
-   * see transaction.api.php for arguments
+   * Get a list of xids and serial numbers.
+   *
+   * See transaction.api.php for arguments
    */
   public function filter(array $conditions, $offset, $limit) {
     extract($conditions);//

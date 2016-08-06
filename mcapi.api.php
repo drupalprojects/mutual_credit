@@ -24,8 +24,8 @@
 
 
 /*
- * 
- * @param integer $serial 
+ *
+ * @param integer $serial
  *   can be varchar or an array of varchars
  * @return object
  *   the transaction entity with ->dependents
@@ -40,7 +40,7 @@ transaction_load($serial);
  * note that this includes a call to hook_transaction_post_insert
  */
 try {
-  array transaction_cluster_create($transaction, $really = TRUE);
+  transaction_cluster_create($transaction, $really = TRUE);
 }
 catch(exception $e){}
 

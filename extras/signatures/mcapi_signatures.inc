@@ -1,7 +1,7 @@
 <?php
 
 /**
- * taking hook_transaction_operations out of the .module file
+ * @see hook_transaction_operations().
  */
 function _mcapi_signatures_transaction_operations() {
   //note that strings are given in English and translated elsewhere, as in the menu system
@@ -59,8 +59,9 @@ function transaction_op_sign($op, $transaction) {
   return transaction_view($transaction);
 }
 /**
- * operation access callback from mcapi_signatures_transaction_operations
- * this doesn't rely on user settings at all.
+ * Operation access callback from mcapi_signatures_transaction_operations.
+ *
+ * This doesn't rely on user settings at all.
  */
 function transaction_op_sign_access($op, $transaction, $currency) {
   if ($transaction->state == TRANSACTION_STATE_PENDING &&
@@ -72,7 +73,7 @@ function transaction_op_sign_access($op, $transaction, $currency) {
 }
 
 /**
- * operation callback from mcapi_signatures_transaction_operations
+ * Operation callback from mcapi_signatures_transaction_operations
  */
 function transaction_op_signoff($op, $transaction) {
   $needed = array_filter(mcapi_get_signatories($transaction->serial));
@@ -82,26 +83,32 @@ function transaction_op_signoff($op, $transaction) {
   return transaction_view($transaction, 'certificate');
 }
 /**
- * operation access callback from mcapi_signatures_transaction_operations
+ * Operation access callback from mcapi_signatures_transaction_operations
  */
 function transaction_op_signoff_access($op, $transaction, $currency) {
   if ($transaction->state != TRANSACTION_STATE_PENDING) return FALSE;
   return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
 }
 
-/*
- * operation access callback from mcapi_signatures_transaction_operations
+/**
+ * Operation access callback from mcapi_signatures_transaction_operations
  */
 function transaction_op_undo_pending_access($op, $transaction, $currency) {
   if ($transaction->state != TRANSACTION_STATE_PENDING) return FALSE;
   return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
 }
 
+/**
+ * Menu callback
+ *
+ * Confirm you want to sign all pending transactions for a member.
+ */
 function mcapi_signall($form, &$form_state, $account) {
   $serials = transactions_needing_sig_of_user($account->uid);
-  $transactions = entity_load('transaction', array_keys(transaction_filter(array('serial' => $serials))));
-  $sentence = str_replace('[transaction:links]', '', variable_get('mcapi_sentence', mcapi_sentence_default()));
-  $form['preview'] = transaction_view($transactions, $sentence);
+  $form['preview'] = transaction_view(
+    entity_load('transaction', array_keys(transaction_filter(array('serial' => $serials)))),
+    str_replace('[transaction:links]', '', variable_get('mcapi_sentence', mcapi_sentence_default()))
+  );
   $form['uid'] = array(
     '#type' => 'hidden',
     '#value' => $account->uid
@@ -113,17 +120,26 @@ function mcapi_signall($form, &$form_state, $account) {
   return $form;
 }
 
+/**
+ * Form submission callback.
+ *
+ * Sign all a user's pending transactions
+ */
 function mcapi_signall_submit($form, &$form_state) {
   $uid = &$form_state['values']['uid'];
   foreach (transactions_needing_sig_of_user($uid) as $serial) {
-    $message = transaction_sign($serial, $uid);
+    $message = transaction_sign(transaction_load($serial), $uid);
   }
   drupal_set_message($message);
   $form_state['redirect'] = 'user';
 }
 
 
-//check whether this transaction type needs signatures and change the state accordingly
+/**
+ * Utility
+ *
+ * Check whether a transaction type needs signatures and change the state accordingly
+ */
 //changes the status in the transaction form according to the settings for the transaction_type
 function _set_form_state_to_pending(&$form, &$form_state) {
    //read the settings and set the $form['state'] hidden widget
@@ -139,10 +155,14 @@ function _set_form_state_to_pending(&$form, &$form_state) {
   }
 }
 
-
+/**
+ * Content callback
+ *
+ * Show all pending transactions pertaining to a certain user.
+ */
 function list_pending_for_uid($uid, $currcodes = array()) {
   $output = array();
-  //couldn't be bothered with a theme callback for this
+  // Couldn't be bothered with a theme callback for this
   $waiting_on = list_waiting_on_uid($uid, $currcodes);
   $waiting_not_on = list_waiting_not_on_uid($uid, $currcodes);
   if (count($waiting_on) ||count($waiting_not_on)) {
@@ -154,6 +174,11 @@ function list_pending_for_uid($uid, $currcodes = array()) {
   }
 }
 
+/**
+ * Content callback
+ *
+ * Show pending transactions waiting for the signature of a certain user.
+ */
 function list_waiting_on_uid($uid, $currcodes = array()) {
   $output = array();
   $serials = transactions_needing_sig_of_user($uid);
@@ -182,7 +207,13 @@ function list_waiting_on_uid($uid, $currcodes = array()) {
   }
   return $output;
 }
-//returns a render array
+
+/**
+ * Content callback
+ *
+ * Show a user's pending transactions as sentences which are waiting for the
+ * signature for another user.
+ */
 function list_waiting_not_on_uid($uid, $currcodes = array()) {
   $volitional_transactions = array();
   $serials = transaction_filter(array('involving' => $uid, 'state' => TRANSACTION_STATE_PENDING));
@@ -202,7 +233,15 @@ function list_waiting_not_on_uid($uid, $currcodes = array()) {
   return array();
 }
 
-
+/**
+ * Utility
+ *
+ * Get all the transaction ids waiting for a certain user's signature
+ *
+ * @param int $uid
+ *
+ * @return int[]
+ */
 function transactions_needing_sig_of_user($uid) {
   //assumes data integrity that all transactions referenced are in pending state
   return db_select("mcapi_signatures", 's')
@@ -213,9 +252,10 @@ function transactions_needing_sig_of_user($uid) {
     ->fetchCol();
 }
 /**
- * transaction operation submit callback
- * unmarks a signature as pending
- * resaves signatories from the transaction object and changes state if all are signed
+ * Transaction operation submit callback.
+ *
+ * Unmarks a signature as pending. Resaves signatories from the transaction
+ * object and changes state if all are signed.
  */
 function transaction_sign($transaction, $uid) {
   if ($transaction->pending_signatures[$uid]) {
@@ -269,8 +309,11 @@ function mcapi_signatures_write($transaction) {
   return array_filter($transaction->pending_signatures);
 }
 
-
-
+/**
+ * Menu form callback.
+ *
+ * Configure signatures for each transaction type and pending notification mail.
+ */
 function mcapi_signatures_config($form, &$form_state) {
   module_load_include('inc', 'mcapi');
   $w = 0;
@@ -392,7 +435,7 @@ function signature_send_initial_notification($transaction, $config) {
 }
 
 /**
- * implements hook_mail().
+ * Implements hook_mail().
  */
 function mcapi_signatures_mail($key, &$message, $params) {
   $options = array('language' => $message['language'], 'sanitize' => FALSE);
