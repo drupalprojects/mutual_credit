@@ -2,12 +2,14 @@
 
 namespace Drupal\mcapi;
 
+use Drupal\mcapi\Entity\Wallet;
+use Drupal\system\Entity\Action;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
-use Drupal\system\Entity\Action;
 use Drupal\Core\Cache\CacheBackendInterface;
-use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Component\Utility\Html;
 
 /**
  * Utility class for community accounting.
@@ -34,8 +36,7 @@ class Mcapi {
         $types = \Drupal::Config('mcapi.settings')->get('entity_types');
         // Having some problems on installation
         if (!$types) {
-          debug();
-          return;// so we don't cache nothing.
+          return [];// so we don't cache nothing.
         }
         foreach (\Drupal::Config('mcapi.settings')->get('entity_types') as $entity_bundle => $max) {
           if (!$max) {
@@ -144,6 +145,8 @@ class Mcapi {
    *
    * @return string[]
    *   The entity names, keyed by entity id.
+   *
+   * @see Drupal\Core\Entity\Plugin\EntityReferenceSelection::getReferenceableEntities
    */
   public static function entityLabelList($entity_type_id, array $data = []) {
     if (empty($data)) {
@@ -164,15 +167,16 @@ class Mcapi {
     }
     $list = [];
     foreach ($entities as $entity) {
-      $list[$entity->id()] = $entity->label();
+      $list[$entity->id()] = Html::escape(\Drupal::entityManager()->getTranslationFromContext($entity)->label());
     }
     return $list;
   }
 
+
   /**
    * Retrieve all the wallets held by a given ContentEntity.
    *
-   * @param ContentEntityInterface $entity
+   * @param EntityInterface $entity
    *   The entity.
    * @param bool $load
    *   TRUE means return the fully loaded wallets.
@@ -182,7 +186,7 @@ class Mcapi {
    *
    * @todo change this to take the entityTypeId and the EntityId instead of the Entity
    */
-  public static function walletsOf(ContentEntityInterface $entity, $load = FALSE) {
+  public static function walletsOf(EntityInterface $entity, $load = FALSE) {
     $wids = \Drupal::entityQuery('mcapi_wallet')
       ->condition('holder_entity_type', $entity->getEntityTypeId())
       ->condition('holder_entity_id', $entity->id())

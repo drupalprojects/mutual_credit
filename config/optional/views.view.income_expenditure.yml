@@ -13,7 +13,7 @@ id: income_expenditure
 label: 'Income & Expenditure'
 module: mcapi
 description: 'two displays showing a users transactions in each direction, by period'
-tag: 'Community Accounting'
+tag: 'Community accounting'
 base_table: mcapi_transaction
 base_field: xid
 core: 8.x

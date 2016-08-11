@@ -1,8 +1,11 @@
 mcapi.toolbar:
   version: VERSION
   css:
-    component:
+    theme:
       css/mcapi.icons.css: {}
+  dependencies:
+    - 'toolbar/toolbar'
+    
 mcapi.transaction:
   version: VERSION
   css:

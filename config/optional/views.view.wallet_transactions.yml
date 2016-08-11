@@ -9,7 +9,7 @@ id: wallet_transactions
 label: 'Transactions in a wallet'
 module: mcapi
 description: ''
-tag: mcapi_transaction
+tag: Community accounting
 base_table: mcapi_transactions_index
 base_field: xid
 core: 8.x

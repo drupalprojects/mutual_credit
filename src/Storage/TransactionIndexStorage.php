@@ -22,6 +22,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    */
   public function doSave($id, EntityInterface $entity) {
     $return = parent::doSave($id, $entity);
+
     // Alternatively how about a db_merge? would be quicker.
     if (!$entity->isNew()) {
       $this->database->delete('mcapi_transactions_index')

@@ -96,10 +96,13 @@ function mcapi_element_info_alter(&$items) {
  * Rename the entity's wallet in case the entity's name is changed.
  */
 function mcapi_entity_presave($entity) {
-  if ($entity instanceof ContentEntityInterface && Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle()) == 1) {
-    // Get the entity's one wallet, and rename it.
-    if ($wids = Mcapi::walletsOf($entity)) {
-      Wallet::load(reset($wids))->setHolder($entity)->save();
+  if ($entity instanceof ContentEntityInterface) {
+    if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle()) == 1) {
+      // Get the entity's one wallet, and rename it.
+      if ($wids = Mcapi::walletsOf($entity)) {
+        $wid = reset($wids);
+        Wallet::load($wid)->setHolder($entity)->save();
+      }
     }
   }
 }

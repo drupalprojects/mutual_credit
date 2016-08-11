@@ -5,13 +5,12 @@ dependencies:
   config:
     - core.entity_view_mode.mcapi_transaction.sentence_ops
   module:
-    - mcapi_signatures
     - user
 id: mcapi_pending_signatures
 label: 'Pending transactions'
 module: views
 description: ''
-tag: ''
+tag: 'Community accounting'
 base_table: mcapi_transaction
 base_field: xid
 core: 8.x

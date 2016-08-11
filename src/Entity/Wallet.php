@@ -65,22 +65,13 @@ use Drupal\Core\Field\BaseFieldDefinition;
  */
 class Wallet extends ContentEntityBase implements WalletInterface {
 
-  /*
-   * constants used for access control
-   * @todo remove these carefully
-   */
-  // authenticated users.
-  const ACCESS_MEMBERS = 'm';
-  // Same groups as wallet owner.
-  const ACCESS_OG = 'g';
-  // Refer to wallet_access table.
-  const ACCESS_USERS = 'u';
-  // Wallet owner; used in the creation phase, then converted to ACCESS_USERS.
-  const ACCESS_OWNER = 'o';
-
+  // Anyone can pay into this wallet
   const PAYWAY_ANYONE_IN = 'I';
+  // Anyone can pay out from this wallet
   const PAYWAY_ANYONE_OUT = 'O';
+  // Anyone can pay into and out of this wallet
   const PAYWAY_ANYONE_BI = 'B';
+  // Only system can interact with this wallet
   const PAYWAY_AUTO = 'A';
 
   private $holder;

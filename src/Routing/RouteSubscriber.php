@@ -19,7 +19,7 @@ class RouteSubscriber extends RouteSubscriberBase {
   protected function alterRoutes(RouteCollection $collection) {
     if ($transaction_list = $collection->get('view.mcapi_transactions.admin')) {
       $collection->add('mcapi.transactions.collection', $transaction_list);
-      $collection->remove('mcapi.admin.transaction.list');
+      $collection->remove('view.admin.transaction.list');
     }
   }
 

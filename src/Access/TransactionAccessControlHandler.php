@@ -33,7 +33,8 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
    * {@inheritdoc}
    */
   public function access(EntityInterface $transaction, $operation, AccountInterface $account = NULL, $return_as_object = FALSE) {
-    if ($operation === 'view' and $account->hasPermission('view all transactions')) {
+    $account = $this->prepareUser($account);
+    if ($operation === 'view' && $account->hasPermission('view all transactions')) {
       // @todo URGENT. Handle the named payees and payers
       return $return_as_object ? AccessResult::allowed()->cachePerUser() : TRUE;
     }

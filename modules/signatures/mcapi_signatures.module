@@ -259,7 +259,7 @@ function mcapi_signatures_mail($key, &$message, $params) {
     ];
     if (!$message['body']) {
       // @todo need to find out why this happened
-      drupal_set_message('No body in notification message template');
+      drupal_set_message('Attempted to send signhere mail with no body text', 'warning');
       return;
     }
 

@@ -15,7 +15,7 @@ id: mcapi_transactions
 label: Transactions
 module: mcapi
 description: 'A list of all transactions'
-tag: Community Accounting
+tag: Community accounting
 base_table: mcapi_transaction
 base_field: xid
 core: 8.x
