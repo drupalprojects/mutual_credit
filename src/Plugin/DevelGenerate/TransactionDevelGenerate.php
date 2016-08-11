@@ -145,6 +145,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     if (!empty($values['kill'])) {
       $this->contentKill($values);
     }
+    //$curr_ids = array_keys(Currency::loadMultiple());
     for ($i = 1; $i <= $values['num']; $i++) {
       $this->develGenerateTransactionAdd($values);
     }
@@ -247,7 +248,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * @note this may attempt to send a email for pending transactions.
    */
   public function develGenerateTransactionAdd(&$values) {
-    $rand_wallet_ids = $this->getWallets($values['conditions']);
+    $values += ['conditions' => []];
+    $rand_wallet_ids = $this->getWallets((array)$values['conditions']);
     $props = [
       'payer' => $rand_wallet_ids[0],
       'payee' => $rand_wallet_ids[1],
@@ -256,12 +258,17 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       'creator' => 1,
       'description' => $this->getRandom()->sentences(1),
     ];
-    if ($curr_id = $values['curr_id']) {
-      $props['worth'] = [
-        'curr_id' => $curr_id,
-        'value' => Currency::load($curr_id)->sampleValue()
-      ];
-    }
+
+    // find a currency that's common to both wallets.
+    $payer_currencies = Wallet::load($props['payer'])->currenciesAvailable();
+    $payee_currencies = Wallet::load($props['payee'])->currenciesAvailable();
+
+    $curr_ids = array_intersect_key($payer_currencies, $payee_currencies);
+    $currency = $curr_ids[array_rand($curr_ids)];
+    $props['worth'] = [
+      'curr_id' => $currency->id(),
+      'value' => $currency->sampleValue()
+    ];
     $transaction = Transaction::create($props);
     // We're not using generateExampleData here because it makes a mess.
     // But that means we might miss other fields on the transaction.
@@ -281,8 +288,6 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     $transaction->created->value = $this->randTransactionTime($rand_wallet_ids[0], $rand_wallet_ids[1]);
     // NB this could generate pending emails.
     $transaction->save();
-    //so it can be modified...
-    return $transaction;
   }
 
   /**
