@@ -103,9 +103,6 @@ mcapi.currency.*:
     zero:
       type: boolean
       label: 'Allow zero transactions'
-    color:
-      type: string
-      label: 'Colour'
     weight:
       type: integer
       label: 'Weight'

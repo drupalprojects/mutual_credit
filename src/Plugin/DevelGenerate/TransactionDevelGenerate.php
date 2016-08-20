@@ -4,7 +4,6 @@ namespace Drupal\mcapi\Plugin\DevelGenerate;
 
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Transaction;
-use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -37,6 +36,11 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   protected $transactionStorage;
 
   /**
+   * The database.
+   */
+  protected $database;
+
+  /**
    * Constructor.
    *
    * @param array $configuration
@@ -48,9 +52,10 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * @param \Drupal\Core\Entity\EntityStorageInterface $transaction_storage
    *   The transaction storage.
    */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityStorageInterface $transaction_storage) {
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityStorageInterface $transaction_storage, $database) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->transactionStorage = $transaction_storage;
+    $this->database = $database;
   }
 
   /**
@@ -61,7 +66,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     return new static(
       $configuration, $plugin_id, $plugin_definition,
       $entity_manager->getStorage('mcapi_transaction'),
-      $container->get('date.formatter')
+      $container->get('date.formatter'),
+      $container->get('database')
     );
   }
 
@@ -149,9 +155,11 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     for ($i = 1; $i <= $values['num']; $i++) {
       $this->develGenerateTransactionAdd($values);
     }
+    $this->sortTransactions();
     if (function_exists('drush_log') && $i % drush_get_option('feedback', 1000) == 0) {
       drush_log(dt('Completed @feedback transactions ', ['@feedback' => drush_get_option('feedback', 1000)], 'ok'));
     }
+
   }
 
   /**
@@ -184,6 +192,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
         [$this, 'batchContentAddTransaction', $values],
       ];
     }
+    $operations[] = [[$this, 'sortTransactions']];
 
     // Start the batch.
     $batch = [
@@ -308,7 +317,6 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       throw new \Exception('Not enough wallets to make a transaction.');
     }
     shuffle($wids);
-
     return array_slice($wids, -2);
   }
 
@@ -326,6 +334,19 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     $wallets = Wallet::loadMultiple([$wid1, $wid2]);
     $latest = max($wallets[$wid1]->created->value, $wallets[$wid2]->created->value);
     return rand($latest, REQUEST_TIME);
+  }
+
+  public function sortTransactions() {
+    $times = $this->database->select('mcapi_transaction', 't')->fields('t', ['serial', 'created'])->execute()->fetchAllKeyed();
+    $keys = array_keys($times);
+    sort($keys);
+    sort($times);
+    $new = array_combine($keys, $times);
+    foreach ($new as $serial => $created) {
+      //assuming that $created is unique and clashes are extremely unlikely
+      $this->database->update('mcapi_transaction')->fields(['serial' => $serial])->condition('created', $created)->execute();
+      $this->database->update('mcapi_transactions_index')->fields(['serial' => $serial])->condition('created', $created)->execute();
+    }
   }
 
 }

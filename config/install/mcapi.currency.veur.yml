@@ -12,6 +12,5 @@ format:
   - ':'
   - 99
 zero: 0
-color: '#0000ff'
 weight: '2'
 

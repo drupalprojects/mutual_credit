@@ -56,6 +56,7 @@ class CurrencyForm extends EntityForm {
       ];
     }
     if (user_roles(TRUE, 'manage mcapi')) {
+      $currentUser = \Drupal::currentUser();
       $form['uid'] = [
         '#title' => $this->t('Comptroller'),
         '#description' => $this->t("Any user with 'Manage community accounting' role"),
@@ -69,6 +70,7 @@ class CurrencyForm extends EntityForm {
         ],
         '#tags' => FALSE,
         '#default_value' => $currency->getOwner(),
+        '#access' => $currentUser->hasPermission('configure mcapi') || $currentUser->id() == $currency->getOwner()->id()
       ];
     }
     else {
@@ -154,17 +156,11 @@ class CurrencyForm extends EntityForm {
       $form['zero']['#required'] = TRUE;
       $form['zero']['#description'] .= $this->t("Zero transaction already exist so this field is required");
     }
-    $form['display'] = [
-      '#title' => $this->t('Appearance'),
-      '#type' => 'fieldset',
-      '#collapsible' => TRUE,
-      '#weight' => 10,
-    ];
     $help[] = $this->t('E.g. for Hours, Minutes put Hr00:60/4mins , for dollars and cents put $0.00; for loaves put 0 loaves.');
     $help[] = $this->t('The first number is always a string of zeros showing the number of characters (powers of ten) the widget will allow.');
     $help[] = $this->t('The optional /n at the end will render the final number widget as a dropdown field showing intervals, in the example, of 15 mins.');
     $help[] = $this->t('Special effects can be accomplised with HTML & css.');
-    $form['display']['format'] = [
+    $form['format'] = [
       '#title' => $this->t('Format'),
       '#description' => implode(' ', $help),
       '#type' => 'textfield',
@@ -172,15 +168,9 @@ class CurrencyForm extends EntityForm {
       '#element_validate' => [
         [$this, 'validateFormat'],
       ],
-      '#max_length' => 16,
-      '#size' => 10,
-    ];
-
-    $form['display']['color'] = [
-      '#title' => $this->t('Colour'),
-      '#description' => $this->t('Colour may be used in visualisations'),
-      '#type' => 'color',
-      '#default_value' => $currency->color,
+      '#max_length' => 32,
+      '#size' => 32,
+      '#weight' => 10
     ];
     return $form;
   }

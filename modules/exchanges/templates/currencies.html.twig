@@ -1,0 +1,16 @@
+{#
+/**
+ * @file
+ * Default theme implementation to display a some currency stats for an exchange.
+ *
+ * each or rows has
+ * - name, the currency name
+ * - volume, the total trading volume of the currency ever, linked to the canonical page
+ * - edit (if permitted) a link to edit the currency.
+#}
+<div class="exchange-currencies">
+<h2>{% trans %}Available currencies{% endtrans %}</h2>
+{% for row in rows %}
+  {{ row.name }} {{ row.volume }} {{ row.edit }}<br />
+{% endfor %}
+</div>

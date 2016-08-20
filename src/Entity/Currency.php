@@ -113,13 +113,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   public $zero;
 
   /**
-   * The color hex code to be used in rendering the currency in visualisations.
-   *
-   * @var string
-   */
-  public $color;
-
-  /**
    * The weight of the currency compared to other currencies.
    *
    * @var integer
@@ -169,7 +162,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       'issuance' => 'acknowledgement',
       'format' => ['$', '000', '.', '99'],
       'zero' => FALSE,
-      'color' => '000',
       'weight' => 0,
       'uid' => \Drupal::currentUser()->id(),
     );
