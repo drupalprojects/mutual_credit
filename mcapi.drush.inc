@@ -18,35 +18,31 @@ use Drupal\mcapi\Entity\Transaction;
  * Implements hook_drush_command().
  */
 function mcapi_drush_command() {
-  $items['generate-transactions'] = [
-    'callback' => 'drush_devel_generate',
-    'callback arguments' => [
-      'plugin_id' => 'transaction',
-    ],
+  $items_NOT_USED['devel-generate-transactions'] = [
     'description' => 'Create transactions.',
     'arguments' => [
       'num' => 'Number of transactions to generate.',
     ],
+    'required-arguments' => 1,
     'options' => [
       'kill' => 'Delete all transactions before generating new ones.',
-      'type' => 'Specify the transaction type - may affect signatures)',
+      'type' => 'Specify the transaction type (may affect signatures)',
     ],
-    'drupal dependencies' => [
+    'drush dependencies' => [
       'devel-generate',
     ],
   ];
   $items['mcapi-wipeslate'] = [
-    'callback' => 'drush_mcapi_wipeslate',
     'description' => "CAUTION: Delete all transaction entities from Drupal's database. Will leave values hanging if other entities use the worth field",
     'arguments' => [
       'curr_id' => 'The machine name of the currency',
-    ],
-    'drupal dependencies' => [
-    // Not a real dependency but should reduce the chance of accidents!
-      'devel',
-    ],
+    ]
   ];
   return $items;
+}
+
+function drush_devel_generate_transactions() {
+
 }
 
 /**

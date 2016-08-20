@@ -123,7 +123,7 @@ class WalletViewBuilder extends EntityViewBuilder {
         $build[$key]['link_income_expenditure'] = [
           '#type' => 'link',
           '#title' => t('Income & Expenditure'),
-          '#url' => Url::fromRoute('view.income_expenditure.income_page', ['mcapi_wallet' => $wallet->id()]),
+          '#url' => Url::fromRoute('view.income_expenditure.wallet_page', ['mcapi_wallet' => $wallet->id()]),
           '#attributes' => ['class' => 'wallet-link'],
         ];
         // views_embed_view('income_expenditure', 'income_embed',$wallet->id());

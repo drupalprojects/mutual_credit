@@ -70,7 +70,7 @@ function _mcapi_entity_extra_field_info() {
     ];
   }
 
-  if ($route_provider->getRoutesByNames(['view.income_expenditure.income_page'])) {
+  if ($route_provider->getRoutesByNames(['view.income_expenditure.wallet_page'])) {
     $wallet_display['link_income_expenditure'] = [
       'label' => t('Link to Income & expenditure'),
       'description' => t('Two tables showing transactions in either direction'),
