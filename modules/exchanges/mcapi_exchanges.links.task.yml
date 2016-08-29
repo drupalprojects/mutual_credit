@@ -14,6 +14,3 @@ mcapi.exchange.userregister.tab:
   base_route: entity.group.canonical
   weight: 4
 
-#temp until this is added to group.links.task.yml
-group_content.dynamic:
-  deriver: '\Drupal\mcapi_exchanges\GroupContentDynamicDeriver'

@@ -5,10 +5,12 @@ namespace Drupal\mcapi\Plugin\DevelGenerate;
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\devel_generate\DevelGenerateBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Database\Connection;
+use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\devel_generate\DevelGenerateBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -41,6 +43,11 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   protected $database;
 
   /**
+   * The entityQueryFactory.
+   */
+  protected $entityQueryFactory;
+
+  /**
    * Constructor.
    *
    * @param array $configuration
@@ -51,46 +58,29 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    *   Definition of the plugin.
    * @param \Drupal\Core\Entity\EntityStorageInterface $transaction_storage
    *   The transaction storage.
+   * @param \Drupal\Core\Database\Connection
+   *   The database connection
+   * @param \Drupal\Core\Entity\Query\QueryFactory
+   *   The query Factory
+   *
    */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityStorageInterface $transaction_storage, $database) {
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityStorageInterface $transaction_storage, Connection $database, QueryFactory $entity_query) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->transactionStorage = $transaction_storage;
     $this->database = $database;
+    $this->entityQueryFactory = $entity_query;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    $entity_manager = $container->get('entity.manager');
     return new static(
       $configuration, $plugin_id, $plugin_definition,
-      $entity_manager->getStorage('mcapi_transaction'),
-      $container->get('date.formatter'),
-      $container->get('database')
+      $container->get('entity.manager')->getStorage('mcapi_transaction'),
+      $container->get('database'),
+      $container->get('entity.query')
     );
-  }
-
-  /**
-   * Find some suitable wallets.
-   *
-   * @staticvar type $wallet_ids
-   *
-   * @return integer[] or FALSE
-   *   wallet ids, shuffled
-   */
-  public function prepareWallets() {
-    static $wallet_ids;
-    if (!isset($wallet_ids)) {
-      $wallet_ids = \Drupal::entityQuery('mcapi_wallet')
-        ->condition('holder_entity_type', 'user')
-        ->execute();
-    }
-    shuffle($wallet_ids);
-    return (count($wallet_ids) < 2) ?
-      FALSE :
-      $wallet_ids;
-
   }
 
   /**
@@ -120,8 +110,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
 
     $form['#redirect'] = FALSE;
 
-    $wids = $this->prepareWallets();
-    if (!$wids) {
+    if (!$this->enoughWallets()) {
       $form_state->setErrorByName('', 'Not enough wallets');
     }
     return $form;
@@ -149,7 +138,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    */
   public function generateContent($values) {
     if (!empty($values['kill'])) {
-      $this->contentKill($values);
+      $this->contentKill($values['type']);
     }
     //$curr_ids = array_keys(Currency::loadMultiple());
     for ($i = 1; $i <= $values['num']; $i++) {
@@ -166,11 +155,17 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * Generate batch to create large numbers of transactions.
    */
   private function generateBatchContent($values) {
+    // Start the batch.
+    $batch = [
+      'title' => $this->t('Generating Transactions'),
+      'operations' => [],
+      'file' => drupal_get_path('module', 'devel_generate') . '/devel_generate.batch.inc',
+    ];
     // Add the kill operation.
     if ($values['kill']) {
-      $operations[] = [
+      $batch['operations'][] = [
         'devel_generate_operation',
-        [$this, 'batchContentKill', $values],
+        [$this, 'batchContentKill', $values['type']],
       ];
     }
     $total = $values['num'];
@@ -178,7 +173,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     // Add the operations to create the transactions.
     for ($num = 0; $num < floor($total / 100); $num++) {
       $values['batch'] = $num;
-      $operations[] = [
+      $batch['operations'][] = [
         'devel_generate_operation',
         [$this, 'batchContentAddTransaction', $values],
       ];
@@ -187,19 +182,12 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       // Add the remainder.
       $values['num'] = $total % 100;
       $values['batch'] = $num++;
-      $operations[] = [
+      $batch['operations'][] = [
         'devel_generate_operation',
         [$this, 'batchContentAddTransaction', $values],
       ];
     }
-    $operations[] = [[$this, 'sortTransactions']];
-
-    // Start the batch.
-    $batch = [
-      'title' => $this->t('Generating Transactions'),
-      'operations' => $operations,
-      'file' => drupal_get_path('module', 'devel_generate') . '/devel_generate.batch.inc',
-    ];
+    $batch['operations'][] = [[$this, 'sortTransactions']];
     batch_set($batch);
   }
 
@@ -217,16 +205,15 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   /**
    * Delete previous transactions before creating a batch of them.
    */
-  public function batchContentKill($vars, &$context) {
-    $this->contentKill($context['results']);
+  public function batchContentKill($values, &$context) {
+    $this->contentKill($values['type']);
   }
 
   /**
    * {@inheritdoc}
    */
   public function validateDrushParams($args) {
-    $wids = $this->prepareWallets();
-    if (!$wids) {
+    if (!$this->enoughWallets()) {
       return drush_set_error('DEVEL_GENERATE_INVALID_INPUT', dt('Not enough wallets to trade.'));
     }
     $values['kill'] = drush_get_option('kill');
@@ -241,13 +228,16 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * @param array $values
    *   The input values from the settings form.
    *
-   * @note May consume a lot of memory
+   * @note Loads all transactions into memory at the same time.
    */
-  protected function contentKill($values) {
-    $transactions = Transaction::loadMultiple();
-    if (!empty($transactions)) {
+  protected function contentKill($type) {
+    $xids = $this->entityQueryFactory->get('mcapi_transaction')
+      ->condition('type', $type)
+      ->execute();
+    if (!empty($xids)) {
+      $transactions = Transaction::loadMultiple($xids);
       $this->transactionStorage->delete($transactions);
-      $this->setMessage($this->t('Deleted %count transactions.', array('%count' => count($transactions))));
+      $this->setMessage($this->t('Deleted %count transactions.', array('%count' => count($xids))));
     }
   }
 
@@ -257,15 +247,20 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * @note this may attempt to send a email for pending transactions.
    */
   public function develGenerateTransactionAdd(&$values) {
+\Drupal::logger('groupcontent')->notice('Creating transaction');
     $values += ['conditions' => []];
-    $rand_wallet_ids = $this->getWallets((array)$values['conditions']);
+    list($w1, $w2) = $this->get2RandWalletIds($values['conditions']);
+    if (!$w2) {
+      return;
+    }
     $props = [
-      'payer' => $rand_wallet_ids[0],
-      'payee' => $rand_wallet_ids[1],
-    // Auto doesn't show in the default view.
+      'payer' => $w1,
+      'payee' => $w2,
+      // Transactions of type 'auto' don't show in the default view.
       'type' => $this->getSetting('type') ?: 'default',
       'creator' => 1,
       'description' => $this->getRandom()->sentences(1),
+      'uid' => $w1
     ];
 
     // find a currency that's common to both wallets.
@@ -278,6 +273,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       'curr_id' => $currency->id(),
       'value' => $currency->sampleValue()
     ];
+
+\Drupal::logger('groupcontent')->notice(print_r($props, 1));
     $transaction = Transaction::create($props);
     // We're not using generateExampleData here because it makes a mess.
     // But that means we might miss other fields on the transaction.
@@ -294,7 +291,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
         }
       }
     }
-    $transaction->created->value = $this->randTransactionTime($rand_wallet_ids[0], $rand_wallet_ids[1]);
+    $transaction->created->value = $this->randTransactionTime($w1, $w2);
     // NB this could generate pending emails.
     $transaction->save();
   }
@@ -304,21 +301,41 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    *
    * @param array $conditions
    *   Conditions for the wallet entityquery
-   * @todo prevent
+   *
+   * @return int[]
+   *   2 wallet ids
    */
-  public function getWallets(array $conditions = []) {
-    $query = \Drupal::entityQuery('mcapi_wallet')
+  public function get2RandWalletIds(array $conditions = []) {
+    $query = $this->entityQueryFactory->get('mcapi_wallet')
       ->condition('payways', Wallet::PAYWAY_AUTO, '<>');
     foreach ($conditions as $field => $value) {
       $query->condition($field, $value, is_array($value) ? 'IN' : '=');
     }
     $wids = $query->execute();
-    if (count($wids) < 2) {
-      throw new \Exception('Not enough wallets to make a transaction.');
+    if (!count($wids) < 2) {
+      \Drupal::logger('mcapi')->warning('Not enough wallets in exchange: '.print_r($conditions, 1));
+      return [];
     }
     shuffle($wids);
     return array_slice($wids, -2);
   }
+
+  /**
+   * Find some suitable wallets.
+   *
+   * @return Bool
+   *   TRUE if there are least 2 wallets, excluding the intertrading wallet.
+   */
+  public function enoughWallets() {
+    static $wallet_ids;
+    if (!isset($wallet_ids)) {
+      $wallet_ids = $this->entityQueryFactory('mcapi_wallet')
+        ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
+        ->execute();
+    }
+    return count($wallet_ids) >= 2;
+  }
+
 
   /**
    * Get a time that a transaction could have taken place between 2 wallets
@@ -337,7 +354,9 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   }
 
   public function sortTransactions() {
-    $times = $this->database->select('mcapi_transaction', 't')->fields('t', ['serial', 'created'])->execute()->fetchAllKeyed();
+    $times = $this->database->select('mcapi_transaction', 't')
+      ->fields('t', ['serial', 'created'])
+      ->execute()->fetchAllKeyed();
     $keys = array_keys($times);
     sort($keys);
     sort($times);

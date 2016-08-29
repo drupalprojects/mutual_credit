@@ -6,10 +6,15 @@ use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi_exchanges\Exchanges;
 use Drupal\group\Entity\Group;
 use Drupal\group\Entity\GroupContent;
-use Drupal\group\Plugin\DevelGenerate\GroupGenerate;
+use Drupal\group\Plugin\DevelGenerate\GroupDevelGenerate;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Datetime\DateFormatterInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\Routing\UrlGeneratorInterface;
 
 /**
  * Generate a trading exchange and populate with users and transactions.
@@ -27,12 +32,12 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  *
  */
-class ExchangeGenerate extends GroupGenerate implements ContainerFactoryPluginInterface {
+class ExchangeGenerate extends GroupDevelGenerate implements ContainerFactoryPluginInterface {
 
   protected $develGenerator;
 
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_type_manager, $devel_generator) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $entity_type_manager);
+  public function __construct($configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entity_type_manager, ModuleHandlerInterface $module_handler, LanguageManagerInterface $language_manager, UrlGeneratorInterface $url_generator, DateFormatterInterface $date_formatter, $devel_generator) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $entity_type_manager, $module_handler, $language_manager, $url_generator, $date_formatter);
     $this->develGenerator = $devel_generator;
   }
 
@@ -43,6 +48,10 @@ class ExchangeGenerate extends GroupGenerate implements ContainerFactoryPluginIn
     return new static(
       $configuration, $plugin_id, $plugin_definition,
       $container->get('entity_type.manager'),
+      $container->get('module_handler'),
+      $container->get('language_manager'),
+      $container->get('url_generator'),
+      $container->get('date.formatter'),
       $container->get('plugin.manager.develgenerate')
     );
   }
@@ -65,7 +74,6 @@ class ExchangeGenerate extends GroupGenerate implements ContainerFactoryPluginIn
     $form['num'] = [
       '#type' => 'radios',
       '#title' => $this->t('How many exchanges would you like to generate?'),
-      '#description' => $this->t('Each user will be randomly put into one exchange'),
       '#default_value' => $this->getSetting('num'),
       '#required' => TRUE,
       '#options' => [
@@ -76,24 +84,27 @@ class ExchangeGenerate extends GroupGenerate implements ContainerFactoryPluginIn
         '#disabled' => TRUE,
       ],
     ];
-    $form['type'] = [
+    $form['group_types'] = [
       '#type' => 'hidden',
-      '#value' => 'exchange'
-    ];
-    $form['av_transactions'] = [
-      '#title' => $this->t('Average num of transactions per exchange'),
-      '#descriptions' => $this->t('New transactions will be created between members of the same exchanges.'),
-      '#type' => 'number',
-      '#min' => 0,
-      '#max' => 100,
-      '#default_value' => 0,
-      '#states' => [
-        'disabled' => [
-          ':input[name="av_users"]' => ['value' => 0]
-        ]
-      ]
+      '#value' => ['exchange']
     ];
     return $form;
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function generateElements(array $values) {
+    $this->currencies = Currency::loadMultiple();
+    $this->groupsKill($values);
+
+    if ($values['num'] <= 10) {
+      $this->generateContent($values);
+    }
+    else {
+      $this->generateBatchContent($values);
+    }
   }
 
   /**
@@ -105,14 +116,18 @@ class ExchangeGenerate extends GroupGenerate implements ContainerFactoryPluginIn
    * @throws \Exception
    */
   private function generateContent($values) {
-    $this->currencies = Currency::loadMultiple();
-    $values['type'] = 'exchange';
-    $this->contentKill($values);
-    $func = $values['num'] == 9 ? 'get9names' : 'get200names';
-    for ($i = 0; $i < $values['num']; $i++) {
-      $nameval = $this->$func($i);
-      list($values['exchange_name'], $values['currency_name']) = each($nameval);
-      $exchange = $this->develGenerateExchangeAdd($values);
+    $this->preGroup($values);
+    if ($values['num'] == 9) {
+      for ($i = 0; $i < 9; $i++) {
+        $nameval = $this->get9names($i);
+        list($values['exchange_name'], $values['currency_name']) = each($nameval);
+        $exchange = $this->addExchange($values);
+      }
+    }
+    else {
+      for ($i = 0; $i < $values['num']; $i++) {
+        $exchange = $this->addExchange($values);
+      }
     }
   }
 
@@ -123,14 +138,9 @@ class ExchangeGenerate extends GroupGenerate implements ContainerFactoryPluginIn
   protected function generateBatchContent($values) {
     $this->currencies = Currency::loadMultiple();
     // Add the kill operation.
-    $operations[] = ['devel_generate_operation', [$this, 'contentKill', $values]];
-
-    // Add the operations to create the groups.
-    $func = $values['num'] == 9 ? 'get9names' : 'get200names';
+    $operations[] = ['devel_generate_operation', [$this, 'groupsKill', $values]];
 
     for ($num = 0; $num < $values['num']; $num++) {
-      $nameval = $this->$func($num);
-      list($values['exchange_name'], $values['currency_name']) = each($nameval);
       $operations[] = ['devel_generate_operation', [$this,'batchContentAddExchange', $values]];
     }
 
@@ -163,8 +173,8 @@ class ExchangeGenerate extends GroupGenerate implements ContainerFactoryPluginIn
    * @param array $values
    *   The input values from the settings form.
    */
-  public function contentKill($values) {
-    parent::contentKill($values);
+  public function groupsKill($values) {
+    parent::groupsKill($values);
     module_load_include('drush.inc', 'mcapi');
     foreach (Currency::loadMultiple() as $currency) {
       drush_mcapi_wipeslate($currency->id());
@@ -179,19 +189,24 @@ class ExchangeGenerate extends GroupGenerate implements ContainerFactoryPluginIn
    *   Batch context, includes array sandbox, array results, finished & message.
    */
   public function batchContentAddExchange($values, &$context) {
-    $this->develGenerateExchangeAdd($values);
+    $this->addExchange($values);
     $context['results']['num']++;
   }
 
   /**
    * Create one exchange with one or more currencies.
    */
-  protected function develGenerateExchangeAdd(&$values) {
+  protected function addExchange($values) {
     // Allow any user to be a group owner.
     $values['role'] = 'authenticated';
+    $values['label_length'] = 2;
     // Force the group generator to populate the group.
     $values['exchange']['group_membership'] = 'group_membership';
     $currencies = $cids = [];
+    if (!isset($values['currency_name'])) {
+      $random = new \Drupal\Component\Utility\Random();
+      $values['currency_name'] = $values['exchange_name'] = $random->word(mt_rand(1, 12));
+    }
 
     $id = strtolower(substr($values['currency_name'], 0, 2));
     $currency = Currency::load($id);
@@ -211,16 +226,20 @@ class ExchangeGenerate extends GroupGenerate implements ContainerFactoryPluginIn
     $currencies[] = $currency;
     $cids[] = $id;
 
-    parent::develGenerateGroupAdd($values);
+    parent::addGroup($values);
+
     // Recover the exchange for some final alterations.
-    $exids = \Drupal::entityQuery('group')->range(0, 1)->sort('id', 'DESC')->execute();
-    $exchange = Group::load(reset($exids));
+    $exchange = $this->lastExchange();
     $exchange->currencies->setValue($currency);
     $exchange->created->value = strtotime('-2 years');
     $exchange->label->value = $values['exchange_name'];
     $exchange->save();
 
-    $this->generateTransactions($exchange, $values['av_transactions']);
+  }
+
+  protected function lastExchange() {
+    $exids = \Drupal::entityQuery('group')->range(0, 1)->sort('id', 'DESC')->execute();
+    return Group::load(reset($exids));
   }
 
   /**
@@ -230,39 +249,40 @@ class ExchangeGenerate extends GroupGenerate implements ContainerFactoryPluginIn
    * @param \Drupal\group\Entity\Group $group
    * @param int $num
    *
-   * @todo Vary the number of transactions
+   * @todo move this to content generator
+   * @note transactions should mostly be created between members of the same groups so this should run AFTER existing members have been assigned to groups.
    */
-  private function generateTransactions(Group $group, $num) {
-    //Make a transaction using any two wallets in the group.
-    $rand = floor($num/4) + rand(0, ceil($num*1.5));
-    $wids = Exchanges::walletsInExchange([$group->id()]);
-    if (count($wids) < 2) {
-      throw new \Exception('Not enough wallets in group '.$group->label());
-    }
-    $args = [
-      'kill' => FALSE,
-      'num' => $rand ,
-      'type' => 'default',
-      'conditions' => ['wid' => $wids],
-      'curr_id' => $group->currencies->getValue()[0]['target_id']
-    ];
-    $this->develGenerator->createInstance('mcapi_transaction')
-    ->generateElements($args);
-
-    // These new transactions aren't returned, so we have to identify them by
-    // getting the latest $rand transactions
-    $xids = \Drupal::entityQuery('mcapi_transaction')
-      ->sort('serial', 'desc')
-      ->range(0, $rand)->execute();
-    foreach ($xids as $xid) {
-      $props = [
-        'gid' => $group->id(),
-        'type' => 'exchange-transactions',//should be exchange-group_membership
-        'entity_id' => $xid,
-      ];
-      GroupContent::create($props)->save();
-    }
-  }
+//  private function generateTransactions(Group $group, $num) {
+//    //Make a transaction using any two wallets in the group.
+//    $rand = floor($num/4) + rand(0, ceil($num*1.5));
+//    $wids = Exchanges::walletsInExchange([$group->id()]);
+//    if (count($wids) < 2) {
+//      throw new \Exception('Not enough wallets in group '.$group->label());
+//    }
+//    $args = [
+//      'kill' => FALSE,
+//      'num' => $rand ,
+//      'type' => 'default',
+//      'conditions' => ['wid' => $wids],
+//      'curr_id' => $group->currencies->getValue()[0]['target_id']
+//    ];
+//    $this->develGenerator->createInstance('mcapi_transaction')
+//    ->generateElements($args);
+//
+//    // These new transactions aren't returned, so we have to identify them by
+//    // getting the latest $rand transactions
+//    $xids = \Drupal::entityQuery('mcapi_transaction')
+//      ->sort('serial', 'desc')
+//      ->range(0, $rand)->execute();
+//    foreach ($xids as $xid) {
+//      $props = [
+//        'gid' => $group->id(),
+//        'type' => 'exchange-transactions',//should be exchange-group_membership
+//        'entity_id' => $xid,
+//      ];
+//      GroupContent::create($props)->save();
+//    }
+//  }
 
   /**
    * Get names and currency names for each of 9 exchanges.

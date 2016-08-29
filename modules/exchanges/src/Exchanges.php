@@ -31,19 +31,19 @@ class Exchanges extends Exchange {
    * @todo check all calls to this are using the needed boolean args
    * @todo consider usering entityQuery directly
    */
-  public static function memberOf(ContentEntityInterface $entity = NULL, $enabledOnly = FALSE, $openOnly = FALSE, $visibleOnly = FALSE) {
-    if (!is_object($entity)) {
+  public static function memberOf($entity = NULL) {
+    if (is_null($entity)) {
       $entity = User::load(\Drupal::currentUser()->id());
     }
-    if ($entity->getEntityTypeId() != 'user') {
-      throw new \Exception('memberOf method only applies to users');
+    $exchanges = [];
+    //@todo refactor this @see
+    foreach (\Drupal::service('group.membership_loader')->loadByUser($entity) as $mem) {
+      $group = $mem->getGroup();
+      if ($group->getGroupType()->id() == 'exchange') {
+        $exchanges[] = $group->id();
+      }
     }
-    $memberships = \Drupal::service('group.membership_loader')->loadByUser($entity);
-    $result = [];
-    foreach ($memberships as $mem) {
-      $result[] = $mem->getGroup()->id();
-    }
-    return $result;
+    return $exchanges;
   }
 
   /**
@@ -53,7 +53,7 @@ class Exchanges extends Exchange {
     if ($previous_holder->getEntityTypeId() == 'group') {
       return User::load(1);
     }
-    $exchanges = SELF::memberOf($previous_holder, TRUE);
+    $exchanges = SELF::memberOf($previous_holder);
     // If the parent entity was in more than one exchange, just pick the first.
     return reset($exchanges);
   }
@@ -61,29 +61,25 @@ class Exchanges extends Exchange {
   /**
    * Load currencies for a given user.
    *
-   * @param EntityOwnerInterface $entity
+   * @param EntityOwnerInterface $user
    *
    * @return CurrencyInterface[]
    */
-  public static function ownerEntityCurrencies(EntityOwnerInterface $entity = NULL) {
-    return SELF::exchangeCurrencies(SELF::memberOf($entity, TRUE));
+  public static function ownerEntityCurrencies(EntityOwnerInterface $user = NULL) {
+    return SELF::exchangeCurrencies(SELF::memberOf($user));
   }
 
   /**
    * Get all the currencies in the given exchanges.
    *
-   * @param array $exchange_ids
+   * @param array $exchanges
    *
    * @return CurrencyInterface[]
    */
   public static function exchangeCurrencies(array $exchanges) {
     $currencies = [];
     foreach ($exchanges as $exchange) {
-      // @temp
-      if (!is_object($exchange->currencies)) {
-        drupal_set_message('Exchange has no currencies property', 'warning');
-        return;
-      }
+    if (!$exchange->currencies){mtrace();}
       foreach ($exchange->currencies->referencedEntities() as $currency) {
         $currencies[$currency->id()] = $currency;
       }
@@ -104,33 +100,14 @@ class Exchanges extends Exchange {
    *   Keyed by currency ID.
    */
   public static function currenciesAvailableToUser(AccountInterface $account = NULL) {
-    $exchanges = SELF::userInExchanges($account);
+    $exchange_ids = SELF::memberOf($account);
     if (empty($exchanges)) {
       drupal_set_message(t('%name is not in any exchanges', ['%name' => $account->getAccountName()]), 'error');
-      $exchanges  = Group::loadMultiple();
+      $exchange_ids = \Drupal::entityQuery('group')->condition('type', 'exchange')->execute();
     }
-    return Self::exchangeCurrencies($exchanges);
+    return Self::exchangeCurrencies(Group::loadMultiple($exchange_ids));
   }
 
-  /**
-   * Get the exchanges a user is a member of.
-   *
-   * @param AccountInterface $account
-   *   The user entity.
-   *
-   * @return Group[]
-   *   The groups the user is in.
-   */
-  public static function userInExchanges(AccountInterface $account) {
-    $exchanges = [];
-    //get the memberships
-    $memberships = \Drupal::service('group.membership_loader')->loadByUser($account);
-    foreach ($memberships as $mem) {
-      $group = $mem->getGroup();
-      $exchanges[$group->id()] = $group;
-    }
-    return $exchanges;
-  }
 
   /**
    * Get all the currency ids for one or more exchanges.
@@ -203,10 +180,9 @@ class Exchanges extends Exchange {
     drupal_set_message('how to get members AND content for a group?');
     $memberships = [];
     foreach ($exids as $group_id) {
-      $group = Group::load($group_id);
       $memberships = array_merge(
         $memberships,
-        \Drupal::service('group.membership_loader')->loadByGroup($group)
+        \Drupal::service('group.membership_loader')->loadByGroup(Group::load($group_id))
       );
     }
     foreach ($memberships as $ship) {

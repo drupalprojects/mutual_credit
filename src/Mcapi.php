@@ -220,7 +220,9 @@ class Mcapi {
         ->condition('holder_entity_id', $entity_ids, 'IN');
       $or->condition($and);
     }
-    return $query->condition($or)->execute()->fetchCol();
+    $result = $query->condition($or)->execute();
+
+    return $result->fetchCol();
   }
 
   /**

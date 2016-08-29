@@ -6,8 +6,8 @@
 
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\user\Entity\User;
+use Drupal\views\Entity\View;
 use Drupal\group\Entity\Group;
-use Drupal\group\Entity\GroupContent;
 
 /**
  * Implements hook_install().
@@ -15,7 +15,6 @@ use Drupal\group\Entity\GroupContent;
  * @todo delete the end of this if not needed.
  */
 function mcapi_exchanges_install() {
-
   // Make the exchange walletable
   $conf = \Drupal::configFactory()->getEditable('mcapi.settings');
   $types = $conf->get('entity_types');
@@ -46,15 +45,10 @@ function mcapi_exchanges_install() {
   ]);
   $exchange->save();
 
-  // Put other users in the default exchanges.
-  foreach (User::loadMultiple() as $account) {
-    if ($account->id()){
-      GroupContent::create([
-        'gid' => $exchange->id(),
-        // $exchange->getGroupType()->getContentPlugin('group_membership')->getContentTypeConfigId()
-        'type' => 'exchange-group_membership',
-        'entity_id' => $account->id(),
-      ])->save();
+  // Put every other user users in the default exchanges.
+  foreach (User::loadMultiple() as $id => $account) {
+    if ($id > 1){
+      $exchange->addContent($account, 'group_membership');
     }
   }
   drupal_set_message(t('All other users have joined the default exchange'));
@@ -67,22 +61,22 @@ function mcapi_exchanges_install() {
 function mcapi_exchanges_uninstall() {
   $configs = [
     'field.storage.group.active',
-    'group.role.exchange-group_admin',
-    'group.role.exchange-pending',
-    'group.role.exchange-anonymous',
-    'group.role.exchange-trader',
-    'group.role.exchange-outsider',
-    'group.role.exchange-member',
-    'group.type.exchange',
     'core.entity_form_display.group_content.exchange-group_membership.default',
-    'field.field.group.exchange.active',
-    'field.field.group.exchange.currencies',
     'field.field.group_content.exchange-group_membership.group_roles',
     'field.storage.group.currencies',
-    'group.content_type.exchange-group_membership'
+    'group.%',
+    '%group.exchange%'
   ];
-  foreach ($configs as $config) {
-    if ($loaded = \Drupal::ConfigFactory()->getEditable($config)) $loaded->delete();
+  foreach ($configs as $name) {
+    db_delete('config')->condition('name', $name, 'LIKE')->execute();
   }
 
+}
+
+function mcapi_exchanges_modules_installed($modules) {
+
+  // This didn't work in hook_install.
+  if ($view = View::load('mcapi_transactions')) {
+    $view->delete();
+  }
 }

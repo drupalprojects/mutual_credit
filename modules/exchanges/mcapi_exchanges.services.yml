@@ -4,3 +4,8 @@ services:
     arguments: [@config.factory]
     tags:
      - { name: event_subscriber }
+  mcapi_exchanges.exchange_context:
+    class: 'Drupal\mcapi_exchanges\Context\ExchangeContext'
+    arguments: ['@current_user', '@group.membership_loader', '@current_route_match']
+    tags:
+      - { name: 'context_provider' }

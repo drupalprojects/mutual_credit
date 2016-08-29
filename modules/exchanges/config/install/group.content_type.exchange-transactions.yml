@@ -1,0 +1,18 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - group.type.exchange
+id: exchange-transactions
+label: 'Exchange: Transactions'
+description: 'Adds transactions to groups.'
+group_type: exchange
+content_plugin: transactions
+plugin_config:
+  group_cardinality: 1
+  entity_cardinality: 1
+  info_text:
+    value: '<p>Please fill out any available fields to describe the relation between the content and the group.</p>'
+    format: plain_text
+  group_type_id: exchange
+

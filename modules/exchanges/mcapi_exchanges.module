@@ -4,10 +4,11 @@
  * @file
  * Hooks for mcapi_exchanges.module
  */
-use Drupal\views\Entity\View;
 use Drupal\mcapi_exchanges\Exchanges;
-use Drupal\Core\Form\FormStateInterface;
+use Drupal\group\Entity\GroupContent;
+use Drupal\Core\Link;
 use Drupal\Core\Url;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 
 /**
@@ -20,6 +21,7 @@ use Drupal\Core\Entity\ContentEntityInterface;
 function mcapi_exchanges_entity_type_alter(array &$entity_types) {
   $path = 'Drupal\mcapi_exchanges\Overrides\\';
   $entity_types['mcapi_currency']->setListbuilderClass($path.'CurrencyListBuilderExchanges');
+  $entity_types['mcapi_currency']->setAccessClass($path.'ExchangeCurrencyAccessControlHandler');
   if (mcapi_exchanges_segregated()) {
     $entity_types['user']->setFormClass('register', $path.'ExchangeUserRegisterForm');
   }
@@ -50,9 +52,11 @@ function mcapi_exchanges_entity_type_alter(array &$entity_types) {
  *
  * @param array $definitions
  */
-function mcapi_exchanges_menu_links_discovered_alter(&$definitions) {
+function mcapi_exchanges_menu_links_discovered_alter(&$links) {
+  unset($links['devel_generate.mcapi_transaction']);
   //unset($items['mcapi.exchange.masspay']);
 }
+
 
 /**
  * Implements hook_menu_local_tasks_alter();
@@ -67,19 +71,19 @@ function mcapi_exchanges_local_tasks_alter(&$definitions) {
  */
 function mcapi_exchanges_entity_extra_field_info() {
   $extra['group']['exchange']['display'] = [
-    'members_link' => [
-      'label' => t('Link to members'),
-      'description' => t('People involved in the exchange'),
-      'weight' => 1,
-    ],
-    'transactions_link' => [
-      'label' => t('link to transactions'),
-      'description' => t('Transactions governed by the exchange'),
-      'weight' => 1,
-    ],
-    'trade_stats' => [
-      'label' => t('Trading stats'),
-      'description' => t('A short table of trading stats per currency'),
+//    'members_link' => [
+//      'label' => t('Link to members'),
+//      'description' => t('People involved in the exchange'),
+//      'weight' => 1,
+//    ],
+//    'transactions_link' => [
+//      'label' => t('link to transactions'),
+//      'description' => t('Transactions governed by the exchange'),
+//      'weight' => 1,
+//    ],
+    'currencies' => [
+      'label' => t('Currencies'),
+      'description' => t('A list of currencies available to the group'),
       'weight' => 1,
     ]
   ];
@@ -94,38 +98,40 @@ function mcapi_exchanges_entity_extra_field_info() {
  * @todo access control on these components
  */
 function mcapi_exchanges_group_view(&$build, $entity, $display) {
-  if ($info = $display->getComponent('members_link')) {
-    $build['members_link'] = [
-      '#type' => 'link',
-      '#title' => t('Show @count members', ['@count'=> count(Exchanges::memberIds($entity))]),
-      '#url' => Url::fromUri('base://group/' . $entity->id() . '/members', []),
-      //maybe instead put a view with the last five members here
-      '#options' => [
-        'attributes' => ['title' => "This view doesn't exist yet @todotim"]
-      ],
-      '#weight' => $info['weight']
-    ];
-  }
-  if ($info = $display->getComponent('transactions_link')) {
-    $transaction_ids = Exchanges::contentIds($entity, 'mcapi_transaction');
-    $build['transactions_link'] = [
-      '#type' => 'link',
-      '#title' => t('Show @count transactions', ['@count' => count($transaction_ids)]),
-      '#url' => Url::fromUri('base://exchange/' . $entity->id() . '/transactions', []),
-      //@todo maybe instead put a view with the last five members here
-      '#options' => [
-        'attributes' => ['title' => "This view doesn't exist yet @todotim"]
-      ],
-      '#weight' => $info['weight']
-    ];
-  }
-  if ($info = $display->getComponent('trade_stats')) {
-    //todo consider doing this with views and new view fields
-    $build['trade_stats'] = [
-      '#theme' => 'exchange_trade_stats',
+//  if ($info = $display->getComponent('members_link')) {
+//    $build['members_link'] = [
+//      '#type' => 'link',
+//      '#title' => t('Show @count members', ['@count'=> count(Exchanges::memberIds($entity))]),
+//      '#url' => Url::fromUri('base://group/' . $entity->id() . '/members', []),
+//      //maybe instead put a view with the last five members here
+//      '#options' => [
+//        'attributes' => ['title' => "This view doesn't exist yet @todotim"]
+//      ],
+//      '#weight' => $info['weight']
+//    ];
+//  }
+//  if ($info = $display->getComponent('transactions_link')) {
+//    $transaction_ids = Exchanges::contentIds($entity, 'mcapi_transaction');
+//    $build['transactions_link'] = [
+//      '#type' => 'link',
+//      '#title' => t('Show @count transactions', ['@count' => count($transaction_ids)]),
+//      '#url' => Url::fromUri('base://exchange/' . $entity->id() . '/transactions', []),
+//      //@todo maybe instead put a view with the last five members here
+//      '#options' => [
+//        'attributes' => ['title' => "This view doesn't exist yet @todotim"]
+//      ],
+//      '#weight' => $info['weight']
+//    ];
+//  }
+  if ($info = $display->getComponent('currencies')) {
+    // Could do with a wrapper
+    $build['currencies'] = [
+      '#theme' => 'currencies',
       '#weight' => $info['weight'],
-      '#exchange' => $entity,
-      '#currencies' => $entity->currencies->referencedEntities()
+      '#currencies' => $entity->currencies->referencedEntities(),
+      '#cache' =>[
+        'contexts' => ['user', 'group']
+      ]
     ];
   }
 }
@@ -194,6 +200,10 @@ function mcapi_exchanges_theme() {
         'exchange' => NULL,
         'currencies' => []
       ]
+    ],
+    'currencies' => [
+      'template' => 'currencies',
+      'render element' => 'element'
     ]
   ];
 }
@@ -214,6 +224,22 @@ function template_preprocess_exchange_trade_stats(&$vars) {
   //could mention whether it is exclusive to the given exchange (local) or used by others (shared)
   //number of different traders
   //volume by month
+}
+
+/**
+ * default theme preprocessor for 'currencies'
+ */
+function template_preprocess_currencies(&$vars) {
+  foreach ($vars['element']['#currencies'] as $id => $curr) {
+    $vars['rows'][$id]['name'] = $curr->name;
+    $vars['rows'][$id]['volume'] = $curr->format(99);
+    if (\Drupal::entityTypeManager()->getAccessControlHandler('mcapi_currency')->access($curr, 'update')) {
+      $vars['rows'][$id]['edit'] = Link::fromTextAndUrl(
+        t('Edit'),
+        Url::fromRoute('entity.mcapi_currency.edit_form', ['mcapi_currency' => $curr->id])
+      );
+    }
+  }
 }
 
 function mcapi_exchange_mail($key, &$message, $params) {
@@ -259,10 +285,9 @@ function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $
  */
 function mcapi_exchanges_query_whichWallets_alter(\Drupal\Core\Database\Driver\mysql\Select $query) {
   $account = \Drupal::currentUser();
-  $exchanges = Exchanges::userInExchanges($account);
+  $exchange_ids = Exchanges::memberOf($account);
 
-  if ($exchanges and $wids = Exchanges::walletsInExchange(array_keys($exchanges))) {
-    //echo 'mcapi_exchanges_query_whichWallets_alter';print_r($wids);
+  if ($exchange_ids and $wids = Exchanges::walletsInExchange($exchange_ids)) {
     $query->condition('w.wid', $wids, 'IN');
   }
   else {
@@ -307,8 +332,8 @@ function __mcapi_exchanges_form_first_party_editform_alter(&$form, FormStateInte
 
 
   $exchanges = \Drupal::currentUser()->hasPermission('manage mcapi') ?
-    Exchange::loadMultiple() :
-    Exchange::loadMultiple();
+    Group::loadMultiple() :
+    Group::loadMultiple();
   debug('Exchanges field needs to be limited to only the exchanges of which the current user is a member ', 'warning');
     /* transaction forms might go in exchange groups? */
   foreach ($exchanges as $id => $entity) {
@@ -365,11 +390,30 @@ function mcapi_exchanges_segregated() {
 function mcapi_exchanges_default_currency_id(ContentEntityInterface $exchange, $field_definition) {
   $output = [];
   // Default currencies for the currency field are all the currencies of the exchanges of which the current user is a member.
-  if ($exchanges = Exchanges::memberOf(NULL, TRUE)) {
-    foreach (Exchanges::exchangeCurrencies($exchanges) as $currency) {
-      $output[] = $currency->id();
-    }
+  if ($exchange_ids = Exchanges::memberOf()) {
+    $exchanges = \Drupal\group\Entity\Group::loadMultiple($exchange_ids);
+    $output = array_keys(Exchanges::exchangeCurrencies($exchanges));
   }
   return $output;
 }
 
+/**
+ * Implements hook_group_content_insert().
+ *
+ * Ensures that transaction children are added to the group as well.
+ *
+ * @note this would lead to one level of recursion!
+ */
+function mcapi_exchanges_group_content_insert(GroupContent $content) {
+  $entity = $content->getEntity();
+  if ($entity instanceof Drupal\mcapi\Entity\Transaction) {
+    foreach ($entity->children as $tx) {
+      $props = [
+        'gid' => $content->getGroup()->id(),
+        'type' => 'exchange-transactions',
+        'entity_id' => $tx->id(),
+      ];
+      GroupContent::create($props)->save();
+    }
+  }
+}

@@ -22,7 +22,7 @@ class Exchange extends FilterPluginBase {
   public function query($use_groupby = FALSE) {
 
     $table = $this->ensureMyTable();
-    $this->query->addWhere(0, "$table.exchange", array_keys(Exchanges::memberOf(NULL, TRUE)));
+    $this->query->addWhere(0, "$table.exchange", array_keys(Exchanges::memberOf()));
   }
 
   /**

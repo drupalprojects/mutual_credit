@@ -29,6 +29,8 @@ class ExchangeAccessControlHandler extends GroupAccessControlHandler {
 
         case 'delete':
           // An exchange with transactions simply cannot be deleted.
+          drupal_set_message('Skipped checking whether transactions can be deleted. See https://www.drupal.org/node/2764929');
+          return GroupAccessResult::forbidden();
           return GroupAccessResult::forbiddenIf($entity->getContent('transactions'));
       }
       return AccessResult::neutral();

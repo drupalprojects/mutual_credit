@@ -37,7 +37,6 @@ class ExchangeId extends ArgumentDefaultPluginBase implements CacheableDependenc
   public function getArgument() {
     // The exchange ID of the current user
     $ids = Exchanges::memberOf();
-    dsm($ids);
     return implode('+', $ids);
   }
 

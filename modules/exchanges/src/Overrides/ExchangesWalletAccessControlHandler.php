@@ -38,8 +38,8 @@ class ExchangesWalletAccessControlHandler extends WalletAccessControlHandler {
       drupal_set_message("Deciding for special case...");
       $user = User::load($account->id());
       // Grant access if the $account shares an exchange with wallet's owner.
-      $user_is_in = Exchanges::memberOf($user, TRUE);
-      $wallet_is_in = Exchanges::memberOf($entity->getOwner(), TRUE);
+      $user_is_in = Exchanges::memberOf($user);
+      $wallet_is_in = Exchanges::memberOf($entity->getOwner());
       // Check that the current user is the same exchange as the wallet.
       if (array_intersect_key($user_is_in, $wallet_is_in)) {
         return $result->allowed()->cachePerUser();

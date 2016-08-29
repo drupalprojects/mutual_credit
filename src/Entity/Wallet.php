@@ -152,13 +152,13 @@ class Wallet extends ContentEntityBase implements WalletInterface {
         $payees[] = $this->getOwner();
         $payees = array_unique($payees);
         $this->payees->setValue($payees);
-        drupal_set_message(t('Allowing owner of @type to be a payee', ['@type' => $this->holder_entity_type->value]));
+        drupal_set_message(t("Allowing owner of @type to be a payee for the @type's wallet", ['@type' => $this->holder_entity_type->value]));
       }
       if (in_array($this->payways->value, [Wallet::PAYWAY_ANYONE_IN, Wallet::PAYWAY_ANYONE_BI])) {
         $payers = $this->payers->referencedEntities();
         $payers[] = $this->getOwner();
         $this->payers->setValue($payers);
-        drupal_set_message(t('Allowing owner of @type to be a payer', ['@type' => $this->holder_entity_type->value]));
+        drupal_set_message(t("Allowing owner of @type to be a payer for the @type's wallet", ['@type' => $this->holder_entity_type->value]));
       }
     }
   }

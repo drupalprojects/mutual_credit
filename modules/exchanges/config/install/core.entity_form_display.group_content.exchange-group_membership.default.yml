@@ -1,5 +1,4 @@
 #this is needed otherwise group_roles field is hidden by default
-uuid: 9e1333e2-e08a-4e96-a24c-08d004665aaa
 langcode: en
 status: true
 dependencies:

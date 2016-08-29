@@ -2,7 +2,6 @@
 
 namespace Drupal\mcapi_exchanges\Routing;
 
-use Drupal\views\Entity\View;
 use Drupal\Core\Routing\RouteSubscriberBase;
 use Drupal\Core\Routing\RoutingEvents;
 use Symfony\Component\Routing\RouteCollection;
@@ -10,7 +9,7 @@ use Symfony\Component\Routing\RouteCollection;
 /**
  * Because the transaction collection is also the field ui base route, and
  * because views provides a superior listing to the entity's official
- * list_builder, this alters that view's route to comply with the entity.
+ * list_builder, this alters that view's route to the entity collection route.
  */
 class RouteSubscriber extends RouteSubscriberBase {
 
@@ -21,10 +20,10 @@ class RouteSubscriber extends RouteSubscriberBase {
     if (mcapi_exchanges_segregated()) {
       $collection->get('user.register')->setPath('user/register/{group}');
     }
-
-    if ($transaction_list = $collection->get('view.mcapi_exchange_transactions.admin')) {
+    if ($transaction_list = $collection->get('view.mcapi_exchange_transactions.admin_collection')) {
       $collection->add('mcapi.transactions.collection', $transaction_list);
-      $collection->remove('mcapi.mcapi_exchange_transactions.admin');
+      // Can't remove this because the view is creating a link for it.
+      $collection->remove('view.mcapi_exchange_transactions.admin_collection');
     }
 
   }
