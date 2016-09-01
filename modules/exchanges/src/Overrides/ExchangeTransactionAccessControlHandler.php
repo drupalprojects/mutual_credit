@@ -35,7 +35,6 @@ class ExchangeTransactionAccessControlHandler extends TransactionAccessControlHa
         }
       }
     }
-    print_r($result);die();
     return $result;
   }
 

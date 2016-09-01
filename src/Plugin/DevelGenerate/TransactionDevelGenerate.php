@@ -247,7 +247,6 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * @note this may attempt to send a email for pending transactions.
    */
   public function develGenerateTransactionAdd(&$values) {
-\Drupal::logger('groupcontent')->notice('Creating transaction');
     $values += ['conditions' => []];
     list($w1, $w2) = $this->get2RandWalletIds($values['conditions']);
     if (!$w2) {
@@ -268,13 +267,15 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     $payee_currencies = Wallet::load($props['payee'])->currenciesAvailable();
 
     $curr_ids = array_intersect_key($payer_currencies, $payee_currencies);
+    if (!$curr_ids) {
+      // Fail silently.
+      return;
+    }
     $currency = $curr_ids[array_rand($curr_ids)];
     $props['worth'] = [
       'curr_id' => $currency->id(),
       'value' => $currency->sampleValue()
     ];
-
-\Drupal::logger('groupcontent')->notice(print_r($props, 1));
     $transaction = Transaction::create($props);
     // We're not using generateExampleData here because it makes a mess.
     // But that means we might miss other fields on the transaction.

@@ -137,23 +137,20 @@ class ExchangeGenerate extends GroupDevelGenerate implements ContainerFactoryPlu
    */
   protected function generateBatchContent($values) {
     $this->currencies = Currency::loadMultiple();
-    // Add the kill operation.
-    $operations[] = ['devel_generate_operation', [$this, 'groupsKill', $values]];
-
-    for ($num = 0; $num < $values['num']; $num++) {
-      $operations[] = ['devel_generate_operation', [$this,'batchContentAddExchange', $values]];
-    }
-
-    // Start the batch.
     $batch = [
       'title' => $this->t('Generating Exchanges'),
-      'operations' => $operations,
       'finished' => 'devel_generate_batch_finished',
       'file' => drupal_get_path('module', 'devel_generate') . '/devel_generate.batch.inc',
       'results' => [
         'num' => 0,
       ],
     ];
+    // Add the kill operation.
+    $batch['operations'][] = ['devel_generate_operation', [$this, 'groupsKill', $values]];
+
+    for ($num = 0; $num < $values['num']; $num++) {
+      $batch['operations'][] = ['devel_generate_operation', [$this,'batchContentAddExchange', $values]];
+    }
     batch_set($batch);
   }
 
@@ -198,10 +195,7 @@ class ExchangeGenerate extends GroupDevelGenerate implements ContainerFactoryPlu
    */
   protected function addExchange($values) {
     // Allow any user to be a group owner.
-    $values['role'] = 'authenticated';
-    $values['label_length'] = 2;
     // Force the group generator to populate the group.
-    $values['exchange']['group_membership'] = 'group_membership';
     $currencies = $cids = [];
     if (!isset($values['currency_name'])) {
       $random = new \Drupal\Component\Utility\Random();
@@ -226,6 +220,10 @@ class ExchangeGenerate extends GroupDevelGenerate implements ContainerFactoryPlu
     $currencies[] = $currency;
     $cids[] = $id;
 
+    $values['label_length'] = 2;
+    $values['group_types'] = ['exchange'];
+    $values['role'] = 'authenticated';
+
     parent::addGroup($values);
 
     // Recover the exchange for some final alterations.
@@ -241,48 +239,6 @@ class ExchangeGenerate extends GroupDevelGenerate implements ContainerFactoryPlu
     $exids = \Drupal::entityQuery('group')->range(0, 1)->sort('id', 'DESC')->execute();
     return Group::load(reset($exids));
   }
-
-  /**
-   * Create some transactions using wallets in a group and relate them to the
-   * group.
-   *
-   * @param \Drupal\group\Entity\Group $group
-   * @param int $num
-   *
-   * @todo move this to content generator
-   * @note transactions should mostly be created between members of the same groups so this should run AFTER existing members have been assigned to groups.
-   */
-//  private function generateTransactions(Group $group, $num) {
-//    //Make a transaction using any two wallets in the group.
-//    $rand = floor($num/4) + rand(0, ceil($num*1.5));
-//    $wids = Exchanges::walletsInExchange([$group->id()]);
-//    if (count($wids) < 2) {
-//      throw new \Exception('Not enough wallets in group '.$group->label());
-//    }
-//    $args = [
-//      'kill' => FALSE,
-//      'num' => $rand ,
-//      'type' => 'default',
-//      'conditions' => ['wid' => $wids],
-//      'curr_id' => $group->currencies->getValue()[0]['target_id']
-//    ];
-//    $this->develGenerator->createInstance('mcapi_transaction')
-//    ->generateElements($args);
-//
-//    // These new transactions aren't returned, so we have to identify them by
-//    // getting the latest $rand transactions
-//    $xids = \Drupal::entityQuery('mcapi_transaction')
-//      ->sort('serial', 'desc')
-//      ->range(0, $rand)->execute();
-//    foreach ($xids as $xid) {
-//      $props = [
-//        'gid' => $group->id(),
-//        'type' => 'exchange-transactions',//should be exchange-group_membership
-//        'entity_id' => $xid,
-//      ];
-//      GroupContent::create($props)->save();
-//    }
-//  }
 
   /**
    * Get names and currency names for each of 9 exchanges.

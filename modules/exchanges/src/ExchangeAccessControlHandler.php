@@ -2,12 +2,12 @@
 
 namespace Drupal\mcapi_exchanges;
 
+use Drupal\mcapi_exchanges\Exchanges;
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\EntityAccessControlHandler;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessResult;
 use Drupal\user\Entity\User;
-use Drupal\mcapi_exchanges\Entity\Exchange;
 
 /**
  * Defines an access controller option for the mcapi_wallet entity.
@@ -19,33 +19,47 @@ class ExchangeAccessControlHandler extends EntityAccessControlHandler {
    */
   public function checkAccess(GroupInterface $exchange, $op, AccountInterface $account) {
 
-    $manager = $exchange->getOwnerId() == $account->id();
-    // can't delete undeletable exchanges.
-    if ($op == 'delete' && !Exchange::deletable($exchange)) {
-      $result = AccessResult::forbidden();
-      $result;
+    // Only exchanges with no members wallets, and no intertrading transactions
+    // can be deleted.
+    if ($op == 'delete') {
+      $wid = Exchanges::getIntertradingWalletId($exchange);
+      if (count(Wallet::load($wid)->history()) || Mcapi::walletsOf($exchange)) {
+        $result = AccessResult::forbidden();
+      }
+      else {
+        $result = AccessResult::allowed();
+      }
+      // Hard to cache this
+      return $result;
     }
+
     // Site admins can do anything.
-    elseif ($account->hasPermission('manage mcapi') || $manager) {
+    if ($account->hasPermission('manage mcapi') || $exchange->getOwnerId() == $account->id()) {
       $result = AccessResult::allowed();
-      $result->cachePerUser();
+    }
+    elseif(0) {
+      // @todo the $account has admin permission of the group.
+      // @note the api function isn't in the group module yet (Sept '16)
     }
     elseif ($op == 'view') {
       $visib = $exchange->get('visibility')->value;
-      if (
-        $visib == Exchange::VISIBILITY_TRANSPARENT ||
-        ($visib == Exchange::VISIBILITY_RESTRICTED && $account->id()) ||
-        //@todo
-        ($visib == Exchange::VISIBILITY_PRIVATE && Exchange::hasMember($exchange, User::load($account->id())))
-        ) {
-        $result = AccessResult::allowed();
+      switch($exchange->get('visibility')->value) {
+        case Exchange::VISIBILITY_TRANSPARENT:
+          $result = AccessResult::allowed();
+          break;
+        case Exchange::VISIBILITY_RESTRICTED:
+          $result = AccessResult::allowedIf($account->isAuthenticated());
+          break;
+        case Exchange::VISIBILITY_PRIVATE:
+          //allow if the theuser is a member of the given group.
+          $mem = \Drupal::service('group.membership_loader')->load($exchange, User::load($account->id()));
+          $result = AccessResult::allowedIf((bool)$mem);
+          break;
+        default:
+          $result = AccessResult::forbidden();
       }
-      else {
-        $result = AccessResult::forbidden();
-      }
-      $result->cachePerUser();
     }
-    return $result->cacheUntilEntityChanges($exchange);
+    return $result->cachePerUser()->cacheUntilEntityChanges($exchange);
   }
 
 }

@@ -96,12 +96,12 @@ class ExchangeContext implements ContextProviderInterface {
     }
     // By now only user 1 should be left
     // Try to get a group context from the route.
-    if (($group = $this->currentRouteMatch->getParameter('group'))) {
+    if (($group = $this->routeMatch->getParameter('group'))) {
       if ($group instanceof GroupInterface && $group->type->target_id == 'exchange' ) {
         return $group;
       }
     }
-
+    drupal_set_message(t('The current user is not in any exchanges.'), 'warning');
     return NULL;
   }
 

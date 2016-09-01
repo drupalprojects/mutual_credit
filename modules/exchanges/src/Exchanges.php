@@ -5,7 +5,7 @@ namespace Drupal\mcapi_exchanges;
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Exchange;
 use Drupal\group\Entity\Group;
-use Drupal\group\Entity\GroupInterface;
+use Drupal\group\Entity\GroupContent;
 use Drupal\user\Entity\User;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\user\EntityOwnerInterface;
@@ -35,15 +35,15 @@ class Exchanges extends Exchange {
     if (is_null($entity)) {
       $entity = User::load(\Drupal::currentUser()->id());
     }
-    $exchanges = [];
+    $exchange_ids = [];
     //@todo refactor this @see
     foreach (\Drupal::service('group.membership_loader')->loadByUser($entity) as $mem) {
       $group = $mem->getGroup();
       if ($group->getGroupType()->id() == 'exchange') {
-        $exchanges[] = $group->id();
+        $exchange_ids[] = $group->id();
       }
     }
-    return $exchanges;
+    return $exchange_ids;
   }
 
   /**
@@ -79,7 +79,6 @@ class Exchanges extends Exchange {
   public static function exchangeCurrencies(array $exchanges) {
     $currencies = [];
     foreach ($exchanges as $exchange) {
-    if (!$exchange->currencies){mtrace();}
       foreach ($exchange->currencies->referencedEntities() as $currency) {
         $currencies[$currency->id()] = $currency;
       }
@@ -100,14 +99,16 @@ class Exchanges extends Exchange {
    *   Keyed by currency ID.
    */
   public static function currenciesAvailableToUser(AccountInterface $account = NULL) {
-    $exchange_ids = SELF::memberOf($account);
-    if (empty($exchanges)) {
-      drupal_set_message(t('%name is not in any exchanges', ['%name' => $account->getAccountName()]), 'error');
-      $exchange_ids = \Drupal::entityQuery('group')->condition('type', 'exchange')->execute();
+    if (!$account) {
+      $account = \Drupal::currentUser();
     }
+    $exchange_ids = static::memberOf($account);
+//    if (empty($exchanges)) {
+//      drupal_set_message(t('%name is not in any exchanges', ['%name' => $account->getAccountName()]), 'error');
+//      $exchanges  = Exchange::loadMultiple();
+//    }
     return Self::exchangeCurrencies(Group::loadMultiple($exchange_ids));
   }
-
 
   /**
    * Get all the currency ids for one or more exchanges.
@@ -163,7 +164,7 @@ class Exchanges extends Exchange {
   }
 
   /**
-   * Get all the wallets whose holders are members of a given exchange.
+   * Get all the wallets whose holders are members of the given exchange(s).
    *
    * This is where things get ugly but we've saved having to maintain a field
    * showing what wallets are in what exchanges
@@ -175,45 +176,25 @@ class Exchanges extends Exchange {
    *   All the wallet ids in the given exchanges.
    *
    * @todo clarify and document whether this includes intertrading wallets. probably does
+   * @todo this is pretty intensive and would benefit from caching and using sparingly
    */
-  public static function walletsInExchange(array $exids) {
+  public static function walletsInExchanges(array $exids) {
     drupal_set_message('how to get members AND content for a group?');
-    $memberships = [];
-    foreach ($exids as $group_id) {
-      $memberships = array_merge(
-        $memberships,
-        \Drupal::service('group.membership_loader')->loadByGroup(Group::load($group_id))
-      );
+    $holders = [];
+
+    foreach (Group::loadMultiple($exids) as $exchange) {
+      $group_content_ids = \Drupal::entityQuery('group_content')->condition('gid', $exchange->id())->execute();
+      foreach (GroupContent::loadMultiple($group_content_ids) as $item) {
+        $entity = $item->getEntity();
+        $holders[$entity->getEntityTypeId()][$entity->id()] = $entity->id();//users doesn't cover nodes.
+      }
     }
-    foreach ($memberships as $ship) {
-      $holders['user'][] = $ship->getUser()->id();//users doesn't cover nodes.
+    if (empty($holders)) {
+      \Drupal::logger('exchanges')->warning('No content found in exchange(s) %ids', ['%ids' => implode(', ', $exids)]);
+      return [];
     }
-    // Not very elegant
-    $holders['user'] = array_unique($holders['user']);
     //now get all the wallets held by these Entities.
     return Mcapi::walletsOfHolders($holders);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function deletable() {
-    if ($this->get('status')->value) {
-      $this->reason = t('Exchange must be disabled');
-      return FALSE;
-    }
-    $wid = SELF::getIntertradingWalletId();
-    if (count(Wallet::load($wid)->history())) {
-      $this->reason = t('Exchange intertrading wallet has transactions');
-      return FALSE;
-    }
-    // If the exchange has wallets, even orphaned wallets, it can't be deleted.
-    $wallet_ids = Mcapi::walletsOf($this);
-    if (count($wallet_ids)) {
-      $this->reason = t('The exchange still owns wallets: @nums', ['@nums' => implode(', ', $wallet_ids)]);
-      return FALSE;
-    }
-    return TRUE;
   }
 
   /**
@@ -223,109 +204,7 @@ class Exchanges extends Exchange {
     return \Drupal::entityQuery('mcapi_wallet')
       ->condition('payways', Wallet::PAYWAY_AUTO)
       ->condition('holder_entity_id', $group->id())
-      ->result();
-//    $wallets = $this->entityTypeManager()
-//      ->getStorage('mcapi_wallet')
-//      ->loadByProperties(['payways' => Wallet::PAYWAY_AUTO, 'holder_entity_id' => $group->id()]);
-//    return reset($wallets);
+      ->execute();
   }
 
-  /**
-   * Find out whether the exchange group can be deactivated.
-   *
-   * @param GroupInterface $group
-   *   The 'exchange' group we are testing for
-   *
-   * @return bool
-   *   TRUE if the exchange is active.
-   *
-   * @todo refactor this.
-   */
-  public static function deactivatable(GroupInterface $exchange) {
-    return (bool)$exchange->active->value;
-  }
-
-  /**
-   * Reverse lookup to see if a given user is a member of this exchange.
-   *
-   * @param GroupInterface $group
-   *   The 'exchange' group we are testing for
-   * @param AccountInterface $account
-   *   The user who may be in the exchange
-   *
-   * @return bool
-   *   TRUE if the account is in the group
-   *
-   * @todo rewrite if needed
-   */
-  public static function hasMember(GroupInterface $exchange, AccountInterface $account) {
-    return (bool) \Drupal::service('group.membership_loader')->load($exchange, $account);
-  }
-
-  /**
-   * Get all the members of an exchange.
-   *
-   * @param GroupInterface $group
-   *   The 'exchange' group we are testing for.
-   *
-   * @return integer[]
-   *   The users who are in the group.
-   */
-  public static function memberIds(GroupInterface $group) {
-    foreach (\Drupal::service('group.membership_loader')->loadByGroup($group) as $membership) {
-      $users[] = $membership->getuser($membership);
-    }
-    return $users;
-  }
-
-
-  /**
-   * Get all content of a given bundle in an exchange.
-   *
-   * @param GroupInterface $group
-   *   The 'exchange' group we are testing for.
-   * @param string $entity_type_id
-   *   The name of the entity we are counting.
-   * @param GroupInterface $bundle
-   *   The name of the bundle we are counting.
-   *
-   * @return array[]
-   *   Arrays of entity ids, keyed by bundle
-   *
-   * @todo
-   */
-  public static function contentIds(GroupInterface $group, $entity_type_id, $bundle = NULL) {
-    drupal_set_message('unable to get content ids yet');
-    return [$entity_type_id => [1]];
-
-    foreach (\Drupal::service('group.membership_loader')->loadByGroup($group) as $membership) {
-      $content[$entity_type_id] = $membership->getuser($membership);
-    }
-    return $content;
-  }
-
-
-  /**
-   * Get the number of transactions which happened in an exchange.
-   *
-   * @param GroupInterface $group
-   *   The 'exchange' group we are testing for.
-   * @param array $conditions
-   *   Conditions for the transaction entityQuery.
-   *
-   * @return integer
-   *   The number of transactions, by serial, in the exchange.
-   */
-  public static function transactionCount(GroupInterface $group, array $conditions = []) {
-
-    $wallets = Exchanges::walletsInExchange([$group->id()]);
-    $query = \Drupal::entityQuery('mcapi_transaction')
-      ->condition('involving', $wallets);
-    foreach ($conditions as $field => $val) {
-      $operator = is_array($val) ? 'IN' : '=';
-      $query->condition($field, $val, $operator);
-    }
-    $serials = $query->execute();
-    return count(array_unique($serials));
-  }
 }

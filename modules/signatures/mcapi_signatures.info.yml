@@ -7,3 +7,5 @@ type: module
 
 dependencies:
   - mcapi
+  #workaround requires views otherwise the optional config doesn't install when this is part of an installation profile
+  - views

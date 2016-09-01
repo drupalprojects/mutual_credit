@@ -7,6 +7,8 @@ use Drupal\mcapi_exchanges\Exchanges;
 use Drupal\mcapi\Plugin\DevelGenerate\TransactionDevelGenerate;
 use Drupal\group\Entity\GroupContent;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Database\Connection;
+use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Entity\EntityStorageInterface;
 
 /**
@@ -33,7 +35,24 @@ class ExchangeTransactionDevelGenerate extends TransactionDevelGenerate {
    */
   protected $exids;
 
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityStorageInterface $transaction_storage, $database, $entity_query) {
+  /**
+   * Constructor.
+   *
+   * @param array $configuration
+   *   A configuration array containing information about the plugin instance.
+   * @param string $plugin_id
+   *   The plugin ID for the plugin instance.
+   * @param array $plugin_definition
+   *   Definition of the plugin.
+   * @param \Drupal\Core\Entity\EntityStorageInterface $transaction_storage
+   *   The transaction storage.
+   * @param \Drupal\Core\Database\Connection
+   *   The database connection
+   * @param \Drupal\Core\Entity\Query\QueryFactory
+   *   The query Factory
+   *
+   */
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityStorageInterface $transaction_storage, Connection $database, QueryFactory $entity_query) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $transaction_storage, $database, $entity_query);
     $this->exids = $entity_query->get('group')->condition('type', 'exchange')->execute();
   }
@@ -55,13 +74,14 @@ class ExchangeTransactionDevelGenerate extends TransactionDevelGenerate {
    */
   public function develGenerateTransactionAdd(&$values) {
     parent::develGenerateTransactionAdd($values);
-    $transaction = $this->lastTransaction();
-    $props = [
-      'gid' => $this->exchange_id,
-      'type' => 'exchange-transactions',
-      'entity_id' => $transaction->id(),
-    ];
-    GroupContent::create($props)->save();
+    if ($transaction = $this->lastTransaction() ){
+      $props = [
+        'gid' => $this->exchange_id,
+        'type' => 'exchange-transactions',
+        'entity_id' => $transaction->id(),
+      ];
+      GroupContent::create($props)->save();
+    }
   }
 
   /**
@@ -75,16 +95,18 @@ class ExchangeTransactionDevelGenerate extends TransactionDevelGenerate {
    */
   public function get2RandWalletIds(array $conditions = []) {
     $this->exchange_id = $this->exids[array_rand($this->exids)];
-    $wids = Exchanges::walletsInExchange([$this->exchange_id]);
-
+    $wids = Exchanges::walletsInExchanges([$this->exchange_id]);
     shuffle($wids);
-    \Drupal::logger('mcapi')->debug(implode(', ', array_slice($wids, -2)));
+    if (count($wids) < 2) {
+      \Drupal::logger('mcapi')->warning('Only '.count($wids).' wallets in exchange: '.$this->exchange_id.': '.print_r($wids, 1));
+      return [];
+    }
     return array_slice($wids, -2);
   }
 
 
   protected function lastTransaction() {
-    $serials = $this->entityQuery->get('mcapi_transaction')
+    $serials = $this->entityQueryFactory->get('mcapi_transaction')
       ->range(0, 1)
       ->sort('serial', 'DESC')
       ->execute();

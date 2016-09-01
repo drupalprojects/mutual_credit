@@ -101,7 +101,7 @@ function mcapi_exchanges_group_view(&$build, $entity, $display) {
 //  if ($info = $display->getComponent('members_link')) {
 //    $build['members_link'] = [
 //      '#type' => 'link',
-//      '#title' => t('Show @count members', ['@count'=> count(Exchanges::memberIds($entity))]),
+//      '#title' => t('Show @count members', ['@count'=> @todo)]),
 //      '#url' => Url::fromUri('base://group/' . $entity->id() . '/members', []),
 //      //maybe instead put a view with the last five members here
 //      '#options' => [
@@ -114,7 +114,7 @@ function mcapi_exchanges_group_view(&$build, $entity, $display) {
 //    $transaction_ids = Exchanges::contentIds($entity, 'mcapi_transaction');
 //    $build['transactions_link'] = [
 //      '#type' => 'link',
-//      '#title' => t('Show @count transactions', ['@count' => count($transaction_ids)]),
+//      '#title' => t('Show @count transactions', ['@count' => @todo]),
 //      '#url' => Url::fromUri('base://exchange/' . $entity->id() . '/transactions', []),
 //      //@todo maybe instead put a view with the last five members here
 //      '#options' => [
@@ -287,7 +287,7 @@ function mcapi_exchanges_query_whichWallets_alter(\Drupal\Core\Database\Driver\m
   $account = \Drupal::currentUser();
   $exchange_ids = Exchanges::memberOf($account);
 
-  if ($exchange_ids and $wids = Exchanges::walletsInExchange($exchange_ids)) {
+  if ($exchange_ids and $wids = Exchanges::walletsInExchanges($exchange_ids)) {
     $query->condition('w.wid', $wids, 'IN');
   }
   else {
