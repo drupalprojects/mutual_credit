@@ -22,11 +22,13 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
    * {@inheritdoc}
    */
   public function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = NULL) {
-    // Creating transactions is simply a matter of being allowed to pay in and
-    // out of at least 1 wallet.
-    return Mcapi::enoughWallets($account->id()) ?
-      AccessResult::Allowed()->cachePerUser() :
-      AccessResult::Forbidden()->cachePerUser();
+    $wids = \Drupal::entityQuery('mcapi_wallet')
+      ->condition('holder_entity_type',  'user')
+      ->condition('holder_entity_id',  $account->id())
+      ->execute();
+    return  $wids ?
+      AccessResult::Allowed()->addCacheableDependency($account) :
+      AccessResult::Forbidden()->addCacheableDependency($account);
   }
 
   /**

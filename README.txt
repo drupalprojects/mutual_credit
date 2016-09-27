@@ -63,35 +63,13 @@ For more ideas visit demo.communityforge.net
 
 Internal Intertrading.
 Intertrading is the name used to describe what happens when one exchange extends credit to another to facilitate payment between members of different exchanges.
-CES and hOurWorld both intertrade amongst their own exchanges. I call this internal intertrading.
-External intertrading is more complex and requires a REST API - this is another project.
-Here I describe how internal intertrading works in this module.
-Any entity which is in an exchange can own a wallet....
-The 1stparty transaction form 'partner' widget offers the user a list of currencies and a list of wallets to trade with, filtered according to whether intertrading is enabled for that form.
-It is possible, but only the most complex configurations would allow, to choose a partner wallet and currency which are not compatible.
-The transaction validation first decides which exchange is the 'source' of the transaction.
-It compares the currencies in the transaction with the currencies of all the exchanges of which the wallet holder is a member.
-If the partner wallet's parent is not in that echange, then it will try to split the transaction into 2.
-From the source wallet to the source exchange's _intertrading wallet, and a payment in a different currency from another exchanges _intertrading wallet to the destination wallet.
-So in a similar way it searches through destination wallet's exchanges to find one with an 'open' currency, that is, one with a exchange rate specified.
-If the transaction has many currencies, it will be reject if more than one currency needs to be converted - that scenario would have pushed me over the edge of sanity.
-So it should be possible for me in England to pay another friend in England in 3 currencies like this:
-1 hour
-1 virtual pound
-10 Community Coins
-and for my friend to receive:
-1 hour
-1 virtual pound
-20 Double Dinars
-But not to pay my friend in France because the system has no way of knowing that $virtual map to EURvirtual while CC maps DD.
-This could be implemented however by adding a 'type' field to the currency.
-This approach to exchange is quite complex but should work in wide range of configurations.
-An exchange can allow many currencies
-A wallet holder can be in many exchanges
-A wallet holder can hold many wallets
-A transaction can consist of many currencies
-Currencies can be confined to certain exchanges or set free.
+CES and hOurWorld both have the ability intertrade amongst their own exchanges. I call this internal intertrading.
+For simplicity's sake, internal intertrading is not possible in this module.
 
+External intertrading happens between web servers via a 3rd party web service.
+Currently the only such service available is Clearing Central, provided by CES.
+We are working on another service provisionally called the Credit Commons.
+@see http://creditcommons.net
 
 ***********************
 **  ADVANCED TIPS    **

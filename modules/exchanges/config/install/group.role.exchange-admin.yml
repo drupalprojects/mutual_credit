@@ -3,10 +3,10 @@ status: true
 dependencies:
   config:
     - group.type.exchange
-id: exchange-group_admin
-label: 'Group admin'
-weight: -99
-internal: true
+id: exchange-admin
+label: 'Administrator'
+weight: -1
+internal: false
 group_type: exchange
 permissions:
   - 'administer group'

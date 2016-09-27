@@ -119,4 +119,13 @@ interface WalletInterface extends ContentEntityInterface {
    */
   public function autoName();
 
+  /**
+   * Check whether a wallet has ever been used. i.e. whether the journal
+   * references it.
+   *
+   * @return bool
+   *   TRUE if the wallet has never been used.
+   */
+  public function isVirgin();
+
 }

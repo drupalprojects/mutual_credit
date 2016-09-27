@@ -25,23 +25,6 @@ entity.mcapi_exchange.disable_confirm:
   options:
     _admin_route: TRUE
 
-mcapi.exchange.intertrading:
-  path: '/exchange/{mcapi_exchange}/balance'
-  defaults:
-    _controller: \Drupal\mcapi_exchanges\Controller\ExchangeController::showIntertradingWallet
-    _title_callback: \Drupal\mcapi_exchanges\Controller\ExchangeController::intertradingWalletTitle
-  requirements:
-    _entity_access: 'mcapi_exchange.view'
-
-#@todo how is this being used?
-#mcapi.exchanges.dashboard:
-#  path: '/admin/accounting/dashboard'
-#  defaults:
-#    _controller: 'Drupal\mcapi_exchanges\Controller\DashboardController::page'
-#    _title: 'Dashboard'
-#  requirements:
-#    _permission: 'access administration pages'
-
 entity.mcapi_exchange.contact:
   path: '/exchange/{group}/contact'
   defaults:

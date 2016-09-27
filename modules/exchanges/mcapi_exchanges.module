@@ -134,6 +134,7 @@ function mcapi_exchanges_group_view(&$build, $entity, $display) {
       ]
     ];
   }
+
 }
 
 /**
@@ -416,4 +417,34 @@ function mcapi_exchanges_group_content_insert(GroupContent $content) {
       GroupContent::create($props)->save();
     }
   }
+}
+
+/**
+ * Implements hook_modules_installed().
+ *
+ * NB this hook doesn't fire in the .install file.
+ */
+function mcapi_exchanges_modules_installed($modules) {
+  if ($view = \Drupal::ConfigFactory()->getEditable('views.view.mcapi_transactions')) {
+    $view->delete();
+  }
+}
+
+/**
+ * Get the exchange of the current user
+ *
+ * @return \Drupal\group\GroupMembership | NULL
+ */
+function mcapi_exchanges_current_membership() {
+  static $done, $membership;
+  if (!$done) {
+    $done = TRUE;
+    foreach (\Drupal::service('group.membership_loader')->loadByUser() as $membership) {
+      if ($membership->getGroup()->getGroupType()->id() == 'exchange') {
+        break;
+      }
+      $membership = NULL;
+    }
+  }
+  return $membership;
 }

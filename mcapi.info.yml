@@ -5,7 +5,7 @@ configure: mcapi.admin
 core: 8.x
 type: module
 dependencies:
-  - system (>=8.1.0)
-  - action (>=8.1.0)
+  - system (>=8.2.0)
+  - action
 #dependency on rules is temporary
   - rules

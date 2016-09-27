@@ -2,29 +2,32 @@
 
 namespace Drupal\mcapi\Plugin\migrate\cckfield;
 
-use Drupal\migrate\Entity\MigrationInterface;
+use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate_drupal\Plugin\migrate\cckfield\CckFieldPluginBase;
 
 /**
  * @MigrateCckField(
- *   id = "worth"
+ *   id = "worth",
+ *   core = {7}
  * )
  */
 class Worth extends CckFieldPluginBase {
 
-  /**
-   * {@inheritdoc}
-   */
-  public function getFieldFormatterMap() {
-    // Only used in d6.
-    return [];
-  }
 
   /**
    * {@inheritdoc}
    */
   public function processField(MigrationInterface $migration) {
-    $process[0]['map'][$this->pluginId][$this->pluginId] = $this->pluginId;
+    $process = [
+      0 => [
+        'map' => [
+          $this->pluginId => [
+            $this->pluginId => $this->pluginId
+          ]
+        ]
+      ]
+    ];
+    print_r($process);die('WorthField::processField');
     $migration->mergeProcessOfProperty('type', $process);
   }
 
@@ -52,6 +55,21 @@ class Worth extends CckFieldPluginBase {
       ],
     ];
     $migration->mergeProcessOfProperty($field_name, $process);
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFieldWidgetMap() {
+    return [];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFieldFormatterMap() {
+    return [];
   }
 
 }

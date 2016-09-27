@@ -2,11 +2,13 @@
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\Core\Entity\ContentEntityForm;
-use Drupal\user\Entity\User;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\user\Entity\User;
+use Drupal\Core\Entity\ContentEntityForm;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -57,6 +59,8 @@ class WalletForm extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
+
+    $form['#title'] = $this->t("Edit %name wallet", ['%name' => $this->entity->label()]);
 
     $form = parent::form($form, $form_state);
 

@@ -31,21 +31,29 @@ class ExchangesWalletAccessControlHandler extends WalletAccessControlHandler {
    * {@inheritdoc}
    */
   public function checkAccess(EntityInterface $entity, $op, AccountInterface $account) {
-    drupal_set_message("Checking that the current user can $op wallet ".$entity->id());
     $result = parent::checkAccess($entity, $op, $account);
     // If the result isn't conclusive then we handle it.
     if ($result->isNeutral()) {
-      drupal_set_message("Deciding for special case...");
-      $user = User::load($account->id());
-      // Grant access if the $account shares an exchange with wallet's owner.
-      $user_is_in = Exchanges::memberOf($user);
+      $user_is_in = Exchanges::memberOf($account);
       $wallet_is_in = Exchanges::memberOf($entity->getOwner());
       // Check that the current user is the same exchange as the wallet.
-      if (array_intersect_key($user_is_in, $wallet_is_in)) {
-        return $result->allowed()->cachePerUser();
+      if ($common = array_intersect_key($user_is_in, $wallet_is_in)) {
+        switch ($op) {
+          case 'view':
+            // Grant access if the $account shares an exchange with wallet's owner.
+            $result->allowed();
+            break;
+          case 'update':
+            // Grant access if the $account has permission to edit all
+            $result->allowedIf(mcapi_exchanges_current_membership()->hasPermission('manage transactions'));
+            break;
+          case 'delete':
+            // Can only delete wallet if there are no transactions.
+            $result::allowedIf($entity->isVirgin());
+        }
       }
     }
-    return $result;
+    return $result->cachePerUser();
   }
 
 }

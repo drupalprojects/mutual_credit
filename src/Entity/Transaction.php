@@ -47,7 +47,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *     "uuid" = "uuid",
  *     "name" = "description"
  *   },
- *   field_ui_base_route = "mcapi.transactions.collection",
+ *   field_ui_base_route = "entity.mcapi_transaction.collection",
  *   translatable = FALSE,
  *   links = {
  *     "canonical" = "/transaction/{mcapi_transaction}",

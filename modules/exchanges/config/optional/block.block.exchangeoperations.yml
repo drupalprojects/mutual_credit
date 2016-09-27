@@ -1,0 +1,22 @@
+#todo move this to the theme
+langcode: en
+status: true
+dependencies:
+  module:
+    - group
+    - mcapi_exchanges
+  theme:
+    - bartik
+id: exchangeoperations
+theme: bartik
+region: sidebar_first
+weight: -5
+provider: null
+plugin: exchange_operations
+settings:
+  id: exchange_operations
+  label: 'Exchange operations'
+  provider: group
+  label_display: visible
+visibility: { }
+

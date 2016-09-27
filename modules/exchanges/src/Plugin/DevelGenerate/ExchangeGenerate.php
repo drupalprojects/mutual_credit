@@ -3,9 +3,7 @@
 namespace Drupal\mcapi_exchanges\Plugin\DevelGenerate;
 
 use Drupal\mcapi\Entity\Currency;
-use Drupal\mcapi_exchanges\Exchanges;
 use Drupal\group\Entity\Group;
-use Drupal\group\Entity\GroupContent;
 use Drupal\group\Plugin\DevelGenerate\GroupDevelGenerate;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
@@ -35,10 +33,14 @@ use Drupal\Core\Routing\UrlGeneratorInterface;
 class ExchangeGenerate extends GroupDevelGenerate implements ContainerFactoryPluginInterface {
 
   protected $develGenerator;
+  protected $groupMembershipLoader;
+  protected $logger;
 
-  public function __construct($configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entity_type_manager, ModuleHandlerInterface $module_handler, LanguageManagerInterface $language_manager, UrlGeneratorInterface $url_generator, DateFormatterInterface $date_formatter, $devel_generator) {
+  public function __construct($configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entity_type_manager, ModuleHandlerInterface $module_handler, LanguageManagerInterface $language_manager, UrlGeneratorInterface $url_generator, DateFormatterInterface $date_formatter, $devel_generator, $group_membership_loader, $logger_factory) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $entity_type_manager, $module_handler, $language_manager, $url_generator, $date_formatter);
     $this->develGenerator = $devel_generator;
+    $this->groupMembershipLoader = $group_membership_loader;
+    $this->logger = $logger_factory->get('devel_generate');
   }
 
   /**
@@ -52,7 +54,9 @@ class ExchangeGenerate extends GroupDevelGenerate implements ContainerFactoryPlu
       $container->get('language_manager'),
       $container->get('url_generator'),
       $container->get('date.formatter'),
-      $container->get('plugin.manager.develgenerate')
+      $container->get('plugin.manager.develgenerate'),
+      $container->get('group.membership_loader'),
+      $container->get('logger.factory')
     );
   }
 
@@ -73,7 +77,7 @@ class ExchangeGenerate extends GroupDevelGenerate implements ContainerFactoryPlu
 
     $form['num'] = [
       '#type' => 'radios',
-      '#title' => $this->t('How many exchanges would you like to generate?'),
+      '#title' => $this->t('Generate how many exchanges?'),
       '#default_value' => $this->getSetting('num'),
       '#required' => TRUE,
       '#options' => [
@@ -225,15 +229,23 @@ class ExchangeGenerate extends GroupDevelGenerate implements ContainerFactoryPlu
     $values['role'] = 'authenticated';
 
     parent::addGroup($values);
-
     // Recover the exchange for some final alterations.
     $exchange = $this->lastExchange();
+
     $exchange->currencies->setValue($currency);
     $exchange->created->value = strtotime('-2 years');
     $exchange->label->value = $values['exchange_name'];
     $exchange->save();
 
+    $this->groupMembershipLoader
+      ->load($exchange, $exchange->getOwner())
+      ->getGroupContent()
+      ->set('group_roles', ['exchange-admin'])
+      ->save();
+    $this->logger->notice('Granted exchange-admin role to user '.$exchange->getOwnerId().', owner of exchange '.$exchange->id());
   }
+
+
 
   protected function lastExchange() {
     $exids = \Drupal::entityQuery('group')->range(0, 1)->sort('id', 'DESC')->execute();

@@ -62,10 +62,10 @@ third_party_settings:
     wallet_link_title: 'Bill [mcapi_wallet:name]'
     path: /transact/bill
     menu_title: 'Bill'
-    menu_weight: '-10'
+    menu_weight: '5'
     menu_parent: 'account:'
     type: default
     direction: '1'
-    experience_twig: 'I, {{ payer }}\r\nreceived {{ description }}\r\nfrom\r\n{{ payee }}\r\nand now credit them for\r\n{{ worth }}'
+    experience_twig: 'I, {{ payer }}\r\nreceived {{ description }}\r\nfrom\r\n{{ payee }}\r\nand now bill them for\r\n{{ worth }}'
     experience_button: Preview
     experience_preview: 'page'

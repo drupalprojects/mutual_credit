@@ -111,7 +111,6 @@ class OneOffPayment extends RulesActionBase {
       '#type' => 'fieldset',
     // This helps in the fieldset validation.
       '#name' => 'worth_items',
-      '#description' => t('If either wallet cannot access a currency, an intertrading transaction will be attempted. Failre will produce a warning on screen and in the log.'),
       'worth' => array(
         // '#title' => t('Worths'),.
         '#type' => 'worth',

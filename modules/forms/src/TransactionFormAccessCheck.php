@@ -2,7 +2,7 @@
 
 namespace Drupal\mcapi_forms;
 
-use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Mcapi;
 use Drupal\Core\Access\AccessResult;
 use Symfony\Component\Routing\Route;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
@@ -15,6 +15,12 @@ use Drupal\Core\Entity\EntityAccessCheck;
  */
 class TransactionFormAccessCheck extends EntityAccessCheck {
 
+  private $walletQuery;
+
+  function __construct() {
+    $this->walletQuery = \Drupal::entityQuery('mcapi_wallet');
+  }
+
   /**
    * Implement access control specific to transaction forms.
    *
@@ -26,31 +32,22 @@ class TransactionFormAccessCheck extends EntityAccessCheck {
     // For some reason neutral is interpreted as forbidden when merged with
     // allowed so though I wanted this to be neutral coz its not used yet, it is
     // allowed for now.
+
+    // Is the user allowed to pay in and out of at least 1 wallet?
+    if (!Mcapi::enoughWallets($account->id())) {
+      return AccessResult::forbidden()->cachePerUser();
+    }
+
     $mode = $route_match->getRouteObject()->getOptions()['parameters']['mode'];
     $config_name = 'mcapi_transaction.mcapi_transaction.' . $mode;
-    $settings = EntityFormDisplay::load($config_name)->getThirdPartySettings('mcapi_forms');
-
-    if (empty($settings['direction'])) {
-      return AccessResult::allowedIfHasPermission($account, 'create 3rdparty transaction');
+    $dir = EntityFormDisplay::load($config_name)->getThirdPartySettings('mcapi_forms')['direction'];
+    if (empty($dir)) {
+      return AccessResult::allowedIfHasPermission($account, 'create 3rdparty transaction')->cachePerUser();
     }
     else {
-      //we can access this form if we have one or wallets which operate in the right direction.
-      $query = \Drupal::entityQuery('mcapi_wallet')
-      // Not intertrading wallets.
-        ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
-        ->condition('orphaned', 0)
-        ->condition('holder_entity_type', 'user')
-        ->condition('holder_entity_id', $account->id());
-      $direction = [Wallet::PAYWAY_ANYONE_BI];
-      if ($settings['direction'] == 1) {
-        $direction[] = Wallet::PAYWAY_ANYONE_IN;
-      }
-      else {
-        $direction[] = Wallet::PAYWAY_ANYONE_OUT;
-      }
-      $query->condition('payways', $direction, 'IN');
-
-      return AccessResult::allowedIf($query->execute());
+      // Access is granted if there are any wallets going the right direction;
+      $wids = mcapi_forms_access_direction($account->id(), $dir);
+      return AccessResult::allowedIf(!empty($wids))->cachePerUser();
     }
   }
 

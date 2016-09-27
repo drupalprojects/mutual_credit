@@ -25,7 +25,6 @@ class ExchangeContext implements ContextProviderInterface {
   protected $routeMatch;
   protected $membershipLoader;
 
-
   /**
    * Constructs a new ExchangeRouteContext.
    *
@@ -69,12 +68,8 @@ class ExchangeContext implements ContextProviderInterface {
    * {@inheritdoc}
    */
   public function getAvailableContexts() {
-    debug('ExchangeContext::getAvailableContexts');
-    return [];
-    return ['exchange' => new Context(new ContextDefinition('entity:group', $this->t('Current exchange')))];
     return $this->getRuntimeContexts([]);
   }
-
 
   /**
    * Retrieves the exchange entity from the current route.
@@ -87,12 +82,9 @@ class ExchangeContext implements ContextProviderInterface {
    *   A group entity of type exchange if found, NULL otherwise.
    */
   public function getExchange() {
-    $memberships = $this->membershipLoader->loadByUser($this->currentUser);
-    foreach ($memberships as $memship) {
-      $group = $memship->getGroup();
-      if ($group->type->target_id == 'exchange') {
-        return $group;
-      }
+
+    if ($membership = mcapi_exchanges_current_membership()) {
+      return $membership->getGroup();
     }
     // By now only user 1 should be left
     // Try to get a group context from the route.
@@ -101,7 +93,6 @@ class ExchangeContext implements ContextProviderInterface {
         return $group;
       }
     }
-    drupal_set_message(t('The current user is not in any exchanges.'), 'warning');
     return NULL;
   }
 

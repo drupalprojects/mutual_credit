@@ -1,7 +1,11 @@
 <?php
 
+use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\mcapi\Entity\Transaction;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Link;
+use Drupal\Core\Url;
 
 
 const MCAPI_FORMS_DIR_INCOMING = 1;
@@ -96,12 +100,12 @@ function mcapi_forms_mcapi_form_list() {
     $forms[$mode] = [
       'link' => Link::fromTextAndUrl(
         $entity->getThirdpartySetting('mcapi_forms', 'title'),
-        \Drupal\Core\Url::fromRoute('mcapi.1stparty.'.$mode)
+        Url::fromRoute('mcapi.1stparty.'.$mode)
       ),
       'operations' => [
         'edit' => [
           'title' => t('Edit'),
-          'url' => Drupal\Core\Url::fromRoute(
+          'url' => Url::fromRoute(
             'entity.entity_form_display.mcapi_transaction.form_mode',
             ['form_mode_name' => $mode]
           )
@@ -179,7 +183,7 @@ function mcapi_forms_mcapi_wallet_view(array &$build, $entity, $display) {
       $build['wallet_link_'.$id] = [
         '#type' => 'link',
         '#title' => wallet_link_title($entity, $settings['wallet_link_title']),
-        '#url' => \Drupal\Core\Url::fromUserInput($settings['path'], ['query' => [$key => $entity->id()]]),
+        '#url' => Url::fromUserInput($settings['path'], ['query' => [$key => $entity->id()]]),
         '#attributes' => ['class' => 'wallet-link'],
       ];
     }
@@ -204,9 +208,44 @@ function mcapi_forms_make_default_transaction($type, $overrides = []) {
   //prepare a transaction using the defaults here
   $vars = ['type' => $type];
   $vars += $overrides;
-  return \Drupal\mcapi\Entity\Transaction::create($vars);
+  return Transaction::create($vars);
 }
 
-function wallet_link_title(\Drupal\mcapi\Entity\WalletInterface $wallet, $title) {
+/**
+ * @param WalletInterface $wallet
+ * @param string $title
+ * @return string
+ */
+function wallet_link_title(WalletInterface $wallet, $title) {
   return str_replace('[mcapi_wallet:name]', $wallet->label(), $title);
 }
+
+/**
+ * Find out which wallets a user can pay into or out of.
+ *
+ * @param int $uid
+ *   A user $account->id
+ * @param string $dir
+ *   Either 'incoming' or 'outgoing'
+ *
+ * @return int[]
+ *   The wallet ids
+ */
+function mcapi_forms_access_direction($uid, $dir) {
+  //we can access this form if we have one or wallets which operate in the right direction.
+  $query = \Drupal::entityQuery('mcapi_wallet')
+    ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
+    ->condition('orphaned', 0)
+    ->condition('holder_entity_type', 'user')
+    ->condition('holder_entity_id', $uid);
+  $directions = [Wallet::PAYWAY_ANYONE_BI];
+  if ($dir == 1) {
+    $directions[] = Wallet::PAYWAY_ANYONE_IN;
+  }
+  elseif ($dir == -1) {
+    $directions[] = Wallet::PAYWAY_ANYONE_OUT;
+  }
+  $query->condition('payways', $directions, 'IN');
+  return $query->execute();
+}
+

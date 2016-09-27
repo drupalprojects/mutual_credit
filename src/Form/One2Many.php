@@ -20,7 +20,7 @@ class One2Many extends MassPayBase {
    * {@inheritdoc}
    */
   public function step1(array &$form, FormStateInterface $form_state) {
-    parent::step_1($form, $form_state);
+    parent::step1($form, $form_state);
     if (empty($form_state->get('confirmed'))) {
       $form['payer']['#weight'] = 1;
       $form['mode']['#weight'] = 2;
@@ -29,7 +29,7 @@ class One2Many extends MassPayBase {
       $form['description']['#weight'] = 5;
       $form['payer']['#title'] = $this->t('The one payer');
       unset($form['payer']['#selection_settings']);
-      $form['payee']['#title'] = $this->t('The many payees');
+      $form['payee']['#title'] = $this->t('The many');
       $form['payee']['#tags'] = TRUE;
       $form['mode']['#title'] = $this->t('Will pay');
     }

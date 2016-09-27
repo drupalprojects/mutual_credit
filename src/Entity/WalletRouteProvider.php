@@ -85,13 +85,7 @@ class WalletRouteProvider extends DefaultHtmlRouteProvider {
           ],
         ]);
       $route_collection->add("entity.{$entity_type_id}.wallets", $route);
-
     }
-
-    $route_collection
-      ->get('entity.mcapi_wallet.edit_form')
-      ->setDefault('_title', 'Manage wallet')
-      ->setRequirement('user', '\d+');
 
     return $route_collection;
   }

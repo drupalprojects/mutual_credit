@@ -372,20 +372,14 @@ class Wallet extends ContentEntityBase implements WalletInterface {
 
   /**
    * {@inheritdoc}
-   *
-   * @todo make a new baseField in this file, a boolean called 'used' default 0
-   * in getSummaries set that flag and save
-   * in this function just read that flag
-   *
-   * @todo put this in the interface
    */
-  public function isUsed() {
-    return (bool) $this->entityTypeManager()
+  public function isVirgin() {
+    $transactions = $this->entityTypeManager()
       ->getStorage('mcapi_transaction')->getQuery()
       ->condition('involving', $this->id())
       ->count()
       ->execute();
-
+    return empty($transactions);
   }
 
 }

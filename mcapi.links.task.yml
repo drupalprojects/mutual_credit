@@ -46,9 +46,9 @@ mcapi.admin_workflow_default_tab:
 
 #default tab
 mcapi.admin.transactions.default_tab:
-  title: Ledger
-  route_name: mcapi.transactions.collection
-  base_route: mcapi.transactions.collection
+  title: Journal
+  route_name: entity.mcapi_transaction.collection
+  base_route: entity.mcapi_transaction.collection
   weight: 0
 
 #default tab used only if this module is extended

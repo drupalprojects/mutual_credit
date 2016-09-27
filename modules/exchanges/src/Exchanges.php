@@ -28,15 +28,14 @@ class Exchanges extends Exchange {
    * @return integer[]
    *   Exchange entity ids.
    *
-   * @todo check all calls to this are using the needed boolean args
    * @todo consider usering entityQuery directly
+   * @todo refactor this and be clearer about whether it is for users or all content.
    */
   public static function memberOf($entity = NULL) {
     if (is_null($entity)) {
       $entity = User::load(\Drupal::currentUser()->id());
     }
     $exchange_ids = [];
-    //@todo refactor this @see
     foreach (\Drupal::service('group.membership_loader')->loadByUser($entity) as $mem) {
       $group = $mem->getGroup();
       if ($group->getGroupType()->id() == 'exchange') {
@@ -173,13 +172,12 @@ class Exchanges extends Exchange {
    *   Group IDs of one or more exchanges.
    *
    * @return int[]
-   *   All the wallet ids in the given exchanges.
+   *   All the wallet ids in the given exchanges except intertrading
    *
-   * @todo clarify and document whether this includes intertrading wallets. probably does
    * @todo this is pretty intensive and would benefit from caching and using sparingly
    */
   public static function walletsInExchanges(array $exids) {
-    drupal_set_message('how to get members AND content for a group?');
+    drupal_set_message('Lookinng for wallets in exchanges '.implode(',', $exids));
     $holders = [];
 
     foreach (Group::loadMultiple($exids) as $exchange) {

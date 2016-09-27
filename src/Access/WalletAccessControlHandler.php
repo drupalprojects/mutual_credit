@@ -43,28 +43,25 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
    * {@inheritdoc}
    */
   protected function checkAccess(EntityInterface $entity, $op, AccountInterface $account) {
+    $own  = $entity->getOwnerId() == $account->id();
     if ($account->hasPermission('manage mcapi')) {
       // Includes user 1.
       return AccessResult::allowed()->cachePerPermissions();
     }
     elseif ($op == 'update') {
-      // ONLY the owner (always a user) can do it.
-      return AccessResult::allowedIf($entity->id() == $entity->getOwner()->id())->cachePerUser();
+      return AccessResult::allowedIf($own)->cachePerUser();
     }
     elseif ($op == 'view') {
-      // There might need to be an intermediate option, for groups.
       return AccessResult::allowedIfhasPermission($account, 'view all transactions')
-        ->orif(
-          AccessResult::allowedIf($entity->getOwnerId() == $account->id())
-        )
+        ->orif(AccessResult::allowedIf($own))
         ->cachePerUser();
     }
-    elseif ($op == 'delete') {
-      return AccessResult::allowedIf(!$entity->isUsed())->addCacheTags(['mcapi_wallet:' . $entity->id()]);
+    elseif ($op == 'delete' && $own) {
       // Can only delete wallet if there are no transactions.
-      // @todo maybe create a basefield unused flag rather than reading ledger
+      return AccessResult::allowedIf($entity->isVirgin());
     }
     elseif ($op == 'transactions') {
+drupal_set_message('just checking wallet.transactions access op is being used');
       if ($account->hasPermission('view all transactions') or $entity->payways->value == Wallet::PAYWAY_AUTO) {
         return AccessResult::allowed()->cachePerPermissions();
       }
@@ -87,7 +84,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
           }
         }
       }
-      return AccessResult::forbidden()->addCacheableDependency($entity);
+      return AccessResult::neutral()->addCacheableDependency($entity);
     }
   }
 

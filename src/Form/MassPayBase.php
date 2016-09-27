@@ -77,9 +77,32 @@ class MassPayBase extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function step1(array &$form, FormStateInterface $form_state) {
+    $display = $this->getFormDisplay($form_state);
+    $form['#parents'] = [];
+    // Borrowed from Drupal\Core\Entity\Entity\EntityFormDisplay but without
+    // making the weights so hard to alter
+    foreach ($display->getComponents() as $name => $options) {
+      if ($widget = $display->getRenderer($name)) {
+        $items = $this->entity->get($name);
+        $items->filterEmptyItems();
+        $form[$name] = $widget->form($items, $form, $form_state);
+        $form[$name]['#access'] = $items->access('edit');
 
-    $this->getFormDisplay($form_state)->buildForm($this->entity, $form, $form_state);
+        // Assign the correct weight. This duplicates the reordering done in
+        // processForm(), but is needed for other forms calling this method
+        // directly.
+        $form[$name]['#weight'] = $options['weight'];
+      }
+    }
+
+    // $form is now the default transaction entity form, but the element weights
+    // will be imposed after form_alter. Normally we would create our own
+    // formDisplay, but this clashes with the mcapi_forms module.
+    // So we carry on adapting the form from admin/accounting/transactions/form-display/default
+
     unset($form['type'], $form['creator'], $form['created']);
+    dsm(array_keys($form));
+    dsm($form['payee']);
     if (Mcapi::maxWalletsOfBundle('user', 'user') == 1) {
       $mode_options = [
         $this->t('The named users'),
@@ -96,7 +119,6 @@ class MassPayBase extends ContentEntityForm {
       '#type' => 'radios',
       // @todo start with nothing selected; force the user to choose something.
       '#options' => $mode_options,
-      '#weight' => '10',
     ];
     $form['payer'] = [
       '#title' => $this->t('Payer'),
@@ -113,8 +135,8 @@ class MassPayBase extends ContentEntityForm {
       '#title' => $this->t('Description'),
       '#placeholder' => $this->t('What this payment is for...'),
       '#type' => 'textfield',
+      '#weight' => 100
     ];
-    $form['description']['#weight'] = 100;
     $form['worth'] = [
       '#title' => $this->t('Worth'),
       '#type' => 'worths_form',

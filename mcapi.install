@@ -40,11 +40,6 @@ function mcapi_install() {
   // Mcapi has to be after field_ui for mcapi_local_tasks_alter.
   module_set_weight('field_ui', -1);
 
-  // Create an intertrading wallet (on user 1 if not stated).
-  Wallet::create([
-    'payways' => Wallet::PAYWAY_AUTO,
-  ])->save();
-
   // We need to deal with existing users, especially user 1 in accordance with
   // the default wallet settings put every user in the default exchange.
   $users = User::loadMultiple();

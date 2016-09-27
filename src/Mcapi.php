@@ -238,14 +238,13 @@ class Mcapi {
     $walletStorage = \Drupal::entityTypeManager()->getStorage('mcapi_wallet');
     $payin = $walletStorage->whichWalletsQuery('payin', $uid);
     $payout = $walletStorage->whichWalletsQuery('payout', $uid);
-    if (count($payin) < 2 && count($payout) < 2) {
-      // This is deliberately ambiguous as to whether you have no wallets or the
-      // system has no other wallets.
-      drupal_set_message(t('There are no wallets for you to trade with'), 'warning');
-      return FALSE;
+    if (count($payin) > 1 || count($payout) > 1) {
+      // There must be at least one wallet in each (and they must be different!)
+      return (count(array_unique(array_merge($payin, $payout))) > 1);
     }
-    // There must be at least one wallet in each (and they must be different!)
-    return (count(array_unique(array_merge($payin, $payout))) > 1);
+    // This is deliberately ambiguous as to whether you have no wallets or the
+    // system has no other wallets.
+    drupal_set_message(t('There are no wallets for you to trade with'), 'warning');
   }
 
   /**

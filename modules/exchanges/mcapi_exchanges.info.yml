@@ -1,4 +1,4 @@
-name: Exchange groups
+name: Multiple exchanges
 description: Support more than one community with separate currencies
 package: Community Accounting
 core: 8.x

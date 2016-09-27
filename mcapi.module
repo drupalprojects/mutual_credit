@@ -114,7 +114,6 @@ function mcapi_entity_presave($entity) {
  */
 function mcapi_entity_insert($entity) {
   $config = \Drupal::config('mcapi.settings');
-  // Note that intertrading wallets are created in Exchange::postSave.
   if ($config->get('autoadd')) {
     $type = $entity->getEntityTypeId();
     // NB autoadd applies to ALL entity types or to none.

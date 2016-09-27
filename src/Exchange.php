@@ -76,7 +76,7 @@ class Exchange {
    */
   public static function orphan(ContentEntityInterface $holder) {
     foreach (Mcapi::walletsOf($holder, TRUE) as $wallet) {
-      if ($wallet->isUsed()) {
+      if (!$wallet->isVirgin()) {
         // Move the wallet.
         $new_holder_entity = \Drupal::moduleHandler()->moduleExists('mcapi_exchanges') ?
         // @todo this is a bit inelegant

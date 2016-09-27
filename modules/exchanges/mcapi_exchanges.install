@@ -73,10 +73,3 @@ function mcapi_exchanges_uninstall() {
 
 }
 
-function mcapi_exchanges_modules_installed($modules) {
-
-  // This didn't work in hook_install.
-  if ($view = View::load('mcapi_transactions')) {
-    $view->delete();
-  }
-}

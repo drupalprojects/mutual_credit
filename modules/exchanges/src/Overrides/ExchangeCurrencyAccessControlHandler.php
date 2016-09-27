@@ -2,6 +2,7 @@
 
 namespace Drupal\mcapi_exchanges\Overrides;
 
+use Drupal\Core\Plugin\Context\ContextProviderInterface;
 use Drupal\Core\Entity\EntityAccessControlHandler;
 use Drupal\Core\Entity\EntityHandlerInterface;
 use Drupal\Core\Entity\EntityInterface;
@@ -26,11 +27,11 @@ class ExchangeCurrencyAccessControlHandler extends EntityAccessControlHandler im
   /**
    *
    * @param \Drupal\mcapi_exchanges\Overrides\EntityTypeInterface $entity_type
-   * @param type $context_handler
+   * @param ContextProviderInterface $context
    */
-  public function __construct(EntityTypeInterface $entity_type, $context) {
+  public function __construct(EntityTypeInterface $entity_type, ContextProviderInterface $context) {
     parent::__construct($entity_type);
-    // I've got really few examples of how to do this.
+    // I've got really few examples of how to do this and this looks very wrong!
     $this->exchangeContext = $context->getRuntimeContexts(['exchange'])['exchange']->getContextValue();
   }
 

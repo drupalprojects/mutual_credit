@@ -1,7 +1,7 @@
 services:
   mcapi_exchanges.route.subscriber:
     class: Drupal\mcapi_exchanges\Routing\RouteSubscriber
-    arguments: [@config.factory]
+    arguments: ['@config.factory']
     tags:
      - { name: event_subscriber }
   mcapi_exchanges.exchange_context:
@@ -9,3 +9,11 @@ services:
     arguments: ['@current_user', '@group.membership_loader', '@current_route_match']
     tags:
       - { name: 'context_provider' }
+  access_check.exchange.role:
+    class: 'Drupal\mcapi_exchanges\ExchangeRoleAccessCheck'
+    tags:
+      - { name: 'access_check', applies_to: '_exchange_role' }
+  access_check.same_exchange:
+    class: Drupal\mcapi_exchange\Access\SameExchangeCheck
+    tags:
+      - { name: access_check, applies_to: _same_exchange }

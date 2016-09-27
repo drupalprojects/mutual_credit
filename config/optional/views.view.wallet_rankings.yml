@@ -7,7 +7,7 @@ id: wallet_rankings
 label: 'Wallet rankings'
 module: mcapi
 description: 'Highest performing wallets by various criteria'
-tag: Community accounting
+tag: 'Community accounting'
 base_table: mcapi_transactions_index
 base_field: xid
 core: 8.x
@@ -64,10 +64,10 @@ display:
           separator: ' '
           hide_empty: false
       fields:
-        label:
-          id: label
+        name:
+          id: name
           table: mcapi_wallet
-          field: label
+          field: name
           relationship: partner_id
           group_type: group
           admin_label: ''
@@ -112,9 +112,23 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          link_to_entity: 1
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
           entity_type: mcapi_wallet
-          plugin_id: entity_label
+          entity_field: name
+          plugin_id: field
       filters: {  }
       sorts: {  }
       header:
@@ -195,6 +209,7 @@ display:
     cache_metadata:
       max-age: -1
       contexts:
+        - 'languages:language_content'
         - 'languages:language_interface'
         - url
       tags: {  }
@@ -237,10 +252,10 @@ display:
           separator: ' '
           hide_empty: false
       fields:
-        label:
-          id: label
+        name:
+          id: name
           table: mcapi_wallet
-          field: label
+          field: name
           relationship: partner_id
           group_type: group
           admin_label: ''
@@ -285,9 +300,23 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          link_to_entity: 1
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
           entity_type: mcapi_wallet
-          plugin_id: entity_label
+          entity_field: name
+          plugin_id: field
         outgoing:
           id: outgoing
           table: mcapi_transactions_index
@@ -350,6 +379,7 @@ display:
     cache_metadata:
       max-age: -1
       contexts:
+        - 'languages:language_content'
         - 'languages:language_interface'
         - url
       tags: {  }
@@ -378,10 +408,10 @@ display:
           separator: ' '
           hide_empty: false
       fields:
-        label:
-          id: label
+        name:
+          id: name
           table: mcapi_wallet
-          field: label
+          field: name
           relationship: partner_id
           group_type: group
           admin_label: ''
@@ -426,9 +456,23 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          link_to_entity: 1
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
           entity_type: mcapi_wallet
-          plugin_id: entity_label
+          entity_field: name
+          plugin_id: field
         incoming:
           id: incoming
           table: mcapi_transactions_index
@@ -505,6 +549,7 @@ display:
     cache_metadata:
       max-age: -1
       contexts:
+        - 'languages:language_content'
         - 'languages:language_interface'
         - url
       tags: {  }
@@ -528,10 +573,10 @@ display:
           separator: ' '
           hide_empty: false
       fields:
-        label:
-          id: label
+        name:
+          id: name
           table: mcapi_wallet
-          field: label
+          field: name
           relationship: partner_id
           group_type: group
           admin_label: ''
@@ -576,9 +621,23 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          link_to_entity: 1
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
           entity_type: mcapi_wallet
-          plugin_id: entity_label
+          entity_field: name
+          plugin_id: field
         partner_id:
           id: partner_id
           table: mcapi_transactions_index
@@ -661,6 +720,7 @@ display:
     cache_metadata:
       max-age: -1
       contexts:
+        - 'languages:language_content'
         - 'languages:language_interface'
         - url
       tags: {  }
@@ -675,57 +735,6 @@ display:
       block_description: 'Rank wallets by number of trades'
       block_category: 'trade rankings'
       fields:
-        label:
-          id: label
-          table: mcapi_wallet
-          field: label
-          relationship: partner_id
-          group_type: group
-          admin_label: ''
-          label: ''
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          link_to_entity: 1
-          entity_type: mcapi_wallet
-          plugin_id: entity_label
         partner_id:
           id: partner_id
           table: mcapi_transactions_index
@@ -784,76 +793,10 @@ display:
           suffix: )
           entity_type: mcapi_transaction
           plugin_id: standard
-      defaults:
-        fields: false
-        sorts: false
-        title: false
-        header: false
-      sorts:
-        partner_id:
-          id: partner_id
-          table: mcapi_transactions_index
-          field: partner_id
-          relationship: none
-          group_type: count
-          admin_label: ''
-          order: DESC
-          exposed: false
-          expose:
-            label: ''
-          entity_type: mcapi_transaction
-          plugin_id: standard
-      title: 'Most trades'
-      header: {  }
-    cache_metadata:
-      max-age: -1
-      contexts:
-        - 'languages:language_interface'
-        - url
-      tags: {  }
-  volume:
-    display_plugin: block
-    id: volume
-    display_title: 'by volume'
-    position: 5
-    display_options:
-      display_extenders: {  }
-      display_description: ''
-      block_description: 'Rank wallets by trade volume'
-      block_category: 'trade rankings'
-      sorts:
-        volume:
-          id: volume
-          table: mcapi_transactions_index
-          field: volume
-          relationship: none
-          group_type: sum
-          admin_label: ''
-          order: DESC
-          exposed: false
-          expose:
-            label: ''
-          entity_type: mcapi_transaction
-          plugin_id: numeric
-      defaults:
-        sorts: false
-        title: false
-        fields: false
-      title: 'Highest volume'
-      row:
-        type: fields
-        options:
-          default_field_elements: true
-          inline:
-            label: label
-            volume: volume
-          separator: ' '
-          hide_empty: false
-      fields:
-        label:
-          id: label
+        name:
+          id: name
           table: mcapi_wallet
-          field: label
+          field: name
           relationship: partner_id
           group_type: group
           admin_label: ''
@@ -898,9 +841,155 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          link_to_entity: 1
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
           entity_type: mcapi_wallet
-          plugin_id: entity_label
+          entity_field: name
+          plugin_id: field
+      defaults:
+        fields: false
+        sorts: false
+        title: false
+        header: false
+      sorts:
+        partner_id:
+          id: partner_id
+          table: mcapi_transactions_index
+          field: partner_id
+          relationship: none
+          group_type: count
+          admin_label: ''
+          order: DESC
+          exposed: false
+          expose:
+            label: ''
+          entity_type: mcapi_transaction
+          plugin_id: standard
+      title: 'Most trades'
+      header: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+      tags: {  }
+  volume:
+    display_plugin: block
+    id: volume
+    display_title: 'by volume'
+    position: 5
+    display_options:
+      display_extenders: {  }
+      display_description: ''
+      block_description: 'Rank wallets by trade volume'
+      block_category: 'trade rankings'
+      sorts:
+        volume:
+          id: volume
+          table: mcapi_transactions_index
+          field: volume
+          relationship: none
+          group_type: sum
+          admin_label: ''
+          order: DESC
+          exposed: false
+          expose:
+            label: ''
+          entity_type: mcapi_transaction
+          plugin_id: numeric
+      defaults:
+        sorts: false
+        title: false
+        fields: false
+      title: 'Highest volume'
+      row:
+        type: fields
+        options:
+          default_field_elements: true
+          inline:
+            label: label
+            volume: volume
+          separator: ' '
+          hide_empty: false
+      fields:
+        name:
+          id: name
+          table: mcapi_wallet
+          field: name
+          relationship: partner_id
+          group_type: group
+          admin_label: ''
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+          entity_type: mcapi_wallet
+          entity_field: name
+          plugin_id: field
         volume:
           id: volume
           table: mcapi_transactions_index
@@ -963,6 +1052,8 @@ display:
     cache_metadata:
       max-age: -1
       contexts:
+        - 'languages:language_content'
         - 'languages:language_interface'
         - url
       tags: {  }
+

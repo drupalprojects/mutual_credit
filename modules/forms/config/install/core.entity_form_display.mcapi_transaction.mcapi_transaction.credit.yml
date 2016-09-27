@@ -62,7 +62,7 @@ third_party_settings:
     wallet_link_title: 'Credit [mcapi_wallet:name]'
     path: /transact/credit
     menu_title: 'Credit'
-    menu_weight: '-10'
+    menu_weight: '5'
     menu_parent: 'account:'
     type: default
     direction: '-1'
