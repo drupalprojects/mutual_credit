@@ -44,6 +44,8 @@ class WalletViewsData extends EntityViewsData {
     $data['mcapi_wallet']['holder_entity_type']['field']['id'] = 'mcapi_holder_type';
     $data['mcapi_wallet']['holder_entity_type']['field']['help'] = $this->t("The wallet holder's translated EntityType name");
 
+    $this->addWalletSummaries($data['mcapi_wallet']);
+    
     // This allows us to do group queries such as find the balance per wallet.
     $data['mcapi_transactions_index']['table']['join'] = [
       'mcapi_wallet' => [
@@ -53,7 +55,6 @@ class WalletViewsData extends EntityViewsData {
         // 'type' => 'RIGHT'.
       ],
     ];
-    $this->addWalletSummaries($data['mcapi_wallet']);
 
     $data['users_field_data']['first_wid']['relationship'] = [
       'title' => $this->t("The user's first wallet"),

@@ -6,10 +6,9 @@ use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Exchange;
 use Drupal\group\Entity\Group;
 use Drupal\group\Entity\GroupContent;
+use Drupal\user\EntityOwnerInterface;
 use Drupal\user\Entity\User;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\user\EntityOwnerInterface;
-
 use Drupal\Core\Entity\ContentEntityInterface;
 
 /**
@@ -18,28 +17,22 @@ use Drupal\Core\Entity\ContentEntityInterface;
 class Exchanges extends Exchange {
 
   /**
-   * Return exchanges of which the passed entity is a member.
+   * Return exchange IDs of which the passed entity is a member.
    *
-   * If an exchange is passed, it returns itself.
-   *
-   * @param OwnerEntityInterface $entity
-   *   Any Content Entity which is a member of an exchange.
+   * @param ContentEntityInterface $entity
+   *   Any ContentEntity
    *
    * @return integer[]
    *   Exchange entity ids.
-   *
-   * @todo consider usering entityQuery directly
-   * @todo refactor this and be clearer about whether it is for users or all content.
    */
-  public static function memberOf($entity = NULL) {
+  public static function memberOf(ContentEntityInterface $entity = NULL) {
+    $exchange_ids = [];
     if (is_null($entity)) {
       $entity = User::load(\Drupal::currentUser()->id());
     }
-    $exchange_ids = [];
-    foreach (\Drupal::service('group.membership_loader')->loadByUser($entity) as $mem) {
-      $group = $mem->getGroup();
-      if ($group->getGroupType()->id() == 'exchange') {
-        $exchange_ids[] = $group->id();
+    foreach (GroupContent::loadByEntity($entity) as $groupContent) {
+      if ($groupContent->bundle() == 'exchange-group_membership') {
+        $exchange_ids[] = $groupContent->getGroup()->id();
       }
     }
     return $exchange_ids;
@@ -102,10 +95,6 @@ class Exchanges extends Exchange {
       $account = \Drupal::currentUser();
     }
     $exchange_ids = static::memberOf($account);
-//    if (empty($exchanges)) {
-//      drupal_set_message(t('%name is not in any exchanges', ['%name' => $account->getAccountName()]), 'error');
-//      $exchanges  = Exchange::loadMultiple();
-//    }
     return Self::exchangeCurrencies(Group::loadMultiple($exchange_ids));
   }
 

@@ -47,6 +47,7 @@ class RunningBalance extends Worth {
    * {@inheritdoc}
    */
   public function query() {
+    die('fff');
     // Determine the wallet id for which we want the balance.
     // It could from one of two args, or a filter.
     $this->addAdditionalFields();
@@ -59,6 +60,7 @@ class RunningBalance extends Worth {
   public function render(ResultRow $values) {
     $worth_field = $this->getEntity($values)->worth;
     $vals = [];
+    dsm($worth_field->getValue());
     foreach ($worth_field->currencies() as $curr_id) {
       $raw = $this->transactionStorage->runningBalance(
         $this->getFirstWalletFieldAlias($values),
