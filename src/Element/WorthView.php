@@ -18,8 +18,7 @@ class WorthView extends RenderElement {
     return [
       '#pre_render' => [
         get_class() . '::preRender',
-      ],
-      '#minus' => FALSE,
+      ]
     ];
   }
 
@@ -36,7 +35,7 @@ class WorthView extends RenderElement {
           'currency-' . $element['#currency']->id,
         ],
       ],
-      '#markup' => $element['#currency']->format(abs($element['#value']), $element['#format']),
+      '#markup' => $element['#currency']->format($element['#value'], $element['#format']),
     ];
   }
 

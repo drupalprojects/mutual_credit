@@ -232,8 +232,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setLabel(t('Parent xid'))
       ->setDescription(t('Parent transaction that created this transaction.'))
       ->setDefaultValue(0)
-      ->setReadOnly(TRUE)
-      ->setRequired(TRUE);
+      ->setReadOnly(TRUE);
 
     // I wanted to add the CanPayout and CanPayin constraints in the widget
     // builder but I couldn't see how. So at the moment they apply to all entity

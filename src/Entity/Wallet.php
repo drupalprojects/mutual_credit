@@ -302,7 +302,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     foreach ($this->getSummaries() as $curr_id => $stats) {
       $worth[] = [
         'curr_id' => $curr_id,
-        'value' => $stats[$stat],
+        'value' => intval($stats[$stat]),
       ];
     }
     return $worth;

@@ -49,12 +49,10 @@ class Worth extends FieldPluginBase {
   public function render(ResultRow $values) {
     $curr_id = $this->getValue($values, 'curr_id');
     if (!$curr_id) {
-      // Implies there was no result
-      // can't format zero without knowing the currency.
-      return;
+      return Currency::load($curr_id)
+        ->format($this->getValue($values), $this->options['format']);
     }
-    return Currency::load($curr_id)
-      ->format($this->getValue($values), $this->options['format']);
+    // Otherwise there was no result - nothing to format
   }
 
 }

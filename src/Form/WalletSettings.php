@@ -37,7 +37,6 @@ class WalletSettings extends ConfigFormBase {
     $this->setConfigFactory($configFactory);
     $this->entityTypeManager = $entityTypeManager;
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
-
   }
 
   /**
@@ -94,25 +93,30 @@ class WalletSettings extends ConfigFormBase {
     // @todo alter this in the exchanges module so that only bundles with an
     // entity reference to an exchange are listed
     foreach ($this->entityTypeManager->getDefinitions() as $entity_type_id => $entity_type) {
-      if (($entity_type->isSubclassOf('\Drupal\User\EntityOwnerInterface') || $entity_type_id == 'user')
-      // Otherwise where to put the wallet!
-        && $entity_type->getLinkTemplate('canonical')
-        ) {
-        $bundles = $this->entityTypeBundleInfo->getBundleInfo($entity_type_id);
-        $entity_label = (count($bundles) > 1)
-          ? $entity_type->getLabel() . ': '
-          : '';
-        foreach ($bundles as $bundle_name => $bundle_info) {
-          $val = $config->get("entity_types.$entity_type_id:$bundle_name");
-          /* @var $bundle_name string */
-          $form['entity_types']["$entity_type_id:$bundle_name"] = [
-            '#title' => $entity_label . $bundle_info['label'],
-            '#type' => 'number',
-            '#min' => $val,
-            '#default_value' => $val,
-            '#size' => 2,
-            '#max_length' => 2,
-          ];
+      if ($entity_type_id == 'mcapi_transaction') {
+        break;
+      }
+      if ($entity_type->isSubclassOf('\Drupal\Core\Entity\ContentEntityInterface')) {
+        if (($entity_type->isSubclassOf('\Drupal\User\EntityOwnerInterface') || $entity_type_id == 'user')
+        // Otherwise where to put the wallet!
+          && $entity_type->getLinkTemplate('canonical')
+          ) {
+          $bundles = $this->entityTypeBundleInfo->getBundleInfo($entity_type_id);
+          $entity_label = (count($bundles) > 1)
+            ? $entity_type->getLabel() . ': '
+            : '';
+          foreach ($bundles as $bundle_name => $bundle_info) {
+            $val = $config->get("entity_types.$entity_type_id:$bundle_name");
+            /* @var $bundle_name string */
+            $form['entity_types']["$entity_type_id:$bundle_name"] = [
+              '#title' => $entity_label . $bundle_info['label'],
+              '#type' => 'number',
+              '#min' => $val,
+              '#default_value' => $val,
+              '#size' => 2,
+              '#max_length' => 2,
+            ];
+          }
         }
       }
     }

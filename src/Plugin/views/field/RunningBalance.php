@@ -4,6 +4,7 @@ namespace Drupal\mcapi\Plugin\views\field;
 
 use Drupal\views\ResultRow;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Entity\EntityTypeManager;
 
 /**
  * Field handler to provide running balance for a given transaction.
@@ -13,8 +14,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @ingroup views_field_handlers
  *
  * @ViewsField("transaction_running_balance")
- *
- * @todo inject transaction storage controller
  */
 class RunningBalance extends Worth {
 
@@ -29,6 +28,8 @@ class RunningBalance extends Worth {
    *   The plugin_id for the plugin instance.
    * @param mixed $plugin_definition
    *   The plugin implementation definition.
+   * @param EntityTypeManager $entity_type_manager
+   *   The EntityTypeManager.
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, $entity_type_manager) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
@@ -47,11 +48,9 @@ class RunningBalance extends Worth {
    * {@inheritdoc}
    */
   public function query() {
-    die('fff');
     // Determine the wallet id for which we want the balance.
     // It could from one of two args, or a filter.
     $this->addAdditionalFields();
-
   }
 
   /**
@@ -60,7 +59,6 @@ class RunningBalance extends Worth {
   public function render(ResultRow $values) {
     $worth_field = $this->getEntity($values)->worth;
     $vals = [];
-    dsm($worth_field->getValue());
     foreach ($worth_field->currencies() as $curr_id) {
       $raw = $this->transactionStorage->runningBalance(
         $this->getFirstWalletFieldAlias($values),
@@ -75,9 +73,6 @@ class RunningBalance extends Worth {
       'label' => 'hidden',
       'settings' => [],
     ];
-//    if (property_exists($values, 'curr_id')) {
-//      $options['settings']['curr_ids'] = [$values->curr_id];
-//    }
     return $worth_field->view($options);
   }
 
