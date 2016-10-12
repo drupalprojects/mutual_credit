@@ -91,10 +91,10 @@ class Exchanges extends Exchange {
    *   Keyed by currency ID.
    */
   public static function currenciesAvailableToUser(AccountInterface $account = NULL) {
-    if (!$account) {
-      $account = \Drupal::currentUser();
+    if ($account instanceof AccountInterface) {
+      $user = User::load($account->id());
     }
-    $exchange_ids = static::memberOf($account);
+    $exchange_ids = static::memberOf($user);
     return Self::exchangeCurrencies(Group::loadMultiple($exchange_ids));
   }
 
@@ -166,9 +166,7 @@ class Exchanges extends Exchange {
    * @todo this is pretty intensive and would benefit from caching and using sparingly
    */
   public static function walletsInExchanges(array $exids) {
-    drupal_set_message('Lookinng for wallets in exchanges '.implode(',', $exids));
     $holders = [];
-
     foreach (Group::loadMultiple($exids) as $exchange) {
       $group_content_ids = \Drupal::entityQuery('group_content')->condition('gid', $exchange->id())->execute();
       foreach (GroupContent::loadMultiple($group_content_ids) as $item) {
@@ -177,7 +175,8 @@ class Exchanges extends Exchange {
       }
     }
     if (empty($holders)) {
-      \Drupal::logger('exchanges')->warning('No content found in exchange(s) %ids', ['%ids' => implode(', ', $exids)]);
+      \Drupal::logger('exchanges')
+        ->warning('No content found in exchange(s) %ids', ['%ids' => implode(', ', $exids)]);
       return [];
     }
     //now get all the wallets held by these Entities.

@@ -58,15 +58,19 @@ mcapi.admin.transaction_form.list:
 mcapi.masspay.12many:
   path: '/transaction/mass/12many'
   defaults:
-    _entity_form: 'mcapi_transaction.12many'
+    _entity_form: 'mcapi_transaction.mass'
     _title: 'One wallet pays many'
   requirements:
     _permission: 'manage mcapi'
+  options:
+    direction: '12many'
 mcapi.masspay.many21:
   path: '/transaction/mass/many21'
   defaults:
-    _entity_form: 'mcapi_transaction.many21'
+    _entity_form: 'mcapi_transaction.mass'
     _title: 'Many wallets pay one'
   requirements:
     _permission: 'manage mcapi'
+  options:
+    direction: 'many21'
 

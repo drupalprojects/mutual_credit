@@ -1,10 +1,9 @@
 <?php
 
-namespace Drupal\mcapi_exchanges\Access;
+namespace Drupal\mcapi_exchanges;
 
 use Drupal\mcapi_exchanges\Exchanges;
 use Drupal\Core\Access\AccessResult;
-use Drupal\Core\Plugin\Context\ContextProviderInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Routing\Access\AccessInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -26,11 +25,14 @@ class SameExchangeCheck implements AccessInterface {
    *   The access result.
    */
   public function access(AccountInterface $account, RouteMatchInterface $routeMatch) {
-    $exchange = mcapi_exchanges_current_membership()->getGroup();
+    if ($membership = mcapi_exchanges_current_membership()) {
+      $exchange = $membership->getGroup();
+    }
+    else return AccessResult::forbidden()->cachePerUser();
 
     // Get the user we are visiting
     // THERE'S  A PROBLEM WITH THIS ONLY WORKS ON ROUTES WITH UPCAST {user}
-    $user = $routeMatch->getParameters('user');
+    $user = $routeMatch->getParameter('user');
 
     // Compare exchanges fo the current user with the visited user.
     if ($exchange && in_array($exchange->id(), Exchanges::memberOf($user))) {

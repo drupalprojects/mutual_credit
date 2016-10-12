@@ -17,9 +17,7 @@ class RouteSubscriber extends RouteSubscriberBase {
    * {@inheritdoc}
    */
   protected function alterRoutes(RouteCollection $collection) {
-    if (mcapi_exchanges_segregated()) {
-      $collection->get('user.register')->setPath('user/register/{group}');
-    }
+    $collection->get('user.register')->setPath('user/register/{group}');
     if ($transaction_list = $collection->get('view.mcapi_exchange_transactions.admin_collection')) {
       $collection->add('mcapi.transactions.collection', $transaction_list);
       // Can't remove this because the view is creating a link for it.

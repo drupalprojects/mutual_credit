@@ -1,34 +1,27 @@
-mcapi.exchange.masspay:
-  path: '/exchange/{mcapi_exchange}/masspay'
+mcapi.exchange.mass:
+  path: '/group/{group}/masspay'
   defaults:
-    _entity_form: 'mcapi_exchange.masspay'
+    _entity_form: 'mcapi_transaction.mass'
     _title: 'Mass payment'
   requirements:
-    _entity_access: 'mcapi_exchange.manage'
-
-#
-entity.mcapi_exchange.enable_confirm:
-  path: '/exchange/{group}/enable'
-  defaults:
-    _entity_form: 'mcapi_exchange.enable'
-  requirements:
-    _permission: 'manage mcapi'
+    _group_permission: 'manage transactions'
+    _group_type: 'exchange'
   options:
-    _admin_route: TRUE
+    parameters:
+      group:
+        type: 'entity:group'
+    direction: 'many21'
 
-entity.mcapi_exchange.disable_confirm:
-  path: '/exchange/{group}/disable'
+mcapi.exchange.12many:
+  path: '/group/{group}/masspay/12many'
   defaults:
-    _entity_form: 'mcapi_exchange.disable'
+    _entity_form: 'mcapi_transaction.mass'
+    _title: 'Mass payment'
   requirements:
-    _permission: 'manage mcapi'
+    _group_permission: 'manage transactions'
+    _group_type: 'exchange'
   options:
-    _admin_route: TRUE
-
-entity.mcapi_exchange.contact:
-  path: '/exchange/{group}/contact'
-  defaults:
-    _entity_form: group.contact
-    _title: 'Contact exchange'
-  requirements:
-    _permission: access site-wide contact form
+    parameters:
+      group:
+        type: 'entity:group'
+    direction: 'many21'

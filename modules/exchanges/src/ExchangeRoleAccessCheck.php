@@ -35,6 +35,7 @@ class ExchangeRoleAccessCheck implements AccessInterface {
       return AccessResult::neutral();
     }
     $parameters = $route_match->getParameters();
+    // @todo use the new function not the heavy context.
     if (!$parameters->has('group')) {
       $group = \Drupal::service('mcapi_exchanges.exchange_context')
         ->getRuntimeContexts(['exchange'])['exchange']
@@ -49,7 +50,8 @@ class ExchangeRoleAccessCheck implements AccessInterface {
         return AccessResult::neutral();
       }
     }
-    return GroupAccessResult::allowedIfHasGroupRole($group, $account, $roles);
+    $roles = explode(';', $roles);
+    return GroupAccessResult::allowedIfHasGroupRoles($group, $account, $roles);
   }
 
 }

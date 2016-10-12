@@ -41,7 +41,7 @@ class GroupTransactions extends GroupContentEnablerBase {
     $account = \Drupal::currentUser();
     $type = $this->getEntityBundle();
     $operations = [];
-    if ($group->hasPermission('create-transactions', $account)) {
+    if ($group->hasPermission('create transactions', $account)) {
       foreach (mcapi_form_displays_load() as $displayEntity) {
         $wallet_id = Mcapi::firstWalletIdOfEntity(User::load($account->id()));
         $settings = $displayEntity->getThirdPartySettings('mcapi_forms');
@@ -63,7 +63,14 @@ class GroupTransactions extends GroupContentEnablerBase {
           ];
         }
       }
-
+    }
+    if ($group->hasPermission('manage transactions', $account)) {
+      // Not sure whether to display one or two links
+      $operations["create-mass-transaction"] = [
+        'title' => $this->t('Mass payment'),
+        'url' => Url::fromRoute('mcapi.exchange.mass', ['group' => $group->id()]),
+        'weight' => 7,
+      ];
     }
     return $operations;
   }

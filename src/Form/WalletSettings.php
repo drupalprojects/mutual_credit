@@ -94,7 +94,7 @@ class WalletSettings extends ConfigFormBase {
     // entity reference to an exchange are listed
     foreach ($this->entityTypeManager->getDefinitions() as $entity_type_id => $entity_type) {
       if ($entity_type_id == 'mcapi_transaction') {
-        break;
+        continue;
       }
       if ($entity_type->isSubclassOf('\Drupal\Core\Entity\ContentEntityInterface')) {
         if (($entity_type->isSubclassOf('\Drupal\User\EntityOwnerInterface') || $entity_type_id == 'user')

@@ -1,5 +1,0 @@
-mcapi_exchange.join.action:
-  route_name: entity.mcapi_exchange.join
-  title: 'Join'
-  appears_on:
-    - entity.mcapi_exchange.canonical

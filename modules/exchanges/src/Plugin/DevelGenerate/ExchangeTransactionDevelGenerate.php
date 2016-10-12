@@ -29,11 +29,18 @@ use Drupal\Core\Entity\EntityStorageInterface;
 class ExchangeTransactionDevelGenerate extends TransactionDevelGenerate {
 
   /**
-   * Group IDs of all exchange groups
+   * Entity Query Object
    *
-   * @var array
+   * @var Drupal\Core\Entity\Query\Sql\Query
    */
-  protected $exids;
+  protected $groupQuery;
+
+  /**
+   * Entity Query Object
+   *
+   * @var Drupal\Core\Entity\Query\Sql\Query
+   */
+  protected $groupContentQuery;
 
   /**
    * Constructor.
@@ -54,7 +61,8 @@ class ExchangeTransactionDevelGenerate extends TransactionDevelGenerate {
    */
   public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityStorageInterface $transaction_storage, Connection $database, QueryFactory $entity_query) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $transaction_storage, $database, $entity_query);
-    $this->exids = $entity_query->get('group')->condition('type', 'exchange')->execute();
+    $this->groupQuery = $entity_query->get('group');
+    $this->groupContentQuery = $entity_query->get('group_content');
   }
 
 
@@ -94,11 +102,13 @@ class ExchangeTransactionDevelGenerate extends TransactionDevelGenerate {
    *   2 wallets whose holders share an exchange.
    */
   public function get2RandWalletIds(array $conditions = []) {
-    $this->exchange_id = $this->exids[array_rand($this->exids)];
+    $exids = $this->groupQuery->condition('type', 'exchange')->execute();
+    $this->exchange_id = $exids[array_rand($exids)];
     $wids = Exchanges::walletsInExchanges([$this->exchange_id]);
     shuffle($wids);
     if (count($wids) < 2) {
-      \Drupal::logger('mcapi')->warning('Only '.count($wids).' wallets in exchange: '.$this->exchange_id.': '.print_r($wids, 1));
+      $msg = 'Only '.count($wids).' wallets in exchange: '.$this->exchange_id.': '.print_r($wids, 1);
+      \Drupal::logger('mcapi')->warning($msg);
       return [];
     }
     return array_slice($wids, -2);
@@ -106,9 +116,9 @@ class ExchangeTransactionDevelGenerate extends TransactionDevelGenerate {
 
 
   protected function lastTransaction() {
-    $serials = $this->entityQueryFactory->get('mcapi_transaction')
+    $serials = $this->transactionQuery
       ->range(0, 1)
-      ->sort('serial', 'DESC')
+      ->sort('xid', 'DESC')
       ->execute();
     return Transaction::loadBySerial(reset($serials));
   }

@@ -236,7 +236,8 @@ class ExchangeGenerate extends GroupDevelGenerate implements ContainerFactoryPlu
     $exchange->created->value = strtotime('-2 years');
     $exchange->label->value = $values['exchange_name'];
     $exchange->save();
-
+    
+    // Grant the admin role to the exchange owner
     $this->groupMembershipLoader
       ->load($exchange, $exchange->getOwner())
       ->getGroupContent()

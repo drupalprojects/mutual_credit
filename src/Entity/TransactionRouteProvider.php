@@ -23,13 +23,12 @@ class TransactionRouteProvider extends DefaultHtmlRouteProvider {
     $options['parameters']['mcapi_transaction']['serial'] = TRUE;
 
     $route_collection
-      ->get('entity.mcapi_transaction.add_form')
-      ->setRequirement('_permission', 'create 3rdparty transaction');
+      ->get('entity.mcapi_transaction.canonical')
+      ->setOptions($options);
 
     $route_collection
-      ->get('entity.mcapi_transaction.canonical')
-      ->setRequirement('user', '\d+')
-      ->setOptions($options);
+      ->get('entity.mcapi_transaction.add_form')
+      ->setRequirement('_permission', 'create 3rdparty transaction');
 
     $route_collection
       ->get('entity.mcapi_transaction.edit_form')

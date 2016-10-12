@@ -19,7 +19,7 @@ use Drupal\Core\Database\Query\Condition;
  *   description = @Translation("Is in the same group as this transaction")
  * )
  *
- * @todo this isn't tested.
+ * @todo inject membership_loader
  */
 class SameGroup extends PluginBase implements TransactionRelativeInterface {
 
@@ -49,13 +49,12 @@ class SameGroup extends PluginBase implements TransactionRelativeInterface {
     foreach ($user_member_of as $membership) {
       $gids[] = $membership->getGroup()->id();
     }
+    $or_group->condition('gc.gid',  $gids, 'IN');
     $query->join(
       'group_content_field_data',
       'gc',
-      'gc.type = exchange-transactions AND gc.entity_id = mcapi_transactions_index.xid'
+      "gc.type = 'exchange-transactions' AND gc.entity_id = mcapi_transactions_index.xid"
     );
-
-    $or_group->condition('gc.gid',  $gids, 'IN');
   }
 
   /**
@@ -68,12 +67,13 @@ class SameGroup extends PluginBase implements TransactionRelativeInterface {
     foreach ($user_member_of as $membership) {
       $gids[] = $membership->getGroup()->id();
     }
+    $or_group->condition('gc.gid',  $gids, 'IN');
+
     $query->join(
       'group_content_field_data',
       'gc',
-      'gc.type = exchange-transactions AND gc.entity_id = mcapi_transaction.xid'
+      "gc.type = 'exchange-transactions' AND gc.entity_id = mcapi_transaction.xid"
     );
-    $or_group->condition('gc.gid',  $gids, 'IN');
   }
 
   /**

@@ -1,4 +1,4 @@
-id: d7_transaction
+id: d7_transaction_signatures
 label: Transaction entity
 migration_tags:
   - Drupal 7

@@ -4,15 +4,18 @@ namespace Drupal\mcapi\Plugin\migrate\source\d7;
 
 use Drupal\migrate\Row;
 use Drupal\migrate_drupal\Plugin\migrate\source\d7\FieldableEntity;
+use Drupal\migrate\Plugin\MigrationInterface;
+
 
 /**
  * Drupal 7 transactions source from database.
  *
  * @MigrateSource(
- *   id = "d7_mcapi_transaction"
+ *   id = "d7_mcapi_transaction",
+ *   source_provider = "mcapi"
  * )
  */
-class Transaction extends FieldableEntity {
+class Transaction extends FieldableEntity {//implements MigrationInterface {
 
   /**
    * {@inheritdoc}

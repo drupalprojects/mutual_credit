@@ -43,9 +43,18 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   protected $database;
 
   /**
-   * The entityQueryFactory.
+   * The entityQuery.
+   *
+   * @var Drupal\Core\Entity\Query\Sql\Query
    */
-  protected $entityQueryFactory;
+  protected $walletQuery;
+
+  /**
+   * The entityQuery.
+   *
+   * @var Drupal\Core\Entity\Query\Sql\Query
+   */
+  protected $transactionQuery;
 
   /**
    * Constructor.
@@ -68,7 +77,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->transactionStorage = $transaction_storage;
     $this->database = $database;
-    $this->entityQueryFactory = $entity_query;
+    $this->walletQuery = $entity_query->get('mcapi_wallet');
+    $this->transactionQuery = $entity_query->get('mcapi_transaction');
   }
 
   /**
@@ -231,7 +241,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * @note Loads all transactions into memory at the same time.
    */
   protected function contentKill($type) {
-    $xids = $this->entityQueryFactory->get('mcapi_transaction')
+    $xids = $this->transactionQuery
       ->condition('type', $type)
       ->execute();
     if (!empty($xids)) {
@@ -307,7 +317,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    *   2 wallet ids
    */
   public function get2RandWalletIds(array $conditions = []) {
-    $query = $this->entityQueryFactory->get('mcapi_wallet')
+    $query = $this->walletQuery
       ->condition('payways', Wallet::PAYWAY_AUTO, '<>');
     foreach ($conditions as $field => $value) {
       $query->condition($field, $value, is_array($value) ? 'IN' : '=');
@@ -330,7 +340,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   public function enoughWallets() {
     static $wallet_ids;
     if (!isset($wallet_ids)) {
-      $wallet_ids = $this->entityQueryFactory('mcapi_wallet')
+      $wallet_ids = $this->walletQuery
         ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
         ->execute();
     }

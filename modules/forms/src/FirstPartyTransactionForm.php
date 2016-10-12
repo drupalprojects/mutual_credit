@@ -2,13 +2,14 @@
 
 namespace Drupal\mcapi_forms;
 
-use Drupal\Core\Url;
-use Drupal\Component\Serialization\Json;
+use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Form\TransactionForm;
 use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\Core\Url;
+use Drupal\Component\Serialization\Json;
 
 /**
  * Form builder for transaction formed designed via the UI.
@@ -37,10 +38,10 @@ class FirstPartyTransactionForm extends TransactionForm {
    */
   public function init(FormStateInterface $form_state) {
     parent::init($form_state);
-    $this->entity = mcapi_forms_make_default_transaction(
-      $this->entityDisplay->getThirdPartySetting('mcapi_forms', 'type'),
-      $this->request->query->all()
-    );
+    $props = [
+      'type' => $this->entityDisplay->getThirdPartySetting('mcapi_forms', 'type'),
+    ];
+    $this->entity = Transaction::create($props + $this->request->query->all());
   }
 
   /**

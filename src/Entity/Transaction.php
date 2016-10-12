@@ -31,8 +31,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *     "form" = {
  *       "default" = "Drupal\mcapi\Form\TransactionForm",
  *       "operation" = "Drupal\mcapi\Form\OperationForm",
- *       "12many" = "Drupal\mcapi\Form\One2Many",
- *       "many21" = "Drupal\mcapi\Form\Many2One",
+ *       "mass" = "Drupal\mcapi\Form\MassPay",
  *       "edit" = "Drupal\mcapi\Form\TransactionEditForm"
  *     },
  *     "views_data" = "Drupal\mcapi\Views\TransactionViewsData",
@@ -159,7 +158,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
   public static function preCreate(EntityStorageInterface $storage, array &$values) {
     $values += [
       'type' => 'default',
-    // Uid of 0 means drush must have created it.
+      // Uid of 0 means drush must have created it.
       'creator' => \Drupal::currentUser()->id(),
     ];
     $type = Type::load($values['type']);
@@ -228,10 +227,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setReadOnly(TRUE);
 
     // This is really an entity reference.
-    $fields['parent'] = BaseFieldDefinition::create('integer')
+    $fields['parent'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Parent xid'))
       ->setDescription(t('Parent transaction that created this transaction.'))
       ->setDefaultValue(0)
+      ->setSetting('target_type', 'mcapi_transaction')
       ->setReadOnly(TRUE);
 
     // I wanted to add the CanPayout and CanPayin constraints in the widget

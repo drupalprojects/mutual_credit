@@ -153,6 +153,9 @@ function mcapi_forms_display_decorate(&$form, $settings) {
       '#weight' => 2,
     ],
   ];
+  if (!\Drupal::moduleHandler()->moduleExists('menu_ui')) {
+    \Drupal::service('module_installer')->install(['menu_ui']);
+  }
   $custom_menus = [];
   foreach (Menu::loadMultiple() as $menu_parent => $menu) {
     $custom_menus[$menu_parent] = $menu->label();
@@ -278,13 +281,13 @@ function mcapi_forms_display_submit($form, $form_state) {
  * Check the required transaction form elements are either preset OR in Twig.
  */
 function validate_twig_template(array $element, $form_state) {
-
   $required = mcapi_forms_required_fields()[0];
+  unset($required['creator']);
   $errors = [];
   // Find the required field and ensure they are all here.
   // Ensure the worth field is present.
-  foreach (mcapi_forms_required_fields()[0] as $fieldname) {
-    if (strpos($element['#value'], '{{ '.$fieldname. '}}') == NULL) {
+  foreach ($required as $fieldname) {
+    if (strpos($element['#value'], '{{ '. $fieldname .' }}') === NULL) {
       $form_state->setError(
         $element,
         t(

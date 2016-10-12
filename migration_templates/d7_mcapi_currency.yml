@@ -1,0 +1,24 @@
+id: d7_currency
+label: Currency configuration entity
+migration_tags:
+  - Drupal 7
+#wait for views to copy it
+class: Drupal\user\Plugin\migrate\Currency
+source:
+  #wait for views to copy it
+  plugin: d7_mcapi_currency
+process:
+  id: currcode
+  name: human_name
+  description: description
+  uid: uid
+  issuance: issuance
+  zero: display/zero
+  format: 
+    plugin: currency_format
+    source: display
+destination:
+  plugin: entity:mcapi_currency
+migration_dependencies:
+  required:
+    - d7_user

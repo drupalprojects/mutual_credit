@@ -2,7 +2,6 @@
 
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Entity\WalletInterface;
-use Drupal\mcapi\Entity\Transaction;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
@@ -29,7 +28,7 @@ function mcapi_forms_entity_type_build(array &$entity_types) {
 /**
  * Implements hook_menu_links_discovered_alter().
  *
- * adds menu links where the firstparty forms specify them
+ * Adds menu links where the firstparty forms specify theme.
  *
  * @param array $links
  *   Each link is a definition array.
@@ -54,9 +53,9 @@ function mcapi_forms_menu_links_discovered_alter(&$links) {
 
 /**
  *
- * implement hook_entity_base_field_info_alter().
+ * Implements hook_entity_base_field_info_alter().
  *
- * change the default date widget for the created field
+ * Change the default date widget for the created field
  *
  * @todo make this work with the date_popup widget, but in what module?
  */
@@ -86,45 +85,52 @@ function mcapi_forms_theme() {
 }
 
 /**
- * implement mcapi hook_mcapi_form_list().
- * return a list of transaction forms declared in this module.
- * each item must e an array with the following keys
+ * Implements mcapi hook_mcapi_form_list().
+ *
+ * Return a list of transaction forms declared in this module. Each item must be
+ * an array with the following keys:
  * - 'link' => \Drupal\Core\Link::()
- * - 'operations' => [Url::fromPath('blah')] an array of items, each with title and path
+ * - 'operations' => [Url::fromPath('blah')] an array of items, each with title
+ * and path
  */
 function mcapi_forms_mcapi_form_list() {
   drupal_set_message(t('Create more forms by creating more transaction form displays and customising them'));
   $forms = [];
 
   foreach (mcapi_form_displays_load() as $mode => $entity) {
+    $title = $entity->getThirdpartySetting('mcapi_forms', 'title');
     $forms[$mode] = [
       'link' => Link::fromTextAndUrl(
-        $entity->getThirdpartySetting('mcapi_forms', 'title'),
+        $title,
         Url::fromRoute('mcapi.1stparty.'.$mode)
       ),
-      'operations' => [
-        'edit' => [
-          'title' => t('Edit'),
-          'url' => Url::fromRoute(
-            'entity.entity_form_display.mcapi_transaction.form_mode',
-            ['form_mode_name' => $mode]
-          )
-        ]
-      ]
+      'operations' => []
     ];
+    if (\Drupal::moduleHandler()->moduleExists('field_ui')) {
+      $forms[$mode]['operations']['edit'] = [
+        'title' => t('Edit'),
+        'url' => Url::fromRoute(
+          'entity.entity_form_display.mcapi_transaction.form_mode',
+          ['form_mode_name' => $mode]
+        )
+      ];
+    }
+    else {
+      drupal_set_message(t('Enable Field UI module to edit %name form', ['%name' => $title]));
+    }
   }
   return $forms;
 }
 
 /**
- *
- * utility
- * get the EntityFormDisplays which have the thirdpartysettings
+ * Get the EntityFormDisplays which have the thirdPartySettings.
  *
  * @param bool $config
- *   TRUE if there is a risk of recursion
- * @return []
- *   The EntityFormDisplay entities, as entities or as config
+ *   TRUE if there is a risk of recursion loading entities, and then will be
+ * loaded as config.
+ *
+ * @return EntityFormDisplay[]
+ *   The display entities, as entities or as config.
  */
 function mcapi_form_displays_load($config = FALSE) {
   $displays = [];
@@ -163,35 +169,39 @@ function mcapi_forms_entity_extra_field_info() {
   return $extra;
 }
 
+
 /**
  * Implements hook_ENTITY_TYPE_view().
  */
 function mcapi_forms_mcapi_wallet_view(array &$build, $entity, $display) {
   if ($display->getComponent('trade_with')) {
-    foreach (mcapi_form_displays_load() as $id => $display) {
+    $current_user_id = \Drupal::currentUser()->id();
+    foreach (mcapi_form_displays_load() as $display) {
       $settings = $display->getThirdPartySettings('mcapi_forms');
-      switch($settings['direction']) {
-        case MCAPI_FORMS_DIR_INCOMING:
-          $key = 'payer';
-          break;
-        case MCAPI_FORMS_DIR_OUTGOING:
-          $key = 'payee';
-          break;
-        default:
-          continue;
+      if (mcapi_forms_access_direction($current_user_id, $settings['direction'])) {
+        switch($settings['direction']) {
+          case MCAPI_FORMS_DIR_INCOMING:
+            $key = 'payer';
+            break;
+          case MCAPI_FORMS_DIR_OUTGOING:
+            $key = 'payee';
+            break;
+          default:
+            continue;
+        }
+        $build['wallet_link_'.$display->id()] = [
+          '#type' => 'link',
+          '#title' => wallet_link_title($entity, $settings['wallet_link_title']),
+          '#url' => Url::fromUserInput($settings['path'], ['query' => [$key => $entity->id()]]),
+          '#attributes' => ['class' => 'wallet-link'],
+        ];
       }
-      $build['wallet_link_'.$id] = [
-        '#type' => 'link',
-        '#title' => wallet_link_title($entity, $settings['wallet_link_title']),
-        '#url' => Url::fromUserInput($settings['path'], ['query' => [$key => $entity->id()]]),
-        '#attributes' => ['class' => 'wallet-link'],
-      ];
     }
   }
 }
 
 /**
- * implements hook_form_FORM_ID_alter
+ * Implements hook_form_FORM_ID_alter().
  */
 function mcapi_forms_form_entity_form_display_edit_form_alter(&$form, \Drupal\Core\Form\FormState $form_state) {
   if ($form['#entity_type'] == 'mcapi_transaction') {
@@ -204,32 +214,28 @@ function mcapi_forms_form_entity_form_display_edit_form_alter(&$form, \Drupal\Co
   }
 }
 
-function mcapi_forms_make_default_transaction($type, $overrides = []) {
-  //prepare a transaction using the defaults here
-  $vars = ['type' => $type];
-  $vars += $overrides;
-  return Transaction::create($vars);
-}
-
 /**
+ * Replace the wallet name in the given template format.
+ *
  * @param WalletInterface $wallet
- * @param string $title
+ * @param string $template
+ *
  * @return string
  */
-function wallet_link_title(WalletInterface $wallet, $title) {
-  return str_replace('[mcapi_wallet:name]', $wallet->label(), $title);
+function wallet_link_title(WalletInterface $wallet, $template) {
+  return str_replace('[mcapi_wallet:name]', $wallet->label(), $template);
 }
 
 /**
  * Find out which wallets a user can pay into or out of.
  *
  * @param int $uid
- *   A user $account->id
+ *   A user $account->id().
  * @param string $dir
- *   Either 'incoming' or 'outgoing'
+ *   Either 'incoming' or 'outgoing'.
  *
  * @return int[]
- *   The wallet ids
+ *   The wallet ids.
  */
 function mcapi_forms_access_direction($uid, $dir) {
   //we can access this form if we have one or wallets which operate in the right direction.

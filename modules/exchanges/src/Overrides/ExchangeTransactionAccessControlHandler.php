@@ -2,19 +2,13 @@
 
 namespace Drupal\mcapi_exchanges\Overrides;
 
-/**
- * @file
- * Contains \Drupal\mcapi\Access\TransactionAccessControlHandler.
- */
-
 use Drupal\mcapi\Access\TransactionAccessControlHandler;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Access\AccessResult;
-use Drupal\mcapi\Mcapi;
 
 /**
- * Defines an access controller option for the mcapi_transaction entity.
+ * Overrides the access controller option for the mcapi_transaction entity.
  */
 class ExchangeTransactionAccessControlHandler extends TransactionAccessControlHandler {
 
@@ -36,20 +30,6 @@ class ExchangeTransactionAccessControlHandler extends TransactionAccessControlHa
       }
     }
     return $result;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function access(EntityInterface $transaction, $operation, AccountInterface $account = NULL, $return_as_object = FALSE) {
-    if ($operation === 'view' and $account->hasPermission('view all transactions')) {
-      // @todo URGENT. Handle the named payees and payers
-      return $return_as_object ? AccessResult::allowed()->cachePerUser() : TRUE;
-    }
-    return Mcapi::transactionActionLoad($operation)
-      ->getPlugin()
-      ->access($transaction, $account, $return_as_object)
-      ->cachePerUser();
   }
 
 }

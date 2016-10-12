@@ -234,7 +234,6 @@ class WorthForm extends FormElement {
       }
     }
     else {
-      debug($element['value']);//see 248, below
       // Check for allowed zero values.
       // zero values are only accepted if the currency allows and if cardinality
       // there is only one currency in the field.

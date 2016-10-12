@@ -8,25 +8,36 @@ use Drupal\mcapi\Mcapi;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\ContentEntityForm;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\KeyValueStore\KeyValueFactory;
+use Drupal\Core\Mail\MailManagerInterface;
 
 /**
  * Form builder for multiple payments between one and many wallets.
  */
-class MassPayBase extends ContentEntityForm {
+class MassPay extends ContentEntityForm {
 
   protected $keyValue;
   protected $mailManager;
+  protected $direction;
 
   /**
-   * Constructs a ContentEntityForm object.
+   * Constructor
+   *
+   * @param EntityManagerInterface $entity_manager
+   * @param EntityTypeManagerInterface $entity_type_manager
+   * @param KeyValueFactory $key_value
+   * @param MailManagerInterface $mail_manager
+   * @param RouteMatchInterface $route_match
    */
-  public function __construct($entity_manager, $entity_type_manager, $key_value, $mail_manager) {
+  public function __construct($entity_manager, EntityTypeManagerInterface $entity_type_manager, KeyValueFactory $key_value, MailManagerInterface $mail_manager, RouteMatchInterface $route_match) {
     // @todo deprecated
     parent::__construct($entity_manager);
     $this->setEntityTypeManager($entity_type_manager);
     $this->keyValue = $key_value->get('masspay');
     $this->mailManager = $mail_manager;
-
+    $this->direction = $route_match->getRouteObject()->getOption('direction');
   }
 
   /**
@@ -37,7 +48,8 @@ class MassPayBase extends ContentEntityForm {
       $container->get('entity.manager'),
       $container->get('entity_type.manager'),
       $container->get('keyvalue'),
-      $container->get('plugin.manager.mail')
+      $container->get('plugin.manager.mail'),
+      $container->get('current_route_match')
     );
   }
 
@@ -101,8 +113,7 @@ class MassPayBase extends ContentEntityForm {
     // So we carry on adapting the form from admin/accounting/transactions/form-display/default
 
     unset($form['type'], $form['creator'], $form['created']);
-    dsm(array_keys($form));
-    dsm($form['payee']);
+
     if (Mcapi::maxWalletsOfBundle('user', 'user') == 1) {
       $mode_options = [
         $this->t('The named users'),
@@ -143,6 +154,13 @@ class MassPayBase extends ContentEntityForm {
       '#default_value' => NULL,
     ];
 
+    if ($this->direction == '12many') {
+      $this->one2many($form, $form_state);
+    }
+    else {
+      $this->many21($form, $form_state);
+    }
+
     $mail_defaults = $this->keyValue->get('default');
     $form['notification'] = [
       '#title' => $this->t('Notify all parties', [], array('context' => 'accounting')),
@@ -167,6 +185,35 @@ class MassPayBase extends ContentEntityForm {
         '#weight' => 1,
       ],
     ];
+  }
+
+  function many21(&$form, FormStateInterface $form_state) {
+    if (empty($form_state->get('confirmed'))) {
+      $form['payee']['#title'] = $this->t('The one payee');
+      $form['payee']['#weight'] = 1;
+      $form['mode']['#weight'] = 2;
+      $form['payer']['#weight'] = 3;
+      $form['worth']['#weight'] = 4;
+      unset($form['payee']['#selection_settings']);
+      $form['payer']['#title'] = $this->t('The many');
+      $form['payer']['#tags'] = TRUE;
+      $form['mode']['#title'] = $this->t('Will receive from');
+    }
+  }
+
+  function one2many(&$form, FormStateInterface $form_state) {
+    if (empty($form_state->get('confirmed'))) {
+      $form['payer']['#weight'] = 1;
+      $form['mode']['#weight'] = 2;
+      $form['payee']['#weight'] = 3;
+      $form['worth']['#weight'] = 4;
+      $form['description']['#weight'] = 5;
+      $form['payer']['#title'] = $this->t('The one payer');
+      unset($form['payer']['#selection_settings']);
+      $form['payee']['#title'] = $this->t('The many');
+      $form['payee']['#tags'] = TRUE;
+      $form['mode']['#title'] = $this->t('Will pay');
+    }
   }
 
   /**

@@ -21,7 +21,7 @@ class ExchangeUserRegisterForm extends RegisterForm {
   public function __construct($entity_manager, $language_manager, $entity_query, $group_id) {
     parent::__construct($entity_manager, $language_manager, $entity_query);
     if ($group_id) {
-      $exchange = Group::load($gid);
+      $exchange = Group::load($group_id);
       if (is_object($exchange) && $exchange->type->value != 'exchange') {
         throw new AccessDeniedHttpException(
           $this->t("You can't join group '%name'", ['%name' => $exchange->label])

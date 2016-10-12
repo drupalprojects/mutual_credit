@@ -2,11 +2,6 @@
 
 namespace Drupal\mcapi\Access;
 
-/**
- * @file
- * Contains \Drupal\mcapi\Access\TransactionAccessControlHandler.
- */
-
 use Drupal\Core\Entity\EntityAccessControlHandler;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -43,7 +38,9 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
     return Mcapi::transactionActionLoad($operation)
       ->getPlugin()
       ->access($transaction, $account, $return_as_object)
-      ->cachePerUser();
+      ->cachePerUser()
+      ->addCacheableDependency($transaction);
   }
+
 
 }
