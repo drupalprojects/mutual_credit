@@ -282,12 +282,13 @@ function mcapi_forms_display_submit($form, $form_state) {
  */
 function validate_twig_template(array $element, $form_state) {
   $required = mcapi_forms_required_fields()[0];
+  $invisible = ['xid', 'uuid', 'serial', 'parent', 'creator', 'type', 'state', 'changed'];
   unset($required['creator']);
   $errors = [];
   // Find the required field and ensure they are all here.
   // Ensure the worth field is present.
   foreach ($required as $fieldname) {
-    if (strpos($element['#value'], '{{ '. $fieldname .' }}') === NULL) {
+    if ( (!in_array($fieldname, $invisible)) && strpos($element['#value'], '{{ '.$fieldname. ' }}') == NULL) {
       $form_state->setError(
         $element,
         t(

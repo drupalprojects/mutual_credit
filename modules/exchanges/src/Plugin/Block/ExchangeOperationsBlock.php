@@ -40,7 +40,6 @@ class ExchangeOperationsBlock extends BlockBase {
       /** @var \Drupal\group\Plugin\GroupContentEnablerInterface $plugin */
       $links += $plugin->getGroupOperations($exchange);
     }
-if (!$links)die('No links found in exchange operations block');
     unset($links['group-leave'], $links['group-join']);
     if ($links) {
       uasort($links, '\Drupal\Component\Utility\SortArray::sortByWeightElement');

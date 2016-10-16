@@ -8,6 +8,7 @@ use Symfony\Component\Validator\ExecutionContextInterface;
 
 /**
  * Base class for validating whether wallets can be used in certain directions.
+ *
  */
 abstract class CanPay extends Constraint implements ConstraintValidatorInterface {
 
