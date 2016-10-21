@@ -1,18 +1,17 @@
 <?php
 
-namespace Drupal\mcapi_exchanges\Form;
+namespace Drupal\mcapi_exchange\Form;
 
-use Drupal\Component\Utility\Html;
-use Drupal\user\Entity\User;
-use Drupal\mcapi\Entity\Currency;
+use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
+
 
 /**
  * Multistep form to make an exchange group
  *
  * @todo
  */
-class ExchangeWizard extends ExchangeForm {
+class ExchangeWizard extends GroupForm {
 
   /**
    * {@inheritdoc}
@@ -49,9 +48,6 @@ class ExchangeWizard extends ExchangeForm {
       '#weight' => $form['currencies']['#weight'] + 1,
     ];
     $form['currencies']['#title'] = t('Use exising currencies');
-    // @todo temp remove this
-    unset($form['currencies']['widget']['#required']);
-    // Existing and new currencies.
     return $form;
   }
 

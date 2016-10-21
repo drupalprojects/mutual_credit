@@ -19,7 +19,8 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
   protected $entityFormBuilder;
   protected $moduleHandler;
   protected $entityTypeManager;
-  private $entityDisplayRepository;
+  protected $entityDisplayRepository;
+  protected $currentUser;
 
   const CONFIRM_NORMAL = 0;
   const CONFIRM_AJAX = 1;
@@ -28,13 +29,14 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
   /**
    * Constructor.
    */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_form_builder, $module_handler, $transaction_relative_manager, $entity_type_manager, $entity_display_respository) {
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_form_builder, $module_handler, $transaction_relative_manager, $entity_type_manager, $entity_display_respository, $current_user) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->entityFormBuilder = $entity_form_builder;
     $this->moduleHandler = $module_handler;
     $this->transactionRelativeManager = $transaction_relative_manager;
     $this->entityTypeManager = $entity_type_manager;
     $this->entityDisplayRepository = $entity_display_respository;
+    $this->currentUser = $current_user;
   }
 
   /**
@@ -49,7 +51,8 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
       $container->get('module_handler'),
       $container->get('mcapi.transaction_relative_manager'),
       $container->get('entity_type.manager'),
-      $container->get('entity_display.repository')
+      $container->get('entity_display.repository'),
+      $container->get('current_user')
     );
   }
 
@@ -58,7 +61,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
    */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
     if (!$account) {
-      $account = \Drupal::currentUser();
+      $account = $this->currentUser;
     }
     $result = $this->accessOp($object, $account) && $this->accessState($object, $account);
 

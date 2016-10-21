@@ -282,37 +282,6 @@ class Mcapi {
         Url::fromUri('http://twig.sensiolabs.org/doc/templates.html')
       );
     return implode(', ', $tokens) . '. ' . $link->toString();
-
-  }
-
-  /**
-   * Get the wallet IDs corresponding to a search string and directionality.
-   *
-   * @param string $match
-   *   A string to be matched against the wallet name.
-   * @param string $restrict
-   *   One of 'payin', 'payout' or empty.
-   *
-   * @return integer[]
-   *   A list of wallet ids.
-   */
-  public static function getWalletSelection($match = '', $restrict = '') {
-    $walletStorage = \Drupal::entityTypeManager()->getStorage('mcapi_wallet');
-    if ($restrict) {
-      $wids = $walletStorage->whichWalletsQuery($restrict, \Drupal::currentUser()->id(), $match);
-    }
-    else {
-      $query = \Drupal::entityQuery('mcapi_wallet')
-      // Not intertrading wallets.
-        ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
-        ->condition('orphaned', 0);
-      if ($match) {
-        $query->condition('name', '%' . \Drupal::database()->escapeLike($match) . '%', 'LIKE');
-      }
-      $wids = $query->execute();
-    }
-
-    return $wids;
   }
 
   /**

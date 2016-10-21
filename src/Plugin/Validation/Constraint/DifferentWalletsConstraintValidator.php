@@ -7,6 +7,8 @@ use Symfony\Component\Validator\Constraint;
 
 /**
  * Check that the two wallets in the transaction are different.
+ *
+ *@todo inject or remove logger
  */
 class DifferentWalletsConstraintValidator extends ConstraintValidator {
 

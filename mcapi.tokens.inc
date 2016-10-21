@@ -27,11 +27,11 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
           $replacements[$original] = $transaction->type->entity->label();
           break;
 
-        case 'payer':
+        case PAYER_FIELDNAME:
           $replacements[$original] = $transaction->payer->entity->getHolder()->toLink()->toString();
           break;
 
-        case 'payee':
+        case PAYEE_FIELDNAME:
           $replacements[$original] = $transaction->payee->entity->getHolder()->toLink()->toString();
           break;
 

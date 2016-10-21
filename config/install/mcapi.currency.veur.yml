@@ -3,7 +3,7 @@ status: true
 dependencies: {  }
 id: veur
 name: Virtual Euros
-description: A promise to deliver one Euro's worth of value
+description: "A promise to deliver one Euro's worth of value. Positive balances in the system should correspond to stored Euros and should be redeemable."
 uid: 1
 issuance: 1
 format:

@@ -20,3 +20,6 @@ wallet_widget_max_select: 15
 wallet_widget_max_radios: 3
 autoadd: 1
 render_unused: 1
+masspay_mail:
+  subject: ''
+  body: ''

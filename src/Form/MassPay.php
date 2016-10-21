@@ -2,15 +2,12 @@
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Mcapi;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\ContentEntityForm;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\KeyValueStore\KeyValueFactory;
 use Drupal\Core\Mail\MailManagerInterface;
 
 /**
@@ -18,26 +15,40 @@ use Drupal\Core\Mail\MailManagerInterface;
  */
 class MassPay extends ContentEntityForm {
 
-  protected $keyValue;
+  const MASSINCLUDE = 0;
+  const MASSEXCLUDE = 1;
+
+  /**
+   * @var Drupal\Core\Mail\MailManagerInterface
+   */
   protected $mailManager;
+
+  /**
+   * Either '12many' or 'many21'
+   * @var string
+   */
   protected $direction;
+
+  /**
+   * Mail template
+   * @var array
+   */
+  protected $configfactory;
+
 
   /**
    * Constructor
    *
    * @param EntityManagerInterface $entity_manager
-   * @param EntityTypeManagerInterface $entity_type_manager
-   * @param KeyValueFactory $key_value
    * @param MailManagerInterface $mail_manager
    * @param RouteMatchInterface $route_match
    */
-  public function __construct($entity_manager, EntityTypeManagerInterface $entity_type_manager, KeyValueFactory $key_value, MailManagerInterface $mail_manager, RouteMatchInterface $route_match) {
+  public function __construct($entity_manager, MailManagerInterface $mail_manager, RouteMatchInterface $route_match, $config_factory) {
     // @todo deprecated
     parent::__construct($entity_manager);
-    $this->setEntityTypeManager($entity_type_manager);
-    $this->keyValue = $key_value->get('masspay');
     $this->mailManager = $mail_manager;
     $this->direction = $route_match->getRouteObject()->getOption('direction');
+    $this->configFactory = $config_factory;
   }
 
   /**
@@ -46,10 +57,9 @@ class MassPay extends ContentEntityForm {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('entity.manager'),
-      $container->get('entity_type.manager'),
-      $container->get('keyvalue'),
       $container->get('plugin.manager.mail'),
-      $container->get('current_route_match')
+      $container->get('current_route_match'),
+      $container->get('config.factory')
     );
   }
 
@@ -57,30 +67,20 @@ class MassPay extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $form = parent::buildForm($form, $form_state);
-    $form = [
-      'submit' => [
-        '#type' => 'submit',
-        '#weight' => 50,
-      ],
-    ];
-    if (empty($form_state->get('validated_transactions'))) {
-      // We have to mimic some part of the normal entity form preparation.
-      // @todo on the rebuilt form we need to make a default entity.
-      // But how to get the submitted values from $form_state?
-      // $this->entity = Transaction::create([]);
-      // $form = parent::form($form, $form_state);.
-      $form['submit']['#value'] = $this->t('Preview');
+    $this->init($form_state);
+    $form['actions'] = $this->actionsElement($form, $form_state);
+
+    if (empty($form_state->get('wallets'))) {
       if (empty($form_state->get('confirmed'))) {
         $this->step1($form, $form_state);
       }
+      $form['actions']['submit']['#value'] = $this->t('Preview');
     }
     else {
-      $viewBuilder = $this->entityTypeManager->getViewBuilder('mcapi_transaction');
-      foreach ($form_state->get('validated_transactions') as $transaction) {
-        $form['preview'][] = $viewBuilder->view($transaction, 'sentence');
-      }
-      $form['submit']['#value'] = $this->t('Confirm');
+      $form['preview'][] = $this->entityTypeManager
+        ->getViewBuilder('mcapi_transaction')
+        ->viewMultiple($this->entity->flatten(), 'sentence');
+      $form['actions']['submit']['#value'] = $this->t('Confirm');
     }
     return $form;
   }
@@ -91,77 +91,55 @@ class MassPay extends ContentEntityForm {
   public function step1(array &$form, FormStateInterface $form_state) {
     $display = $this->getFormDisplay($form_state);
     $form['#parents'] = [];
-    // Borrowed from Drupal\Core\Entity\Entity\EntityFormDisplay but without
-    // making the weights so hard to alter
+
+    // Build the default transaction form
     foreach ($display->getComponents() as $name => $options) {
       if ($widget = $display->getRenderer($name)) {
+        if($name == PAYER_FIELDNAME && $this->direction == '12many') {
+          $widget->forceMultipleValues();
+        }
+        elseif($name == PAYEE_FIELDNAME && $this->direction == 'many21') {
+          $widget->forceMultipleValues();
+        }
         $items = $this->entity->get($name);
         $items->filterEmptyItems();
         $form[$name] = $widget->form($items, $form, $form_state);
         $form[$name]['#access'] = $items->access('edit');
-
-        // Assign the correct weight. This duplicates the reordering done in
-        // processForm(), but is needed for other forms calling this method
-        // directly.
-        $form[$name]['#weight'] = $options['weight'];
       }
     }
-
-    // $form is now the default transaction entity form, but the element weights
-    // will be imposed after form_alter. Normally we would create our own
-    // formDisplay, but this clashes with the mcapi_forms module.
-    // So we carry on adapting the form from admin/accounting/transactions/form-display/default
-
+    // Don't restrict wallets by payin/payout settings
+    $form_state->set('restrictWallets', FALSE);
     unset($form['type'], $form['creator'], $form['created']);
+    $form['description']['#weight'] = 5;
 
+    $form['mode'] = [
+      '#type' => 'radios',
+    ];
     if (Mcapi::maxWalletsOfBundle('user', 'user') == 1) {
-      $mode_options = [
+      $form['mode']['#options'] = [
         $this->t('The named users'),
         $this->t("All users except those named"),
       ];
     }
     else {
-      $mode_options = [
-        $this->t('The named wallets'),
-        $this->t("All wallets except those named"),
+      $form['mode']['#options'] = [
+        SELF::MASSINCLUDE => $this->t('The named wallets'),
+        SELF::MASSEXCLUDE => $this->t("All wallets except those named"),
       ];
     }
-    $form['mode'] = [
-      '#type' => 'radios',
-      // @todo start with nothing selected; force the user to choose something.
-      '#options' => $mode_options,
-    ];
-    $form['payer'] = [
-      '#title' => $this->t('Payer'),
-      '#type' => 'wallet_entity_auto',
-      '#selection_settings' => ['direction' => 'payout'],
-    ];
-
-    $form['payee'] = [
-      '#title' => $this->t('Payee'),
-      '#type' => 'wallet_entity_auto',
-      '#selection_settings' => ['direction' => 'payin'],
-    ];
-    $form['description'] = [
-      '#title' => $this->t('Description'),
-      '#placeholder' => $this->t('What this payment is for...'),
-      '#type' => 'textfield',
-      '#weight' => 100
-    ];
-    $form['worth'] = [
-      '#title' => $this->t('Worth'),
-      '#type' => 'worths_form',
-      '#default_value' => NULL,
-    ];
-
-    if ($this->direction == '12many') {
-      $this->one2many($form, $form_state);
+    if (empty($form_state->get('confirmed'))) {
+      if ($this->direction == '12many') {
+        $this->one2many($form, $form_state);
+      }
+      else {
+        $this->many21($form, $form_state);
+      }
     }
-    else {
-      $this->many21($form, $form_state);
-    }
+    unset($form[PAYEE_FIELDNAME]['widget']['target_id']['#description']);
+    unset($form[PAYER_FIELDNAME]['widget']['target_id']['#description']);
 
-    $mail_defaults = $this->keyValue->get('default');
+    $mail_setting  = $this->configFactory->get('mcapi.settings')->get('masspay_mail');
+    //@todo use rules for this
     $form['notification'] = [
       '#title' => $this->t('Notify all parties', [], array('context' => 'accounting')),
       // @todo decide whether to put rules in a different module
@@ -174,87 +152,71 @@ class MassPay extends ContentEntityForm {
         '#title' => $this->t('Subject'),
         '#type' => 'textfield',
         // This needs to be stored per-exchange.
-        '#default_value' => $mail_defaults['subject'],
+        '#default_value' => $mail_setting['subject'],
       ],
       'body' => [
         '#title' => $this->t('Message'),
         // @todo the tokens?
         '#description' => $this->t('The following tokens are available: [user:name]'),
         '#type' => 'textarea',
-        '#default_value' => $mail_defaults['body'],
+        '#default_value' => $mail_setting['body'],
         '#weight' => 1,
       ],
     ];
   }
 
   function many21(&$form, FormStateInterface $form_state) {
-    if (empty($form_state->get('confirmed'))) {
-      $form['payee']['#title'] = $this->t('The one payee');
-      $form['payee']['#weight'] = 1;
-      $form['mode']['#weight'] = 2;
-      $form['payer']['#weight'] = 3;
-      $form['worth']['#weight'] = 4;
-      unset($form['payee']['#selection_settings']);
-      $form['payer']['#title'] = $this->t('The many');
-      $form['payer']['#tags'] = TRUE;
-      $form['mode']['#title'] = $this->t('Will receive from');
-    }
+    $form[PAYEE_FIELDNAME]['widget']['target_id']['#title'] = $this->t('The one payee');
+    $form[PAYER_FIELDNAME]['widget']['target_id']['#title'] = $this->t('The many');
+    //$form[PAYER_FIELDNAME]['widget'][0]['target_id']['#multiple'] = TRUE;
+    $form[PAYEE_FIELDNAME]['#weight'] = 1;
+    $form['mode']['#weight'] = 2;
+    $form[PAYER_FIELDNAME]['#weight'] = 3;
+    $form['worth']['#weight'] = 4;
+    unset($form[PAYEE_FIELDNAME]['#selection_settings']);
+    $form[PAYER_FIELDNAME]['#tags'] = TRUE;
+    $form['mode']['#title'] = $this->t('Will receive from');
   }
 
   function one2many(&$form, FormStateInterface $form_state) {
-    if (empty($form_state->get('confirmed'))) {
-      $form['payer']['#weight'] = 1;
-      $form['mode']['#weight'] = 2;
-      $form['payee']['#weight'] = 3;
-      $form['worth']['#weight'] = 4;
-      $form['description']['#weight'] = 5;
-      $form['payer']['#title'] = $this->t('The one payer');
-      unset($form['payer']['#selection_settings']);
-      $form['payee']['#title'] = $this->t('The many');
-      $form['payee']['#tags'] = TRUE;
-      $form['mode']['#title'] = $this->t('Will pay');
-    }
+    $form[PAYER_FIELDNAME]['widget']['target_id']['#title'] = $this->t('The one payer');
+    $form[PAYEE_FIELDNAME]['widget']['target_id']['#title'] = $this->t('The many');
+    //$form[PAYEE_FIELDNAME]['widget'][0]['target_id']['#multiple'] = TRUE;
+    $form[PAYER_FIELDNAME]['#weight'] = 1;
+    $form['mode']['#weight'] = 2;
+    $form[PAYEE_FIELDNAME]['#weight'] = 3;
+    $form['worth']['#weight'] = 4;
+    $form['description']['#weight'] = 5;
+    $form[PAYEE_FIELDNAME]['#tags'] = TRUE;
+    unset($form[PAYER_FIELDNAME]['#selection_settings']);
+    $form['mode']['#title'] = $this->t('Will pay');
   }
 
   /**
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    if ($form_state->getErrors()) {
-      return;
-    }
-    // Only validate step 1.
-    if (empty($form_state->get('validated_transactions'))) {
-      // Buildentity fails without this, but not so in NodeFormController.
-      $form_state->cleanValues();
+    if (!$form_state->getErrors()) {
+      // Only validate step 1.
+      if (empty($form_state->get('wallets'))) {
+        // Unlike normal one-step entity forms, save the entiry here for step 2
+        $this->entity = parent::validateForm($form, $form_state);
 
-      $form_state->setValue('creator', $this->currentUser()->id());
-      $form_state->setValue('type', 'mass');
-      $values = $form_state->getValues();
-      $transactions = [];
-      foreach ((array) $form_state->getValue('payer') as $payer) {
-        foreach ((array) $form_state->getValue('payee') as $payee) {
-          if ($payer == $payee) {
-            continue;
-          }
-          $wallets[] = $values['payer'] = is_array($payer) ? $payer['target_id'] : $payer;
-          $wallets[] = $values['payee'] = is_array($payee) ? $payee['target_id'] : $payee;
-          $transactions[] = Transaction::create($values);
-        }
-      }
+        // We will mail the owners of these wallets
+        $wids = array_unique(array_merge(
+          (array)$form_state->getValue(PAYER_FIELDNAME)['target_id'],
+          (array)$form_state->getValue(PAYEE_FIELDNAME)['target_id']
+        ));
+        $form_state->set('wallets', $wids);
+        $form_state->setRebuild(TRUE);
 
-      foreach ($transactions as $transaction) {
-        // We do NOT add children.
-        $violations = $transaction->validate();
-        foreach ($violations as $violation) {
-          $form_state->setErrorByName($violation->getpropertypath(), $violation->getMessage());
-        }
+        //store this for now coz its lost in stage 2
+        $mail = [
+          'subject' => $form_state->getValue('subject'),
+          'body' => $form_state->getValue('body')
+        ];
+        $form_state->set('mail', $mail);
       }
-      // @todo update to d8
-      // drupal_set_title(t('Are you sure?'));
-      $form_state->set('validated_transactions', $transactions);
-      // Mail the owners of these.
-      $form_state->set('wallets', array_unique($wallets));
     }
   }
 
@@ -262,43 +224,98 @@ class MassPay extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $values = $form_state->getValues();
-    // @todo how do we inject stuff into forms?
-    $this->keyValue->set('default', ['subject' => $values['subject'], 'body' => $values['body']]);
+    parent::submitForm($form, $form_state);
+    $this->configFactory->getEditable('mcapi.settings')
+      ->set('masspay_mail', $form_state->get('mail'))
+      ->save();
+  }
 
-    // @todo what does this mean?
-    if (!isset($values['op'])) {
-      $form_state->setRebuild(TRUE);
-      return;
-    }
-
-    $main_transaction = array_shift($form_state->get('validated_transactions'));
-    $main_transaction->children = $form_state->get('validated_transactions');
-    $main_transaction->save();
-
-    // @todo make sure this is queueing
-    $params['subject'] = $values['subject'];
-    $params['body'] = $values['body'];
-    $params['serial'] = $main_transaction->serial->value;
+  /**
+   * {@inheritdoc}
+   */
+  public function save(array $form, FormStateInterface $form_state) {
+    parent::save($form, $form_state);
+    // @todo make sure this mail is queueing
+    $params = $form_state->get('mail');
+    $params['serial'] = $this->entity->serial->value;
     foreach (Wallet::loadMultiple($form_state->get('wallets')) as $wallet) {
       $owner = $wallet->getOwner();
       $params['recipient_id'] = $owner->id();
-      $this->mailManager->mail('mcapi', 'mass', $owner->getEmail(), user_preferred_langcode($owner), $params);
+      $this->mailManager->mail(
+        'mcapi',
+        'mass',
+        $owner->getEmail(),
+        $owner->getPreferredLangcode(),
+        $params
+      );
     }
     // Go to the transaction certificate.
     $form_state->setRedirect(
       'entity.mcapi_transaction.canonical',
-      ['mcapi_transaction' => $main_transaction->serial->value]
+      ['mcapi_transaction' => $this->entity->serial->value]
     );
 
     $this->logger('mcapi')->notice(
       'User @uid created @num mass transactions #@serial',
       [
         '@uid' => $this->currentUser()->id(),
-        '@count' => count($form_state->get('validated_transactions')),
+        '@num' => count($this->entity->children) + 1,
         '@serial' => $this->entity->serial->value,
       ]
     );
   }
+
+  public function buildEntity(array $form, FormStateInterface $form_state) {
+    if ($form_state->get('wallets')) {
+      return $this->entity;
+    }
+    $entity = parent::buildEntity($form, $form_state);
+
+    if ($this->direction == '12many') {
+      $one_fieldname = PAYER_FIELDNAME;
+      $many_fieldname = PAYEE_FIELDNAME;
+    }
+    else {
+      $one_fieldname = PAYEE_FIELDNAME;
+      $many_fieldname = PAYER_FIELDNAME;
+    }
+    $one_wid = $form_state->getValue($one_fieldname)['target_id'];
+
+    if ($form_state->getValue('mode') == SELF::MASSEXCLUDE) {
+      $field_definition = $entity->get($many_fieldname)->getFieldDefinition();
+      $$many_fieldname = \Drupal::service('plugin.manager.entity_reference_selection')
+        ->getSelectionHandler($field_definition)
+        ->inverse($form_state->getValue($many_fieldname)['target_id']);
+    }
+    else {
+      $$many_fieldname = $form_state->getValue($many_fieldname)['target_id'];
+    }
+    $entity->creator->target_id = $this->currentUser()->id();
+    $entity->type->target_id = 'mass';
+    $transactions = $wallets = [];
+    foreach ($$many_fieldname as $many) {
+      if ($many == $one_wid) {
+        continue;
+      }
+      $transaction = $entity->createDuplicate();
+      $transaction->set($many_fieldname, $many);
+      $transaction->set($one_fieldname, $one_wid);
+      $transactions[] = $transaction;
+    }
+    if (empty($transactions)) {
+      throw new \Exception('Problem creating transaction on MassPay form');
+    }
+    // Invoke all specified builders for copying form values to entity
+    // properties.
+    if (isset($form['#entity_builders'])) {
+      foreach ($form['#entity_builders'] as $function) {
+        call_user_func_array($function, array($entity->getEntityTypeId(), $entity, &$form, &$form_state));
+      }
+    }
+    $entity = array_shift($transactions);
+    $entity->children = $transactions;
+    return $entity;
+  }
+
 
 }

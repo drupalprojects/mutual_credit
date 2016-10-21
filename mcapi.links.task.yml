@@ -25,16 +25,16 @@ mcapi.currency.edit.tab:
   base_route: entity.mcapi_currency.edit_form
   weight: 0
 
+mcapi.masspay.many21:
+  title: 'Many-to-one'
+  route_name: mcapi.masspay
+  base_route: mcapi.masspay
+  weight: 0
+
 mcapi.masspay.12many:
   title: 'One-to-many'
   route_name: mcapi.masspay.12many
-  base_route: mcapi.masspay.12many
-  weight: 0
-
-mcapi.masspay.many21:
-  title: 'Many-to-one'
-  route_name: mcapi.masspay.many21
-  base_route: mcapi.masspay.12many
+  base_route: mcapi.masspay
   weight: 0
 
 #default tab needed when signatures tab is added

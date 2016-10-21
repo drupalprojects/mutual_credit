@@ -17,6 +17,7 @@ class RouteSubscriber extends RouteSubscriberBase {
    * {@inheritdoc}
    */
   protected function alterRoutes(RouteCollection $collection) {
+    // Replace the user registration form with one specially designed for exchanges
     $collection->get('user.register')->setPath('user/register/{group}');
     if ($transaction_list = $collection->get('view.mcapi_exchange_transactions.admin_collection')) {
       $collection->add('mcapi.transactions.collection', $transaction_list);
@@ -24,6 +25,15 @@ class RouteSubscriber extends RouteSubscriberBase {
       $collection->remove('view.mcapi_exchange_transactions.admin_collection');
     }
 
+    // Change acess to the currency collection form
+    $collection->get('entity.mcapi_currency.collection')
+      ->setRequirements(['_user_is_logged_in' => 'true']);
+
+    // Make mass transaction forms available to group accountants.
+    $collection->get('mcapi.masspay')
+      ->setRequirements(['_exchange_permission' => 'manage transactions']);
+    $collection->get('mcapi.masspay.12many')
+      ->setRequirements(['_exchange_permission' => 'manage transactions']);
   }
 
   /**

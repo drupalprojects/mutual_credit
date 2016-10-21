@@ -4,9 +4,12 @@ namespace Drupal\mcapi_exchanges\Overrides;
 
 use Drupal\mcapi_exchanges\Exchanges;
 use Drupal\mcapi\ListBuilder\CurrencyListBuilder;
+use Drupal\group\GroupMembershipLoader;
 use Drupal\group\Entity\Group;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Entity\Query\QueryFactory;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -15,8 +18,26 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class CurrencyListBuilderExchanges extends CurrencyListBuilder {
 
-  private $currentuser;
+  private $currentUser;
   private $database;
+  private $entityQuery;
+  private $membershipLoader;
+
+  /**
+   * Constructor.
+   *
+   * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
+   * @param \Drupal\Core\Entity\EntityStorageInterface $storage
+   * @param \Drupal\Core\Session\AccountInterface $current_user
+   * @param \Drupal\Core\Entity\Query\QueryFactory $entity_query
+   * @param \Drupal\group\GroupMembershipLoader $membership_loader
+   */
+  public function __construct($entity_type, $storage, AccountInterface $current_user, QueryFactory $entity_query, GroupMembershipLoader $membership_loader) {
+    parent::__construct($entity_type, $storage);
+    $this->currentUser = $current_user;
+    $this->entityQuery = $entity_query;
+    $this->membershipLoader = $membership_loader;
+  }
 
   /**
    * {@inheritdoc}
@@ -26,30 +47,20 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
       $entity_type,
       $container->get('entity_type.manager')->getStorage('mcapi_currency'),
       $container->get('current_user'),
-      $container->get('database')
+      $container->get('entity.query'),
+      $container->get('group.membership_loader')
     );
-  }
-
-  /**
-   * Constructs a new EntityListBuilder object.
-   *
-   * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
-   *   The entity type definition.
-   * @param \Drupal\Core\Entity\EntityStorageInterface $storage
-   *   The entity storage class.
-   */
-  public function __construct(EntityTypeInterface $entity_type, EntityStorageInterface $storage, $current_user, $database) {
-    parent::__construct($entity_type, $storage);
-    $this->currentUser = $current_user;
-    $this->database = $database;
   }
 
   /**
    * {@inheritdoc}
    */
   public function buildHeader() {
-    $header['exchanges'] = t('Used in');
-    return parent::buildHeader() + $header;
+    $header = parent::buildHeader() + ['exchanges' => $this->t('Used in')];
+    if (!$this->currentUser->hasPermission('configure mcapi')) {
+      unset($header['weight']);
+    }
+    return $header;
   }
 
   /**
@@ -58,21 +69,28 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
    * @todo we might want to somehow filter the currencies before they get here, if there are large number
    */
   public function buildRow(EntityInterface $entity) {
-    // Get the groups which use this currency
-    $group_ids =\Drupal::entityQuery('group')
-      ->condition('currencies', $entity->id)
+
+    $row = parent::buildRow($entity);
+    //dsm(array_keys($row));
+    // Find out if the currency is used in more than one group.
+    $gids = $this->entityQuery->get('group')
+      ->condition('currencies', $entity->id())
       ->execute();
-    if (count($group_ids) > 1) {
-      $row['exchanges']['#markup'] = $this->t('@count exchanges', array('@count' => count($group_ids)));
+    if (count($gids) > 1) {
+      $row['exchanges']['#markup'] = $this->t('@count exchanges', array('@count' => count($gids)));
     }
     else {
       $link = '';
-      if ($gid = reset($group_ids)) {
+      if ($gid = reset($gids)) {
         $link = Group::load($gid)->toLink()->toString();
       }
       $row['exchanges']['#markup'] = $link;
     }
-    return parent::buildRow($entity) + $row;
+
+    if (!$this->currentUser->hasPermission('configure mcapi')) {
+      unset($row['weight']);
+    }
+    return $row;
   }
 
   /**
@@ -85,52 +103,32 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
       return parent::load();
     }
     $gids = $currencies = [];
-    //get my memberships
-    $memberships = \Drupal\group\GroupMembership::loadByUser($this->currentUser, ['admin']);
-    //get the groups from the memberships
-    foreach ($memberships as $ship) {
-      $gids[] = $ship->getGroup()->id();
+    //get my exchange
+    $membership = mcapi_exchanges_current_membership();
+    if (!$membership) {
+      return [];
     }
-    if ($gids) {
-      // Get the currencies in those groups
-      $curr_ids = Exchanges::getCurrenciesOfExchanges($gids);
-      // No sort has been applied.
-      $currencies = $this->storage->loadMultiple($curr_ids);
-    }
+
+    $gid = $membership->getGroup()->id();
+
+    // Get the currencies in those groups
+    $curr_ids = Exchanges::getCurrenciesOfExchanges([$gid]);
+    // No sort has been applied.
+    $currencies = $this->storage->loadMultiple($curr_ids);
+
     return $currencies;
   }
 
-}
 
-/**
+  /**
    * {@inheritdoc}
-   *
-   * @todo make the currency filter work like the views filter works
-   *
-   * @note that we must choose between currency weights and the paged / filtered list
-   *
-   * @see \Drupal\views_ui\ViewListBuilder::render
    */
-/*
-public function render() {
-$this->limit = 2;//set this to 50 after testing
-$list = parent::render();
+  public function buildForm(array $form, FormStateInterface $form_state) {
+    $form = parent::buildForm($form, $form_state);
+    if (!$this->currentUser->hasPermission('configure mcapi')) {
+      unset($form[$this->entitiesKey]['#tabledrag']);
+    }
+    return $form;
+  }
 
-$list['filters'] = [
-'#type' => 'search',
-'#title' => $this->t('Filter'),
-'#title_display' => 'invisible',
-'#size' => 40,
-'#placeholder' => $this->t('Filter by currency name or machine name'),
-'#weight' => -1,
-'#attributes' => array(
-'class' => array('views-filter-text'),
-'data-table' => '.views-listing-table',
-'autocomplete' => 'off',
-'title' => $this->t('Enter a part of the view name or description to filter by.'),
-),
-];
-return $list;
 }
- *
- */

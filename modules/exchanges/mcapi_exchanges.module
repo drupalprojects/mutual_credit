@@ -8,6 +8,7 @@
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi_exchanges\Exchanges;
 use Drupal\group\Entity\GroupContent;
+use Drupal\Core\Database\Driver\mysql\Select;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\Core\Entity\ContentEntityInterface;
@@ -25,19 +26,8 @@ function mcapi_exchanges_entity_type_alter(array &$entity_types) {
   $entity_types['mcapi_currency']->setAccessClass($path.'ExchangeCurrencyAccessControlHandler');
   $entity_types['mcapi_transaction']->setAccessClass($path.'ExchangeTransactionAccessControlHandler');
   $entity_types['user']->setFormClass('register', $path.'ExchangeUserRegisterForm');
-
-  //$entity_types['user']->setAccessClass($path.'UserAccessControlHandler');
   $entity_types['mcapi_wallet']->setAccessClass($path.'ExchangesWalletAccessControlHandler');
-
   $entity_types['group']->setAccessClass($path.'ExchangeAccessControlHandler');
-  $entity_types['group']->setFormClass('many21', 'Drupal\mcapi_exchanges\Form\GroupMassTransactionForm');
-  $entity_types['group']->setFormClass('12many', 'Drupal\mcapi_exchanges\Form\GroupMassTransactionForm');
-
-  // This view would ideally be deleted on pre_install, but that doesn't work
-  // when this module is part of a distribution profile.
-  //if (class_exists('Drupal\views\Entity\View') && $view = View::load('mcapi_transactions')) {
-    //$view->delete();
-  //}
 }
 
 
@@ -144,10 +134,11 @@ function template_preprocess_exchange_trade_stats(&$vars) {
  */
 function template_preprocess_currencies(&$vars) {
   foreach ($vars['element']['#currencies'] as $id => $curr) {
-    $vars['rows'][$id]['name'] = $curr->name;
-    $vars['rows'][$id]['volume'] = $curr->format(99);
+    $row = &$vars['rows'][$id];
+    $row['name'] = $curr->name;
+    $row['volume'] = $curr->format(99);
     if (\Drupal::entityTypeManager()->getAccessControlHandler('mcapi_currency')->access($curr, 'update')) {
-      $vars['rows'][$id]['edit'] = Link::fromTextAndUrl(
+      $row['edit'] = Link::fromTextAndUrl(
         t('Edit'),
         Url::fromRoute('entity.mcapi_currency.edit_form', ['mcapi_currency' => $curr->id])
       );
@@ -164,19 +155,21 @@ function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $
 }
 
 /**
- * Implements hook_query_TAG_alter().
+ * Implements hook_query_entity_query_ENTITY_TYPE_alter().
  *
- * Limits all wallet entityQueries to the exchanges of the current user.
+ * Limits all wallet entityQueries to the exchanges of the current user. NB Only
+ * Applies to restricted queries
+ *
+ * @see Drupal\mcapi\Plugin\Field\FieldWidget\WalletReferenceAutocompleteWidget::formElement
  */
-function mcapi_exchanges_query_whichWallets_alter(\Drupal\Core\Database\Driver\mysql\Select $query) {
+function mcapi_exchanges_query_entity_query_mcapi_wallet_alter(Select $query) {
   $exchange_ids = Exchanges::memberOf();
   if ($exchange_ids and $wids = Exchanges::walletsInExchanges($exchange_ids)) {
-    $query->condition('w.wid', $wids, 'IN');
+    $query->condition('base_table.wid', $wids, 'IN');
   }
   else {
-    // If the holder isn't in an exchange, or has no compatiable wallet, prevent
-    // the query from returning anything.
-    $query->condition('w.wid', 0);
+    // If the holder isn't in an exchange, qury returns nothing.
+    $query->condition('base_table.wid', 0);
   }
 }
 
@@ -237,30 +230,6 @@ function mcapi_exchanges_current_membership() {
 }
 
 /**
- * Implements hook_form_alter().
- *
- * Add the exchange and a new submit callback to the mass transaction page.
- */
-function mcapi_exchanges_form_mcapi_transaction_mass_form_alter(&$form, $form_state) {
-  //Get the group from the RouteMatch
-  $form_state->set('exchange', \Drupal::routeMatch()->getParameter('group'));
-  //add a submit handler
-  $form['actions']['submit']['#submit'][] = 'mcapi_exchanges_mcapi_transaction_mass_submit';
-}
-
-/**
- * Relate mass transaction to the group.
- */
-function mcapi_exchanges_mcapi_transaction_mass_submit($form, $form_state) {
-  // Can the GroupContent entity be somehow created in the postSave save?
-  // We would have to put the Group id in the transaction beforehand.
-  // How is the group ID currently put into a transaction?
-  $transaction = $form_state->getFormObject()->getEntity();
-  echo $transaction->id(); die();
-
-}
-
-/**
  * Implements hook_ENTITY_TYPE_create().
  *
  * Tells each new transaction it is in the current user's exchange
@@ -270,6 +239,7 @@ function mcapi_exchanges_mcapi_transaction_mass_submit($form, $form_state) {
  * @see mcapi_exchanges_mcapi_transaction_insert
  */
 function mcapi_exchanges_mcapi_transaction_create(TransactionInterface $transaction) {
+  // Could use context for this?
   if ($membership = mcapi_exchanges_current_membership()) {
     $transaction->exchange = $membership->getGroup();
   }
@@ -288,14 +258,32 @@ function mcapi_exchanges_mcapi_transaction_insert(TransactionInterface $transact
   // Just create GroupContent for the main transaction and the children will be
   // created by mcapi_exchanges_group_content_insert
   if ($ex = $transaction->exchange) {
-    $parent_xid = $transaction->id();
-    foreach ($transaction->flatten() as $t) {
-      $props = [
-        'gid' => $ex->id(),
-        'type' => 'exchange-transactions',
-        'entity_id' => $t->id(),
-      ];
-      GroupContent::Create($props)->save();
-    }
+    //foreach ($transaction->flatten() as $t) {
+    $props = [
+      'gid' => $ex->id(),
+      'type' => 'exchange-transactions',
+      'entity_id' => $transaction->id(),
+    ];
+    GroupContent::Create($props)->save();
   }
+}
+
+/**
+ * populate the notifcation field with the exchange's last used notification
+ */
+function mcapi_exchanges_form_mcapi_transaction_mass_form_alter(&$form, $form_state, $form_id) {
+  if(isset($form['notification'])) {
+    $presets = \Drupal::keyValue('masspay')
+      ->get($form_state->getFormObject()->getEntity()->exchange->id());
+    $form['notification']['subject']['#default_value'] = $presets['subject'];
+    $form['notification']['body']['#default_value'] = $presets['body'];
+  }
+    $form['actions']['submit']['#submit'][] = 'mcapi_exchanges_save_masspay_message';
+}
+
+function mcapi_exchanges_save_masspay_message($form, $form_state) {
+  \Drupal::keyValue('masspay')->set(
+    $form_state->getFormObject()->getEntity()->exchange->id(),
+    $form_state->get('mail')
+  );
 }

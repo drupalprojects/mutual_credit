@@ -25,9 +25,11 @@ use Symfony\Component\Routing\Route;
 class TransactionSerialConverter extends EntityConverter {
 
   /**
-   * Don't bother injecting EntityTypeManager as the parent expects.
+   * Constructs a new EntityConverter.
+   *
+   * Pverride parent because no params are needed
    */
-  public function __construct(){}
+  public function __construct() {}
 
   /**
    * {@inheritdoc}

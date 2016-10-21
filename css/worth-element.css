@@ -5,12 +5,7 @@
 div#edit-worth-wrapper {
   display: inline-block;
 }
-fieldset.worth-element span.multiple {
-  text-align: right;
-}
-
 span.worth.multiple {
-  text-align: right;
   margin-bottom: 3px;
   display: block;
 }

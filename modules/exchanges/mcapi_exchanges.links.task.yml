@@ -1,14 +1,3 @@
-mcapi.group.mass.many21:
-  route_name: mcapi.exchange.mass
-  title: Many-to-one
-  base_route: mcapi.exchange.mass
-  weight: 0
-mcapi.group.mass.12many:
-  route_name: mcapi.exchange.12many
-  title: One-to-many
-  base_route: mcapi.exchange.mass
-  weight: 1
-
 mcapi.exchange.userregister.tab:
   route_name: user.register
   title: Register

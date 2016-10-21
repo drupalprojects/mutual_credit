@@ -276,7 +276,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         case 'type':
         case 'state':
           // @todo is this [] syntax working? I think not
-          $query->condition($field . '[]', (array) $value);
+          $query->condition($field, (array) $value, 'IN');
           break;
 
         case 'involving':
@@ -377,7 +377,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   /**
    * {@inheritdoc}
    *
-   * Overriding this because entityQuery returns xids and serials.
+   * Overriding this because transaction entityQuery returns xids and serials.
    */
   public function loadByProperties(array $values = array()) {
     // Build a query to fetch the entity IDs.

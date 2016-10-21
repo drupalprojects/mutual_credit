@@ -7,11 +7,15 @@
 
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Exchange;
-use Drupal\system\Entity\Action;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\system\Entity\Action;
+use Drupal\user\Entity\User;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
 use Drupal\Core\Entity\ContentEntityInterface;
+
+define('PAYER_FIELDNAME', 'payer');
+define('PAYEE_FIELDNAME', 'payee');
 
 /**
  * Implements hook_help().
@@ -19,11 +23,12 @@ use Drupal\Core\Entity\ContentEntityInterface;
 function mcapi_help($route_name) {
   switch ($route_name) {
     case 'entity.mcapi_currency.collection':
-      return implode(' ', [
+      $help = [
         t('Multiple currencies allow many, potentially overlapping communities to work in this Drupal instance, and for currencies to embody different values.'),
         t('Retired currencies can no longer be used, but transactions are still visible.'),
         t('Only unused currencies can be deleted.'),
-      ]);
+      ];
+      break;
 
     case 'mcapi.admin.workflow':
       $help = [
@@ -33,12 +38,12 @@ function mcapi_help($route_name) {
       if (\Drupal::moduleHandler()->moduleExists('field_ui')) {
         $help[] = t("N.B. 'Manage display' tab is hidden because transaction displays are all handled through configurable templates.");
       }
-      return implode(' ', $help);
+      break;
 
     case 'entity.mcapi_transaction.field_ui_fields':
       $settings_url = Url::fromRoute('mcapi.admin_misc');
       $action_url = Url::fromRoute('mcapi.admin.workflow');
-      $message = [
+      $help = [
         t('These transaction display settings should always be overridden.'),
         t('To configure the certificate, override certificate.html.twig in your theme'),
         t(
@@ -50,8 +55,14 @@ function mcapi_help($route_name) {
           ['%link' => Link::fromTextAndUrl($action_url->toString(), $action_url)]
         ),
       ];
-      return implode(' ', $message);
+      break;
+    default:
+      return;
   }
+  foreach ($help as $sentence) {
+    $output[] = (string)$sentence;
+  }
+  return implode(' ', $output);
 }
 
 /**
@@ -161,19 +172,6 @@ function mcapi_entity_type_alter(array &$entity_types) {
 }
 
 /**
- * Implements hook_entity_operation_alter().
- *
- * Prevent the transaction view modes from being tampered with.
- *
- * @todo check these view modes all still exist
- */
-function mcapi_entity_operation_alter(&$operations, $entity) {
-  if (in_array('mcapi_transaction.' . $entity->id(), ['certificate', 'sentence'])) {
-    $operations = [];
-  }
-}
-
-/**
  * Implements hook_form_field_config_edit_form_alter().
  *
  * @see Drupal\mcapi\Form\CurrencyForm::save
@@ -231,8 +229,9 @@ function mcapi_mcapi_form_list() {
  *
  * Ensure on startup that the worth field is visible in the entity form. This is
  * nasty but there was no other way.
+ * @deprecated
  */
-function mcapi_entity_form_display_alter($display, $display_context) {
+function __mcapi_entity_form_display_alter($display, $display_context) {
   if ($display_context['bundle'] == 'mcapi_transaction') {
     $settings = $display->getComponent('worth');
     $settings['visible'] = TRUE;
@@ -242,8 +241,10 @@ function mcapi_entity_form_display_alter($display, $display_context) {
 
 /**
  * Implements hook_entity_view_display_alter().
+ * Ensure the worth element is visible on all transaction displays
+ * @deprecated
  */
-function mcapi_entity_view_display_alter($display, $display_context) {
+function __mcapi_entity_view_display_alter($display, $display_context) {
   if ($display_context['bundle'] == 'mcapi_transaction') {
     $settings = $display->getComponent('worth');
     $settings['visible'] = TRUE;
@@ -279,11 +280,10 @@ function mcapi_one_wallet_entity_views_displays() {
 /**
  * Implements hook_query_MCAPI_TRANSACTION_ACCESS_alter().
  *
- * Per-transaction access control on transaction views on the basis of only
- * relatives being able to see it. Relatives are defined in the transaction_view
- * action configuration.
- *
- * @note this hook doesn't work when placed in mcapi.views_execution.inc
+ * EntityQuery tag added by Drupal\Core\Entity\Query\Sql\Select::prepare.
+ * Provides per-transaction access control on the basis of only relatives being
+ * able to see it. Relatives are defined in the transaction_view action
+ * configuration.
  */
 function mcapi_query_mcapi_transaction_access_alter($query) {
   if (\Drupal::currentUser()->hasPermission('view all transactions')) {
@@ -340,6 +340,6 @@ function mcapi_mail($key, &$message, $params) {
     // $params are body and $recipient_id, serial.
     $message['subject'] = $params['subject'];
     // Not using the whole token system, right now, just [user:name].
-    $message['body'] = str_replace('[user:name]', User::load($params['recipient_id'])->getDisplayName(), $params['body']);
+    $message['body'][] = str_replace('[user:name]', User::load($params['recipient_id'])->getDisplayName(), $params['body']);
   }
 }

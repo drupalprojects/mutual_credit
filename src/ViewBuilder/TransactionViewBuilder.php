@@ -6,6 +6,9 @@ use Drupal\system\Entity\Action;
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\mcapi\Entity\TransactionInterface;
+use Drupal\Core\Utility\Token;
+use Drupal\Core\Config\ConfigFactory;
+use Drupal\Core\Routing\CurrentRouteMatch;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
@@ -17,14 +20,18 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class TransactionViewBuilder extends EntityViewBuilder {
 
-  private $settings;
+  protected $settings;
+  protected $routeMatch;
+  protected $token;
 
   /**
    * Constructor.
    */
-  public function __construct($entity_type, $entity_manager, $language_manager, $config_factory) {
-    $this->settings = $config_factory->get('mcapi.settings');
+  public function __construct($entity_type, $entity_manager, $language_manager, ConfigFactory $config_factory, CurrentRouteMatch $route_match, Token $token) {
     parent::__construct($entity_type, $entity_manager, $language_manager);
+    $this->settings = $config_factory->get('mcapi.settings');
+    $this->routeMatch = $route_match;
+    $this->token = $token;
   }
 
   /**
@@ -37,7 +44,9 @@ class TransactionViewBuilder extends EntityViewBuilder {
       $entity_type,
       $container->get('entity.manager'),
       $container->get('language_manager'),
-      $container->get('config.factory')
+      $container->get('config.factory'),
+      $container->get('current_route_match'),
+      $container->get('token')
     );
   }
 
@@ -50,14 +59,9 @@ class TransactionViewBuilder extends EntityViewBuilder {
    * - transactions are not viewed very often, more usually with views.
    */
   protected function getBuildDefaults(EntityInterface $entity, $view_mode) {
-    if ($view_mode == 'full') {
-      // If the view_mode is 'full' that means nothing was specified, which is
-      // the norm. So we turn to the 'view' transition where the view mode is a
-      // configuration.
-      $view_mode = 'certificate';
-    }
     $build = parent::getBuildDefaults($entity, $view_mode);
     switch ($view_mode) {
+      case 'full':
       case 'certificate_ops':
       case 'certificate':
         $build['#theme'] = 'mcapi_transaction_twig';
@@ -73,11 +77,11 @@ class TransactionViewBuilder extends EntityViewBuilder {
         // mcapi_transaction, so we'll just add this div by hand.
         unset($build['#theme'], $build['#mcapi_transaction']);
         $template = '<div class = "mcapi_transaction-sentence">' . $this->settings->get('sentence_template') . '</div>';
-        $build['#markup'] = \Drupal::token()->replace($template, ['xaction' => $entity]);
+        $build['#markup'] = $this->token->replace($template, ['xaction' => $entity]);
         if ($view_mode == 'sentence') {
           break;
         }
-        $link_list = $this->buildLinkList($this->buildActionlinks($entity));
+        $link_list = $this->buildLinkList($entity);
         $build['#markup'] .= render($link_list);
         break;
 
@@ -111,8 +115,8 @@ class TransactionViewBuilder extends EntityViewBuilder {
     foreach ($entities as $id => $transaction) {
       // No action links on the action page itself
       // todo inject routeMatch //need to cache by route in that case.
-      if (\Drupal::routeMatch()->getRouteName() != 'mcapi.transaction.operation' && $transaction->id()) {
-        $build[$id]['links'] = $this->buildLinkList($this->buildActionlinks($transaction));
+      if ($this->routeMatch->getRouteName() != 'mcapi.transaction.operation' && $transaction->id()) {
+        $build[$id]['links'] = $this->buildLinkList($transaction);
       }
     }
   }
@@ -120,47 +124,17 @@ class TransactionViewBuilder extends EntityViewBuilder {
   /**
    * Build a list of transaction operations as links.
    *
-   * @param array $link_list
-   *   A list of transaction operations with a title and url.
-   *
-   * @return array
-   *   An array of links.
-   */
-  public function buildLinkList($link_list) {
-    $links = [];
-    if ($link_list) {
-      $links = [
-        '#theme' => 'item_list',
-        '#list_type' => 'ul',
-        '#items' => [],
-        '#attributes' => ['class' => ['transaction-operations']],
-      ];
-      foreach ($link_list as $op) {
-        $links['#items'][] = [
-          '#type' => 'link',
-          '#title' => $op['title'],
-          '#url' => $op['url'],
-        ];
-      }
-    }
-    return $links;
-  }
-
-  /**
-   * Build the action links for a transaction.
-   *
    * @param TransactionInterface $transaction
    *   The transaction to build links for.
    *
    * @return array
-   *   A renderable array of links.
+   *   An array of links.
    */
-  public function buildActionlinks(TransactionInterface $transaction) {
+  public function buildLinkList(TransactionInterface $transaction) {
     $operations = [];
-
     foreach (Mcapi::transactionActionsLoad() as $action_name => $action) {
       $plugin = $action->getPlugin();
-      if ($plugin->access($transaction, \Drupal::currentUser())) {
+      if ($plugin->access($transaction)) {
         $route_params = ['mcapi_transaction' => $transaction->serial->value];
         if ($action_name == 'transaction_view') {
           $route_name = 'entity.mcapi_transaction.canonical';
@@ -208,11 +182,29 @@ class TransactionViewBuilder extends EntityViewBuilder {
         }
       }
     }
-    $operations += \Drupal::moduleHandler()->invokeAll('entity_operation', [$transaction]);
-    \Drupal::moduleHandler()->alter('entity_operation', $operations, $transaction);
+    $operations += $this->moduleHandler()->invokeAll('entity_operation', [$transaction]);
+    $this->moduleHandler()->alter('entity_operation', $operations, $transaction);
     // @todo check the order is sensible
     uasort($operations, '\Drupal\Component\Utility\SortArray::sortByWeightElement');
-    return $operations;
+
+    $links = [];
+    if ($operations) {
+      $links = [
+        '#theme' => 'item_list',
+        '#list_type' => 'ul',
+        '#items' => [],
+        '#attributes' => ['class' => ['transaction-operations']],
+      ];
+      foreach ($operations as $op) {
+        //@todo how to incorporate the rest of the operations
+        $links['#items'][] = [
+          '#type' => 'link',
+          '#title' => $op['title'],
+          '#url' => $op['url'],
+        ];
+      }
+    }
+    return $links;
   }
 
 }

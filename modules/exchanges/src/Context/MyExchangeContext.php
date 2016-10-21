@@ -17,7 +17,7 @@ use Drupal\Core\StringTranslation\StringTranslationTrait;
  *
  * @todo When to use a context and when to use a ContextProvidor?
  */
-class ExchangeContext implements ContextProviderInterface {
+class MyExchangeContext implements ContextProviderInterface {
 
   use StringTranslationTrait;
 

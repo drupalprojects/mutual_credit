@@ -2,7 +2,10 @@
 
 namespace Drupal\mcapi_exchanges\Overrides;
 
+use Drupal\group\Entity\Group;
+use Drupal\group\Access\GroupAccessResult;
 use Drupal\Core\Plugin\Context\ContextProviderInterface;
+use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Entity\EntityAccessControlHandler;
 use Drupal\Core\Entity\EntityHandlerInterface;
 use Drupal\Core\Entity\EntityInterface;
@@ -25,21 +28,29 @@ class ExchangeCurrencyAccessControlHandler extends EntityAccessControlHandler im
   protected $exchange;
 
   /**
-   *
+   * EntityQuery on group entity
+   * @var Drupal\Core\Entity\Query\QueryFactory
+   */
+  protected $queryFactory;
+
+  /**
    * @param \Drupal\mcapi_exchanges\Overrides\EntityTypeInterface $entity_type
    * @param ContextProviderInterface $context
+   * @param Drupal\Core\Entity\Query\QueryFactory $query_factory
    */
-  public function __construct(EntityTypeInterface $entity_type, ContextProviderInterface $context) {
+  public function __construct(EntityTypeInterface $entity_type, ContextProviderInterface $context, QueryFactory $query_factory) {
     parent::__construct($entity_type);
     // I've got really few examples of how to do this and this looks very wrong!
     $this->exchangeContext = $context->getRuntimeContexts(['exchange'])['exchange']->getContextValue();
+    $this->queryFactory = $query_factory;
   }
 
 
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
     return new static(
       $entity_type,
-      $container->get('mcapi_exchanges.exchange_context')
+      $container->get('mcapi_exchanges.my_exchange_context'),
+      $container->get('entity.query')
     );
   }
 
@@ -47,36 +58,56 @@ class ExchangeCurrencyAccessControlHandler extends EntityAccessControlHandler im
    * {@inheritdoc}
    */
   public function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
-
+    if ($account->hasPermission('configure mcapi')) {
+      return AccessResult::allowed()->cachePerUser();
+    }
 
     switch ($operation) {
       case 'view':
-        return AccessResult::allowed()->cachePerPermissions();
-
-      case 'create':
-        //only group admins can create and can only do so within that group.
-        drupal_set_message('Access control for currency creation not coded yet');
-        return AccessResult::forbidden();
+        $result = AccessResult::allowed()->cachePerPermissions();
         break;
       case 'update':
-        // If the currency is in one group only, $account must be admin of that group.
-        //
-        //
-        // Otherwise:
-        return AccessResult::allowedIfHasPermission($account, 'configure mcapi')->cachePerPermissions();
-
+        $gids = $this->queryFactory->get('group')->condition('currencies', $entity->id())->execute();
+        if (count($gids) == 1) {
+          $group = Group::load(reset($gids));
+          $result = GroupAccessResult::allowedIfHasGroupPermission($group, $account, 'manage currencies')
+            ->addCacheableDependency($group);
+        }
+        else {
+          // Or we could add every group as a cachable dependency in case all but one drop the currency.
+          $result = AccessResult::forbidden();
+        }
         break;
 
       case 'delete':
-        $count = \Drupal::entityQuery('mcapi_transaction')
+        // This is almost never be permissible.
+        // There is a problem with count() on the transaction entity Query
+        // SELECT 1 AS expression ... GROUP BY base_table.xid
+        // @see \Drupal\Core\Database\Query\Select::prepareCountQuery
+        $xids = $this->queryFactory->get('mcapi_transaction')
           ->condition('worth.curr_id', $entity->id())
-          ->count()
+          ->accessCheck(FALSE)
           ->execute();
-        $result = $count ?
-          AccessResult::forbidden() :
-          AccessResult::allowed();
-    };
-    return $result;
+        if ($xids) {
+          $result = AccessResult::forbidden();
+        }
+        else {
+          $result = AccessResult::AllowedIf($entity->access('update'));
+        }
+    }
+    return $result->cachePerUser();
   }
+
+  function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = NULL) {
+    if ($account->hasPermission('configure mcapi')) {
+      return AccessResult::allowed()->cachePerUser();
+    }
+    if ($mem = mcapi_exchanges_current_membership()) {
+      //only group admins can create and can only do so within that group.
+      return GroupAccessResult::allowedIfHasGroupPermission($mem->getGroup(), $account, 'manage transactions')->cachePerUser();
+    }
+    return AccessResult::forbidden()->cachePerUser();
+  }
+
 
 }

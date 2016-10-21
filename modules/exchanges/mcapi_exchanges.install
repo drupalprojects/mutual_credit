@@ -6,7 +6,6 @@
 
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\user\Entity\User;
-use Drupal\views\Entity\View;
 use Drupal\group\Entity\Group;
 
 /**
@@ -73,3 +72,14 @@ function mcapi_exchanges_uninstall() {
 
 }
 
+/**
+ * Implements hook_module_preinstall().
+ */
+function mcapi_exchanges_module_preinstall($module) {
+  // Hard to know where to put this code
+  if (class_exists('\Drupal\views\Entity\View')) {
+    if ($view = \Drupal\views\Entity\View::load('mcapi_transactions')) {
+      $view->delete();
+    }
+  }
+}

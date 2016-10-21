@@ -20,6 +20,7 @@ use Symfony\Component\Validator\ConstraintViolationInterface;
  *     "wallet_reference"
  *   }
  * )
+ * @todo inject \Drupal::config('mcapi.settings')
  */
 class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidget {
 
@@ -39,7 +40,7 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
     $element = parent::settingsForm($form, $form_state);
     unset($element['size']);
     $element['hide_one_wallet'] = [
-      '#title' => $this->t('Hide the wallet field if there is only one.'),
+      '#title' => $this->t('Hide this field if there is only one wallet available.'),
       '#type' => 'checkbox',
       '#default_value' => $this->getSetting('hide_one_wallet'),
     ];
@@ -66,13 +67,13 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
    * @see mcapi_field_widget_wallet_reference_autocomplete_form_alter
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
-
     if ($form_state->get('restrictWallets')) {
-      $restriction = $this->fieldDefinition->getName() == 'payer' ? 'payout' : 'payin';
+      $restriction = $this->fieldDefinition->getName() == PAYER_FIELDNAME ? 'payout' : 'payin';
       // Used in wallet constraint validator.
       $items->restricted = TRUE;
     }
     else {
+      $this->fieldDefinition->setSetting('handler_settings', []);
       $restriction = '';
       $items->restricted = FALSE;
     }
@@ -84,12 +85,16 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
     }
     else {
       // Get all payer or payee wallets regardless of direction.
-      $wids = Mcapi::getWalletSelection('', $restriction);
+      $wids = \Drupal::service('plugin.manager.entity_reference_selection')
+        ->getSelectionHandler($this->fieldDefinition)
+        ->queryEntities();
     }
     $count = count($wids);
 
     if (!$count) {
-      throw new \Exception('No wallets to show for ' . $this->fieldDefinition->getName());
+      drupal_set_message($this->t('No wallets to show for @role', ['@role' => $this->fieldDefinition->getLabel()]), 'error');
+      $form['#disabled'] = TRUE;
+      return [];
     }
     $max = \Drupal::config('mcapi.settings')->get('wallet_widget_max_select');
     // Present different widgets according to the number of wallets to choose
@@ -107,7 +112,7 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
     }
     elseif ($count > $max) {
       $element += [
-        '#type' => 'wallet_entity_auto',
+        '#type' => 'wallet_entity_auto', //this is just a wrapper around element entity_autocomplete
         '#selection_settings' => ['direction' => $restriction],
         '#default_value' => $default_value_wallet,
         '#placeholder' => $this->getSetting('placeholder'),
@@ -126,9 +131,41 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
 
   /**
    * {@inheritdoc}
+   *
+   * @note this is used on the mass transaction form to select multiple wallets
+   */
+  protected function formMultipleElements(FieldItemListInterface $items, array &$form, FormStateInterface $form_state) {
+    $element = array(
+      '#title' => $this->fieldDefinition->getLabel(),
+      '#description' => $this->fieldDefinition->getDescription(),
+    );
+    $element = $this->formSingleElement($items, 0, $element, $form, $form_state);
+    $element['target_id']['#multiple'] = TRUE;
+    return $element;
+  }
+
+  public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
+    //This helps the massPay form to validate when this widget manifests an array
+    if (key($values) == '0') {
+      $values = ['target_id' => reset($values[0])];
+    }
+    return $values;
+  }
+
+  /**
+   * {@inheritdoc}
    */
   public function errorElement(array $element, ConstraintViolationInterface $error, array $form, FormStateInterface $form_state) {
     return isset($element['target_id']) ? $element['target_id'] : FALSE;
+  }
+
+
+  function forceMultipleValues() {
+    $this->pluginDefinition['multiple_values'] = TRUE;
+  }
+
+  function inverse() {
+
   }
 
 }

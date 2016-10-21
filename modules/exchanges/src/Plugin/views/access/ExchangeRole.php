@@ -70,7 +70,7 @@ class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterf
       $plugin_id,
       $plugin_definition,
       $container->get('entity_type.manager'),
-      $container->get('mcapi_exchanges.exchange_context')
+      $container->get('mcapi_exchanges.my_exchange_context')
     );
   }
 

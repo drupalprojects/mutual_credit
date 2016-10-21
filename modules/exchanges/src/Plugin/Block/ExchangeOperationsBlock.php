@@ -2,9 +2,10 @@
 
 namespace Drupal\mcapi_exchanges\Plugin\Block;
 
+use Drupal\group\Access\GroupAccessResult;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Block\TitleBlockPluginInterface;
 
 /**
  * Provides a block with operations the user can perform in their exchange.
@@ -14,16 +15,17 @@ use Drupal\Core\Access\AccessResult;
  *   admin_label = @Translation("Exchange operations")
  * )
  */
-class ExchangeOperationsBlock extends BlockBase {
+class ExchangeOperationsBlock extends BlockBase  {
 
   /**
    * @var \Drupal\group\Entity\GroupInterface $group
    */
-  protected $membership;
+  protected $exchange;
 
   public function __construct(array $configuration, $plugin_id, $plugin_definition) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->membership = mcapi_exchanges_current_membership();
+    // We could also pull this from context service
+    $this->exchange = community_exchange_current();
   }
 
   /**
@@ -32,33 +34,34 @@ class ExchangeOperationsBlock extends BlockBase {
   public function build() {
     $build = [];
     $build['#cache']['contexts'] = ['group.type', 'group_membership.roles.permissions'];
-
+    $build['#exchange'] = $this->exchange;
+    $build['#title'] = $this->t('Operations for '.$this->exchange->label());
     $links = [];
-    $exchange = $this->membership->getGroup();
     // Retrieve the operations from the installed content plugins.
-    foreach ($exchange->getGroupType()->getInstalledContentPlugins() as $plugin) {
+    foreach ($this->exchange->getGroupType()->getInstalledContentPlugins() as $plugin) {
       /** @var \Drupal\group\Plugin\GroupContentEnablerInterface $plugin */
-      $links += $plugin->getGroupOperations($exchange);
+      $links += $plugin->getGroupOperations($this->exchange);
     }
     unset($links['group-leave'], $links['group-join']);
     if ($links) {
+      // We bury this inside 'list' otherwise the list #title and the block #title are confused.
       uasort($links, '\Drupal\Component\Utility\SortArray::sortByWeightElement');
-      $build['#theme'] = 'item_list';
-      $build['#list_type'] = 'ul';
+      $build['list']['#theme'] = 'item_list';
+      $build['list']['#list_type'] = 'ul';
       foreach ($links as $data) {
-        $build['#items'][] = [
+        $build['list']['#items'][] = [
           '#type'=> 'link',
           '#title' => $data['title'],
           '#url' => $data['url']
         ];
       }
     }
-    // If no group was found, cache the empty result on the route.
+    // If no exchange was found, cache the empty result on the route.
     return $build;
   }
 
   protected function blockAccess(AccountInterface $account) {
-    return AccessResult::allowedif(!is_null($this->membership))->cachePerUser();
+    return GroupAccessResult::allowedif(!is_null($this->exchange))->cachePerUser();
   }
 
 }

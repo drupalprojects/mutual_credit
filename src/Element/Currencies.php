@@ -61,7 +61,7 @@ class Currencies extends FormElement {
       // Have to do some of the checkbox processing manually coz we missed it.
       $element['#type'] = 'checkboxes';
       $element['#value'] = array_filter($element['#default_value']);
-      $element = Checkboxes::processCheckboxes($element, $form_state);
+      $element = Checkboxes::processCheckboxes($element, $form_state, $form_state->getCompleteForm());
     }
     else {
       $element['#theme'] = 'select';

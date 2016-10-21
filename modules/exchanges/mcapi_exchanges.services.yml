@@ -4,16 +4,22 @@ services:
     arguments: ['@config.factory']
     tags:
      - { name: event_subscriber }
-  mcapi_exchanges.exchange_context:
-    class: 'Drupal\mcapi_exchanges\Context\ExchangeContext'
+  mcapi_exchanges.my_exchange_context:
+    class: 'Drupal\mcapi_exchanges\Context\MyExchangeContext'
     arguments: ['@current_user', '@group.membership_loader', '@current_route_match']
+    tags:
+      - { name: 'context_provider' }
+  exchange.group_combo_context:
+    class: 'Drupal\mcapi_exchanges\Context\ExchangeComboContext'
+    arguments: ['@current_user', '@group.membership_loader', '@entity_type.manager', '@current_route_match']
     tags:
       - { name: 'context_provider' }
   access_check.exchange.role:
     class: 'Drupal\mcapi_exchanges\ExchangeRoleAccessCheck'
     tags:
-      - { name: 'access_check', applies_to: '_exchange_role' }
-  access_check.same_exchange:
-    class: Drupal\mcapi_exchanges\SameExchangeCheck
+      - { name: access_check, applies_to: _exchange_role }
+  access_check.my_exchange_permission:
+    class: Drupal\mcapi_exchanges\MyExchangePermission
+    arguments: ['@mcapi_exchanges.my_exchange_context']
     tags:
-      - { name: access_check, applies_to: _same_exchange }
+      - { name: 'access_check', applies_to: '_exchange_permission' }

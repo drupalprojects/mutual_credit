@@ -174,6 +174,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     $query = $this->entityTypeManager()
       ->getStorage('mcapi_transaction')->getQuery()
       ->count()
+      ->accessCheck(FALSE)
       ->condition('worth.curr_id', $this->id());
     foreach ($conditions as $field => $val) {
       $operator = is_array($val) ? 'IN' : '=';

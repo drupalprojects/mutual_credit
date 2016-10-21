@@ -23,8 +23,8 @@ class Unerase extends TransactionActionBase {
   /**
    * Constructor.
    */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_type_manager, $entity_display_respository, $key_value) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_type_manager, $entity_display_respository);
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_type_manager, $entity_display_respository, $current_user, $key_value) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $entity_form_builder, $module_handler, $relative_active_plugins, $entity_type_manager, $entity_display_respository, $current_user);
     $this->keyValue = $key_value;
   }
 
@@ -41,6 +41,7 @@ class Unerase extends TransactionActionBase {
       $container->get('mcapi.transaction_relative_manager'),
       $container->get('entity_type.manager'),
       $container->get('entity_display.repository'),
+      $container->get('current_user'),
       $container->get('keyvalue.database')
     );
   }

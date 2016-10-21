@@ -2,7 +2,7 @@
 
 namespace Drupal\mcapi\Plugin\EntityReferenceSelection;
 
-use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Entity\Plugin\EntityReferenceSelection\DefaultSelection;
 
@@ -15,6 +15,7 @@ use Drupal\Core\Entity\Plugin\EntityReferenceSelection\DefaultSelection;
  *   entity_types = {"mcapi_wallet"},
  *   group = "default"
  * )
+ * @todo inject things
  */
 class WalletSelection extends DefaultSelection {
 
@@ -65,11 +66,31 @@ class WalletSelection extends DefaultSelection {
    * @return integer[]
    *   wallet ids
    */
-  private function queryEntities($match = NULL) {
-    return Mcapi::getWalletSelection(
-      $match,
-      $this->configuration['handler_settings']['direction']
-    );
+  public function queryEntities($match = NULL) {
+    if ($restrict = @$this->configuration['handler_settings']['direction']) {
+      $wids = \Drupal::entityTypeManager()
+        ->getStorage('mcapi_wallet')
+        ->whichWalletsQuery($restrict, \Drupal::currentUser()->id(), $match);
+    }
+    else {
+      $query = \Drupal::entityQuery('mcapi_wallet')
+        // Not intertrading wallets.
+        ->condition('payways', Wallet::PAYWAY_AUTO, '!=')
+        ->condition('orphaned', 0);
+      if ($match) {
+        $query->condition('name', '%' . \Drupal::database()->escapeLike($match) . '%', 'LIKE');
+      }
+      $wids = $query->execute();
+    }
+    return $wids;
+  }
+
+
+  /**
+   * This is only called in MassPay::buildEntity
+   */
+  public function inverse($ids) {
+    return array_diff($this->queryEntities(), $ids);
   }
 
 }

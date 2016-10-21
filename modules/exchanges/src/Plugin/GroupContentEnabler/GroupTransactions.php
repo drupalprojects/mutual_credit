@@ -68,7 +68,7 @@ class GroupTransactions extends GroupContentEnablerBase {
       // Not sure whether to display one or two links
       $operations["create-mass-transaction"] = [
         'title' => $this->t('Mass payment'),
-        'url' => Url::fromRoute('mcapi.exchange.mass', ['group' => $group->id()]),
+        'url' => Url::fromRoute('mcapi.masspay'),
         'weight' => 7,
       ];
     }

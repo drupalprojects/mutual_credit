@@ -32,7 +32,7 @@ class CurrencyForm extends EntityForm {
     $form['description'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Description of the currency'),
-      '#description' => $this->t('Use the plural'),
+      '#description' => $this->t('Why is this currency credible? Who guarantees it? What is its value? What is its story?'),
       '#default_value' => $currency->description,
       '#weight' => 1,
     ];
@@ -172,6 +172,7 @@ class CurrencyForm extends EntityForm {
       '#size' => 32,
       '#weight' => 10
     ];
+    $form['#attached']['library'][] = 'mcapi/currency-form';
     return $form;
   }
 

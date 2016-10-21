@@ -46,8 +46,8 @@ class TransactionForm extends ContentEntityForm {
   /**
    * Constructor.
    */
-  public function __construct($entity_type_manager, $tempstore, $current_request, $current_user) {
-    parent::__construct($entity_type_manager);
+  public function __construct($entity_manager, $tempstore, $current_request, $current_user) {
+    parent::__construct($entity_manager);
     $this->tempStore = $tempstore;
     $this->request = $current_request;
     $this->currentUser = $current_user;
@@ -74,8 +74,8 @@ class TransactionForm extends ContentEntityForm {
     $form = parent::form($form, $form_state);
     // Try to prevent the same wallet being in both payer and payee fields.
     // we can only do this is one field has only one option.
-    $payer = &$form['payer']['widget'][0]['target_id'];
-    $payee = &$form['payee']['widget'][0]['target_id'];
+    $payer = &$form[PAYER_FIELDNAME]['widget'][0]['target_id'];
+    $payee = &$form[PAYEE_FIELDNAME]['widget'][0]['target_id'];
     if ($payer['#type'] == 'value') {
       if (isset($payee['#options'])) {
         unset($payee['#options'][$payer['#value']]);

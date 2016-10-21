@@ -52,5 +52,4 @@ class WalletItem extends EntityReferenceItem {
   public function storageSettingsForm(array &$form, FormStateInterface $form_state, $has_data) {
     return [];
   }
-
 }

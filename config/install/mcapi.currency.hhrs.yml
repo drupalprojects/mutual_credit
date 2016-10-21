@@ -3,7 +3,7 @@ status: true
 dependencies: {  }
 id: hhrs
 name: 'Human Hours'
-description: 'An hour of the full presence of one human being'
+description: 'An hour of the full presence of one human being. Usually issued in acknowledgement but ideally also used between members.'
 uid: 1
 issuance: 2
 format:

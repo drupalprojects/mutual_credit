@@ -8,8 +8,6 @@ use Drupal\mcapi\Entity\Wallet;
 use Drupal\devel_generate\DevelGenerateBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Database\Connection;
-use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -38,25 +36,6 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   protected $transactionStorage;
 
   /**
-   * The database.
-   */
-  protected $database;
-
-  /**
-   * The entityQuery.
-   *
-   * @var Drupal\Core\Entity\Query\Sql\Query
-   */
-  protected $walletQuery;
-
-  /**
-   * The entityQuery.
-   *
-   * @var Drupal\Core\Entity\Query\Sql\Query
-   */
-  protected $transactionQuery;
-
-  /**
    * Constructor.
    *
    * @param array $configuration
@@ -67,18 +46,11 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    *   Definition of the plugin.
    * @param \Drupal\Core\Entity\EntityStorageInterface $transaction_storage
    *   The transaction storage.
-   * @param \Drupal\Core\Database\Connection
-   *   The database connection
-   * @param \Drupal\Core\Entity\Query\QueryFactory
-   *   The query Factory
    *
    */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityStorageInterface $transaction_storage, Connection $database, QueryFactory $entity_query) {
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityStorageInterface $transaction_storage) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->transactionStorage = $transaction_storage;
-    $this->database = $database;
-    $this->walletQuery = $entity_query->get('mcapi_wallet');
-    $this->transactionQuery = $entity_query->get('mcapi_transaction');
   }
 
   /**
@@ -87,9 +59,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
     return new static(
       $configuration, $plugin_id, $plugin_definition,
-      $container->get('entity.manager')->getStorage('mcapi_transaction'),
-      $container->get('database'),
-      $container->get('entity.query')
+      $container->get('entity.manager')->getStorage('mcapi_transaction')
     );
   }
 
@@ -154,11 +124,10 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     for ($i = 1; $i <= $values['num']; $i++) {
       $this->develGenerateTransactionAdd($values);
     }
-    $this->sortTransactions();
+    static::sortTransactions();
     if (function_exists('drush_log') && $i % drush_get_option('feedback', 1000) == 0) {
       drush_log(dt('Completed @feedback transactions ', ['@feedback' => drush_get_option('feedback', 1000)], 'ok'));
     }
-
   }
 
   /**
@@ -171,6 +140,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       'operations' => [],
       'file' => drupal_get_path('module', 'devel_generate') . '/devel_generate.batch.inc',
     ];
+
     // Add the kill operation.
     if ($values['kill']) {
       $batch['operations'][] = [
@@ -179,7 +149,6 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       ];
     }
     $total = $values['num'];
-    $values['num'] = 100;
     // Add the operations to create the transactions.
     for ($num = 0; $num < floor($total / 100); $num++) {
       $values['batch'] = $num;
@@ -204,10 +173,10 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   /**
    * Create one transaction as part of a batch.
    */
-  public function batchContentAddTransaction($vars, &$context) {
+  public function batchContentAddTransaction($values, &$context) {
     $context['results']['num'] = intval($context['results']['num']);
-    for ($num = 0; $num < $vars['num']; $num++) {
-      $this->develGenerateTransactionAdd($context['results']);
+    for ($num = 0; $num < $values['num']; $num++) {
+      $this->develGenerateTransactionAdd($values);
       $context['results']['num']++;
     }
   }
@@ -215,8 +184,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   /**
    * Delete previous transactions before creating a batch of them.
    */
-  public function batchContentKill($values, &$context) {
-    $this->contentKill($values['type']);
+  public function batchContentKill($type, &$context) {
+    $this->contentKill($type);
   }
 
   /**
@@ -235,13 +204,13 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   /**
    * Deletes all transactions .
    *
-   * @param array $values
-   *   The input values from the settings form.
+   * @param string $type
+   *   The type of transactions to delete
    *
    * @note Loads all transactions into memory at the same time.
    */
   protected function contentKill($type) {
-    $xids = $this->transactionQuery
+    $xids = $this->getEntityQuery('mcapi_transaction')
       ->condition('type', $type)
       ->execute();
     if (!empty($xids)) {
@@ -317,7 +286,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    *   2 wallet ids
    */
   public function get2RandWalletIds(array $conditions = []) {
-    $query = $this->walletQuery
+    $query = $this->getEntityQuery('mcapi_wallet')
       ->condition('payways', Wallet::PAYWAY_AUTO, '<>');
     foreach ($conditions as $field => $value) {
       $query->condition($field, $value, is_array($value) ? 'IN' : '=');
@@ -340,7 +309,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   public function enoughWallets() {
     static $wallet_ids;
     if (!isset($wallet_ids)) {
-      $wallet_ids = $this->walletQuery
+      $wallet_ids = $this->getEntityQuery('mcapi_wallet')
         ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
         ->execute();
     }
@@ -364,8 +333,9 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     return rand($latest, REQUEST_TIME);
   }
 
-  public function sortTransactions() {
-    $times = $this->database->select('mcapi_transaction', 't')
+  public static function sortTransactions() {
+    $db = \Drupal::database();
+    $times = $db->select('mcapi_transaction', 't')
       ->fields('t', ['serial', 'created'])
       ->execute()->fetchAllKeyed();
     $keys = array_keys($times);
@@ -374,9 +344,19 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     $new = array_combine($keys, $times);
     foreach ($new as $serial => $created) {
       //assuming that $created is unique and clashes are extremely unlikely
-      $this->database->update('mcapi_transaction')->fields(['serial' => $serial])->condition('created', $created)->execute();
-      $this->database->update('mcapi_transactions_index')->fields(['serial' => $serial])->condition('created', $created)->execute();
+      $db->update('mcapi_transaction')
+        ->fields(['serial' => $serial])
+        ->condition('created', $created)
+        ->execute();
+      $db->update('mcapi_transactions_index')
+        ->fields(['serial' => $serial])
+        ->condition('created', $created)
+        ->execute();
     }
+  }
+
+  function getEntityQuery($entity_type) {
+    return \Drupal::entityQuery($entity_type);
   }
 
 }

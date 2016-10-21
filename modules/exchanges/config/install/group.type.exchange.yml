@@ -3,4 +3,4 @@ status: true
 dependencies: {  }
 id: exchange
 label: Exchange
-description: 'A group of people who trust each other to reciprocate economically'
+description: 'A group of people who trust each other and reciprocate economically'

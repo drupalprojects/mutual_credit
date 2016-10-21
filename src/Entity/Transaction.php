@@ -87,7 +87,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
     $transactions = \Drupal::entityTypeManager()
       ->getStorage('mcapi_transaction')
       ->loadByProperties(['serial' => $serial]);
-    return reset($transactions);
+    $transaction = array_shift($transactions);
+    $transaction->children = $transactions;
+    return $transaction;
   }
 
   /**
@@ -144,9 +146,13 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
     if ($this->parent->value == 0) {
       // If the transaction hasn't been assembled, it won't have 'children'.
       foreach ((array) $this->children as $entity) {
-        foreach ($entity->validate() as $violation) {
-          throw new \Exception('Violation in child transaction, ' . $violation->getPropertyPath() . ': ' . $violation->getMessage());
+        $child_violations = $entity->validate();
+        foreach ($child_violations as $violation) {
+          drupal_set_message($violation->getMessage(), 'error');
+          //drupal_set
+          //throw new \Exception('Violation in child transaction, ' . $violation->getPropertyPath() . ': ' . $violation->getMessage());
         }
+        //$violationList->addAll($child_violations);
       }
     }
     return $violationList;
@@ -237,7 +243,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
     // I wanted to add the CanPayout and CanPayin constraints in the widget
     // builder but I couldn't see how. So at the moment they apply to all entity
     // forms, but they only run code when $items->restricted is TRUE.
-    $fields['payer'] = BaseFieldDefinition::create('wallet_reference')
+    $fields[PAYER_FIELDNAME] = BaseFieldDefinition::create('wallet_reference')
       ->setLabel(t('Payer'))
       ->setDescription(t('The giving wallet'))
       ->setReadOnly(TRUE)
@@ -250,7 +256,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setDisplayConfigurable('view', TRUE)
       ->setDisplayOptions('view', ['type' => 'entity_reference_label', 'weight' => 1]);
 
-    $fields['payee'] = BaseFieldDefinition::create('wallet_reference')
+    $fields[PAYEE_FIELDNAME] = BaseFieldDefinition::create('wallet_reference')
       ->setLabel(t('Payee'))
       ->setDescription(t('The receiving wallet'))
       ->setReadOnly(TRUE)

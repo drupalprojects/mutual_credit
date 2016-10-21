@@ -5,7 +5,7 @@ mcapi.toolbar:
       css/mcapi.icons.css: {}
   dependencies:
     - 'toolbar/toolbar'
-    
+
 mcapi.transaction:
   version: VERSION
   css:
@@ -16,7 +16,7 @@ mcapi.wallets:
   css:
     component:
       css/wallets.css: {}
-mcapi.currency-form:
+currency-form:
   version: VERSION
   css:
     component:

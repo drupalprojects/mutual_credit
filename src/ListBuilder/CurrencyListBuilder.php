@@ -24,8 +24,7 @@ class CurrencyListBuilder extends DraggableListBuilder {
    */
   public function buildHeader() {
     $header['title'] = t('Title');
-    $header['transactions'] = t('Uses');
-    $header['volume'] = t('Volume');
+    $header['volume'] = t('Traded');
     $header['issuance'] = t('Issuance');
     return $header + parent::buildHeader();
   }
@@ -41,10 +40,6 @@ class CurrencyListBuilder extends DraggableListBuilder {
     $row['title'] = ['#markup' => $entity->toLink()->toString()];
 
     $stats = $entity->stats();
-    // This includes deleted transactions.
-    $row['transactions'] = [
-      '#markup' => $stats->trades,
-    ];
 
     // This includes deleted transactions.
     $row['volume'] = [

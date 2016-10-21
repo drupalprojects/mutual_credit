@@ -117,7 +117,7 @@ class Exchanges extends Exchange {
    */
   public static function getCurrenciesOfExchanges($exchange_ids) {
     // We need all the currencies referenced by these exchanges.
-    return \Drupal::database()->select('groups__currencies', 'c')
+    return \Drupal::database()->select('group__currencies', 'c')
       ->fields('c', ['currencies_target_id'])
       ->condition('entity_id', $exchange_ids, 'IN')
       ->execute()->fetchCol();

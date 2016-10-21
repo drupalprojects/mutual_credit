@@ -4,7 +4,6 @@ namespace Drupal\mcapi_exchanges\Overrides;
 
 use Drupal\mcapi\Access\TransactionAccessControlHandler;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Access\AccessResult;
 
 /**
