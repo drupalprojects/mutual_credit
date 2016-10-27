@@ -67,26 +67,26 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * {@inheritdoc}
    */
   public function settingsForm(array $form, FormStateInterface $form_state) {
-    $form['kill'] = array(
+    $form['kill'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('<strong>Delete all transactions</strong> before generating new content.'),
       '#default_value' => $this->getSetting('kill'),
-    );
-    $form['num'] = array(
+    ];
+    $form['num'] = [
       '#type' => 'number',
       '#title' => $this->t('How many transactions would you like to generate?'),
       '#default_value' => $this->getSetting('num'),
       '#required' => TRUE,
       '#min' => 0,
-    );
-    $form['type'] = array(
+    ];
+    $form['type'] = [
       '#title' => $this->t('What type of transactions'),
       '#type' => 'select',
       '#options' => Mcapi::entityLabelList('mcapi_type'),
       '#default_value' => $this->getSetting('type'),
       '#required' => TRUE,
       '#min' => 0,
-    );
+    ];
 
     $form['#redirect'] = FALSE;
 
@@ -174,10 +174,10 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * Create one transaction as part of a batch.
    */
   public function batchContentAddTransaction($values, &$context) {
-    $context['results']['num'] = intval($context['results']['num']);
+    //$context['num'] = intval($context['num']);
     for ($num = 0; $num < $values['num']; $num++) {
       $this->develGenerateTransactionAdd($values);
-      $context['results']['num']++;
+      $context['num']++;
     }
   }
 
@@ -287,12 +287,13 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    */
   public function get2RandWalletIds(array $conditions = []) {
     $query = $this->getEntityQuery('mcapi_wallet')
-      ->condition('payways', Wallet::PAYWAY_AUTO, '<>');
+      ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
+      ->condition('orphaned', 0);
     foreach ($conditions as $field => $value) {
       $query->condition($field, $value, is_array($value) ? 'IN' : '=');
     }
     $wids = $query->execute();
-    if (!count($wids) < 2) {
+    if (count($wids) < 2) {
       \Drupal::logger('mcapi')->warning('Not enough wallets in exchange: '.print_r($conditions, 1));
       return [];
     }

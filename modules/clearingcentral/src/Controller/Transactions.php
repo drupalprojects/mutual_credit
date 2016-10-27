@@ -1,15 +1,15 @@
 <?php
 
-namespace Drupal\mcapi_exchanges\Controller;
+namespace Drupal\mcapi_cc\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\group\Entity\GroupInterface;
 use Drupal\mcapi_exchanges\Exchanges;
 
 /**
- * Returns responses for Exchange routes.
+ * Returns a list of intertrading transactions.
  */
-class ExchangeController extends ControllerBase {
+class Transactions extends ControllerBase {
 
   /**
    * Show a list of transactions between this exchange and others.

@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\mcapi\Element;
+namespace Drupal\mcapi_cc\Element;
 
 use Drupal\mcapi\Exchange;
 use Drupal\Core\Form\FormStateInterface;

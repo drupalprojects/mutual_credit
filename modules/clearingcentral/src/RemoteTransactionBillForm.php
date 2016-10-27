@@ -1,13 +1,14 @@
 <?php
 
+/**
+ * @file
+ * Definition of Drupal\mcapi_cc\RemoteTransactionBillForm.
+ */
+
 namespace Drupal\mcapi_cc;
 
-use Drupal\mcapi\Exchange;
 use Drupal\Core\Form\FormStateInterface;
 
-/**
- * Create a form for billing a user in another exchange.
- */
 class RemoteTransactionBillForm extends RemoteTransactionForm {
 
   /**
@@ -15,7 +16,7 @@ class RemoteTransactionBillForm extends RemoteTransactionForm {
    */
   public function init(FormStateInterface $form_state) {
     parent::init($form_state);
-    $this->entity->payer->target_id = Exchange::intertradingWalletId();
+    $this->entity->payer->target_id = \Drupal\mcapi\Exchange::intertradingWalletId();
   }
 
   /**
@@ -32,10 +33,11 @@ class RemoteTransactionBillForm extends RemoteTransactionForm {
       $form['payee']['widget'][0]['target_id']['#title'] = $this->t('Local wallet to be credited');
       $form['outgoing'] = [
         '#type' => 'value',
-        '#value' => 0,
+        '#value' => 0
       ];
     }
     return $form;
   }
 
 }
+

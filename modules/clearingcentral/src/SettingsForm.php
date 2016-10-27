@@ -1,15 +1,18 @@
 <?php
 
+/**
+ * @file
+ * Contains \Drupal\mcapi_cc\SettingsForm.
+ *
+ */
 namespace Drupal\mcapi_cc;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\mcapi\Exchange;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
-/**
- * Form Constructor for intertrading settings.
- */
 class SettingsForm extends ConfigFormBase {
 
   private $moduleHandler;
@@ -18,22 +21,16 @@ class SettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormID() {
     return 'mcapi_cc_settings_form';
   }
 
-  /**
-   * Constructor.
-   */
   public function __construct(ConfigFactoryInterface $configFactory, $module_handler, $transaction_relative_manager) {
     $this->setConfigFactory($configFactory);
     $this->moduleHandler = $module_handler;
     $this->transactionRelativeManager = $transaction_relative_manager;
   }
 
-  /**
-   * {@inheritdoc}
-   */
   static public function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
@@ -47,21 +44,18 @@ class SettingsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->configFactory->get('mcapi.settings');
-    $form['ticks_name'] = [
+    $build['ticks_name'] = [
       '#title'  => $this->t('Base accounting unit name'),
       '#description' => $this->t('The unit that all others will be measured in'),
       '#description_display' => 'after',
       '#type' => 'textfield',
       '#default_value' => $config->get('ticks_name'),
       '#weight' => -1,
-      '#required'  => TRUE,
+      '#required'  => TRUE
     ];
     return parent::buildForm($form, $form_state);
   }
 
-  /**
-   * {@inheritdoc}
-   */
   public function validateForm(array &$form, FormStateInterface $form_state) {
 
   }
@@ -80,9 +74,6 @@ class SettingsForm extends ConfigFormBase {
     parent::submitForm($form, $form_state);
   }
 
-  /**
-   * {@inheritdoc}
-   */
   protected function getEditableConfigNames() {
     return ['mcapi.cc.settings'];
   }

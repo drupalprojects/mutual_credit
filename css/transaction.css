@@ -68,10 +68,6 @@ ul.transaction-operations li:last-child {
 ul.transaction-operations li a {
   text-decoration: none;
 }
-/*div.sentence, */
-div.sentence .link {
-  padding: 0 0 0 1em;
-}
 div.transaction div.certificate div.field {
   display: inline;
 }
@@ -85,4 +81,14 @@ div.certificate div.worth-zero {
   display: inline-block;
   width: 100px;
   height: 90px;
+}
+
+/* the transaction operations flow on from the sentence in the pending view of transactions as sentences */
+div.mcapi_transaction-sentence>div.item-list, div.mcapi_transaction-sentence ul, div.mcapi_transaction-sentence ul>li{
+  display: inline;
+}
+
+/*div.sentence, */
+div.mcapi_transaction-sentence ul>li {
+  padding: 0 0 0 1em;
 }

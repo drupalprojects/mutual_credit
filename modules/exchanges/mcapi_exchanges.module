@@ -8,6 +8,7 @@
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi_exchanges\Exchanges;
 use Drupal\group\Entity\GroupContent;
+use Drupal\user\Entity\User;
 use Drupal\Core\Database\Driver\mysql\Select;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
@@ -168,7 +169,7 @@ function mcapi_exchanges_query_entity_query_mcapi_wallet_alter(Select $query) {
     $query->condition('base_table.wid', $wids, 'IN');
   }
   else {
-    // If the holder isn't in an exchange, qury returns nothing.
+    // If the holder isn't in an exchange, query returns nothing.
     $query->condition('base_table.wid', 0);
   }
 }
@@ -213,13 +214,16 @@ function mcapi_exchanges_modules_installed($modules) {
 /**
  * Get the exchange of the current user.
  *
+ * @param int $uid
+ *
  * @return \Drupal\group\GroupMembership | NULL
  */
-function mcapi_exchanges_current_membership() {
+function mcapi_exchanges_current_membership($uid = NULL) {
   static $done, $membership;
   if (!$done) {
     $done = TRUE;
-    foreach (\Drupal::service('group.membership_loader')->loadByUser() as $membership) {
+    $user = $uid ? User::load($uid) : NULL;
+    foreach (\Drupal::service('group.membership_loader')->loadByUser($user) as $membership) {
       if ($membership->getGroup()->getGroupType()->id() == 'exchange') {
         break;
       }

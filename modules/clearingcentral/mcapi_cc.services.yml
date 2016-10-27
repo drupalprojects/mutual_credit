@@ -1,0 +1,4 @@
+services:
+  mcapi_cc.clearing_central:
+    class: Drupal\mcapi_cc\ClearingCentral
+    arguments: [@config.factory, @http_client, @keyvalue, @entity.query, @logger.factory, @account_switcher]

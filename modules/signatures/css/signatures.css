@@ -58,9 +58,3 @@ div.transaction.certificate td.signature.signed {
 div.transaction.certificate td.signature.pending {
   background-image: url("pending.png");
 }
-
-/* the transaction operations flow on from the sentence in the pending view of transactions as sentences */
-div.view-mcapi-pending-signatures div.mcapi_transaction-sentence,
-div.view-mcapi-pending-signatures div.item-list {
-  display: inline;
-}

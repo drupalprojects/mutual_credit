@@ -1,2 +1,13 @@
+mcapi_cc.remote.bill:
+  title: Remote Bill
+  description: Bill a member of another exchange
+  route_name: mcapi_cc.remote.bill
+  menu_name: tools
+  weight: 6
 
-
+mcapi_cc.remote.credit:
+  title: Remote Credit
+  description: Credit a member of another exchange
+  route_name: mcapi_cc.remote.credit
+  menu_name: tools
+  weight: 6

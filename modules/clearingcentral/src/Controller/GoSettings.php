@@ -1,18 +1,19 @@
 <?php
 
+/**
+ * @file
+ * Contains \Drupal\mcapi_cc\Controller\GoSettings.
+ */
+
 namespace Drupal\mcapi_cc\Controller;
 
-use Drupal\system\Controller\SystemController;
 
 /**
- * Redirects to first intertrading wallet.
+ * redirects to first intertrading wallet
  */
-class GoSettings extends SystemController {
+class GoSettings extends \Drupal\system\Controller\SystemController {
 
-  /**
-   * Redirect to edit wallet one.
-   */
-  public function walletOneEdit() {
+  function WalletOneEdit() {
     return $this->redirect('entity.mcapi_wallet.edit_form', ['mcapi_wallet' => 1]);
 
   }

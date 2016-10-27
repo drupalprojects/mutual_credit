@@ -1,9 +1,7 @@
 <?php
 
-const CLEARING_CENTRAL_URL = 'http://cxn.org.za';
-const CLEARING_CENTRAL_IP = '69.61.35.151';
 const TRANSACTION_STATE_HANGING = 'hanging';
-const CEN_SUCCESS = 1;
+const CEN_SUCCESS = 1;//response code
 
 use Drupal\Core\Link;
 
@@ -53,7 +51,7 @@ function mcapi_cc_form_wallet_form_alter(&$form, \Drupal\Core\Form\FormStateInte
       '#maxlength' => 7,
       '#disabled' => $used,
       '#default_value' => $settings['login'],
-      '#element_validate' => ['ces_exchange_id_validate'],
+      '#element_validate' => ['mcapi_cc_exchange_id_validate'],
       '#weight' => 2
     ],
     'ex_pass' => [
@@ -71,7 +69,7 @@ function mcapi_cc_form_wallet_form_alter(&$form, \Drupal\Core\Form\FormStateInte
   }
 }
 
-function ces_exchange_id_validate(&$element, $form_state) {
+function mcapi_cc_exchange_id_validate(&$element, $form_state) {
   if (!preg_match('/[a-zA-Z]{3}[0-9]{4}/', $element['#value'])) {
     $form_state->setError($element, 'Badly formatted login: '.$element['#value']);
   }
@@ -83,8 +81,9 @@ function mcapi_cc_save_wallet_settings($form, $form_state) {
     'login' => $form_state->getValue('ex_id'),
     'pass' => $form_state->getValue('ex_pass')
   ];
+  $wid = \Drupal\mcapi\Exchange::intertradingWalletId();
   \Drupal::keyValue('clearingcentral')
-    ->set($form_state->getFormObject()->getEntity()->id(), $settings);
+    ->set($wid, $settings);
 }
 
 /**
@@ -119,15 +118,34 @@ function mcapi_cc_mcapi_form_list() {
  */
 function mcapi_cc_mcapi_transaction_insert($transaction)  {
   if ($transaction->type->target_id == 'remote') {
-    //write the transaction's remote fields
-    \Drupal::database()->insert('mcapi_cc')->fields([
-      'xid' => $transaction->id(),
-      'serial' => $transaction->serial->value,
-      'txid' => $transaction->uuid->value,
-      'remote_exchange_id' => $transaction->remote_exchange_id,
-      'remote_user_id' => $transaction->remote_user_id,
-      'remote_user_name' => $transaction->remote_user_name
-    ])->execute();
+    if (isset($transaction->remote_exchange_id) && isset($transaction->remote_user_id)) {
+      //write the transaction's remote fields
+      \Drupal::database()->insert('mcapi_cc')->fields([
+        'xid' => $transaction->id(),
+        'serial' => $transaction->serial->value,
+        'txid' => $transaction->uuid->value,
+        'remote_exchange_id' => $transaction->remote_exchange_id,
+        'remote_user_id' => $transaction->remote_user_id,
+        'remote_user_name' => $transaction->remote_user_name ?: $transaction->remote_user_id
+      ])->execute();
+    }
+    else {
+      throw new \Exception('Missing remote transaction properties');
+    }
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert().
+ *
+ * Create an intertrading wallet for every exchange.
+ */
+function mcapi_cc_group_insert($entity) {
+  if ($entity->bundle() == 'exchange') {
+    Wallet::create([
+      'payways' => Wallet::PAYWAY_AUTO,
+      'holder' => $entity
+    ])->save();
   }
 }
 
@@ -136,7 +154,7 @@ function mcapi_cc_mcapi_transaction_insert($transaction)  {
  * Implements hook_ENTITY_load();
  */
 function mcapi_cc_mcapi_transaction_load($transactions) {
-  foreach ($transactions as $transaction) {
+  foreach ($transactions as $xid => $transaction) {
     if ($transaction->type->target_id != 'remote') {
       return;
     }
@@ -150,34 +168,6 @@ function mcapi_cc_mcapi_transaction_load($transactions) {
     }
   }
 }
-
-/**
- *
- * @param type $code
- * @return string
- */
-function clearingcentral_lookup_response($code) {
-  $codes = [
-    0 => t('Unknown error in Clearing Central'),
-    CEN_SUCCESS => 'success',
-    2 => t('Buyer does not exist (unknown account number)'),
-    3 => t('Exchange not registered on Clearing Central'),
-    4 => t('Transaction denied ("no funds", over limit, account locked, exchange over deficit limit etc.)'),
-    5 => t('faulty data'),
-    6 => t('Repeat transaction and so rejected by CC (same TXID submitted)'),
-    7 => t('URL error'),
-    8 => t('Conversion rate not set'),
-    9 => t('Server error (e.g. cannot access db)'),
-    10 => t('Password is wrong in settings'),
-    11 => t('IP of incoming server not in CC DB'),
-    12 => t('No TXID provided (update/delete only)'),
-    13 => t('TXID does not exist (update/delete only)'),
-    14 => t('Unable to connect to remote server'),
-    15 => t('Failed to connect to host or proxy')
-  ];
-  return $codes[$code];
-}
-
 
 /**
  * Implements hook_ENTITY_TYPE_view_alter().
@@ -214,16 +204,20 @@ function mcapi_cc_mcapi_transaction_view_alter(array &$build, $entity, $display)
  */
 function mcapi_cc_entity_display_build_alter(&$build, $context) {
   if ($context['entity']->getEntityTypeId() == 'mcapi_transaction') {
-    if ($context['entity']->type->target_id == 'remote') {
-      $store = \Drupal::keyValue('clearingcentral');
-      if ($store->get($context['entity']->payer->target_id)) {
-        $build['payer'] = mcapi_cc_wallet_name($context['entity']->payer);
+    $transaction = $context['entity'];
+    if ($transaction->type->target_id == 'remote') {
+      if (mcapi_cc_settings($transaction->payer->target_id)) {
+        $build['payer'] = mcapi_cc_wallet_name($transaction->payer);
       }
-      elseif($store->get($context['entity']->payee->target_id))  {
-        $build['payee'] = mcapi_cc_wallet_name($context['entity']->payee);
+      elseif($store->get($transaction->payee->target_id))  {
+        $build['payee'] = mcapi_cc_wallet_name($transaction->payee);
       }
     }
   }
+}
+
+function mcapi_cc_settings($wid) {
+  return \Drupal::keyValue('clearingcentral')->get($wid);
 }
 
 function mcapi_cc_wallet_name($field_items) {
@@ -244,4 +238,35 @@ function mcapi_cc_wallet_name($field_items) {
       ]
     )
   ];
+}
+
+/**
+ * Get the Clearing Central service
+ *
+ * @param int $intertrading_wallet_id
+ * @return Drupal\mcapi_cc\ClearingCentral
+ */
+function clearingCentral($intertrading_wallet_id) {
+  $settings = \Drupal::keyValue('clearingcentral')->get($intertrading_wallet_id);
+  return \Drupal::service('mcapi_cc.clearing_central')
+    ->init($settings['curr_id'], $settings['login'], $settings['pass']);
+}
+
+
+/**
+ * Implements hook_mcapi_transaction_validate().
+ *
+ * Check that intertrading wallet is not being misused.
+ */
+function mcapi_cc_mcapi_transaction_validate($transaction) {
+  if ($transaction->payer->entity->payways->value == Wallet::PAYWAY_AUTO || $transaction->payee->entity->payways->value == Wallet::PAYWAY_AUTO) {
+    // There MUST be a child transaction also with an intertrading wallet in a different exchange.
+    foreach ($transaction->children as $child) {
+      if ($child->payer->entity->payways->value == Wallet::PAYWAY_AUTO || $child->payee->entity->payways->value == Wallet::PAYWAY_AUTO) {
+        drupal_set_message('intertrading transaction looks good', 'warning');
+        continue 2;
+      }
+    }
+    throw new \Exception('Intertrading wallet error');
+  }
 }

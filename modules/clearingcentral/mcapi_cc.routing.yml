@@ -31,6 +31,14 @@ mcapi_cc.endpoint:
 mcapi_cc.settings:
   path: '/wallet/intertrading'
   defaults:
-    _controller: \Drupal\mcapi_cc\Controller\GoSettings::walletOneEdit
+    _controller: \Drupal\mcapi_cc\Controller\GoSettings::WalletOneEdit
   requirements:
     _permission: 'configure mcapi'
+    
+mcapi_cc.transactions:
+  path: '/exchange/{mcapi_exchange}/balance'
+  defaults:
+    _controller: \Drupal\mcapi_cc\Controller\Transactions::showIntertradingWallet
+    _title_callback: \Drupal\mcapi_cc\Controller\Transactions::intertradingWalletTitle
+  requirements:
+    _entity_access: 'mcapi_exchange.view'

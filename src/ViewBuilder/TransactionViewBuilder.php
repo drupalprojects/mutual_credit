@@ -3,16 +3,12 @@
 namespace Drupal\mcapi\ViewBuilder;
 
 use Drupal\system\Entity\Action;
-use Drupal\mcapi\Mcapi;
-use Drupal\mcapi\Plugin\TransactionActionBase;
-use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\Core\Utility\Token;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Routing\CurrentRouteMatch;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
-use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -76,13 +72,18 @@ class TransactionViewBuilder extends EntityViewBuilder {
         // This way of doing it we can't quite use the parent theme callback
         // mcapi_transaction, so we'll just add this div by hand.
         unset($build['#theme'], $build['#mcapi_transaction']);
-        $template = '<div class = "mcapi_transaction-sentence">' . $this->settings->get('sentence_template') . '</div>';
+        $build['#prefix'] = '<div class = "mcapi_transaction-sentence">';
+        $build['#suffix'] = '</div>';
+        $template = $this->settings->get('sentence_template');
         $build['#markup'] = $this->token->replace($template, ['xaction' => $entity]);
         if ($view_mode == 'sentence') {
           break;
         }
-        $link_list = $this->buildLinkList($entity);
-        $build['#markup'] .= render($link_list);
+        $build['link_list'] = [
+          '#theme' => 'item_list',
+          '#type' => 'ul',
+          '#items' => $this->links($entity)
+        ];
         break;
 
       default:
@@ -116,93 +117,30 @@ class TransactionViewBuilder extends EntityViewBuilder {
       // No action links on the action page itself
       // todo inject routeMatch //need to cache by route in that case.
       if ($this->routeMatch->getRouteName() != 'mcapi.transaction.operation' && $transaction->id()) {
-        $build[$id]['links'] = $this->buildLinkList($transaction);
+        foreach (\Drupal::entityTypeManager()->getListBuilder('mcapi_transaction')->getOperations($transaction) as $op) {
+          //@todo how to incorporate the rest of the operations
+          //$links['#items'][] = [
+          $links[] = [
+            '#type' => 'link',
+            '#title' => $op['title'],
+            '#url' => $op['url'],
+          ];
+        }
+        if ($links) {
+          $build[$id]['links'] = [
+            '#theme' => 'item_list',
+            '#list_type' => 'ul',
+            '#items' => $links,
+            '#attributes' => ['class' => ['transaction-operations']],
+          ];
+        }
       }
     }
   }
 
-  /**
-   * Build a list of transaction operations as links.
-   *
-   * @param TransactionInterface $transaction
-   *   The transaction to build links for.
-   *
-   * @return array
-   *   An array of links.
-   */
-  public function buildLinkList(TransactionInterface $transaction) {
-    $operations = [];
-    foreach (Mcapi::transactionActionsLoad() as $action_name => $action) {
-      $plugin = $action->getPlugin();
-      if ($plugin->access($transaction)) {
-        $route_params = ['mcapi_transaction' => $transaction->serial->value];
-        if ($action_name == 'transaction_view') {
-          $route_name = 'entity.mcapi_transaction.canonical';
-        }
-        else {
-          $route_name = $action->getPlugin()->getPluginDefinition()['confirm_form_route_name'];
-          $route_params['operation'] = substr($action_name, 12);
-        }
-
-        $operations[$action_name] = [
-          'title' => $plugin->getConfiguration()['title'],
-          'url' => Url::fromRoute($route_name, $route_params),
-        ];
-
-        $display = $plugin->getConfiguration('display');
-        if ($display != TransactionActionBase::CONFIRM_NORMAL) {
-          if ($display == TransactionActionBase::CONFIRM_MODAL) {
-            $operations['#attached']['library'][] = 'core/drupal.ajax';
-            $operations[$action_name]['attributes'] = [
-              'class' => ['use-ajax'],
-              'data-dialog-type' => 'modal',
-              'data-dialog-options' => Json::encode(['width' => 500]),
-            ];
-          }
-          elseif ($display == TransactionActionBase::CONFIRM_AJAX) {
-            // To make a ajax link it seems necessary to put the url twice.
-            $operations[$action_name]['ajax'] = [
-              // There must be either a callback or a path.
-              'wrapper' => 'transaction-' . $transaction->serial->value,
-              'method' => 'replace',
-              'path' => $operations[$action_name]['url']->getInternalPath(),
-            ];
-          }
-        }
-        elseif ($display != TransactionActionBase::CONFIRM_NORMAL && $action_name != 'view') {
-          // The link should redirect back to the current page by default.
-          if ($dest = $plugin->getConfiguration('redirect')) {
-            $redirect = ['destination' => $dest];
-          }
-          else {
-            $redirect = $this->redirecter->getAsArray();
-          }
-          // @todo stop removing leading slash when the redirect service does it properly
-          $operations[$action_name]['query'] = $redirect;
-        }
-      }
-    }
-    $operations += $this->moduleHandler()->invokeAll('entity_operation', [$transaction]);
-    $this->moduleHandler()->alter('entity_operation', $operations, $transaction);
-    // @todo check the order is sensible
-    uasort($operations, '\Drupal\Component\Utility\SortArray::sortByWeightElement');
-
-    $links = [];
-    if ($operations) {
-      $links = [
-        '#theme' => 'item_list',
-        '#list_type' => 'ul',
-        '#items' => [],
-        '#attributes' => ['class' => ['transaction-operations']],
-      ];
-      foreach ($operations as $op) {
-        //@todo how to incorporate the rest of the operations
-        $links['#items'][] = [
-          '#type' => 'link',
-          '#title' => $op['title'],
-          '#url' => $op['url'],
-        ];
-      }
+  public function links($transaction) {
+    foreach (\Drupal::entityTypeManager()->getListBuilder('mcapi_transaction')->getOperations($transaction) as $data) {
+      $links[] = \Drupal\Core\Link::fromTextAndUrl($data['title'], $data['url']);
     }
     return $links;
   }

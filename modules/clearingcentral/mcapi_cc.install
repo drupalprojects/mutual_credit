@@ -2,9 +2,21 @@
 
 /**
  * Implements hook_install().
+ *
+ * Make an intertrading wallet for user 1 and every exchange
  */
 function mcapi_cc_install() {
+  // Create an intertrading wallet on user 1.
+  Wallet::create([
+    'payways' => Wallet::PAYWAY_AUTO,
+  ])->save();
 
+  $exchanges = \Drupal::entityTypeManager()
+    ->getStorage('group')
+    ->loadByProperties(['type' => 'exchange']);
+  foreach ($exchanges as $exchange) {
+    mcapi_cc_group_insert($entity);
+  }
 }
 
 /**

@@ -42,5 +42,12 @@ function mcapi_exchanges_views_data_alter(&$data) {
       break;
     }
   }
+  $data['group_content_field_data']['exchange_of_user']['argument'] = [
+    'title' => t('Exchange of user'),
+    'label' => t('Exchange of user'),
+    'help' => t('Take a user id and filter by the exchange of that user'),
+    'id' => 'user_exchange',
+    'field' => 'gid',
+  ];
 
 }

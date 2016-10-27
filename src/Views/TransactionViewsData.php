@@ -67,6 +67,13 @@ class TransactionViewsData extends EntityViewsData {
     ];
     $data['mcapi_transaction']['payee']['field']['default_formatter'] = 'entity_reference_label';
 
+    //@temp
+    //@see https://www.drupal.org/node/2337507
+    $data['mcapi_transaction']['created']['argument'] = [
+      'field' => 'created',
+      'id' => 'date_fulldate',
+    ];
+
     // \Drupal/views/EntityViewsData::getViewsData has no way to retrieve the
     // index table from the TransactionStorageSchema so we add the fields
     // individually here.
@@ -195,8 +202,18 @@ class TransactionViewsData extends EntityViewsData {
       ],
       'filter' => [
         'id' => 'date',
-      ],
+      ]
     ];
+    //@temp
+    //@see https://www.drupal.org/node/2337507
+    $data['mcapi_transactions_index']['created_fulldate'] = array(
+      'title' => $this->t('Created date'),
+      'help' => $this->t('Date in the form of CCYYMMDD.'),
+      'argument' => array(
+        'field' => 'created',
+        'id' => 'date_fulldate',
+      ),
+    );
     $data['mcapi_transactions_index']['created_year_month'] = [
       'title' => $this->t('Created year + month'),
       'help' => $this->t('Date in the form of YYYYMM.'),
