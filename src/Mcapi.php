@@ -3,6 +3,7 @@
 namespace Drupal\mcapi;
 
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\system\Entity\Action;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
@@ -183,8 +184,6 @@ class Mcapi {
    *
    * @return \Drupal\mcapi\Entity\WalletInterface[]
    *   Or just the wallet ids if $load is FALSE.
-   *
-   * @todo change this to take the entityTypeId and the EntityId instead of the Entity
    */
   public static function walletsOf(EntityInterface $entity, $load = FALSE) {
     $wids = \Drupal::entityQuery('mcapi_wallet')
@@ -196,33 +195,6 @@ class Mcapi {
     return $load ?
       \Drupal::entityTypeManager()->getStorage('mcapi_wallet')->loadMultiple($wids) :
       $wids;
-  }
-
-  /**
-   * Retrieve all the wallets held by any of many ContentEntities.
-   *
-   * @param ContentEntityInterface[] $entities
-   *   An array of content entities.
-   *
-   * @return int[]
-   *   The wallet IDs.
-   */
-  public static function walletsOfHolders(array $entities) {
-    $query = \Drupal::database()->select('mcapi_wallet', 'w')
-      ->fields('w', ['wid'])
-      ->condition('orphaned', 0)
-      ->condition('payways', Wallet::PAYWAY_AUTO, '<>');
-
-    $or = $query->orConditionGroup();
-    foreach ($entities as $entity_type_id => $entity_ids) {
-      $and = $query->andConditionGroup()
-        ->condition('holder_entity_type', $entity_type_id)
-        ->condition('holder_entity_id', $entity_ids, 'IN');
-      $or->condition($and);
-    }
-    $result = $query->condition($or)->execute();
-
-    return $result->fetchCol();
   }
 
   /**
@@ -244,7 +216,9 @@ class Mcapi {
     }
     // This is deliberately ambiguous as to whether you have no wallets or the
     // system has no other wallets.
-    drupal_set_message(t('There are no wallets for you to trade with'), 'warning');
+    if (\Drupal::currentUser()->isAuthenticated()) {
+      drupal_set_message(t('There are no wallets for you to trade with'), 'warning');
+    }
   }
 
   /**
@@ -285,14 +259,25 @@ class Mcapi {
   }
 
   /**
-   * Get the first or main wallet held by an entity.
+   * get the time of the first transaction in a currency.
    *
-   * @param ContentEntityInterface $entity
-   *   Any content entity.
+   * @param CurrencyInterface $currency
+   *
+   * @return int
+   *   The unixtime.
    */
-  public static function firstWalletIdOfEntity(ContentEntityInterface $entity) {
-    $wids = Mcapi::walletsOf($entity);
-    return reset($wids);
+  public static function earliestTransactionTime(CurrencyInterface $currency) {
+    static $results = [];
+    $curr_id = $currency->id();
+    if (!isset($results[$curr_id])) {
+      $query = db_select('mcapi_transactions_index');
+      $query->addExpression('MIN(created)');
+      $query->condition('state', 'done');
+      $query->condition('curr_id', $curr_id);
+      $results[$curr_id] = $query->execute()->fetchField();
+    }
+    return $results[$curr_id];
   }
+
 
 }

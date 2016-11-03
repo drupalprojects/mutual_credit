@@ -39,28 +39,29 @@ class GroupTransactions extends GroupContentEnablerBase {
    */
   public function getGroupOperations(GroupInterface $group) {
     $account = \Drupal::currentUser();
-    $type = $this->getEntityBundle();
     $operations = [];
     if ($group->hasPermission('create transactions', $account)) {
+      $uid = $account->id();
       foreach (mcapi_form_displays_load() as $displayEntity) {
-        $wallet_id = Mcapi::firstWalletIdOfEntity(User::load($account->id()));
-        $settings = $displayEntity->getThirdPartySettings('mcapi_forms');
-        if (mcapi_forms_access_direction($account->id(), $settings['direction'])) {
-          switch($settings['direction']) {
-            case MCAPI_FORMS_DIR_INCOMING:
-              $key = 'payer';
-              break;
-            case MCAPI_FORMS_DIR_OUTGOING:
-              $key = 'payee';
-              break;
-            default:
-              continue;
+        foreach (Mcapi::walletsOf(User::load($uid), FALSE) as $wallet_id) {
+          $settings = $displayEntity->getThirdPartySettings('mcapi_forms');
+          if (mcapi_forms_access_direction($uid, $settings['direction'])) {
+            switch($settings['direction']) {
+              case MCAPI_FORMS_DIR_INCOMING:
+                $key = 'payer';
+                break;
+              case MCAPI_FORMS_DIR_OUTGOING:
+                $key = 'payee';
+                break;
+              default:
+                continue;
+            }
+            $operations["create-transaction"] = [
+              'title' => $settings['title'],
+              'url' => Url::fromUserInput($settings['path'], ['query' => [$key => $wallet_id]]),
+              'weight' => 7,
+            ];
           }
-          $operations["create-transaction"] = [
-            'title' => $settings['title'],
-            'url' => Url::fromUserInput($settings['path'], ['query' => [$key => $wallet_id]]),
-            'weight' => 7,
-          ];
         }
       }
     }

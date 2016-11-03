@@ -117,7 +117,7 @@ function _mcapi_theme($existing, $type, $theme, $path) {
     'render element' => 'transaction',
   ] + $file;
   $items['mcapi_currency'] = [
-    'render element' => 'currency',
+    'render element' => 'elements',
     'template' => 'currency',
   ] + $file;
   $items['mcapi_timeline'] = [

@@ -29,7 +29,7 @@ class AccountingAdmin extends SystemController {
           Url::fromRoute('mcapi.wallet.add.user', ['user' => $this->currentUser()->id()])
         );
       }
-      // don't both checking for create user access.
+      // don't bother checking for create user access.
       $message[] = $this->l(
         $this->t("Or create another user."),
         Url::fromRoute('user.admin_create')

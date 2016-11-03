@@ -8,11 +8,12 @@ label: Currency(s)
 description: 'Which currencies can be used in this exchange?'
 required: 0
 default_value: {  }
-default_value_callback: 'mcapi_exchanges_default_currency_id'
-settings:
-  handler: default
+#default_value_callback: 'mcapi_exchanges_default_currency_id'
+settings:  
+  handler: 'default:mcapi_currency'
   handler_settings:
     target_bundles: null
+    auto_create: false
 dependencies:
   config:
     - field.storage.group.currencies

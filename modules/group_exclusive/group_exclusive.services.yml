@@ -1,0 +1,15 @@
+services:
+  group_exclusive.route.subscriber:
+    class: Drupal\group_exclusive\RouteSubscriber
+    arguments: [@config.factory]
+    tags:
+     - { name: event_subscriber }
+  group.group_exclusive_context:
+    class: 'Drupal\group_exclusive\Context\ExclusiveGroupContext'
+    arguments: ['@config.factory', '@current_user', '@group.membership_loader', '@entity_type.manager']
+    tags:
+      - { name: 'context_provider' }
+  access_check.group.type:
+    class: 'Drupal\group_exclusive\GroupTypeAccessCheck'
+    tags:
+      - { name: 'access_check', applies_to: '_group_type' }

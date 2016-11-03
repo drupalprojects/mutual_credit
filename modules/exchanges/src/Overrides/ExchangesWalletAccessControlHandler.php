@@ -4,7 +4,7 @@ namespace Drupal\mcapi_exchanges\Overrides;
 
 use Drupal\mcapi_exchanges\Exchanges;
 use Drupal\mcapi\Access\WalletAccessControlHandler;
-use Drupal\user\Entity\User;
+use Drupal\group\Access\GroupAccessResult;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -35,10 +35,10 @@ class ExchangesWalletAccessControlHandler extends WalletAccessControlHandler {
     $result = parent::checkAccess($entity, $op, $account);
     // If the result isn't conclusive then we handle it.
     if ($result->isNeutral()) {
-      $user_is_in = Exchanges::memberOf(User::load($account->id()));
-      $wallet_is_in = Exchanges::memberOf($entity->getOwner());
       // Check that the current user is the same exchange as the wallet.
-      if ($common = array_intersect_key($user_is_in, $wallet_is_in)) {
+      $exchange_membership = group_exclusive_membership_get('exchange', $account)->getGroup();
+      $owner_membership = group_exclusive_membership_get('exchange', $entity->getOwner());
+      if ($exchange_membership->getGroup()->id() == $owner_membership->getGroup()->id()) {
         switch ($op) {
           case 'view':
             // Grant access if the $account shares an exchange with wallet's owner.
@@ -46,7 +46,7 @@ class ExchangesWalletAccessControlHandler extends WalletAccessControlHandler {
             break;
           case 'update':
             // Grant access if the $account has permission to edit all
-            $result = AccessResult::allowedIf(mcapi_exchanges_current_membership()->hasPermission('manage transactions'));
+            $result = GroupAccessResult::allowedIfHasGroupPermission($exchange_membership->getGroup(), 'manage transactions');
             break;
           case 'delete':
             // Can only delete wallet if there are no transactions.

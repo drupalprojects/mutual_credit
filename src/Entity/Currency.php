@@ -2,11 +2,12 @@
 
 namespace Drupal\mcapi\Entity;
 
-use Drupal\Core\Render\Markup;
-use Drupal\Core\Link;
 use Drupal\user\Entity\User;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\user\UserInterface;
+use Drupal\Core\Render\Markup;
+use Drupal\Core\Link;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 
@@ -324,16 +325,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
-   * Called in EntityViewBuilder::getBuildDefaults()
-   *
-   * @note I think this needed to render the canonical view, which is usually
-   * assumed to be a contentEntity.
-   */
-  public function isDefaultRevision() {
-    return TRUE;
-  }
-
-  /**
    * {@inheritdoc}
    */
   public static function formats() {
@@ -389,11 +380,21 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    *   with
    */
   public function stats() {
-    return \Drupal::entityTypeManager()
+    return $this->entityManager()
       ->getStorage('mcapi_transaction')
       ->ledgerStateQuery($this->id(), [])
       ->execute()
       ->fetch();
   }
 
+
+  /**
+   * {@inheritdoc}
+   *
+   * Override to never invalidate the entity's cache tag; the config system
+   * already invalidates it.
+   */
+  protected function invalidateTagsOnSave($update) {
+    Cache::invalidateTags(['mcapi_currency_list']);
+  }
 }

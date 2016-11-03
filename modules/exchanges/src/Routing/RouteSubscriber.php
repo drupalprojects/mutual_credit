@@ -3,7 +3,6 @@
 namespace Drupal\mcapi_exchanges\Routing;
 
 use Drupal\Core\Routing\RouteSubscriberBase;
-use Drupal\Core\Routing\RoutingEvents;
 use Symfony\Component\Routing\RouteCollection;
 
 /**
@@ -17,10 +16,9 @@ class RouteSubscriber extends RouteSubscriberBase {
    * {@inheritdoc}
    */
   protected function alterRoutes(RouteCollection $collection) {
-    // Replace the user registration form with one specially designed for exchanges
-    $collection->get('user.register')->setPath('user/register/{group}');
+    // Use the transaction view, for the entity's collection route
     if ($transaction_list = $collection->get('view.mcapi_exchange_transactions.admin_collection')) {
-      $collection->add('mcapi.transactions.collection', $transaction_list);
+      $collection->add('entity.mcapi_transaction.collection', $transaction_list);
       // Can't remove this because the view is creating a link for it.
       $collection->remove('view.mcapi_exchange_transactions.admin_collection');
     }
@@ -29,22 +27,12 @@ class RouteSubscriber extends RouteSubscriberBase {
     $collection->get('entity.mcapi_currency.collection')
       ->setRequirements(['_user_is_logged_in' => 'true']);
 
-    // Make mass transaction forms available to group accountants.
+    // Mass transaction forms should be available to permitted group members.
     $collection->get('mcapi.masspay')
-      ->setRequirements(['_exchange_permission' => 'manage transactions']);
+      ->setRequirements(['_group_permission' => 'manage transactions']);
     $collection->get('mcapi.masspay.12many')
-      ->setRequirements(['_exchange_permission' => 'manage transactions']);
+      ->setRequirements(['_group_permission' => 'manage transactions']);
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public static function getSubscribedEvents() {
-    return [
-      RoutingEvents::ALTER => [
-        ['onAlterRoutes', 0],
-      ],
-    ];
-  }
 
 }

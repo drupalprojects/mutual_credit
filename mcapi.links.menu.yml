@@ -43,7 +43,7 @@ mcapi.admin.transaction_form.list:
 mcapi.admin.transaction.list:
   title: Transactions
   description: List and configure transactions
-  route_name: mcapi.transactions.collection
+  route_name: entity.mcapi_transaction.collection
   parent: mcapi.admin
   weight: 5
 

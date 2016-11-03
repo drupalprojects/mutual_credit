@@ -6,7 +6,6 @@ use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Currency;
-use Drupal\user\EntityOwnerInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\mcapi_exchanges\Exchanges;
 
@@ -14,21 +13,6 @@ use Drupal\mcapi_exchanges\Exchanges;
  * Static class relating to one or multiple exchanges.
  */
 class Exchange {
-
-  /**
-   * Load currencies for a given ownerentity.
-   *
-   * @param EntityOwnerInterface $entity
-   *   The Owner Entity (not the wallet holder).
-   *
-   * @return Currency[]
-   *   The currencies available to that entity.
-   */
-  public static function ownerEntityCurrencies(EntityOwnerInterface $entity = NULL) {
-    return Self::MultipleExchanges() ?
-      Exchanges::ownerEntityCurrencies($entity) :
-      Currency::loadMultiple();
-  }
 
   /**
    * Get a list of all the currencies currently in a wallet's scope.

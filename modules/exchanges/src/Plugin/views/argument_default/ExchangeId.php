@@ -20,7 +20,7 @@ class ExchangeId extends ArgumentDefaultPluginBase implements CacheableDependenc
    * {@inheritdoc}
    */
   public function getArgument() {
-    if ($mem = mcapi_exchanges_current_membership()) {
+    if ($mem = group_exclusive_membership_get('exchange')) {
       return $mem->getGroup()->id();
     }
   }

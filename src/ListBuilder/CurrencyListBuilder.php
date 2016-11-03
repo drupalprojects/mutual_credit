@@ -73,23 +73,9 @@ class CurrencyListBuilder extends DraggableListBuilder {
    * {@inheritdoc}
    */
   public function load() {
-    // Just show the currencies the current user has permission to edit
-    // get the currencies in all exchanges of which current user is manager
-    // if (\Drupal::currentUser()->hasPermission('manage mcapi')) {.
     $curr_ids = $this->getStorage()->getQuery()
-        ->sort('name')
-        ->execute();
-    // }
-    /*
-    else {
-    $exchange_ids = \Drupal::entityTypeManager()
-    ->getStorage('mcapi_exchange')->getQuery()
-    ->condition('manager', $currentUser->id())
-    ->execute();
-    $curr_ids = Exchanges::getCurrenciesOfExchanges($exchange_ids);
-    }
-     *
-     */
+      ->sort('name')
+      ->execute();
     // no sort has been applied.
     return $this->storage->loadMultiple($curr_ids);
   }

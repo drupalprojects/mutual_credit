@@ -43,3 +43,14 @@ fieldset.ordered-wallets {
   list-style-position: inside;
   width: 40%;
 }
+#transaction-stats-filter div.form-type-select {
+  display: inline-block;
+  margin-right: 2em;
+}
+
+div.currency-link {
+  display: inline-block;
+}
+div.currency-link .volume {
+  font-size: 200%;
+}

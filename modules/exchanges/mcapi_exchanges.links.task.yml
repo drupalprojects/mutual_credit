@@ -1,6 +1,0 @@
-mcapi.exchange.userregister.tab:
-  route_name: user.register
-  title: Register
-  base_route: entity.group.canonical
-  weight: 4
-

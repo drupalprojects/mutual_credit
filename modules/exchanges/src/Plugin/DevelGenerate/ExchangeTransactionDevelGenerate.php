@@ -61,14 +61,15 @@ class ExchangeTransactionDevelGenerate extends TransactionDevelGenerate {
    */
   public function get2RandWalletIds(array $conditions = []) {
     $exids = $this->getEntityQuery('group')->condition('type', 'exchange')->execute();
-    $this->exchange_id = $exids[array_rand($exids)];
-    $wids = Exchanges::walletsInExchanges([$this->exchange_id]);
+    $exchange = Group::load($exids[array_rand($exids)]);
+    $wids = Exchanges::walletsInExchange($exchange);
     shuffle($wids);
     if (count($wids) < 2) {
-      $msg = 'Only '.count($wids).' wallets in exchange: '.$this->exchange_id.': '.print_r($wids, 1);
+      $msg = 'Only '.count($wids).' wallets in exchange: '.$exchange->id().': '.print_r($wids, 1);
       \Drupal::logger('mcapi')->warning($msg);
       return [];
     }
+    $this->exchange_id = $exchange->id();
     return array_slice($wids, -2);
   }
 

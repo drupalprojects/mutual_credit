@@ -254,7 +254,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    * @param array $conditions
    *   Conditions keyed by property name suitable for getMcapiIndexQuery(): xid,
    *    serial, partner_id, wallet_id, creator, type, state, involving, since,
-   *    until, value, min, max.
+   *    until, value, min, max, curr_id
    */
   private function getMcapiIndexQuery($curr_id, array $conditions = []) {
     if (!$curr_id) {
@@ -272,6 +272,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         case 'serial':
         case 'partner_id':
         case 'wallet_id':
+        case 'curr_id':
         case 'creator':
         case 'type':
         case 'state':
@@ -312,7 +313,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
           break;
 
         default:
-          debug('Filtering on unknown field: ' . $field);
+          //debug('Filtering on unknown field: ' . $field);
       }
     }
     return $query;

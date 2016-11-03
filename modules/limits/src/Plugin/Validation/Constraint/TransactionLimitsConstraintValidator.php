@@ -2,12 +2,13 @@
 
 namespace Drupal\mcapi_limits\Plugin\Validation\Constraint;
 
-use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi_limits\McapiLimitsEvents;
 use Drupal\mcapi_limits\Event\TransactionPreventedEvent;
-use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -16,6 +17,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Constraint validator checking whether a wallet is beyond its limits.
  */
 class TransactionLimitsConstraintValidator extends ConstraintValidator implements ContainerInjectionInterface {
+
+  use StringTranslationTrait;
 
   private $currentUser;
   private $limiter;
@@ -75,32 +78,28 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator implement
         $this->replacements = ['@currency' => $currency->name];
         $config = $plugin->getConfiguration();
         if ($config['skip']['user1'] && $this->currentUser->id() == 1) {
-          $this->logger->log(
-            'notice',
+          $this->logger->notice(
             'Skipped @currency balance limit check because you are user 1.',
             $this->replacements
           );
           return;
         }
         elseif ($config['skip']['owner'] && $this->currentUser->id() == $currency->uid) {
-          $this->logger->log(
-            'notice',
+          $this->logger->notice(
             'Skipped @currency balance limit check because you are the currency owner.',
             $this->replacements
           );
           return;
         }
         elseif ($config['skip']['auto'] && $transaction->type->target_id == 'auto') {
-          $this->logger->log(
-            'notice',
+          $this->logger->notice(
             'Skipped balance limit checks for @currency.',
             $this->replacements
           );
           return;
         }
         elseif ($config['skip']['mass'] && $transaction->type->target_id == 'mass') {
-          $this->logger->log(
-            'notice',
+          $this->logger->notice(
             'Skipped balance limit checks for @currency.',
             $this->replacements
           );
@@ -125,7 +124,7 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator implement
               ->addViolation();
             $event = new TransactionPreventedEvent(
               $transaction,
-              [\Drupal::translation()->translate($constraint->overLimitBlock, $this->replacements)]
+              [$this->t($constraint->overLimitBlock, $this->replacements)]
             );
             $this->eventDispatcher->dispatch(McapiLimitsEvents::PREVENTED, $event);
             // @todo remove this warning mail
@@ -133,11 +132,11 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator implement
               $currency,
               $transaction->payee->entity,
               $transaction->payer->entity,
-              \Drupal::translation()->translate($constraint->overLimitBlock, $this->replacements)
+              $this->t($constraint->overLimitBlock, $this->replacements)
             );
           }
           else {
-            $message = \Drupal::translation()->translate($constraint->overLimitWarning, $this->replacements);
+            $message = $this->t($constraint->overLimitWarning, $this->replacements);
             // Used by Drupal\rules\Plugin\Condition\TransactionTransgresses.
             $transaction->mailLimitsWarning[$wid][$currency->id()] = $message;
           }
@@ -153,7 +152,7 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator implement
 
             $event = new TransactionPreventedEvent(
               $transaction,
-              [\Drupal::translation()->translate($constraint->overLimitBlock, $this->replacements)]
+              [$this->t($constraint->overLimitBlock, $this->replacements)]
             );
             $this->eventDispatcher->dispatch(McapiLimitsEvents::PREVENTED, $event);
             // @todo remove this warning mail
@@ -161,11 +160,11 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator implement
               $currency,
               $transaction->payer->entity,
               $transaction->payee->entity,
-              \Drupal::translation()->translate($constraint->overLimitBlock, $this->replacements)
+              $this->t($constraint->overLimitBlock, $this->replacements)
             );
           }
           else {
-            $message = \Drupal::translation()->translate($constraint->overLimitWarning, $this->replacements);
+            $message = $this->t($constraint->overLimitWarning, $this->replacements);
             // Used by Drupal\rules\Plugin\Condition\TransactionTransgresses.
             $transaction->mailLimitsWarning[$wid][$currency->id()] = $message;
           }

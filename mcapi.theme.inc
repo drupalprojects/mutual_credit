@@ -210,7 +210,6 @@ function theme_mcapi_transaction_twig($vars) {
  */
 function mcapi_preprocess_mcapi_timeline(&$vars) {
   $vars['id'] = preg_replace('/[^a-z0-9_]+/', '_', strtolower($vars['title']));
-
   foreach ($vars['points'] as $timestamp => $val) {
     $vars['daterows'][] = [
     // Format for javascript dates.
@@ -218,9 +217,8 @@ function mcapi_preprocess_mcapi_timeline(&$vars) {
       $val,
     ];
   }
-  $currency = $vars['currency'];
   // TEMP until gcharts works better. Force some formatted values on the axis.
-  if (isset($vars['currency'])) {
+  if ($currency = $vars['currency']) {
     if ($currency->issuance == Currency::TYPE_PROMISE) {
       // Make symmetrical axes for mutual credit.
       // @note its pretty difficult to give the axes nice limits if the native currency
@@ -292,3 +290,15 @@ function gchart_axes($vals) {
     return [-_mcapi_get_axis_max(abs($min)), 0, _mcapi_get_axis_max($max)];
   }
 }
+
+function template_preprocess_mcapi_currency(&$variables) {
+  $currency = $variables['elements']['#mcapi_currency'];
+  $stats = $currency->stats();
+  $variables['name'] = $currency->label();
+  $variables['issuance'] = Currency::issuances()[$currency->issuance];
+  $variables['volume'] = $currency->format($stats->volume);
+  $variables['trades'] = $stats->trades;
+  $variables['wallets'] = $stats->partners;
+  $variables['url'] = $currency->toUrl();
+}
+

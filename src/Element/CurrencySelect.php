@@ -12,7 +12,7 @@ use Drupal\Core\Render\Element\Checkboxes;
  *
  * @FormElement("mcapi_currency_select")
  */
-class Currencies extends FormElement {
+class CurrencySelect extends FormElement {
 
   /**
    * {@inheritdoc}
@@ -25,8 +25,6 @@ class Currencies extends FormElement {
       ],
       '#theme_wrappers' => ['form_element'],
       '#multiple' => FALSE,
-    // Filter only for active currences.
-      '#status' => TRUE,
     );
   }
 
@@ -35,9 +33,6 @@ class Currencies extends FormElement {
    */
   public static function processCurrcodes($element, $form_state) {
     $conditions = [];
-    if ($element['#status']) {
-      $conditions['status'] = TRUE;
-    }
     if (empty($element['#options']) && !empty($element['#curr_ids'])) {
       // Shows the intersection of all currencies and currencies provided.
       $element['#options'] = array_intersect_key(

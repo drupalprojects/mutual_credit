@@ -27,6 +27,8 @@ class ExchangeRoleAccessCheck implements AccessInterface {
    *
    * @return \Drupal\Core\Access\AccessResultInterface
    *   The access result.
+   *
+   * @deprecated
    */
   public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
     $roles = $route->getRequirement('_exchange_role');
@@ -37,10 +39,11 @@ class ExchangeRoleAccessCheck implements AccessInterface {
     $parameters = $route_match->getParameters();
     // @todo use the new function not the heavy context.
     if (!$parameters->has('group')) {
-      $group = \Drupal::service('mcapi_exchanges.my_exchange_context')
-        ->getRuntimeContexts(['exchange'])['exchange']
-        ->getContextValue();
-      if (!$group) {
+      if ($memship = group_exclusive_membership_get('exchange')) {
+        $group = $memship->getGroup();
+      }
+      else {
+        mtrace();
         return AccessResult::neutral();
       }
     }

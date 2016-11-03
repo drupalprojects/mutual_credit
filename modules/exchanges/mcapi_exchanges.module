@@ -7,8 +7,8 @@
 
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi_exchanges\Exchanges;
+use Drupal\group\Entity\Group;
 use Drupal\group\Entity\GroupContent;
-use Drupal\user\Entity\User;
 use Drupal\Core\Database\Driver\mysql\Select;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
@@ -26,18 +26,8 @@ function mcapi_exchanges_entity_type_alter(array &$entity_types) {
   $entity_types['mcapi_currency']->setListbuilderClass($path.'CurrencyListBuilderExchanges');
   $entity_types['mcapi_currency']->setAccessClass($path.'ExchangeCurrencyAccessControlHandler');
   $entity_types['mcapi_transaction']->setAccessClass($path.'ExchangeTransactionAccessControlHandler');
-  $entity_types['user']->setFormClass('register', $path.'ExchangeUserRegisterForm');
   $entity_types['mcapi_wallet']->setAccessClass($path.'ExchangesWalletAccessControlHandler');
   $entity_types['group']->setAccessClass($path.'ExchangeAccessControlHandler');
-}
-
-
-/**
- * Implements hook_menu_local_tasks_alter();
- */
-function mcapi_exchanges_local_tasks_alter(&$definitions) {
-  // move the user/register tab to the group
-  unset($definitions['user.register']);
 }
 
 /**
@@ -61,15 +51,8 @@ function mcapi_exchanges_entity_extra_field_info() {
  */
 function mcapi_exchanges_group_view(&$build, $entity, $display) {
   if ($info = $display->getComponent('currencies')) {
-    // Could do with a wrapper
-    $build['currencies'] = [
-      '#theme' => 'currencies',
-      '#weight' => $info['weight'],
-      '#currencies' => $entity->currencies->referencedEntities(),
-      '#cache' =>[
-        'contexts' => ['user', 'group']
-      ]
-    ];
+    return \Drupal::entityTypeManager()->getViewBuilder('mcapi_currency')
+      ->viewMultiple($entity->currencies->referencedEntities(), 'summary');
   }
 }
 
@@ -88,7 +71,7 @@ function mcapi_exchanges_theme_registry_alter(&$items) {
  */
 function mcapi_exchanges_form_wallet_limits_form_alter(&$form, $form_state) {
   $wallet = $form_state->getFormObject()->wallet;
-  if (!Exchanges::memberOf($wallet->getHolder())) {
+  if (!group_exclusive_membership_get('exchange', $wallet->getHolder())) {
     drupal_set_message(t("Wallet %name is not currently in any exchange so can't be used", ['%name' => $wallet->label()]));
   }
 }
@@ -98,36 +81,10 @@ function mcapi_exchanges_form_wallet_limits_form_alter(&$form, $form_state) {
  */
 function mcapi_exchanges_theme() {
   return [
-    'exchange_trade_stats' => [
-      'template' => 'exchange_trade_stats',
-      'variables' => [
-        'exchange' => NULL,
-        'currencies' => []
-      ]
-    ],
     'currencies' => [
-      'template' => 'currencies',
       'render element' => 'element'
     ]
   ];
-}
-
-/**
- * Default theme preprocessor for 'exchange_trade_stats'
- */
-function template_preprocess_exchange_trade_stats(&$vars) {
-  foreach ($vars['currencies'] as $currency) {
-    $stats = $currency->stats();
-    $vars['stats'][$currency->id] = [
-      'trades' => $stats->trades,
-      'volume' => $stats->volume,
-      'scope' => count(Exchanges::getExchangesUsing($currency->id()))
-    ];
-  }
-  //we could also have a breakdown of transactions by category
-  //could mention whether it is exclusive to the given exchange (local) or used by others (shared)
-  //number of different traders
-  //volume by month
 }
 
 /**
@@ -151,8 +108,7 @@ function template_preprocess_currencies(&$vars) {
  * Implements hook_field_widget_WIDGET_TYPE_form_alter()
  */
 function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $context) {
-  $currencies = Exchanges::currenciesAvailableToUser(\Drupal::currentUser());
-  $element['#allowed_curr_ids'] = array_keys($currencies);
+  $element['#allowed_curr_ids'] = array_keys(Exchanges::currenciesAvailableToUser());
 }
 
 /**
@@ -164,8 +120,8 @@ function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $
  * @see Drupal\mcapi\Plugin\Field\FieldWidget\WalletReferenceAutocompleteWidget::formElement
  */
 function mcapi_exchanges_query_entity_query_mcapi_wallet_alter(Select $query) {
-  $exchange_ids = Exchanges::memberOf();
-  if ($exchange_ids and $wids = Exchanges::walletsInExchanges($exchange_ids)) {
+  $membership = group_exclusive_membership_get('exchange');
+  if ($membership and $wids = Exchanges::walletsInExchange($membership->getGroup())) {
     $query->condition('base_table.wid', $wids, 'IN');
   }
   else {
@@ -188,49 +144,31 @@ function mcapi_exchanges_query_entity_query_mcapi_wallet_alter(Select $query) {
  * @return string[]
  *   currency ids
  *
- * @todo this might not make sense usability wise;
+ * @deprecated
  */
 function mcapi_exchanges_default_currency_id(ContentEntityInterface $exchange, $field_definition) {
-  $output = [];
-  // Default currencies for the currency field are all the currencies of the exchanges of which the current user is a member.
-  if ($exchange_ids = Exchanges::memberOf()) {
-    $exchanges = \Drupal\group\Entity\Group::loadMultiple($exchange_ids);
-    $output = array_keys(Exchanges::exchangeCurrencies($exchanges));
+  drupal_set_message('mcapi_exchanges_default_currency_id');
+  $curr_ids = [];
+  // Default currencies for the currency field are all the currencies of the
+  // exchanges of which the current user is a member.
+  if ($membership = group_exclusive_membership_get('exchange')) {
+    foreach ($membership->getGroup()->currencies->referencedEntities() as $curr) {
+      $curr_ids = $curr->id();
+    }
   }
-  return $output;
+  return $curr_ids;
 }
 
 /**
  * Implements hook_modules_installed().
  *
- * @note this hook doesn't fire in the .install file.
+ * @note this hook must not be in the .install file.
  */
 function mcapi_exchanges_modules_installed($modules) {
+  // Completely replace this view with config from mthis module.
   if ($view = \Drupal::ConfigFactory()->getEditable('views.view.mcapi_transactions')) {
     $view->delete();
   }
-}
-
-/**
- * Get the exchange of the current user.
- *
- * @param int $uid
- *
- * @return \Drupal\group\GroupMembership | NULL
- */
-function mcapi_exchanges_current_membership($uid = NULL) {
-  static $done, $membership;
-  if (!$done) {
-    $done = TRUE;
-    $user = $uid ? User::load($uid) : NULL;
-    foreach (\Drupal::service('group.membership_loader')->loadByUser($user) as $membership) {
-      if ($membership->getGroup()->getGroupType()->id() == 'exchange') {
-        break;
-      }
-      $membership = NULL;
-    }
-  }
-  return $membership;
 }
 
 /**
@@ -243,11 +181,10 @@ function mcapi_exchanges_current_membership($uid = NULL) {
  * @see mcapi_exchanges_mcapi_transaction_insert
  */
 function mcapi_exchanges_mcapi_transaction_create(TransactionInterface $transaction) {
-  // Could use context for this?
-  if ($membership = mcapi_exchanges_current_membership()) {
+  if ($membership = group_exclusive_membership_get('exchange')) {
     $transaction->exchange = $membership->getGroup();
   }
-  // DevelGenerate operates as user 0 during installation
+  // DevelGenerate operates as user 0 during installation, in which case, $transaction->exchange is set there
 }
 
 /**
@@ -269,6 +206,9 @@ function mcapi_exchanges_mcapi_transaction_insert(TransactionInterface $transact
       'entity_id' => $transaction->id(),
     ];
     GroupContent::Create($props)->save();
+  }
+  else {
+    throw new \Exception('No exchange indicated for new transaction.');
   }
 }
 

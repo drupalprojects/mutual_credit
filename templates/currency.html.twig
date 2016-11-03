@@ -1,0 +1,18 @@
+{#
+/**
+ * @file
+ * Default theme implementation for the currency
+ * name
+ * issuance
+ * volume e.g. US$99.99
+ * trades number of trades
+ * wallets number of wallets
+ * url canonical relative
+ */
+
+#}
+{{ attach_library('mcapi/mcapi.currency') }}
+<a href="{{ url }}"><div class = "currency-link">
+    <div class = "volume">{{ volume }}</div>
+    {{ name }}
+</div></a>

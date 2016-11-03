@@ -1,25 +1,26 @@
 <?php
 
-namespace Drupal\mcapi_exchanges;
+namespace Drupal\group_exclusive;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\DependencyInjection\ServiceProviderBase;
-use Symfony\Component\DependencyInjection\Reference;
 
 /**
  * Overrides the Drupal\user\Access\RegisterAccessCheck service.
+ *
+ * @deprecated
  */
-class McapiExchangesServiceProvider extends ServiceProviderBase {
+class GroupExclusiveServiceProvider extends ServiceProviderBase {
 
   /**
    * {@inheritdoc}
    */
   public function alter(ContainerBuilder $container) {
+    //anonymous user creation doesn't need modification
     $definition = $container->getDefinition('access_check.user.register');
     $definition
-      ->setClass('Drupal\mcapi_exchanges\Overrides\RegisterAccessCheck')
+      ->setClass('\Drupal\group_exclusive\RegisterAccessCheck')
       ->addArgument('group.group_route_context');
-
   }
 
 }

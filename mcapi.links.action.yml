@@ -3,7 +3,7 @@ entity.mcapi_transaction.add_form:
   title: 'Create Transaction'
   appears_on:
     - mcapi.admin
-    - mcapi.transactions.collection
+    - entity.mcapi_transaction.collection
 
 entity.mcapi_currency.add_form:
   route_name: entity.mcapi_currency.add_form

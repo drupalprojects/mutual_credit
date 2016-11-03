@@ -1,0 +1,6 @@
+#group.exclusive.userregister.tab:
+#  title: Register
+#  route_name: user.register
+#  base_route: entity.group.canonical
+#  weight: 4
+

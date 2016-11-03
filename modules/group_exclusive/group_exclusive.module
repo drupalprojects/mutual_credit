@@ -1,0 +1,168 @@
+<?php
+
+use Drupal\group\Entity\GroupContent;
+use Drupal\user\Entity\User;
+use Drupal\Core\Entity\ContentEntityInterface;
+
+
+
+/**
+ * Implements hook_menu_links_discovered_alter().
+ *
+ * Disable unwanted menu items put in the main menu by core modules.
+ *
+ * @note this disabling can be re-enabled by user 1
+ */
+function group_exclusive_menu_links_discovered_alter(&$links) {
+  // This is put there by the admin_toolbar_tools module
+  if (group_exclusive_members()) {
+    //$links['user.admin_create']['parent'] = 'entity.group.collection';
+  }
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function group_exclusive_local_tasks_alter(&$definitions) {
+  if (group_exclusive_members()) {
+    // This route now has a group in the path, see Drupal\group_exclusive\RouteSubscriber::alterRoutes
+    if (isset($definitions['user.register'])) {
+      // move the user/register tab to the group
+      $definitions['user.register']['base_route'] = 'entity.group.canonical';
+    }
+  }
+}
+
+/**
+ * Implements hook_menu_local_actions_alter().
+ *
+ * Re-base any actions hanging off.
+ */
+function group_exclusive_menu_local_actions_alter(&$definitions) {
+  if (group_exclusive_members()) {
+    if (isset($definitions['user.register'])) {
+      // This route now has a group in the path, see Drupal\group_exclusive\RouteSubscriber::alterRoutes
+      // move the user/register tab to the group
+      $definitions['user.register']['base_route'][] = 'entity.group.canonical';
+      dsm($definitions['user.register']);
+    }
+    else {
+      dsm('local action user.register does not exist');
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_type_alter().
+ *
+ * Override Drupal's user.register form
+ */
+function group_exclusive_entity_type_alter(array &$entity_types) {
+  $entity_types['user']->setFormClass('register', '\Drupal\group_exclusive\GroupUserRegisterForm');
+}
+
+/**
+ * Get the one group of a given type for a given entity.
+ * Get the one group of a given type for a given entity.
+ *
+ * @param string $group_type
+ *   The group bundle name, or type.
+ * @param ContentEntityInterface $entity
+ *   Any content entity
+ *
+ * @return \Drupal\group\GroupMembership | NULL
+ */
+function group_exclusive_membership_get($group_type, ContentEntityInterface $entity = NULL) {
+  if (!$entity) {
+     $entity = User::load(\Drupal::currentUser()->id());
+  }
+  $key = $entity->getEntityTypeId().$entity->id();
+  static $results = [];
+  if (!isset($results[$group_type][$key])) {
+    if (!in_array($group_type, \Drupal::config('group_exclusive.settings')->get('plugins'))) {
+      return NULL;
+      throw new \Exception("Group type $group_type is not exclusive.");
+    }
+    foreach (GroupContent::loadByEntity($entity) as $groupContent) {
+      $plugin_id = $groupContent->getContentPlugin()->getPluginId();
+      if (in_array($plugin_id, \Drupal::config('group_exclusive.settings')->get('plugins'))) {
+        break;
+      }
+      $groupContent = NULL;
+    }
+    $results[$group_type][$key] = $groupContent;
+  }
+  return $results[$group_type][$key];
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_delete().
+ *
+ * Remove the GroupContentType from the list of exclusive group types.
+ */
+function group_exclusive_group_content_type_delete($entity) {
+  $config = \Drupal::configFactory()->getEditable('group_exclusive.settings');
+  $plugins = $config->get('plugins');
+  unset($plugins[array_search($entity->id(), $plugins)]);
+  $config->set('plugins', $plugins)->save();
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function group_exclusive_form_group_content_type_edit_form_alter(&$form, $form_state) {
+  $settings = \Drupal::config('group_exclusive.settings')->get('plugins');
+  $form['exclusive'] = [
+    '#title' => t('Exclusive'),
+    '#type' => 'checkbox',
+    '#default_value' => in_array($form_state->getFormObject()->getEntity()->id(), $settings),
+    '#states' => [
+      'visible' => [
+        ':input[name="group_cardinality"]' => ['value' => 1],
+      ]
+    ],
+    '#weight' => -1
+  ];
+  $form['group_cardinality']['#weight']= -2;
+  $form['actions']['submit']['#submit'][] = 'group_exclusive_submit_group_entity_type';
+}
+
+/**
+ * Entity form submit callback
+ *
+ * @note I tried to use hook_entity_presave for this, but oddities in the way
+ * the entity is saved meant that we couldn't access the changed version of the config.
+ * See in GroupContentType::updateContentPlugin where $this->pluginInstance is
+ * reset only after the entity is fully saved.
+ */
+function group_exclusive_submit_group_entity_type(&$form, $form_state) {
+  $entity_id = $form_state->getFormObject()->getEntity()->id();
+  $exclusive = $form_state->getValue('group_cardinality') == 1 && $form_state->getValue('exclusive');
+  $settings = \Drupal::configFactory()->getEditable('group_exclusive.settings');
+  $plugins = $settings->get('plugins');
+  unset($plugins[array_search($entity_id, $plugins)]);
+  if ($exclusive) {
+    $plugins[] = $entity_id;
+  }
+  $settings->set('plugins', array_values($plugins))->save();
+}
+
+/**
+ * Find out which group types if any insist on exclusive membership.
+ *
+ * @return []
+ *   The group bundle names
+ */
+function group_exclusive_members() {
+  static $exclusive_memberships = NULL;
+  if (is_null($exclusive_memberships)) {
+    $settings = \Drupal::config('group_exclusive.settings')->get('plugins');
+    $exclusive_memberships = [];
+    foreach ($settings as $plugin_id) {
+      if (substr($plugin_id, -16) == 'group_membership') {
+        $exclusive_memberships[] = substr($plugin_id, 0, -17);
+      }
+    }
+  }
+  return $exclusive_memberships;
+}

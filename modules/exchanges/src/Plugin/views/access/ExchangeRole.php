@@ -2,13 +2,13 @@
 
 namespace Drupal\mcapi_exchanges\Plugin\views\access;
 
-use Drupal\group\Entity\GroupRole as Role;
+use Drupal\group\Entity\GroupRole;
+use Drupal\views\Plugin\views\access\AccessPluginBase;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheableDependencyInterface;
+use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Plugin\Context\ContextProviderInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\views\Plugin\views\access\AccessPluginBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Routing\Route;
 
@@ -32,9 +32,9 @@ class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterf
   protected $usesOptions = TRUE;
 
   /**
-   * The exchange entity for the current user.
+   * @var Drupal\group\GroupInterface.
    */
-  protected $exchangeContext;
+  protected $exchange;
 
   /**
    * The Role storage handler
@@ -44,21 +44,16 @@ class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterf
   protected $roleStorage;
 
   /**
-   * Constructs a Role object.
+   * Constructor
    *
-   * @param array $configuration
-   *   A configuration array containing information about the plugin instance.
-   * @param string $plugin_id
-   *   The plugin_id for the plugin instance.
-   * @param mixed $plugin_definition
-   *   The plugin implementation definition.
-   * @param \Drupal\Core\Plugin\Context\ContextProviderInterface $context_provider
-   *   The group route context.
+   * @param EntityTypeManager $entity_type_manager
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, $entity_type_manager, ContextProviderInterface $context_provider) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManager $entity_type_manager) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->roleStorage = $entity_type_manager->getStorage('group_role');
-    $this->exchangeContext = $context_provider->getRuntimeContexts(['exchange'])['exchange'];
+    if ($group_content = group_exclusive_membership_get('exchange')) {
+      $this->exchange = $group_content->getGroup();
+    }
   }
 
   /**
@@ -69,8 +64,7 @@ class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterf
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('entity_type.manager'),
-      $container->get('mcapi_exchanges.my_exchange_context')
+      $container->get('entity_type.manager')
     );
   }
 
@@ -78,15 +72,13 @@ class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterf
    * {@inheritdoc}
    */
   public function access(AccountInterface $account) {
-    $exchange = $this->exchangeContext->getContextValue();
-    if (!empty($exchange)) {
+    if ($this->exchange) {
       foreach ($this->options['role_ids'] as $rid) {
-        if($exchange->hasRole($rid, $account)) {
+        if($this->exchange->hasRole($rid, $account)) {
           return TRUE;
         }
       }
     }
-    return FALSE;
   }
 
   /**
@@ -108,7 +100,7 @@ class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterf
    * {@inheritdoc}
    */
   public function summaryTitle() {
-    foreach (Role::loadMultiple($this->options['role_ids']) as $role) {
+    foreach (GroupRole::loadMultiple($this->options['role_ids']) as $role) {
       $title[] = $role->label();
     }
     return implode(', ', $title);

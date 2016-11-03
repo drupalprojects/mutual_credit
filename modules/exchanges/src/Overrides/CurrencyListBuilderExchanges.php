@@ -69,9 +69,7 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
    * @todo we might want to somehow filter the currencies before they get here, if there are large number
    */
   public function buildRow(EntityInterface $entity) {
-
     $row = parent::buildRow($entity);
-    //dsm(array_keys($row));
     // Find out if the currency is used in more than one group.
     $gids = $this->entityQuery->get('group')
       ->condition('currencies', $entity->id())
@@ -102,21 +100,11 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
     if ($this->currentUser->hasPermission('manage mcapi')) {
       return parent::load();
     }
-    $gids = $currencies = [];
     //get my exchange
-    $membership = mcapi_exchanges_current_membership();
-    if (!$membership) {
-      return [];
+    if ($membership = group_exclusive_membership_get('exchange')) {
+      return $membership->getGroup()->currencies->referencedEntities();
     }
-
-    $gid = $membership->getGroup()->id();
-
-    // Get the currencies in those groups
-    $curr_ids = Exchanges::getCurrenciesOfExchanges([$gid]);
-    // No sort has been applied.
-    $currencies = $this->storage->loadMultiple($curr_ids);
-
-    return $currencies;
+    return [];
   }
 
 

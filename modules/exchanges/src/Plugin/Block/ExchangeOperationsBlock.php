@@ -25,7 +25,7 @@ class ExchangeOperationsBlock extends BlockBase  {
   public function __construct(array $configuration, $plugin_id, $plugin_definition) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     // We could also pull this from context service
-    $this->exchange = community_exchange_current();
+    $this->exchangeMembership = group_exclusive_membership_get('exchange');
   }
 
   /**
@@ -34,13 +34,14 @@ class ExchangeOperationsBlock extends BlockBase  {
   public function build() {
     $build = [];
     $build['#cache']['contexts'] = ['group.type', 'group_membership.roles.permissions'];
-    $build['#exchange'] = $this->exchange;
-    $build['#title'] = $this->t('Operations for '.$this->exchange->label());
+    $exchange = $this->exchangeMembership->getGroup();
+    $build['#exchange'] = $exchange;
+    $build['#title'] = $this->t('Operations for '.$exchange->label());
     $links = [];
     // Retrieve the operations from the installed content plugins.
-    foreach ($this->exchange->getGroupType()->getInstalledContentPlugins() as $plugin) {
+    foreach ($exchange->getGroupType()->getInstalledContentPlugins() as $plugin) {
       /** @var \Drupal\group\Plugin\GroupContentEnablerInterface $plugin */
-      $links += $plugin->getGroupOperations($this->exchange);
+      $links += $plugin->getGroupOperations($exchange);
     }
     unset($links['group-leave'], $links['group-join']);
     if ($links) {
@@ -61,7 +62,7 @@ class ExchangeOperationsBlock extends BlockBase  {
   }
 
   protected function blockAccess(AccountInterface $account) {
-    return GroupAccessResult::allowedif(!is_null($this->exchange))->cachePerUser();
+    return GroupAccessResult::allowedif(!is_null($this->exchangeMembership))->cachePerUser();
   }
 
 }

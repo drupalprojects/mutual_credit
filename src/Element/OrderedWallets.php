@@ -59,8 +59,7 @@ class OrderedWallets extends Fieldset {
       ];
       // @todo put titles on list items "See record for %name"
       $data = array_reverse($element['#data'], TRUE);
-      while (count($element['top']['#items']) < $element['#top']) {
-        list($wid, $val) = each($data);
+      while (list($wid, $val) = each($data)) {
         $wallet = Wallet::load($wid);
         if ($element['#users_only'] && $wallet->holder_entity_type->value != 'user') {
           continue;
@@ -69,6 +68,9 @@ class OrderedWallets extends Fieldset {
           $val = $currency->format($val, Currency::DISPLAY_NORMAL, FALSE);
         }
         $element['top']['#items'][] = ['#markup' => $wallet->getHolder()->toLink()->toString() . ' (' . $val . ')'];
+        if (count($element['top']['#items']) >= $element['#top']) {
+          break;
+        }
       }
     }
     return $element;

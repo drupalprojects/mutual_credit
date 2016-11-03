@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\mcapi_exchanges\Overrides;
+namespace Drupal\group_exclusive;
 
 use Drupal\group\Access\GroupAccessResult;
 use Drupal\group\Entity\Group;
@@ -10,6 +10,8 @@ use Drupal\Core\Routing\Access\AccessInterface;
 
 /**
  * Access check for user registration routes.
+ *
+ * @deprecated
  */
 class RegisterAccessCheck implements AccessInterface {
 

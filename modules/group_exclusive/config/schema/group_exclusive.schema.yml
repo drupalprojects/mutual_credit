@@ -1,0 +1,9 @@
+#note there is no UI to edit this, only entity hooks
+group_eclusive.settings:
+  type: config_object
+  label: 'Exclusive groups settings'
+  mapping:
+    plugins:
+      type: sequence
+      label: Exclusive bundles
+      sequence: {}

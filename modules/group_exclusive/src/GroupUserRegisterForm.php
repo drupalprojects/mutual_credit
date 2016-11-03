@@ -1,34 +1,34 @@
 <?php
 
-namespace Drupal\mcapi_exchanges\Overrides;
+namespace Drupal\group_exclusive;
 
 use Drupal\user\RegisterForm;
 use Drupal\group\Entity\Group;
+use Drupal\group\Entity\GroupInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Form handler for the user register forms.
+ *
+ * @todo review this when there is a proper way to create entities IN GROUPS
  */
-class ExchangeUserRegisterForm extends RegisterForm {
+class GroupUserRegisterForm extends RegisterForm {
 
   protected $exchange;
 
   /**
    * Constructs a new EntityForm object.
    */
-  public function __construct($entity_manager, $language_manager, $entity_query, $group_id) {
+  public function __construct($entity_manager, $language_manager, $entity_query, GroupInterface $exchange) {
     parent::__construct($entity_manager, $language_manager, $entity_query);
-    if ($group_id) {
-      $exchange = Group::load($group_id);
-      if (is_object($exchange) && $exchange->type->value != 'exchange') {
-        throw new AccessDeniedHttpException(
-          $this->t("You can't join group '%name'", ['%name' => $exchange->label])
-        );
-      }
-      $this->exchange = $exchange;
-    }
+//    if ($exchange->type->target_id != 'exchange') {
+//      throw new AccessDeniedHttpException(
+//        $this->t("You can't join group '%name'", ['%name' => $exchange->label])
+//      );
+//    }
+    $this->exchange = $exchange;
   }
 
   /**
@@ -43,6 +43,9 @@ class ExchangeUserRegisterForm extends RegisterForm {
     );
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
     if ($this->exchange) {
@@ -86,14 +89,12 @@ class ExchangeUserRegisterForm extends RegisterForm {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-
     // This temp value is picked up when the new user's wallet is added
     // @see eserai_mcapi_wallet_insert
-    $this->entity->walletType = $form_state->getValue('wallet_type');
-
+    $this->entity->address->country_code = $this->exchange->address->country_code;
+    $this->entity->wallet_type = $form_state->getValue('wallet_type');
     parent::save($form, $form_state);
-
-    Group::load($form_state->getValue('exchange_id'))->addContent($this->entity, 'group_membership');
-
+    $this->exchange->addContent($this->entity, 'group_membership');
   }
+
 }

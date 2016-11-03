@@ -2,6 +2,7 @@
 
 namespace Drupal\mcapi\Plugin\Block;
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -9,16 +10,25 @@ use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Currency;
 
-define('MCAPIBLOCK_USER_MODE_CURRENT', 1);
-define('MCAPIBLOCK_USER_MODE_PROFILE', 0);
-
 /**
  * Base block class for user transaction data.
  */
 class McapiBlockBase extends BlockBase {
 
+  const USER_MODE_CURRENT = 1;
+  const USER_MODE_PROFILE = 0;
+
   protected $account;
   protected $currencies;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    //mtrace();//inject routeMatch & currentuser
+  }
+
 
   /**
    * {@inheritdoc}
@@ -35,23 +45,15 @@ class McapiBlockBase extends BlockBase {
    *
    * In profile mode, hide the block if we are not on a profile page.
    */
-  public function access(AccountInterface $account, $return_as_object = FALSE) {
-    $account = \Drupal::routeMatch()->getParameter('user');
+  public function blockAccess(AccountInterface $account) {
     // don't we need to call the parent?  See blockbase::access after alpha14.
     debug($this->getPluginDefinition(), 'check that block access is working');
-    if ($this->configuration['user_source'] == MCAPIBLOCK_USER_MODE_PROFILE) {
-      if ($account = \Drupal::request()->attributes->get('user')) {
-        $this->account = $account;
-      }
-      else {
-        return FALSE;
+    if ($this->configuration['user_source'] == static::USER_MODE_PROFILE) {
+      if (!\Drupal::routeMatch()->getParameters()->has('user')) {
+        return AccessResult::forbidden();
       }
     }
-    else {
-      $this->account = \Drupal::currentUser();
-    }
-
-    return TRUE;
+    return AccessResult::allowed();
   }
 
   /**
@@ -73,8 +75,8 @@ class McapiBlockBase extends BlockBase {
       '#title' => t('User'),
       '#type' => 'radios',
       '#options' => array(
-        MCAPIBLOCK_USER_MODE_PROFILE => t('Show as part of profile being viewed'),
-        MCAPIBLOCK_USER_MODE_CURRENT => t('Show for logged in user'),
+        static::USER_MODE_PROFILE => t('Show as part of profile being viewed'),
+        static::USER_MODE_CURRENT => t('Show for logged in user'),
       ),
       '#default_value' => $this->configuration['user_source'],
     ];
@@ -90,24 +92,28 @@ class McapiBlockBase extends BlockBase {
     foreach ($values as $key => $val) {
       $this->configuration[$key] = $val;
     }
+     $this->configuration['curr_ids'] = array_filter($this->configuration['curr_ids']);
   }
 
   /**
    * {@inheritdoc}
    */
   public function build() {
-    $curr_ids = array_filter($this->configuration['curr_ids']);
+
+    if ($this->configuration['user_source'] == static::USER_MODE_PROFILE) {
+      // We already know the parameter bag has 'user' from blockAccess
+      $this->account = \Drupal::routeMatch()->getParameter('user');
+    }
+    else {// Current user
+      $this->account = \Drupal::currentUser();
+    }
+
     // Might want to move this to mcapi_exchanges.
-    if (empty($curr_ids)) {
-      $otheruser = ($this->configuration['user_source'] == MCAPIBLOCK_USER_MODE_PROFILE) ? NULL : $this->account;
-      // Show only the currency visible to the current user AND profiled user.
-      $this->currencies = array_intersect_key(
-          Exchange::ownerEntityCurrencies(\Drupal::currentUser()),
-        Exchange::ownerEntityCurrencies($otheruser)
-      );
+    if (empty($this->configuration['curr_ids'])) {
+      $this->currencies = Exchange::currenciesAvailableToUser($this->account);
     }
     else {
-      $this->currencies = Currency::loadMultiple($this->currencies);
+      $this->currencies = Currency::loadMultiple($this->configuration['curr_ids']);
     }
   }
 

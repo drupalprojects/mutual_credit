@@ -1,0 +1,5 @@
+exchange.add.currency:
+  title: Create currency
+  route_name: entity.mcapi_currency.add_form
+  appears_on:
+    - entity.group.canonical

@@ -4,6 +4,7 @@ namespace Drupal\mcapi_exchanges\Overrides;
 
 use Drupal\group\Entity\Group;
 use Drupal\group\Access\GroupAccessResult;
+use Drupal\user\Entity\User;
 use Drupal\Core\Plugin\Context\ContextProviderInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Entity\EntityAccessControlHandler;
@@ -22,12 +23,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class ExchangeCurrencyAccessControlHandler extends EntityAccessControlHandler implements EntityHandlerInterface {
 
   /**
-   * The exchange group whose currencies we are checking.
-   * @var \Drupal\group\Entity\Group
-   */
-  protected $exchange;
-
-  /**
    * EntityQuery on group entity
    * @var Drupal\Core\Entity\Query\QueryFactory
    */
@@ -35,13 +30,10 @@ class ExchangeCurrencyAccessControlHandler extends EntityAccessControlHandler im
 
   /**
    * @param \Drupal\mcapi_exchanges\Overrides\EntityTypeInterface $entity_type
-   * @param ContextProviderInterface $context
    * @param Drupal\Core\Entity\Query\QueryFactory $query_factory
    */
-  public function __construct(EntityTypeInterface $entity_type, ContextProviderInterface $context, QueryFactory $query_factory) {
+  public function __construct(EntityTypeInterface $entity_type, QueryFactory $query_factory) {
     parent::__construct($entity_type);
-    // I've got really few examples of how to do this and this looks very wrong!
-    $this->exchangeContext = $context->getRuntimeContexts(['exchange'])['exchange']->getContextValue();
     $this->queryFactory = $query_factory;
   }
 
@@ -49,7 +41,6 @@ class ExchangeCurrencyAccessControlHandler extends EntityAccessControlHandler im
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
     return new static(
       $entity_type,
-      $container->get('mcapi_exchanges.my_exchange_context'),
       $container->get('entity.query')
     );
   }
@@ -74,6 +65,7 @@ class ExchangeCurrencyAccessControlHandler extends EntityAccessControlHandler im
             ->addCacheableDependency($group);
         }
         else {
+          // Group members can't update currencies which are in more than one group
           // Or we could add every group as a cachable dependency in case all but one drop the currency.
           $result = AccessResult::forbidden();
         }
@@ -102,7 +94,7 @@ class ExchangeCurrencyAccessControlHandler extends EntityAccessControlHandler im
     if ($account->hasPermission('configure mcapi')) {
       return AccessResult::allowed()->cachePerUser();
     }
-    if ($mem = mcapi_exchanges_current_membership()) {
+    if ($mem = group_exclusive_membership_get('exchange', User::load($account->id()))) {
       //only group admins can create and can only do so within that group.
       return GroupAccessResult::allowedIfHasGroupPermission($mem->getGroup(), $account, 'manage transactions')->cachePerUser();
     }

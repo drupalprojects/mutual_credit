@@ -2,11 +2,13 @@
 
 namespace Drupal\mcapi\ViewBuilder;
 
+use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Entity\Currency;
+use Drupal\Core\Form\FormState;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
-use \Drupal\mcapi\Entity\Wallet;
-use \Drupal\mcapi\Entity\Currency;
 
 /**
  * Visualisations of transactions per currency.
@@ -16,35 +18,41 @@ class CurrencyViewBuilder extends EntityViewBuilder {
   /**
    * {@inheritdoc}
    */
-  public function view(EntityInterface $entity, $view_mode = 'full', $langcode = NULL) {
-    $currency = $entity;
-    $build = parent::view($entity, $view_mode, $langcode);
+  protected function getBuildDefaults(EntityInterface $currency, $view_mode) {
+    $build = parent::getBuildDefaults($currency, $view_mode);
+
+    if ($view_mode == 'summary') {
+      return $build;
+    }
+
     unset($build['#theme']);
     // @todo update this using entityTypemanager when the API changes maybe not before D9
     $transactionStorage  = $this->entityManager->getStorage('mcapi_transaction');
 
+    $form_state = (new FormState())->set('currency', $currency);
     $build['filter'] = [
       '#title' => $this->t('Filter'),
       '#type' => 'details',
       // @todo inject this
-      'form' => \Drupal::formBuilder()->getForm('\Drupal\mcapi\Form\TransactionStatsFilterForm'),
+      'form' => \Drupal::formBuilder()->buildForm('Drupal\mcapi\Form\TransactionStatsFilterForm', $form_state),
       '#weight' => -1,
+      '#open' => isset($_SESSION['transaction_stats_filter'])
     ];
 
-    // dsm(\Drupal::request()->query->all());
     $build['#cache_contexts'] = ['accounting'];
     // @todo sort out the classes/attributes
     $build['#attributes'] = ['class' => 'blah', 'id' => 'blah'];
     $build['#classes'] = ['blah'];
     $build['#id'] = ['blah'];
 
-    $conditions = [
-      'until' => REQUEST_TIME,
-      'since' => $this->earliestTransactionTime(),
-    ];
+    if ($earliest = Mcapi::earliestTransactionTime($currency)) {
+      // $since needs to be set to the second previous to the first transaction;
+      $conditions['since'] = $earliest - 1;
+    }
+    $conditions =isset($_SESSION['transaction_stats_filter']) ?  array_filter($_SESSION['transaction_stats_filter']) : [];
 
     //@todo support time periods
-    list($from, $to, $period) = $this->periodQueryParams($conditions['since'], $conditions['until']);
+    list(, , $period) = $this->periodQueryParams($conditions);
 
     $balances_asc = $trades = $volumes = $incomes = $spending = [];
     foreach ($transactionStorage->ledgerStateByWallet($currency->id(), $conditions) as $row) {
@@ -55,14 +63,14 @@ class CurrencyViewBuilder extends EntityViewBuilder {
       $spending[$row->wid] = $row->expenditure;
     }
     if (!$balances_asc) {
-      return [
+      return $build + [
         '#markup' => t('No transactions yet', [], ['context' => 'accounting']),
       ];
     }
 
     asort($balances_asc);
     // Get the bottom wallets.
-    for ($i = 0; $i < min(10, count($balances_asc)); $i++) {
+    for ($i = 0; $i < min(10, count($balances_asc)/2); $i++) {
       list($wid, $quant) = each($balances_asc);
       $wallet = Wallet::load($wid);
       if (!$wallet) {
@@ -77,7 +85,7 @@ class CurrencyViewBuilder extends EntityViewBuilder {
     }
     // Get the top wallets.
     $balances_desc = array_reverse($balances_asc, TRUE);
-    for ($i = 0; $i < min(10, count($balances_asc)); $i++) {
+    for ($i = 0; $i < min(10, count($balances_asc)/2); $i++) {
       list($wid, $quant) = each($balances_desc);
       $wallet = Wallet::load($wid);
       $tops[] = [
@@ -91,7 +99,7 @@ class CurrencyViewBuilder extends EntityViewBuilder {
     $build['balances_chart'] = [
     // Decide this.
       '#theme' => 'mcapi_extreme_balances',
-      '#curr_id' => $entity->id(),
+      '#curr_id' => $currency->id(),
       '#depth' => 10,
       '#class' => ['extreme-balances'],
       '#largest'  => max(max($balances_desc), abs(min($balances_desc))),
@@ -103,8 +111,8 @@ class CurrencyViewBuilder extends EntityViewBuilder {
     $build['trades_per_user_wallet'] = [
       '#title' => t('Trades per wallet'),
       '#type' => 'mcapi_ordered_wallets',
-      '#id' => 'trades_per_user_wallet_' . $entity->id(),
-      '#curr_id' => $entity->id(),
+      '#id' => 'trades_per_user_wallet_' . $currency->id(),
+      '#curr_id' => $currency->id(),
       '#users_only' => TRUE,
       '#format_vals' => FALSE,
       '#data' => $trades,
@@ -113,8 +121,8 @@ class CurrencyViewBuilder extends EntityViewBuilder {
     $build['volume_per_user_wallet'] = [
       '#title' => t('Volume per wallet'),
       '#type' => 'mcapi_ordered_wallets',
-      '#id' => 'volume_per_user_wallet_' . $entity->id(),
-      '#curr_id' => $entity->id(),
+      '#id' => 'volume_per_user_wallet_' . $currency->id(),
+      '#curr_id' => $currency->id(),
       '#users_only' => TRUE,
       '#format_vals' => TRUE,
       '#data' => $volumes,
@@ -123,8 +131,8 @@ class CurrencyViewBuilder extends EntityViewBuilder {
     $build['income_per_user_wallet'] = [
       '#title' => t('Income per wallet'),
       '#type' => 'mcapi_ordered_wallets',
-      '#id' => 'income_per_user_wallet_' . $entity->id(),
-      '#curr_id' => $entity->id(),
+      '#id' => 'income_per_user_wallet_' . $currency->id(),
+      '#curr_id' => $currency->id(),
       '#users_only' => TRUE,
       '#format_vals' => TRUE,
       '#data' => $incomes,
@@ -133,8 +141,8 @@ class CurrencyViewBuilder extends EntityViewBuilder {
     $build['spending_per_user_wallet'] = [
       '#title' => t('Expenditure per wallet'),
       '#type' => 'mcapi_ordered_wallets',
-      '#id' => 'spending_per_user_wallet_' . $entity->id(),
-      '#curr_id' => $entity->id(),
+      '#id' => 'spending_per_user_wallet_' . $currency->id(),
+      '#curr_id' => $currency->id(),
       '#users_only' => TRUE,
       '#format_vals' => TRUE,
       '#data' => $spending,
@@ -142,13 +150,14 @@ class CurrencyViewBuilder extends EntityViewBuilder {
     ];
 
     list($dates, $trades, $volumes, $wallets) = $transactionStorage->historyPeriodic($currency->id(), $period, $conditions);
+
     $params = [
       '@units' => $currency->label(),
       '@span' => strtolower(new TranslatableMarkup($period)),
     ];
     $build['trades_history'] = [
       '#theme' => 'mcapi_timeline',
-      '#title' => t('Numbers of @units traded per @span', $params),
+      '#title' => t('Numbers of @units trades per @span', $params),
       '#points' => array_combine($dates, $trades),
       '#width' => 800,
       '#height' => 200,
@@ -169,22 +178,8 @@ class CurrencyViewBuilder extends EntityViewBuilder {
       '#height' => 200,
     ];
 
+    $build['#attached']['library'][] = 'mcapi/mcapi.currency';
     return $build;
-
-  }
-
-  /**
-   * Get the time of the oldest transaction.
-   *
-   * Strictly speaking this function should be in the storage controller
-   * interface and will cause problems with any transaction storage other than
-   * mysql.
-   */
-  public function earliestTransactionTime() {
-    $query = db_select('mcapi_transactions_index');
-    $query->addExpression('MIN(created)');
-    $query->condition('state', 'done');
-    return $query->execute()->fetchField();
   }
 
   /**
@@ -201,7 +196,9 @@ class CurrencyViewBuilder extends EntityViewBuilder {
    * @param int $until
    *   A unix timestamp, larger than $since.
    */
-  public function periodQueryParams($since, $until) {
+  public function periodQueryParams($conditions) {
+    $since = isset($conditions['since']) ? $conditions['since'] : 0;
+    $until = isset($conditions['until']) ? $conditions['until'] : REQUEST_TIME;
     $span = $until - $since;
     $day = 86400;
     // $year = 31560192;

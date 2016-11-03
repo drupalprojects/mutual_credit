@@ -11,5 +11,9 @@ description: 'Adds users to groups as members.'
 group_type: exchange
 content_plugin: group_membership
 plugin_config:
-  group_type_id: exchange
+  group_cardinality: 1
+  entity_cardinality: 1
+  info_text:
+    value: "<p>By submitting this form you will become a member of this and only this exchange."
+    format: basic
 

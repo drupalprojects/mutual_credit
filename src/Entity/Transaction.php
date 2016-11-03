@@ -6,6 +6,7 @@ use Drupal\mcapi\Event\TransactionAssembleEvent;
 use Drupal\mcapi\McapiEvents;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\user\UserInterface;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityChangedInterface;
@@ -178,8 +179,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    * {@inheritdoc}
    */
   public function getCacheTags() {
-    // @todo Add bundle-specific listing cache tag?
-    // @see https://drupal.org/node/2145751
     return array_merge_recursive(
       ['mcapi_transaction:' . $this->id()],
       $this->payer->entity->getCacheTags(),
@@ -345,6 +344,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
 
   /**
    * {@inheritdoc}
+   *
+   * @todo test this. any change to a transaction should clear anything tagged
+   * with that transaction, those wallets or that currency
    */
   protected function invalidateTagsOnSave($update) {
     parent::invalidateTagsOnSave($update);
@@ -363,6 +365,11 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
     foreach ($wallets as $wallet) {
       $wallet->invalidateTagsOnSave($update);
     }
+    $tags = [];
+    foreach ($this->worth->currencies(TRUE) as $currency) {
+      $tags = array_merge($tags, $currency->getCacheTagsToInvalidate());
+    }
+    Cache::invalidateTags($tags);
   }
 
   /**

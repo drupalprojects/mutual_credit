@@ -19,10 +19,11 @@ class WalletStats extends McapiBlockBase {
    * {@inheritdoc}
    */
   public function build() {
+    parent::build();
     // @todo where do we get the entity from?
     return [
       '#theme' => 'mcapi_wallets',
-      '#wallets' => Mcapi::walletsOf($content____entity),
+      '#wallets' => Mcapi::walletsOf($this->account),
     ];
   }
 
