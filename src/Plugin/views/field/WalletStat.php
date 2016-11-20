@@ -31,28 +31,31 @@ class WalletStat extends FieldPluginBase {
   public function render(ResultRow $values) {
     $entity = $this->getEntity($values);
     if ($entity->getEntityTypeId() != 'mcapi_wallet') {
-      $entities = Mcapi::walletsOf($entity);
-      $wallet = Wallet::load(reset($entities));
+      $entities = Mcapi::walletsOf($entity, TRUE);
+      $wallet = reset($entities);
     }
     else {
       $wallet = $entity;
     }
-    $stat = $this->definition['stat'];
-    $val = $wallet->getStatAll($stat);
-    switch ($stat) {
-      case 'volume':
-      case 'incoming':
-      case 'outgoing':
-      case 'balance':
-        return [
-          '#type' => 'worths_view',
-          '#worths' => $val,
-        ];
+    if ($wallet) {
+      $stat = $this->definition['stat'];
+      $val = $wallet->getStatAll($stat);
+      switch ($stat) {
+        case 'volume':
+        case 'incoming':
+        case 'outgoing':
+        case 'balance':
+          return [
+            '#type' => 'worths_view',
+            '#worths' => $val,
+          ];
 
-      case 'trades':
-      case 'partners':
-        return $val;
+        case 'trades':
+        case 'partners':
+          return $val;
+      }
     }
+    return $this->t('No transactions yet.');
   }
 
 }

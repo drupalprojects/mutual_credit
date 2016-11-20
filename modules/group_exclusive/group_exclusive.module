@@ -44,10 +44,10 @@ function group_exclusive_menu_local_actions_alter(&$definitions) {
       // This route now has a group in the path, see Drupal\group_exclusive\RouteSubscriber::alterRoutes
       // move the user/register tab to the group
       $definitions['user.register']['base_route'][] = 'entity.group.canonical';
-      dsm($definitions['user.register']);
+      debug($definitions['user.register']);
     }
     else {
-      dsm('local action user.register does not exist');
+      debug('local action user.register does not exist');
     }
   }
 }
@@ -63,7 +63,6 @@ function group_exclusive_entity_type_alter(array &$entity_types) {
 
 /**
  * Get the one group of a given type for a given entity.
- * Get the one group of a given type for a given entity.
  *
  * @param string $group_type
  *   The group bundle name, or type.
@@ -74,25 +73,29 @@ function group_exclusive_entity_type_alter(array &$entity_types) {
  */
 function group_exclusive_membership_get($group_type, ContentEntityInterface $entity = NULL) {
   if (!$entity) {
-     $entity = User::load(\Drupal::currentUser()->id());
+    $entity = User::load(\Drupal::currentUser()->id());
   }
-  $key = $entity->getEntityTypeId().$entity->id();
+  if ($entity->isNew()) {
+    return NULL;
+  }
   static $results = [];
-  if (!isset($results[$group_type][$key])) {
-    if (!in_array($group_type, \Drupal::config('group_exclusive.settings')->get('plugins'))) {
-      return NULL;
-      throw new \Exception("Group type $group_type is not exclusive.");
+  $entity_id = $entity->id();
+  $plugin_id = $group_type.'-group_membership';
+  if (!isset($results[$plugin_id][$entity_id])) {
+    if (!in_array($plugin_id, \Drupal::config('group_exclusive.settings')->get('plugins'))) {
+      print_r(\Drupal::config('group_exclusive.settings')->get('plugins'));
+//      throw new \Exception("Group type $group_type is not exclusive.");
     }
+    $groupContent = NULL;
     foreach (GroupContent::loadByEntity($entity) as $groupContent) {
-      $plugin_id = $groupContent->getContentPlugin()->getPluginId();
-      if (in_array($plugin_id, \Drupal::config('group_exclusive.settings')->get('plugins'))) {
+      if ($group_type == $groupContent->getGroup()->bundle()) {
         break;
       }
       $groupContent = NULL;
     }
-    $results[$group_type][$key] = $groupContent;
+    $results[$plugin_id][$entity_id] = $groupContent;
   }
-  return $results[$group_type][$key];
+  return $results[$plugin_id][$entity_id];
 }
 
 /**
@@ -140,7 +143,9 @@ function group_exclusive_submit_group_entity_type(&$form, $form_state) {
   $exclusive = $form_state->getValue('group_cardinality') == 1 && $form_state->getValue('exclusive');
   $settings = \Drupal::configFactory()->getEditable('group_exclusive.settings');
   $plugins = $settings->get('plugins');
-  unset($plugins[array_search($entity_id, $plugins)]);
+  if (in_array($entity_id, $plugins)) {
+    unset($plugins[array_search($entity_id, $plugins)]);
+  }
   if ($exclusive) {
     $plugins[] = $entity_id;
   }

@@ -56,12 +56,13 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
     $holder = $query->andConditionGroup();
     $holder->condition('holder_entity_type', 'user');
     $holder->condition('holder_entity_id', $uid);
-    $holder->condition('base_table.payways', Wallet::PAYWAY_AUTO, '<>');
     $or->condition($holder);
     $query->condition($or);
     $query->addTag('whichWallets');
-    // Allow modification as if it was an entityquery
+    // Allow modification as if it was an entityquery, i.e. hook_query_entity_query_ENTITY_TYPE_alter
     $query->addTag('entity_query_mcapi_wallet');
+    // This would normally be added by a real entityQuery @see Drupal\mcapi\Entity\Query::prepare().
+    $holder->condition('base_table.payways', Wallet::PAYWAY_AUTO, '<>');
     return $query->execute()->fetchCol();
   }
 

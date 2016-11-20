@@ -6,6 +6,7 @@ use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi_exchanges\Exchanges;
 use Drupal\mcapi\Plugin\DevelGenerate\TransactionDevelGenerate;
 use Drupal\group\Entity\GroupContent;
+use Drupal\group\Entity\Group;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -13,7 +14,7 @@ use Drupal\Core\Form\FormStateInterface;
  *
  * @DevelGenerate(
  *   id = "mcapi_exchange_transaction",
- *   label = @Translation("transactions"),
+ *   label = @Translation("Transactions in exchanges"),
  *   description = @Translation("Generate transactions between wallets in the same exchanges"),
  *   url = "transaction",
  *   permission = "administer devel_generate",
@@ -76,14 +77,16 @@ class ExchangeTransactionDevelGenerate extends TransactionDevelGenerate {
   /**
    * Retrive the last created transaction (with the highest ID)
    *
-   * @return \Drupal\mcapi\Entity\Transaaction
+   * @return \Drupal\mcapi\Entity\Transaction | NULL
    */
   protected function lastTransaction() {
     $serials = $this->getEntityQuery('mcapi_transaction')
       ->range(0, 1)
       ->sort('xid', 'DESC')
       ->execute();
-    return Transaction::loadBySerial(reset($serials));
+    if ($serials) {
+      return Transaction::loadBySerial(reset($serials));
+    }
   }
 
 }

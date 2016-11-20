@@ -149,7 +149,6 @@ function mcapi_cc_group_insert($entity) {
   }
 }
 
-
 /**
  * Implements hook_ENTITY_load();
  */

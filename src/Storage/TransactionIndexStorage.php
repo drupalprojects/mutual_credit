@@ -204,10 +204,10 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     $conditions['wallet_id'] = $wallet_id;
     $query = $this->getMcapiIndexQuery($curr_id, $conditions);
     $query->addExpression('COUNT(DISTINCT i.serial)', 'trades');
-    $query->addExpression('SUM(i.incoming)', 'gross_in');
-    $query->addExpression('SUM(i.outgoing)', 'gross_out');
-    $query->addExpression('SUM(i.diff)', 'balance');
-    $query->addExpression('SUM(i.volume)', 'volume');
+    $query->addExpression('COALESCE(SUM(i.incoming), 0)', 'gross_in');
+    $query->addExpression('COALESCE(SUM(i.outgoing), 0)', 'gross_out');
+    $query->addExpression('COALESCE(SUM(i.diff), 0)', 'balance');
+    $query->addExpression('COALESCE(SUM(i.volume), 0)', 'volume');
     $query->addExpression('COUNT(DISTINCT i.partner_id)', 'partners');
     return $query->execute()->fetch(\PDO::FETCH_ASSOC);
   }

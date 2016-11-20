@@ -85,12 +85,7 @@ class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterf
    * {@inheritdoc}
    */
   public function alterRouteDefinition(Route $route) {
-    if ($rids = array_filter($this->options['role_ids'])) {
-      $route->setRequirement('_exchange_role', implode(';', $rids));
-    }
-    else {
-      \Drupal::logger('mcapi_exchanges')->warning('No roles specified for route @route', ['@route' => $route->getPath()]);
-    }
+    $route->setRequirement('_exchange_role', implode(';', array_filter($this->options['role_ids'])));
     // Upcast any %group path key the user may have configured so the
     // '_group_role' access check will receive a properly loaded group.
     $route->setOption('parameters', ['group' => ['type' => 'entity:group']]);
@@ -136,7 +131,8 @@ class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterf
       '#title' => $this->t('Group roles'),
       '#default_value' => $this->options['role_ids'],
       '#description' => $this->t('Only users with a selected exchange role will be able to access this display.<br /><strong>Warning:</strong> This will only work if there is an exchange {group} parameter in the route. If not, it will always deny access.'),
-      '#multiple' => TRUE
+      '#multiple' => TRUE,
+      '#required' => TRUE
     );
   }
 

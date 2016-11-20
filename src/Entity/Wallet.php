@@ -71,7 +71,11 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   const PAYWAY_ANYONE_OUT = 'O';
   // Anyone can pay into and out of this wallet
   const PAYWAY_ANYONE_BI = 'B';
-  // Only system can interact with this wallet
+  /**
+   * Only system can interact with this wallet
+   *
+   * @var string
+   */
   const PAYWAY_AUTO = 'A';
 
   private $holder;
@@ -252,18 +256,9 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     if (!$this->stats) {
       $transactionStorage = $this->entityTypeManager()->getStorage('mcapi_transaction');
       // Fill in the values of any unused, available currencies.
-      foreach ($this->currenciesAvailable() as $curr_id => $currency) {
+      foreach (Exchange::currenciesAvailable($this) as $currency) {
+        $curr_id = $currency->id();
         $this->stats[$curr_id] = $transactionStorage->walletSummary($curr_id, $this->id());
-        if (empty($this->stats[$curr_id])) {
-          $this->stats[$curr_id] = [
-            'balance' => 0,
-            'trades' => 0,
-            'volume' => 0,
-            'gross_in' => 0,
-            'gross_out' => 0,
-            'partners' => 0,
-          ];
-        }
       }
     }
     return $this->stats;
@@ -299,6 +294,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    *   Worth values in no particular order, each with curr_id and (raw) value.
    */
   public function getStatAll($stat = 'balance') {
+    $worth = [];
     foreach ($this->getSummaries() as $curr_id => $stats) {
       $worth[] = [
         'curr_id' => $curr_id,
@@ -349,7 +345,8 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * {@inheritdoc}
    */
   public function currenciesAvailable() {
-    return Exchange::currenciesAvailableToUser($this->getOwner());
+    debug('disintermediated');
+    return Exchange::currenciesAvailable($this);
   }
 
   /**

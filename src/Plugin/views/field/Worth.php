@@ -47,8 +47,7 @@ class Worth extends FieldPluginBase {
    * @todo if there is a currency filter on this view, we would want to only show that currency part of each worth value
    */
   public function render(ResultRow $values) {
-    $curr_id = $this->getValue($values, 'curr_id');
-    if (!$curr_id) {
+    if ($curr_id = $this->getValue($values, 'curr_id')) {
       return Currency::load($curr_id)
         ->format($this->getValue($values), $this->options['format']);
     }

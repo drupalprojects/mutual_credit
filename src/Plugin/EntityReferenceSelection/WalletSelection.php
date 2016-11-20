@@ -73,10 +73,7 @@ class WalletSelection extends DefaultSelection {
         ->whichWalletsQuery($restrict, \Drupal::currentUser()->id(), $match);
     }
     else {
-      $query = \Drupal::entityQuery('mcapi_wallet')
-        // Not intertrading wallets.
-        ->condition('payways', Wallet::PAYWAY_AUTO, '!=')
-        ->condition('orphaned', 0);
+      $query = \Drupal::entityQuery('mcapi_wallet');
       if ($match) {
         $query->condition('name', '%' . \Drupal::database()->escapeLike($match) . '%', 'LIKE');
       }

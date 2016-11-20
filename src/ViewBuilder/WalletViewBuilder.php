@@ -73,7 +73,7 @@ class WalletViewBuilder extends EntityViewBuilder {
    * Put the Holder entity's name with the wallet name in brackets.
    */
   public static function defaultLabel($wallet) {
-    if ($wallet->payways == Wallet::PAYWAY_AUTO) {
+    if ($wallet->payways->value == Wallet::PAYWAY_AUTO) {
       return t('Import/Export');
     }
     $name = $wallet->name->value;

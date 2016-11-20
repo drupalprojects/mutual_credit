@@ -5,10 +5,11 @@
  * Helper functions.
  */
 
-use Drupal\Core\Cache\Cache;
+use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -243,7 +244,7 @@ function limits_settings_subform($form, FormStateInterface $form_state) {
  *   A renderable array.
  */
 function mcapi_view_limits(WalletInterface $wallet, $curr_ids = []) {
-  $currencies = $wallet->currenciesAvailable();
+  $currencies = Exchange::currenciesAvailable($wallet);
   if ($curr_ids) {
     $currencies = array_intersect_key($currencies, array_flip($curr_ids));
   }

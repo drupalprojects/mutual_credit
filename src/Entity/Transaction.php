@@ -88,9 +88,12 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
     $transactions = \Drupal::entityTypeManager()
       ->getStorage('mcapi_transaction')
       ->loadByProperties(['serial' => $serial]);
-    $transaction = array_shift($transactions);
-    $transaction->children = $transactions;
-    return $transaction;
+    if ($transactions) {
+      $transaction = array_shift($transactions);
+      $transaction->children = $transactions;
+      return $transaction;
+    }
+    throw new \Exception('No transaction with serial '.$serial);
   }
 
   /**

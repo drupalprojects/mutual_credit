@@ -2,9 +2,9 @@
 
 namespace Drupal\mcapi_exchanges\Overrides;
 
-use Drupal\mcapi_exchanges\Exchanges;
 use Drupal\mcapi\Access\WalletAccessControlHandler;
 use Drupal\group\Access\GroupAccessResult;
+use Drupal\user\Entity\User;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -36,7 +36,13 @@ class ExchangesWalletAccessControlHandler extends WalletAccessControlHandler {
     // If the result isn't conclusive then we handle it.
     if ($result->isNeutral()) {
       // Check that the current user is the same exchange as the wallet.
-      $exchange_membership = group_exclusive_membership_get('exchange', $account)->getGroup();
+      // @todo rewrite this when wallets are in exchanges directly
+      drupal_set_message('@todo rewrite ExchangesWalletAccessControlHandler');
+      $user = User::load($account->id());
+      $exchange_membership = group_exclusive_membership_get('exchange', $user);
+      if (!$exchange_membership) {
+        $result = AccessResult::neutral();
+      }
       $owner_membership = group_exclusive_membership_get('exchange', $entity->getOwner());
       if ($exchange_membership->getGroup()->id() == $owner_membership->getGroup()->id()) {
         switch ($op) {

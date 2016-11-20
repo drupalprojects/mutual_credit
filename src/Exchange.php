@@ -31,11 +31,27 @@ class Exchange {
       $currencies = Self::MultipleExchanges() ?
         Exchanges::currenciesAvailableToUser($account) :
         Currency::loadMultiple();
-      uasort($currencies, '\Drupal\mcapi\Mcapi::uasortWeight');
       $account->currencies_available = $currencies;
     }
     // Note this adhoc variable gives us no control over static or caching.
     return $account->currencies_available;
+  }
+
+  /**
+   * Get the currencies in the exchange of the wallet owner.
+   *
+   * @param Wallet $wallet
+   *
+   * @return \Drupal\mcapi\Entity\Currency[]
+   *   NOT keyed by currency ID
+   */
+  public static function currenciesAvailable(Wallet $wallet) {
+    // Either the wallet holder is an exchange, or is in an exchange
+    $currencies  = Self::MultipleExchanges() ?
+      Exchanges::currenciesAvailable($wallet) :
+      Currency::loadMultiple();
+    uasort($currencies, '\Drupal\mcapi\Mcapi::uasortWeight');
+    return $currencies;
   }
 
   /**
@@ -104,7 +120,7 @@ class Exchange {
   }
 
   /**
-   * Identify an exchanges intertrading wallet.
+   * Identify an exchange's intertrading wallet.
    *
    * @param int $exchange_id
    *   The ID of the exchange.
@@ -117,10 +133,10 @@ class Exchange {
       $wid = Exchanges::getIntertradingWalletId($exchange_id);
     }
     else {
-      $wids = \Drupal::entityQuery('mcapi_wallet')
-        ->condition('payways', Wallet::PAYWAY_AUTO)
-        ->execute();
-      $wid = reset($wids);
+      $wallets = \Drupal::entityTypeManager()
+        ->getStorage('mcapi_wallet')
+        ->loadByProperties(['direction' => Wallet::PAYWAY_AUTO]);
+      $wid = reset($wallets)->id();
     }
     return $wid;
   }

@@ -2,6 +2,7 @@
 
 namespace Drupal\mcapi_limits;
 
+use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\mcapi\Currency;
 
@@ -61,7 +62,7 @@ class WalletLimiter {
     }
     $limits = [];
     // Get the default limits.
-    $needed_currencies = $this->wallet->currenciesAvailable();
+    $needed_currencies = Exchange::currenciesAvailable($this->wallet);
     foreach ($needed_currencies as $curr_id => $currency) {
       $limits[$curr_id] = $this->defaults($currency);
     }
@@ -214,7 +215,7 @@ class WalletLimiter {
    */
   private function overridable() {
     $overridable_curr_ids = [];
-    foreach ($this->wallet->currenciesAvailable() as $currency) {
+    foreach (Exchange::currenciesAvailable($this->wallet) as $currency) {
       $config = $currency->getThirdPartySettings('mcapi_limits');
       if (!empty($config['override'])) {
         $overridable_curr_ids[] = $currency->id();

@@ -44,7 +44,6 @@ class TransactionStorage extends TransactionIndexStorage {
     $transaction->serial->value = $serial;
     // Allow code to run after saving.
     $transaction->setOriginalId($transaction->id());
-    unset($transaction->original);
     return $return;
   }
 
@@ -76,5 +75,5 @@ class TransactionStorage extends TransactionIndexStorage {
     }
     $this->resetCache($ids);
   }
-  
+
 }

@@ -30,4 +30,13 @@ class Query extends BaseQuery {
     return $this;
   }
 
+  public function prepare() {
+    parent::prepare();
+    // Exclude intertrading or orphaned wallets
+    if ($this->getEntityTypeId() == 'mcapi_wallet') {
+      $this->condition('payways', Wallet::PAYWAY_AUTO, '<>');
+      $this->condition('orphaned', 0);
+    }
+    return $this;
+  }
 }

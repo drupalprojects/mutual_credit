@@ -274,7 +274,6 @@ class ClearingCentral implements IntertradingInterface {
    */
   private function walletIdfromFragment($fragment) {
     $wids = $this->walletEntityQuery
-      ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
       ->condition('name', '%'.$fragment.'%', 'LIKE')
       ->execute();
     if (count($wids) > 1) {

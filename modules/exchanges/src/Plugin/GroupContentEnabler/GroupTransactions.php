@@ -20,7 +20,7 @@ use Drupal\user\Entity\User;
  *   description = @Translation("Adds transactions to groups."),
  *   entity_type_id = "mcapi_transaction",
  *   pretty_path_key = "transactions",
- *   enforced = FALSE
+ *   enforced = TRUE
  * )
  */
 class GroupTransactions extends GroupContentEnablerBase {

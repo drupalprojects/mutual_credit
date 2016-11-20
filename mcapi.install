@@ -53,16 +53,6 @@ function mcapi_install() {
       'holder' => $account,
     ])->save();
   }
-
-  $zero_icon_uri = '/' . drupal_get_path('module', 'mcapi') . '/templates/present.png';
-  $snippet = '<img src = "' . $zero_icon_uri . '" width = "31" />';
-
-  // @temp this won't work until we sort out the text filtering.
-  // @see \Drupal\mcapi\Element\WorthView
-  $snippet = '-';
-  \Drupal::configFactory()->getEditable('mcapi.settings')
-    ->set('zero_snippet', $snippet)
-    ->save();
 }
 
 /**

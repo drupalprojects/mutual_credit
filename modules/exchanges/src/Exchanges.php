@@ -15,6 +15,8 @@ use Drupal\Core\Entity\ContentEntityInterface;
  */
 class Exchanges extends Exchange {
 
+  static $walletsInExchanges = [];
+
   /**
    * Identify a new parent entity for a wallet.
    */
@@ -42,6 +44,7 @@ class Exchanges extends Exchange {
     if (is_null($account)) {
       $account = \Drupal::currentUser();
     }
+    // The user is in one and only one exchange
     $user = User::load($account->id());
     $currencies = [];
     if ($membership = group_exclusive_membership_get('exchange', $user)) {
@@ -50,6 +53,30 @@ class Exchanges extends Exchange {
       }
     }
     return $currencies;
+  }
+
+  /**
+   * The design of this module took a u-turn when I decided that every wallet is
+   * in one and only one exchange, otherwise currency availability gets too
+   * complicated. So the currencies available to a wallet are determined by its
+   * holder, what what one exchange the holder is in.
+   *
+   * @param Wallet $wallet
+   *
+   * @return \Drupal\mcapi\Entity\Currency[]
+   */
+  public static function currenciesAvailable(Wallet $wallet) {
+    $holder = $wallet->getHolder();
+    if ($holder->getEntityTypeId() == 'group' && ($holder->bundle() == 'exchange')) {
+      $exchange = $holder;
+    }
+    elseif($memship = group_exclusive_membership_get('exchange', $holder)) {
+      $exchange = $memship->getGroup();
+    }
+    else {// The system intertrading wallet should be removed.
+      throw new \Exception('No currencies are available.');
+    }
+    return $exchange->currencies->referencedEntities();
   }
 
   /**
@@ -64,54 +91,73 @@ class Exchanges extends Exchange {
    * @return int[]
    *   All the wallet ids in the given exchanges except intertrading
    *
-   * @todo this is pretty intensive and would benefit from caching and using sparingly
+   * @todo refactor this once wallets are in groups
    */
   public static function walletsInExchange(GroupInterface $exchange) {
-    static $i = 0; drupal_set_message('need to cache walletsInExchange? use '.$i++);
-    $group_content_ids = \Drupal::entityQuery('group_content')
+    $ids = \Drupal::entityQuery('group_content')
+      ->condition('type', 'exchange-wallet')
       ->condition('gid', $exchange->id())
       ->execute();
-    if (empty($group_content_ids)) {
-      \Drupal::logger('mcapi_exchanges')
-        ->warning('No wallet holders found in exchange %ids', ['%ids' => $exchange->id()]);
-      return [];
+    $wids = [];
+    foreach(GroupContent::loadMultiple($ids) as $id => $group_content) {
+      $wallet = $group_content->getEntity();
+      if ($wallet->payways->value != Wallet::PAYWAY_AUTO) {
+        $wids[] = $wallet->id();
+      }
     }
-    $holders = [];
-    foreach (GroupContent::loadMultiple($group_content_ids) as $item) {
-      $entity = $item->getEntity();
-      $holders[$entity->getEntityTypeId()][$entity->id()] = $entity->id();//users doesn't cover nodes.
+    //return $wids;
+
+
+    if (!isset(static::$walletsInExchanges[$exchange->id()])) {
+      // Get all the ids of content in the exchange.
+      $group_content_ids = \Drupal::entityQuery('group_content')
+        ->condition('gid', $exchange->id())
+        ->execute();
+      if (empty($group_content_ids)) {
+        \Drupal::logger('mcapi_exchanges')
+          ->warning('No wallet holders found in exchange %ids', ['%ids' => $exchange->id()]);
+        return [];
+      }
+      $holders = [];
+      // Load ALL the content in the exchange.
+      foreach (GroupContent::loadMultiple($group_content_ids) as $item) {
+        $entity = $item->getEntity();
+        $holders[$entity->getEntityTypeId()][$entity->id()] = $entity->id();//users doesn't cover nodes.
+      }
+      //This used to be walletsOfHolders
+      // Build a query for all the available wallet IDs
+      $query = \Drupal::database()->select('mcapi_wallet', 'w')
+        ->fields('w', ['wid'])
+        ->condition('orphaned', 0)
+        ->condition('payways', Wallet::PAYWAY_AUTO, '<>');
+
+      $or = $query->orConditionGroup();
+      // Find the wallets whose holders are content in the exchange.
+      foreach ($holders as $entity_type_id => $ids) {
+        $and = $query->andConditionGroup()
+          ->condition('holder_entity_type', $entity_type_id)
+          ->condition('holder_entity_id', $ids, 'IN');
+        $or->condition($and);
+      }
+      $query->condition($or);
+      static::$walletsInExchanges[$exchange->id()] = $query->execute()->fetchCol();
     }
-
-    //This used to be walletsOfHolders
-    // Build a query for all the available wallet IDs
-    $query = \Drupal::database()->select('mcapi_wallet', 'w')
-      ->fields('w', ['wid'])
-      ->condition('orphaned', 0)
-      ->condition('payways', Wallet::PAYWAY_AUTO, '<>');
-
-    $or = $query->orConditionGroup();
-    foreach ($holders as $entity_type_id => $ids) {
-      $and = $query->andConditionGroup()
-        ->condition('holder_entity_type', $entity_type_id)
-        ->condition('holder_entity_id', $ids, 'IN');
-      $or->condition($and);
-    }
-    $result = $query->condition($or)->execute();
-
-    return $result->fetchCol();
-
-    // Deprecated see above
-    //return Mcapi::walletsOfHolders($holders);
+    return static::$walletsInExchanges[$exchange->id()];
   }
 
   /**
    * @todo
    */
   public static function getIntertradingWalletId($group) {
-    return \Drupal::entityQuery('mcapi_wallet')
-      ->condition('payways', Wallet::PAYWAY_AUTO)
-      ->condition('holder_entity_id', $group->id())
-      ->execute();
+    // EntityQuery filters out intertrading wallets.
+    $wallets = \Drupal::entityTypeManager()
+      ->getStorage('mcapi_wallet')
+      ->loadByProperties([
+          'payways' => Wallet::PAYWAY_AUTO,
+          'holder_entity_type' => 'group',
+          'holder_entity_id' => $group->id()
+        ]);
+    return reset($wallets)->id();
   }
 
 }

@@ -7,6 +7,7 @@ use Drupal\Core\TypedData\DataDefinition;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\TypedData\DataReferenceDefinition;
+use Drupal\Core\Entity\TypedData\EntityDataDefinition;
 
 /**
  * Plugin implementation of the 'worth' field type.
@@ -43,12 +44,9 @@ class WorthItem extends FieldItemBase {
     $properties['currency'] = DataReferenceDefinition::create('entity')
       ->setLabel(t('Currency'))
       ->setComputed(TRUE)
+      ->addConstraint('EntityType', 'mcapi_currency')
       ->setClass('\Drupal\mcapi\CurrencyComputed')
       ->setSetting('currency source', 'curr_id');
-    // don't know why a special class is needed when its not in
-    // EntityReferenceItem::propertyDefinitions
-    // ->setTargetDefinition(EntityDataDefinition::create('mcapi_currency'))
-    // ->addConstraint('EntityType', 'mcapi_currency')
     return $properties;
   }
 
@@ -93,7 +91,7 @@ class WorthItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public function isEmpty() {
-    if ($this->curr_id && $this->currency->zero) {
+    if ($this->curr_id && $this->currency && $this->currency->zero) {
       return FALSE;
     }
     return $this->get('value')->getValue() == 0;

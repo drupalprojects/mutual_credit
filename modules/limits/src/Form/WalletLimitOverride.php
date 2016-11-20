@@ -56,7 +56,7 @@ class WalletLimitOverride extends FormBase {
     // $form['#attached']['html_head']
     $limiter = WalletLimiter::create($wallet);
     $overrides = $limiter->overrides();
-    foreach ($wallet->currenciesAvailable() as $curr_id => $currency) {
+    foreach (Exchange::currenciesAvailable($wallet) as $currency) {
       $config = $currency->getThirdPartySettings('mcapi_limits');
       if (!$config || $config['plugin'] == 'none') {
         continue;
@@ -71,6 +71,7 @@ class WalletLimitOverride extends FormBase {
         $desc[] = t('Max: %worth', ['%worth' => $currency->format($limits['max'])]);
       }
       if ($config['override']) {
+        $curr_id = $currency->id();
         // For now the per-wallet override allows admin to declare absolute min
         // and max per user. The next thing would be for the override to support
         // different plugins and peruser settings. This should be in the plugin.

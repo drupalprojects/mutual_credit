@@ -15,6 +15,7 @@ use Symfony\Component\Validator\Constraint;
  *   id = "CommonCurrency",
  *   label = @Translation("Checks that the payer and payee can access all currencies in the transaction"),
  * )
+ * @deprecated no need to check for this if all transactions are within one exchange.
  */
 class CommonCurrencyConstraint extends CompositeConstraintBase {
 
@@ -93,8 +94,8 @@ class CommonCurrencyConstraint extends CompositeConstraintBase {
    */
   private function uncommonCurrencies($wid1, $wid2, FieldItemListInterface $worth) {
     $curr_keys = $worth->currencies();
-    $wallet1_currencies = Wallet::load($wid1)->currenciesAvailable();
-    $wallet2_currencies = Wallet::load($wid2)->currenciesAvailable();
+    $wallet1_currencies = Exchange::currenciesAvailable(Wallet::load($wid1));
+    $wallet2_currencies = Exchange::currenciesAvailable(Wallet::load($wid2));
     // All of the $curr_keys must be in both arrays.
     return array_merge(
       array_diff($curr_keys, array_keys($wallet1_currencies)),

@@ -4,9 +4,32 @@
  * Installation hooks for mcapi_exchanges
  */
 
-use Drupal\Core\Entity\Entity\EntityFormDisplay;
-use Drupal\user\Entity\User;
+use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\group\Entity\Group;
+use Drupal\user\Entity\User;
+
+
+/**
+ * Implements hook_requirements().
+ *
+ * This module can only be installed if user 1 hasn't used his wallet
+ */
+function mcapi_exchanges_requirements($phase) {
+  $requirements = [];
+  if ($phase == 'install' && class_exists('\Drupal\mcapi\Mcapi')) {
+    foreach (Mcapi::walletsOf(User::load(1)) as $wallet) {
+      if (!$wallet->isVirgin()) {
+        $requirements['mcapi_exchanges'] = [
+          'title' => t('User 1 has never traded'),
+          'description' => t('User 1 wallet has nowhere to go in a multiple exchange setup'),
+          'severity' => REQUIREMENT_ERROR
+        ];
+      }
+    }
+  }
+  return $requirements;
+}
 
 /**
  * Implements hook_install().
@@ -21,29 +44,23 @@ function mcapi_exchanges_install() {
   $conf->set('entity_types', $types)->save();
   \Drupal\Core\Cache\Cache::invalidateTags(['walletable_bundles']);
 
-  // Ensure the currencies field is visible on the exchange display.
-  // @todo test this on exchange/add
-  EntityFormDisplay::create([
-    'targetEntityType' => 'group',
-    'bundle' => 'exchange',
-    'mode' => 'default',
-    'status' => TRUE
-  ])->setComponent(
-    'currencies',
-    ['weight'  => 10, 'type' => 'options_select', 'settings' => []]
-  )->save();
-
-  return; //don't forget to uninstall the default group as well
-  // Now make a default exchange
+  // Now make a default exchange and give it the intertrading wallet.
   // Groups module automatically puts the entity owner in the exchange.
   $exchange = Group::create([
-    'label' => 'Default exchange',
+    'label' => t('Default exchange'),
     'uid' => 1,
     'type' => 'exchange',
     'currencies' => \Drupal\mcapi\Entity\Currency::loadMultiple()
   ]);
   $exchange->save();
-
+  //  Get the first intertrading wallet and put it in the default exchange.
+  $wids = \Drupal::entityQuery('mcapi_wallet')
+    ->condition('holder_entity_type', 'user')
+    ->condition('holder_entity_id', 1)
+    ->execute();
+  if ($wids) {
+    $wallet= Wallet::load(reset($wids))->setHolder($exchange)->save();
+  }
   // Put every other user users in the default exchanges.
   foreach (User::loadMultiple() as $id => $account) {
     if ($id > 1){

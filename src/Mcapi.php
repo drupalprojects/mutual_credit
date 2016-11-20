@@ -8,7 +8,6 @@ use Drupal\system\Entity\Action;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
 use Drupal\Core\Cache\CacheBackendInterface;
-use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Component\Utility\Html;
 
@@ -107,7 +106,9 @@ class Mcapi {
     if ($action = Action::load($action_name)) {
       return $action;
     }
-    throw new \Exception("No action with name '$operation'");
+    elseif ($operation <> 'view label') {
+      throw new \Exception("No action with name '$operation'");
+    }
   }
 
   /**
@@ -278,6 +279,5 @@ class Mcapi {
     }
     return $results[$curr_id];
   }
-
-
+  
 }

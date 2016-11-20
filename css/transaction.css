@@ -75,12 +75,12 @@ form.transaction-operation-form div#edit-actions {
   text-align: center;
 }
 
-div.certificate div.worth-zero {
+div.certificate span.worth-zero {
   background-image: url("present.gif");/* free image from http::clipartpanda.com */
   background-size: 100%;
   display: inline-block;
-  width: 100px;
-  height: 90px;
+  width: 31px;
+  height: 31px;
 }
 
 /* the transaction operations flow on from the sentence in the pending view of transactions as sentences */
@@ -92,3 +92,4 @@ div.mcapi_transaction-sentence>div.item-list, div.mcapi_transaction-sentence ul,
 div.mcapi_transaction-sentence ul>li {
   padding: 0 0 0 1em;
 }
+

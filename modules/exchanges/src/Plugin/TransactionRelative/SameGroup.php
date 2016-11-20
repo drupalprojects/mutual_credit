@@ -46,15 +46,18 @@ class SameGroup extends PluginBase implements TransactionRelativeInterface {
     // Get the groups of user $uid
     $account = \Drupal\user\Entity\User::load($uid);
     $user_member_of = \Drupal::service('group.membership_loader')->loadByUser($account);
+    $gids = [];
     foreach ($user_member_of as $membership) {
       $gids[] = $membership->getGroup()->id();
     }
-    $or_group->condition('gc.gid',  $gids, 'IN');
-    $query->join(
-      'group_content_field_data',
-      'gc',
-      "gc.type = 'exchange-transactions' AND gc.entity_id = mcapi_transactions_index.xid"
-    );
+    if ($gids) {
+      $or_group->condition('gc.gid',  $gids, 'IN');
+      $query->join(
+        'group_content_field_data',
+        'gc',
+        "gc.type = 'exchange-transactions' AND gc.entity_id = mcapi_transactions_index.xid"
+      );
+    }
   }
 
   /**
@@ -64,16 +67,18 @@ class SameGroup extends PluginBase implements TransactionRelativeInterface {
     // Get the groups of user $uid
     $account = \Drupal\user\Entity\User::load($uid);
     $user_member_of = \Drupal::service('group.membership_loader')->loadByUser($account);
+    $gids = [];
     foreach ($user_member_of as $membership) {
       $gids[] = $membership->getGroup()->id();
     }
-    $or_group->condition('gc.gid',  $gids, 'IN');
-
-    $query->join(
-      'group_content_field_data',
-      'gc',
-      "gc.type = 'exchange-transactions' AND gc.entity_id = mcapi_transaction.xid"
-    );
+    if ($gids) {
+      $or_group->condition('gc.gid',  $gids, 'IN');
+      $query->join(
+        'group_content_field_data',
+        'gc',
+        "gc.type = 'exchange-transactions' AND gc.entity_id = mcapi_transaction.xid"
+      );
+    }
   }
 
   /**

@@ -5,14 +5,14 @@
  * Hooks for mcapi_exchanges.module
  */
 
+use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi_exchanges\Exchanges;
-use Drupal\group\Entity\Group;
 use Drupal\group\Entity\GroupContent;
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Database\Driver\mysql\Select;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
-use Drupal\Core\Entity\ContentEntityInterface;
 
 /**
  * Implements hook_entity_info_alter().
@@ -57,26 +57,6 @@ function mcapi_exchanges_group_view(&$build, $entity, $display) {
 }
 
 /**
- * Implements hook_theme_registry_alter().
- */
-function mcapi_exchanges_theme_registry_alter(&$items) {
-  $items['1stpartyform']['preprocess functions'][] = 'mcapi_exchanges_1stparty_preprocess';
-}
-
-/**
- * Implements hook_form_FORM_ID_alter().
- *
- * In the unlikely event that a wallets holder is not in any exchanges put a
- * warning on the wallet limits form.
- */
-function mcapi_exchanges_form_wallet_limits_form_alter(&$form, $form_state) {
-  $wallet = $form_state->getFormObject()->wallet;
-  if (!group_exclusive_membership_get('exchange', $wallet->getHolder())) {
-    drupal_set_message(t("Wallet %name is not currently in any exchange so can't be used", ['%name' => $wallet->label()]));
-  }
-}
-
-/**
  * Implements hook_theme().
  */
 function mcapi_exchanges_theme() {
@@ -114,8 +94,7 @@ function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $
 /**
  * Implements hook_query_entity_query_ENTITY_TYPE_alter().
  *
- * Limits all wallet entityQueries to the exchanges of the current user. NB Only
- * Applies to restricted queries
+ * Restrict wallets to the user's own exchange.
  *
  * @see Drupal\mcapi\Plugin\Field\FieldWidget\WalletReferenceAutocompleteWidget::formElement
  */
@@ -123,10 +102,6 @@ function mcapi_exchanges_query_entity_query_mcapi_wallet_alter(Select $query) {
   $membership = group_exclusive_membership_get('exchange');
   if ($membership and $wids = Exchanges::walletsInExchange($membership->getGroup())) {
     $query->condition('base_table.wid', $wids, 'IN');
-  }
-  else {
-    // If the holder isn't in an exchange, query returns nothing.
-    $query->condition('base_table.wid', 0);
   }
 }
 
@@ -144,7 +119,7 @@ function mcapi_exchanges_query_entity_query_mcapi_wallet_alter(Select $query) {
  * @return string[]
  *   currency ids
  *
- * @deprecated
+ * @deprecated ?
  */
 function mcapi_exchanges_default_currency_id(ContentEntityInterface $exchange, $field_definition) {
   drupal_set_message('mcapi_exchanges_default_currency_id');
@@ -193,7 +168,6 @@ function mcapi_exchanges_mcapi_transaction_create(TransactionInterface $transact
  * Relate the transaction to the specified group.
  *
  * @param TransactionInterface $transaction
- *
  */
 function mcapi_exchanges_mcapi_transaction_insert(TransactionInterface $transaction) {
   // Just create GroupContent for the main transaction and the children will be
@@ -207,13 +181,10 @@ function mcapi_exchanges_mcapi_transaction_insert(TransactionInterface $transact
     ];
     GroupContent::Create($props)->save();
   }
-  else {
-    throw new \Exception('No exchange indicated for new transaction.');
-  }
 }
 
 /**
- * populate the notifcation field with the exchange's last used notification
+ * Populate the notifcation field with the exchange's last used notification.
  */
 function mcapi_exchanges_form_mcapi_transaction_mass_form_alter(&$form, $form_state, $form_id) {
   if(isset($form['notification'])) {
@@ -231,3 +202,38 @@ function mcapi_exchanges_save_masspay_message($form, $form_state) {
     $form_state->get('mail')
   );
 }
+
+/**
+ * Implements hook_ENTITY_TYPE_insert().
+ *
+ * Anything that holds a wallet, when added to a group, must add the wallet to
+ * the group also.
+ */
+function mcapi_exchanges_group_content_insert($entity) {
+  $group = $entity->getGroup();
+  if ($group->bundle() == 'exchange') {
+    foreach (Mcapi::WalletsOf($entity, TRUE) as $wallet) {
+      $props = [
+        'gid' => $exchange->id(),
+        'type' => 'exchange-wallet',
+        'entity_id' => $wallet->id(),
+      ];
+      GroupContent::Create($props)->save();
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Prevent editing some groupEnabledContentTypes
+ */
+function mcapi_exchanges_form_group_content_type_edit_form_alter(&$form, $form_state) {
+  $donottouch  = ['exchange-wallet', 'exchange-group_membership', 'exchange-transactions'];
+  if (in_array($form_state->getFormObject()->getEntity()->id(), $donottouch)) {
+    drupal_set_message(t('Multiple exchanges module forbids editing this.'),  'warning');
+    $form['#disabled'] = TRUE;
+    $form['info_text']['#access'] = FALSE;
+  }
+}
+

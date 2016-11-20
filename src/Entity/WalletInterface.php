@@ -87,14 +87,6 @@ interface WalletInterface extends ContentEntityInterface {
   public function isIntertrading();
 
   /**
-   * Get a list of currencies available to the wallet.
-   *
-   * @return CurrencyInterface[]
-   *   Keyed by currency ID.
-   */
-  public function currenciesAvailable();
-
-  /**
    * Returns the entity owner's user entity.
    *
    * @return \Drupal\user\UserInterface

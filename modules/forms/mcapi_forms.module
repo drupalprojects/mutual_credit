@@ -227,7 +227,7 @@ function wallet_link_title(WalletInterface $wallet, $template) {
 }
 
 /**
- * Find out which wallets a user can pay into or out of.
+ * Find out which of their own wallets a user can pay into or out of.
  *
  * @param int $uid
  *   A user $account->id().
@@ -240,8 +240,6 @@ function wallet_link_title(WalletInterface $wallet, $template) {
 function mcapi_forms_access_direction($uid, $dir) {
   //we can access this form if we have one or wallets which operate in the right direction.
   $query = \Drupal::entityQuery('mcapi_wallet')
-    ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
-    ->condition('orphaned', 0)
     ->condition('holder_entity_type', 'user')
     ->condition('holder_entity_id', $uid);
   $directions = [Wallet::PAYWAY_ANYONE_BI];

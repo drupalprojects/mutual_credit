@@ -3,6 +3,7 @@
 namespace Drupal\mcapi\Plugin\DevelGenerate;
 
 use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\devel_generate\DevelGenerateBase;
@@ -242,9 +243,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     ];
 
     // find a currency that's common to both wallets.
-    $payer_currencies = Wallet::load($props['payer'])->currenciesAvailable();
-    $payee_currencies = Wallet::load($props['payee'])->currenciesAvailable();
-
+    $payer_currencies = Exchange::currenciesAvailable(Wallet::load($props['payer']));
+    $payee_currencies = Exchange::currenciesAvailable(Wallet::load($props['payee']));
     $curr_ids = array_intersect_key($payer_currencies, $payee_currencies);
     if (!$curr_ids) {
       // Fail silently.
@@ -287,7 +287,6 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    */
   public function get2RandWalletIds(array $conditions = []) {
     $query = $this->getEntityQuery('mcapi_wallet')
-      ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
       ->condition('orphaned', 0);
     foreach ($conditions as $field => $value) {
       $query->condition($field, $value, is_array($value) ? 'IN' : '=');
@@ -310,9 +309,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   public function enoughWallets() {
     static $wallet_ids;
     if (!isset($wallet_ids)) {
-      $wallet_ids = $this->getEntityQuery('mcapi_wallet')
-        ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
-        ->execute();
+      $wallet_ids = $this->getEntityQuery('mcapi_wallet')->execute();
     }
     return count($wallet_ids) >= 2;
   }

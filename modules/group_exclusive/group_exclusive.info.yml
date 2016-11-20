@@ -2,4 +2,5 @@ name: Exclusive group membership
 description: Restrict members to one and only one group
 core: 8.x
 type: module
-
+dependencies:
+  - group

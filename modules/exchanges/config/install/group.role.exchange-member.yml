@@ -1,0 +1,25 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - group.type.exchange
+id: exchange-member
+label: Member
+weight: -100
+internal: false
+audience: member
+group_type: exchange
+permissions_ui: true
+permissions:
+  - 'view group'
+  - 'view group_membership content'
+  - 'create post node'
+  - 'delete own post node'
+  - 'edit own post node'
+  - 'view post node'
+  - 'create transactions'
+  - 'create-edit-delete own smallads'
+  - 'access subgroup overview'
+  - 'view subgroup:local_project content'
+  - 'view subgroup:neighbourhood content'
+

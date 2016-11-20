@@ -72,20 +72,14 @@ class WorthWidget extends WidgetBase {
    * @see \Drupal\Core\Field\WidgetInterface
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
-
     $curr_ids = array_filter($this->getSetting('currencies'));
-
-    $this->getSetting('exclude');
-    if ($this->getSetting('exclude')) {
-      $curr_ids = array_diff(array_keys(Currency::loadMultiple()), $curr_ids);
-    }
-    elseif (\Drupal::currentUser()->id() == 1) {
-      $curr_ids = array_keys(Currency::loadMultiple());
-    }
-    else {
+    if (empty($curr_ids)) {
+      // Get all the currencies available to the current user
       $curr_ids = array_keys(Exchange::currenciesAvailableToUser());
     }
-
+    elseif ($this->getSetting('exclude')) {
+      $curr_ids = array_diff(array_keys(Currency::loadMultiple()), $curr_ids);
+    }
     // Because this is a multiple widget, ignore delta value and put all items.
     $element += array(
       '#title' => $this->fieldDefinition->label(),

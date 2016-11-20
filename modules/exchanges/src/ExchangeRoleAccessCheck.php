@@ -32,6 +32,7 @@ class ExchangeRoleAccessCheck implements AccessInterface {
    */
   public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
     $roles = $route->getRequirement('_exchange_role');
+
     // Don't interfere if no role was specified.
     if ($roles === NULL) {
       return AccessResult::neutral();
@@ -43,7 +44,6 @@ class ExchangeRoleAccessCheck implements AccessInterface {
         $group = $memship->getGroup();
       }
       else {
-        mtrace();
         return AccessResult::neutral();
       }
     }
