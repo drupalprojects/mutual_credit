@@ -22,7 +22,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   url = "transaction",
  *   permission = "administer devel_generate",
  *   settings = {
- *     "num" = 200,
+ *     "num" = 100,
  *     "kill" = TRUE
  *   }
  * )
@@ -105,6 +105,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       $this->generateContent($values);
     }
     else {
+      //these batches will run later
       $this->generateBatchContent($values);
     }
   }
@@ -146,12 +147,12 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     if ($values['kill']) {
       $batch['operations'][] = [
         'devel_generate_operation',
-        [$this, 'batchContentKill', $values['type']],
+        [$this, 'contentKill', $values['type']],
       ];
     }
     $total = $values['num'];
     // Add the operations to create the transactions.
-    for ($num = 0; $num < floor($total / 100); $num++) {
+    for ($num = 0; $num < floor($total / 50); $num++) {
       $values['batch'] = $num;
       $batch['operations'][] = [
         'devel_generate_operation',
@@ -160,15 +161,16 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     }
     if ($num = $total % 100) {
       // Add the remainder.
-      $values['num'] = $total % 100;
+      $values['num'] = $total % 50;
       $values['batch'] = $num++;
       $batch['operations'][] = [
         'devel_generate_operation',
         [$this, 'batchContentAddTransaction', $values],
       ];
     }
-    $batch['operations'][] = [[$this, 'sortTransactions']];
-    batch_set($batch);
+    $batch['operations'][] = [[$this, 'sortTransactions'], []];
+
+   batch_set($batch);
   }
 
   /**
@@ -178,15 +180,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     //$context['num'] = intval($context['num']);
     for ($num = 0; $num < $values['num']; $num++) {
       $this->develGenerateTransactionAdd($values);
-      $context['num']++;
+      //$context['results']['num']++;
     }
-  }
-
-  /**
-   * Delete previous transactions before creating a batch of them.
-   */
-  public function batchContentKill($type, &$context) {
-    $this->contentKill($type);
   }
 
   /**
@@ -210,7 +205,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    *
    * @note Loads all transactions into memory at the same time.
    */
-  protected function contentKill($type) {
+  public function contentKill($type) {
     $xids = $this->getEntityQuery('mcapi_transaction')
       ->condition('type', $type)
       ->execute();
@@ -293,8 +288,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     }
     $wids = $query->execute();
     if (count($wids) < 2) {
-      \Drupal::logger('mcapi')->warning('Not enough wallets in exchange: '.print_r($conditions, 1));
-      return [];
+      throw new \Exception('Not enough wallets to make a transaction.');
     }
     shuffle($wids);
     return array_slice($wids, -2);

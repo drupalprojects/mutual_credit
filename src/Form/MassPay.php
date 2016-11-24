@@ -197,6 +197,10 @@ class MassPay extends ContentEntityForm {
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     if (!$form_state->getErrors()) {
+
+      //if ($this->direction == '12many') $this->getFormDisplay($form_state)->getRenderer('payer')->forceMultipleValues();
+      //else $this->getFormDisplay($form_state)->getRenderer('payee')->forceMultipleValues();
+
       // Only validate step 1.
       if (empty($form_state->get('wallets'))) {
         // Unlike normal one-step entity forms, save the entiry here for step 2
@@ -224,6 +228,10 @@ class MassPay extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+
+    //if ($this->direction == '12many') $this->getFormDisplay($form_state)->getRenderer('payer')->forceMultipleValues();
+    //else $this->getFormDisplay($form_state)->getRenderer('payee')->forceMultipleValues();
+
     parent::submitForm($form, $form_state);
     $this->configFactory->getEditable('mcapi.settings')
       ->set('masspay_mail', $form_state->get('mail'))

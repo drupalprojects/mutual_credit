@@ -125,7 +125,6 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
         '#default_value' => $default_value_wallet ? $default_value_wallet->id() : '',
       ];
     }
-
     return ['target_id' => $element];
   }
 
@@ -144,9 +143,12 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
     return $element;
   }
 
+  /**
+   * try without this, just using the parent for normal and mass transactions
+   */
   public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
     //This helps the massPay form to validate when this widget manifests an array
-    if (key($values) == '0') {
+    if (is_array(reset($values)) && key($values) == '0') {
       $values = ['target_id' => reset($values[0])];
     }
     return $values;
@@ -160,12 +162,19 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
   }
 
 
+  /**
+   * {@inheritdoc}
+   *
+   * @note this hack for the mass transaction form is probably a bad idea.
+   * Instead of hacking the widget we should hack the transaction field instance
+   * cardinality.
+   */
   function forceMultipleValues() {
     $this->pluginDefinition['multiple_values'] = TRUE;
   }
 
   function inverse() {
-
+    die('called WalletReferenceAutocompleteWidget::inverse');
   }
 
 }

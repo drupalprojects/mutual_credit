@@ -2,6 +2,7 @@
 
 namespace Drupal\mcapi\Plugin\Validation\Constraint;
 
+use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Entity\Plugin\Validation\Constraint\CompositeConstraintBase;

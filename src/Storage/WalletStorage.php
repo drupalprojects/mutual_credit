@@ -18,7 +18,7 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
     $entity->setHolder($values['holder']);
     return $entity;
   }
-
+  
   /**
    * {@inheritdoc}
    *
