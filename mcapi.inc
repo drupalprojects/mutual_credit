@@ -728,7 +728,6 @@ function _worth_element_process($element, &$form_state) {
   return $element;
 }
 
-
 /**
  * Default implementation of theme 'worth_field'
  * Converts the quantity into tokens and replaces them into the currency display format

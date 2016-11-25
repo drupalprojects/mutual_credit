@@ -1,8 +1,9 @@
 <?php
 
-/*
- * implements hook_mcapicurrencies_default
- * simply copies the currency in the default currency variable, used for single currency systems
+/**
+ * Implements hook_mcapicurrencies_default().
+ *
+ * Simply copies the currency in the default currency variable, used for single currency systems
  */
 function mcapi_mcapicurrencies_default() {
   $currency = new stdClass;
@@ -69,7 +70,6 @@ function mcapi_mcapicurrencies_default() {
     )
   );
   $currencies[$currency->currcode] = $currency;
-
 
 
   $mcapicurrency = new stdClass();
