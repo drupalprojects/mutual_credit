@@ -1,0 +1,3 @@
+plugins:
+  - exchange-group_membership
+  - exchange-wallet

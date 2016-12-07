@@ -231,11 +231,11 @@ function wallet_link_title(WalletInterface $wallet, $template) {
  *
  * @param int $uid
  *   A user $account->id().
- * @param string $dir
- *   Either 'incoming' or 'outgoing'.
+ * @param int $dir
+ *   Either MCAPI_FORMS_DIR_INCOMING or MCAPI_FORMS_DIR_OUTGOING.
  *
- * @return int[]
- *   The wallet ids.
+ * @return boolean
+ *   TRUE if access is granted
  */
 function mcapi_forms_access_direction($uid, $dir) {
   //we can access this form if we have one or wallets which operate in the right direction.
@@ -243,13 +243,12 @@ function mcapi_forms_access_direction($uid, $dir) {
     ->condition('holder_entity_type', 'user')
     ->condition('holder_entity_id', $uid);
   $directions = [Wallet::PAYWAY_ANYONE_BI];
-  if ($dir == 1) {
+  if ($dir == MCAPI_FORMS_DIR_OUTGOING) {
     $directions[] = Wallet::PAYWAY_ANYONE_IN;
   }
-  elseif ($dir == -1) {
+  elseif ($dir == MCAPI_FORMS_DIR_INCOMING) {
     $directions[] = Wallet::PAYWAY_ANYONE_OUT;
   }
-  $query->condition('payways', $directions, 'IN');
-  return $query->execute();
+  return (bool)$query->condition('payways', $directions, 'IN')->count()->execute();
 }
 

@@ -91,14 +91,7 @@ class ExchangeCurrencyAccessControlHandler extends EntityAccessControlHandler im
   }
 
   function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = NULL) {
-    if ($account->hasPermission('configure mcapi')) {
-      return AccessResult::allowed()->cachePerUser();
-    }
-    if ($mem = group_exclusive_membership_get('exchange', User::load($account->id()))) {
-      //only group admins can create and can only do so within that group.
-      return GroupAccessResult::allowedIfHasGroupPermission($mem->getGroup(), $account, 'manage transactions')->cachePerUser();
-    }
-    return AccessResult::forbidden()->cachePerUser();
+    return AccessResult::allowedIfHasPermission($account, 'configure mcapi')->cachePerUser();
   }
 
 

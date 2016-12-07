@@ -12,7 +12,7 @@ namespace Drupal\mcapi\Unit;
 use Drupal\simpletest\WebTestBase;
 
 /**
- *
+ * @group Community Accounting
  */
 class McapiTest extends WebTestBase {
 
@@ -20,8 +20,6 @@ class McapiTest extends WebTestBase {
    *
    */
   function test_1() {
-    // $this->moduleInstaller->install(array('mcapi_tester'));.
-    \Drupal::service('module_installer')->uninstall(array('mcapi_tester'));
 
   }
 
@@ -29,9 +27,6 @@ class McapiTest extends WebTestBase {
    *
    */
   function test_2() {
-    // $this->moduleInstaller->uninstall(['mcapi_tester']);
-    //    $this->moduleInstaller->install(['mcapi_exchanges']);
-    //    $this->moduleInstaller->install(['mcapi_tester']);.
   }
 
 }

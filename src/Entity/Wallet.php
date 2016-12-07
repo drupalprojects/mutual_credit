@@ -345,7 +345,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * {@inheritdoc}
    */
   public function currenciesAvailable() {
-    debug('disintermediated');
+    debug('disintermediated', 'this function is not needed any more');
     return Exchange::currenciesAvailable($this);
   }
 

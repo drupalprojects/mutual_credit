@@ -36,7 +36,10 @@ function group_exclusive_local_tasks_alter(&$definitions) {
 /**
  * Implements hook_menu_local_actions_alter().
  *
- * Re-base any actions hanging off.
+ * if any group at all forces memberships to be exclusive then move the
+ * user.register action to the group's canonical page.
+ *
+ * @see \Drupal\group_exclusive\RouteSubscriber
  */
 function group_exclusive_menu_local_actions_alter(&$definitions) {
   if (group_exclusive_members()) {
@@ -83,8 +86,7 @@ function group_exclusive_membership_get($group_type, ContentEntityInterface $ent
   $plugin_id = $group_type.'-group_membership';
   if (!isset($results[$plugin_id][$entity_id])) {
     if (!in_array($plugin_id, \Drupal::config('group_exclusive.settings')->get('plugins'))) {
-      print_r(\Drupal::config('group_exclusive.settings')->get('plugins'));
-//      throw new \Exception("Group type $group_type is not exclusive.");
+      throw new \Exception("Group type $group_type is not exclusive.");
     }
     $groupContent = NULL;
     foreach (GroupContent::loadByEntity($entity) as $groupContent) {

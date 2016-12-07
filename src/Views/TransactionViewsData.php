@@ -328,6 +328,14 @@ class TransactionViewsData extends EntityViewsData {
         'additional fields' => ['curr_id', 'wallet_id', 'serial', 'volume'],
       ],
     ];
+    $data['mcapi_transactions_index']['first_wallet'] = [
+      'title' => $this->t('First wallet of route entity'),
+      'help' => $this->t("First wallet of the entity given in the route"),
+      'argument' => [
+        'id' => 'route_wallet',
+        'field' => 'wallet_id'
+      ]
+    ];
 
     return $data;
   }

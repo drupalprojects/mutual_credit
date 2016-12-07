@@ -135,7 +135,7 @@ class Exchange {
     else {
       $wallets = \Drupal::entityTypeManager()
         ->getStorage('mcapi_wallet')
-        ->loadByProperties(['direction' => Wallet::PAYWAY_AUTO]);
+        ->loadByProperties(['payways' => Wallet::PAYWAY_AUTO]);
       $wid = reset($wallets)->id();
     }
     return $wid;

@@ -3,6 +3,7 @@
 namespace Drupal\mcapi\Element;
 
 use Drupal\Core\Entity\Element\EntityAutocomplete;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Provides a widget to select wallet references by name, using autocomplete.
@@ -13,12 +14,13 @@ use Drupal\Core\Entity\Element\EntityAutocomplete;
  */
 class WalletAutocomplete extends EntityAutocomplete {
 
+  static $multiple;
+
   /**
    * {@inheritdoc}
    */
   public function getInfo() {
     $info = parent::getInfo();
-    $info['#target_type'] = 'mcapi_wallet';
     $info['#selection_handler'] = 'default:mcapi_wallet';
     $info['#target_type'] = 'mcapi_wallet';
     $info['#restrict'] = '';

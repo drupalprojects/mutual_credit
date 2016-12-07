@@ -12,7 +12,7 @@ use Drupal\Core\Session\AccountInterface;
  *
  * @GroupContentEnabler(
  *   id = "wallet",
- *   label = @Translation("Wallets"),
+ *   label = @Translation("Wallet"),
  *   description = @Translation("Adds wallets to groups."),
  *   entity_type_id = "mcapi_wallet",
  *   pretty_path_key = "wallets",

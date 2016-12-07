@@ -40,6 +40,17 @@ class GroupTransactions extends GroupContentEnablerBase {
   public function getGroupOperations(GroupInterface $group) {
     $account = \Drupal::currentUser();
     $operations = [];
+    if ($group->hasPermission('manage transactions', $account)) {
+      // Not sure whether to display one or two links
+      $operations["create-mass-transaction"] = [
+        'title' => $this->t('Mass payment'),
+        'url' => Url::fromRoute('mcapi.masspay'),
+        'weight' => 7,
+      ];
+    }
+    if (!\Drupal::moduleHandler()->moduleExists('mcapi_forms')) {
+      return $operations;
+    }
     if ($group->hasPermission('create transactions', $account)) {
       $uid = $account->id();
       foreach (mcapi_form_displays_load() as $displayEntity) {
@@ -64,14 +75,6 @@ class GroupTransactions extends GroupContentEnablerBase {
           }
         }
       }
-    }
-    if ($group->hasPermission('manage transactions', $account)) {
-      // Not sure whether to display one or two links
-      $operations["create-mass-transaction"] = [
-        'title' => $this->t('Mass payment'),
-        'url' => Url::fromRoute('mcapi.masspay'),
-        'weight' => 7,
-      ];
     }
     return $operations;
   }

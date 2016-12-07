@@ -36,7 +36,8 @@ class Mcapi {
         $types = \Drupal::Config('mcapi.settings')->get('entity_types');
         // Having some problems on installation
         if (!$types) {
-          return [];// so we don't cache nothing.
+          // So we don't cache nothing.
+          return [];
         }
         foreach (\Drupal::Config('mcapi.settings')->get('entity_types') as $entity_bundle => $max) {
           if (!$max) {
@@ -49,7 +50,7 @@ class Mcapi {
           'walletableBundles',
           $bundles,
           CacheBackendInterface::CACHE_PERMANENT,
-        // @todo what are the tags?
+          // @todo what are the tags?
           ['walletable_bundles']
         );
       }
@@ -68,7 +69,10 @@ class Mcapi {
    * @return int
    *   The maximum number of wallets.
    */
-  public static function maxWalletsOfBundle($entity_type_id, $bundle) {
+  public static function maxWalletsOfBundle($entity_type_id, $bundle = NULL) {
+    if (!$bundle) {
+      $bundle = $entity_type_id;
+    }
     $bundles = static::walletableBundles();
     if (isset($bundles[$entity_type_id])) {
       if (isset($bundles[$entity_type_id][$bundle])) {
@@ -115,6 +119,8 @@ class Mcapi {
    * Utility function.
    *
    * Load those special transaction operations which are also actions.
+   *
+   * @todo move this to the TransactionActionManager?
    */
   public static function transactionActionsLoad() {
     return \Drupal::entityTypeManager()
@@ -190,9 +196,20 @@ class Mcapi {
     $wids = \Drupal::entityQuery('mcapi_wallet')
       ->condition('holder_entity_type', $entity->getEntityTypeId())
       ->condition('holder_entity_id', $entity->id())
-      ->condition('payways', Wallet::PAYWAY_AUTO, '<>')
-      ->condition('orphaned', 0)
       ->execute();
+    // Todo reduce all this paranoia checking
+    if (empty($wids)) {
+      if ($entity->isNew()) {
+        \Drupal::logger('mcapi')>error('Should not run walletsOf on an unsaved user',  ['exception' => new \Exception()]);
+      }
+      elseif ($entity->getEntityTypeId() == 'user' && $entity->id() != 1) {
+        echo ('User '. $entity->id() . ' has no wallets');
+        \Drupal::logger('mcapi')
+           ->debug('user '.$entity->id() .' has no wallets', ['exception' => new \Exception()]);
+        mtrace();
+      }
+    }
+
     return $load ?
       \Drupal::entityTypeManager()->getStorage('mcapi_wallet')->loadMultiple($wids) :
       $wids;
@@ -266,6 +283,8 @@ class Mcapi {
    *
    * @return int
    *   The unixtime.
+   *
+   * @todo move this to TransactionStorage
    */
   public static function earliestTransactionTime(CurrencyInterface $currency) {
     static $results = [];
@@ -279,5 +298,5 @@ class Mcapi {
     }
     return $results[$curr_id];
   }
-  
+
 }

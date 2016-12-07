@@ -95,16 +95,18 @@ class MassPay extends ContentEntityForm {
     // Build the default transaction form
     foreach ($display->getComponents() as $name => $options) {
       if ($widget = $display->getRenderer($name)) {
-        if($name == PAYER_FIELDNAME && $this->direction == '12many') {
-          $widget->forceMultipleValues();
+        if($name == PAYEE_FIELDNAME && $this->direction == '12many') {
+          $this->multipleWalletWidget($form, $name);
         }
-        elseif($name == PAYEE_FIELDNAME && $this->direction == 'many21') {
-          $widget->forceMultipleValues();
+        elseif($name == PAYER_FIELDNAME && $this->direction == 'many21') {
+          $this->multipleWalletWidget($form, $name);
         }
-        $items = $this->entity->get($name);
-        $items->filterEmptyItems();
-        $form[$name] = $widget->form($items, $form, $form_state);
-        $form[$name]['#access'] = $items->access('edit');
+        else {
+          $items = $this->entity->get($name);
+          $items->filterEmptyItems();
+          $form[$name] = $widget->form($items, $form, $form_state);
+          $form[$name]['#access'] = $items->access('edit');
+        }
       }
     }
     // Don't restrict wallets by payin/payout settings
@@ -192,11 +194,23 @@ class MassPay extends ContentEntityForm {
     $form['mode']['#title'] = $this->t('Will pay');
   }
 
+  private function multipleWalletWidget(&$form, $fieldname) {
+    $form[$fieldname] = [
+      '#title' => $fieldname == PAYER_FIELDNAME ? t('Payers') : t('Payees'),
+      '#type' => 'wallet_entity_auto',
+      '#multiple' => TRUE,
+    ];
+  }
+
   /**
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     if (!$form_state->getErrors()) {
+
+      //if ($this->direction == '12many') $this->getFormDisplay($form_state)->getRenderer('payer')->forceMultipleValues();
+      //else $this->getFormDisplay($form_state)->getRenderer('payee')->forceMultipleValues();
+
       // Only validate step 1.
       if (empty($form_state->get('wallets'))) {
         // Unlike normal one-step entity forms, save the entiry here for step 2
@@ -204,8 +218,8 @@ class MassPay extends ContentEntityForm {
 
         // We will mail the owners of these wallets
         $wids = array_unique(array_merge(
-          (array)$form_state->getValue(PAYER_FIELDNAME)['target_id'],
-          (array)$form_state->getValue(PAYEE_FIELDNAME)['target_id']
+          (array)$form_state->getValue(PAYER_FIELDNAME)[0]['target_id'],
+          (array)$form_state->getValue(PAYEE_FIELDNAME)[0]['target_id']
         ));
         $form_state->set('wallets', $wids);
         $form_state->setRebuild(TRUE);
@@ -224,6 +238,9 @@ class MassPay extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    //if ($this->direction == '12many') $this->getFormDisplay($form_state)->getRenderer('payer')->forceMultipleValues();
+    //else $this->getFormDisplay($form_state)->getRenderer('payee')->forceMultipleValues();
+
     parent::submitForm($form, $form_state);
     $this->configFactory->getEditable('mcapi.settings')
       ->set('masspay_mail', $form_state->get('mail'))
@@ -246,6 +263,7 @@ class MassPay extends ContentEntityForm {
         'mass',
         $owner->getEmail(),
         $owner->getPreferredLangcode(),
+        // Should contain subject, body as a string, and recipient_id.
         $params
       );
     }
@@ -279,26 +297,28 @@ class MassPay extends ContentEntityForm {
       $one_fieldname = PAYEE_FIELDNAME;
       $many_fieldname = PAYER_FIELDNAME;
     }
-    $one_wid = $form_state->getValue($one_fieldname)['target_id'];
+    $one_wid = $form_state->getValue($one_fieldname)[0]['target_id'];
 
     if ($form_state->getValue('mode') == SELF::MASSEXCLUDE) {
       $field_definition = $entity->get($many_fieldname)->getFieldDefinition();
+
       $$many_fieldname = \Drupal::service('plugin.manager.entity_reference_selection')
         ->getSelectionHandler($field_definition)
-        ->inverse($form_state->getValue($many_fieldname)['target_id']);
+        ->inverse($form_state->getValue($many_fieldname)[0]['target_id']);
     }
     else {
-      $$many_fieldname = $form_state->getValue($many_fieldname)['target_id'];
+      $$many_fieldname = $form_state->getValue($many_fieldname);
     }
     $entity->creator->target_id = $this->currentUser()->id();
     $entity->type->target_id = 'mass';
     $transactions = $wallets = [];
-    foreach ($$many_fieldname as $many) {
-      if ($many == $one_wid) {
+    foreach ($$many_fieldname as $many_val) {
+      $many_wid = $many_val['target_id'];
+      if ($many_wid == $one_wid) {
         continue;
       }
       $transaction = $entity->createDuplicate();
-      $transaction->set($many_fieldname, $many);
+      $transaction->set($many_fieldname, $many_wid);
       $transaction->set($one_fieldname, $one_wid);
       $transactions[] = $transaction;
     }

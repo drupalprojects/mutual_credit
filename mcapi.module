@@ -102,23 +102,6 @@ function mcapi_element_info_alter(&$items) {
 }
 
 /**
- * Implements hook_entity_presave().
- *
- * Rename the entity's wallet in case the entity's name is changed.
- */
-function mcapi_entity_presave($entity) {
-  if ($entity instanceof ContentEntityInterface) {
-    if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle()) == 1) {
-      // Get the entity's one wallet, and rename it.
-      if ($wids = Mcapi::walletsOf($entity)) {
-        $wid = reset($wids);
-        Wallet::load($wid)->setHolder($entity)->save();
-      }
-    }
-  }
-}
-
-/**
  * Implements hook_entity_insert().
  *
  * Give a new wallet to new entities, if the settings require.
@@ -143,6 +126,28 @@ function mcapi_entity_insert($entity) {
         'Wallet autocreated for new @entitytype @id',
         ['@entitytype' => $type, '@id' => $entity->id()]
       );
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ *
+ * Rename the entity's wallet in case the entity's name is changed.
+ */
+function mcapi_entity_update($entity) {
+  if ($entity instanceof ContentEntityInterface) {
+    // Only rename the wallet if the entity can have max 1 wallet.
+    if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle()) == 1) {
+      // Get the entity's one wallet, and rename it.
+      if ($wallets = Mcapi::walletsOf($entity, TRUE)) {
+        reset($wallets)->save();
+      }
+      elseif ($entity->id() != 1) {
+        //user 1 is resaved during setup
+        mtrace();
+        throw new \Exception($entity->getEntityTypeId() . ' should have 1 wallet.');
+      }
     }
   }
 }

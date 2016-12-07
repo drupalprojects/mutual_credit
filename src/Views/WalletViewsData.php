@@ -23,7 +23,7 @@ class WalletViewsData extends EntityViewsData {
       'help' => $this->t('Could be any entity implementing OwnerInterface'),
       'field' => [
         'id' => 'mcapi_wallet_holder',
-      ],
+      ]
     ];
 
 
@@ -45,7 +45,7 @@ class WalletViewsData extends EntityViewsData {
     $data['mcapi_wallet']['holder_entity_type']['field']['help'] = $this->t("The wallet holder's translated EntityType name");
 
     $this->addWalletSummaries($data['mcapi_wallet']);
-    
+
     // This allows us to do group queries such as find the balance per wallet.
     $data['mcapi_transactions_index']['table']['join'] = [
       'mcapi_wallet' => [
@@ -56,14 +56,16 @@ class WalletViewsData extends EntityViewsData {
       ],
     ];
 
-    $data['users_field_data']['first_wid']['relationship'] = [
-      'title' => $this->t("The user's first wallet"),
-      'help' => $this->t("Reference the first wallet each user. N.B. Reqires aggregate query"),
-      'base' => 'mcapi_wallet',
-      'base field' => 'wid',
-      'field' => 'uid',
-      'label' => $this->t('First wallet'),
-      'id' => 'standard',
+    $data['users_field_data']['first_wid'] = [
+      'relationship' => [
+        'title' => $this->t("The user's first wallet"),
+        'help' => $this->t("Reference the first wallet each user. N.B. Reqires aggregate query"),
+        'base' => 'mcapi_wallet',
+        'base field' => 'wid',
+        'field' => 'uid',
+        'label' => $this->t('First wallet'),
+        'id' => 'standard',
+      ]
     ];
 
     return $data;

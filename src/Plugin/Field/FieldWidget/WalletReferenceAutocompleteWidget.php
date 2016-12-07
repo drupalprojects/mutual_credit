@@ -18,7 +18,8 @@ use Symfony\Component\Validator\ConstraintViolationInterface;
  *   description = @Translation("Autocomplete field on wallets"),
  *   field_types = {
  *     "wallet_reference"
- *   }
+ *   },
+ *   multiple_values = false
  * )
  * @todo inject \Drupal::config('mcapi.settings')
  */
@@ -125,28 +126,15 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
         '#default_value' => $default_value_wallet ? $default_value_wallet->id() : '',
       ];
     }
-
     return ['target_id' => $element];
   }
 
   /**
-   * {@inheritdoc}
-   *
-   * @note this is used on the mass transaction form to select multiple wallets
+   * try without this, just using the parent for normal and mass transactions
    */
-  protected function formMultipleElements(FieldItemListInterface $items, array &$form, FormStateInterface $form_state) {
-    $element = array(
-      '#title' => $this->fieldDefinition->getLabel(),
-      '#description' => $this->fieldDefinition->getDescription(),
-    );
-    $element = $this->formSingleElement($items, 0, $element, $form, $form_state);
-    $element['target_id']['#multiple'] = TRUE;
-    return $element;
-  }
-
   public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
     //This helps the massPay form to validate when this widget manifests an array
-    if (key($values) == '0') {
+    if (is_array(reset($values)) && key($values) == '0') {
       $values = ['target_id' => reset($values[0])];
     }
     return $values;
@@ -159,13 +147,12 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
     return isset($element['target_id']) ? $element['target_id'] : FALSE;
   }
 
-
-  function forceMultipleValues() {
-    $this->pluginDefinition['multiple_values'] = TRUE;
-  }
-
+  /**
+   * @todo
+   * @see src/Plugin/EntityReferenceSelection/WalletSelection.php
+   */
   function inverse() {
-
+    die('called WalletReferenceAutocompleteWidget::inverse');
   }
 
 }

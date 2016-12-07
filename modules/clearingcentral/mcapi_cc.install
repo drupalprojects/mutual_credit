@@ -1,5 +1,7 @@
 <?php
 
+use Drupal\mcapi\Entity\Wallet;
+
 /**
  * Implements hook_install().
  *
@@ -10,13 +12,6 @@ function mcapi_cc_install() {
   Wallet::create([
     'payways' => Wallet::PAYWAY_AUTO,
   ])->save();
-
-  $exchanges = \Drupal::entityTypeManager()
-    ->getStorage('group')
-    ->loadByProperties(['type' => 'exchange']);
-  foreach ($exchanges as $exchange) {
-    mcapi_cc_group_insert($entity);
-  }
 }
 
 /**

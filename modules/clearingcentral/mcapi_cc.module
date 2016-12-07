@@ -4,12 +4,7 @@ const TRANSACTION_STATE_HANGING = 'hanging';
 const CEN_SUCCESS = 1;//response code
 
 use Drupal\Core\Link;
-
-function ___mcapi_cc_form_mcapi_wallet_settings_form_alter(&$form, $form_state) {
-  $form['intertrading_wallet'] = [
-
-  ];
-}
+use Drupal\mcapi_cc\ClearingCentral;
 
 /**
  * Implements hook_form_wallet_form_alter().
@@ -45,7 +40,7 @@ function mcapi_cc_form_wallet_form_alter(&$form, \Drupal\Core\Form\FormStateInte
       '#title' => t('Exchange ID'),
       '#description' => t(
         'Network Identifier in the Community Exchange Network. For example: cen0123. You can check your account at %link.',
-        ['%link' => Link::fromTextAndUrl(t('Clearing Central'), \Drupal\Core\Url::fromUri(CLEARING_CENTRAL_URL))->toString()]
+        ['%link' => Link::fromTextAndUrl(t('Clearing Central'), \Drupal\Core\Url::fromUri(ClearingCentral::CLEARING_CENTRAL_URL))->toString()]
       ),
       '#size' => 15,
       '#maxlength' => 7,
@@ -69,12 +64,22 @@ function mcapi_cc_form_wallet_form_alter(&$form, \Drupal\Core\Form\FormStateInte
   }
 }
 
+/**
+ * Element validation callback for exchange id on clearing central
+ *
+ * Value must be 3 letters then 4 numbers.
+ */
 function mcapi_cc_exchange_id_validate(&$element, $form_state) {
   if (!preg_match('/[a-zA-Z]{3}[0-9]{4}/', $element['#value'])) {
     $form_state->setError($element, 'Badly formatted login: '.$element['#value']);
   }
 }
 
+/**
+ * Additional form submit callback for wallet_form.
+ *
+ * Saves additional settings for intertrading wallets.
+ */
 function mcapi_cc_save_wallet_settings($form, $form_state) {
   $settings = [
     'curr_id' => $form_state->getValue('curr_id'),
@@ -114,6 +119,7 @@ function mcapi_cc_mcapi_form_list() {
 
 /**
  * Implements hook_ENTITY_insert().
+ *
  * Saves the CC metadata and sends the transaction to clearing central
  */
 function mcapi_cc_mcapi_transaction_insert($transaction)  {
@@ -194,7 +200,8 @@ function mcapi_cc_mcapi_transaction_view_alter(array &$build, $entity, $display)
 
 
 /**
- * Implements hook entity_build_display()
+ * Implements hook entity_build_display().
+ *
  * @param array $build
  * @param array $context
  * @see \Drupal\Core\Entity\Entity\EntityViewDisplay::buildMultiple

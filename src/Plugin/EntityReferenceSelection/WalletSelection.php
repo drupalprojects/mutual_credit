@@ -2,7 +2,6 @@
 
 namespace Drupal\mcapi\Plugin\EntityReferenceSelection;
 
-use Drupal\mcapi\Entity\Wallet;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Entity\Plugin\EntityReferenceSelection\DefaultSelection;
 

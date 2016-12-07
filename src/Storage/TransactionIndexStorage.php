@@ -255,6 +255,8 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    *   Conditions keyed by property name suitable for getMcapiIndexQuery(): xid,
    *    serial, partner_id, wallet_id, creator, type, state, involving, since,
    *    until, value, min, max, curr_id
+   *
+   * @note be aware that unless this query may return double the expected results, unless filtered appropriately
    */
   private function getMcapiIndexQuery($curr_id, array $conditions = []) {
     if (!$curr_id) {
@@ -353,9 +355,10 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
 
   /**
    * {@inheritdoc}
+   *
+   * @note The running balance views field isn't used in any default views.
    */
   public function runningBalance($wid, $curr_id, $until, $sort_field = 'xid') {
-    dsm('testing running balance');
     // The running balance depends the order of the transactions. we will assume
     // the order of creation is what's wanted because that corresponds to the
     // order of the xid. NB it is possible to change the apparent creation date.
@@ -394,12 +397,11 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   public function ledgerStateQuery($curr_id, array $conditions) {
     $q = $this->getMcapiIndexQuery($curr_id, $conditions);
     $q->addExpression('SUM(diff)', 'balance');
-    $q->addExpression('SUM(volume)', 'volume');
+    $q->addExpression('SUM(volume)/2', 'volume');
     $q->addExpression('SUM(incoming)', 'income');
     $q->addExpression('SUM(outgoing)', 'expenditure');
-    $q->addExpression('COUNT(xid)', 'trades');
+    $q->addExpression('COUNT(serial)', 'trades');
     $q->addExpression('COUNT (DISTINCT partner_id)', 'partners');
-    $q->condition('volume', 0, '>');
     return $q;
   }
 

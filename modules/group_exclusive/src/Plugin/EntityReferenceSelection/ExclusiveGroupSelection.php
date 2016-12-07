@@ -82,7 +82,7 @@ class ExclusiveGroupSelection extends DefaultSelection {
     }
     $form['group_type'] = [
       '#title' => $this->t('Exclusive group type'),
-      '#description' => $this->t('Group types where the membership has a group cardinality of 1'),
+      '#description' => $this->t('Exclusive group types'),
       '#type' => 'radios',
       '#options' => $options,
       '#default_value' => isset($settings['group_type']) ?  $settings['group_type'] : '',

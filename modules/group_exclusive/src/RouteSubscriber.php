@@ -14,17 +14,16 @@ class RouteSubscriber extends RouteSubscriberBase {
    * {@inheritdoc}
    */
   protected function alterRoutes(RouteCollection $collection) {
-    //This means we prevent ordinary user registration
     if ($exclusive_memberships = group_exclusive_members()) {
-      // Replace the anon user registration form with one designed for exchanges.
+      // Replace the anon user registration form with one designed for groups.
       $collection->get('user.register')
         ->setPath('group/{group}/user/register')
         ->setOption('parameters', ['group' => ['type' => 'entity:group']]);
       // Change the path of admin/people/create and access to allow only group
       // admins to create users.
       if ($route = $collection->get('user.admin_create')) {
-        $route->setRequirements([]);return;
         //this new path is returning page not found
+//debug($route);
         $route
           ->setPath('/group/{group}/people/create')
           ->setDefault('group', 'true') // This is a mandatory parameter in UrlGenerator::doGenerate
@@ -34,6 +33,8 @@ class RouteSubscriber extends RouteSubscriberBase {
             '_method' => 'GET|POST',
           ])
           ->setOption('parameters', ['group' => ['type' => 'entity:group']]);
+//$route->setRequirements([]);return;
+
       }
     }
   }

@@ -88,7 +88,6 @@ function mcapi_signatures_mcapi_transaction_delete($transaction) {
  */
 function mcapi_signatures_mcapi_transaction_insert($transaction) {
   if ($transaction->state->target_id == 'pending' && !$transaction->parent->value) {
-
     \Drupal::service('mcapi.signatures')
       ->setTransaction($transaction)
       ->insert();
@@ -96,6 +95,7 @@ function mcapi_signatures_mcapi_transaction_insert($transaction) {
     // this should be configurable by transaction type.
     foreach (\Drupal::service('mcapi.signatures')->setTransaction($transaction)->waitingOn() as $uid) {
       $account = User::load($uid);
+      $options = ['langcode' => $account->getPreferredLangcode()];
       $message = \Drupal::service('plugin.manager.mail')->mail(
         'mcapi_signatures',
         'signhere',
@@ -105,7 +105,13 @@ function mcapi_signatures_mcapi_transaction_insert($transaction) {
           'recipient' => $account,
           'transaction' => $transaction,
           'subject' => t('Awaiting your signature...'),
-          'body' => [t("Hi [user:name],\nA transaction is awaiting your signature on [site:name].\n\n[xaction:sentence]\nLogin and sign it with one click:\n[signhere]")],
+          'body' => [
+            t('Hi [user:name],', [], $options),
+            t("A transaction is awaiting your signature on [site:name].", [], $options),
+            "[xaction:sentence]",
+            t("Login and sign it with one click:", [], $options),
+            "[signhere]"
+          ]
         ]
       );
       if ($message['result']) {
@@ -257,16 +263,6 @@ function mcapi_signatures_mail($key, &$message, $params) {
     $data = [
       'xaction' => $params['transaction'],
     ];
-    if (!$message['body']) {
-      // @todo need to find out why this happened
-      drupal_set_message('Attempted to send signhere mail with no body text', 'warning');
-      return;
-    }
-
-    $paragraph = [];
-    foreach ($message['body'] as $delta => $paragraph) {
-      $paragraph = \Drupal::token()->replace($paragraph, $data);
-    }
     // Now this special replacement.
     $signhere = Url::fromRoute(
       'mcapi.signatures.anonsign',
@@ -277,7 +273,10 @@ function mcapi_signatures_mail($key, &$message, $params) {
       ],
       ['absolute' => TRUE]
     );
-    $message['body'][$delta] = str_replace('[signhere]', $signhere->toString(), $paragraph);
+    foreach ($params['body'] as $delta => $paragraph) {
+      $paragraph = str_replace('[signhere]', $signhere->toString(), $paragraph);
+      $message['body'][] = \Drupal::token()->replace($paragraph, $data);
+    }
   }
 }
 

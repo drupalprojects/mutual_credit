@@ -266,7 +266,6 @@ class ExchangeGenerate extends GroupDevelGenerate implements ContainerFactoryPlu
     //override the sample data with any given field values
     foreach ($values as $key => $val) {
       if ($exchange->hasField($key)) {
-debug($val, $key .' added to exchange');
         $exchange->set($key, $val);
       }
     }

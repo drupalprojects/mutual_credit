@@ -18,6 +18,7 @@ use Drupal\Core\Entity\EntityTypeManager;
 class RunningBalance extends Worth {
 
   private $transactionStorage;
+  private $fAlias;
 
   /**
    * Constructs a Handler object.
@@ -51,6 +52,7 @@ class RunningBalance extends Worth {
     // Determine the wallet id for which we want the balance.
     // It could from one of two args, or a filter.
     $this->addAdditionalFields();
+    $this->fAlias = $this->getFirstWalletFieldAlias();
   }
 
   /**
@@ -61,7 +63,7 @@ class RunningBalance extends Worth {
     $vals = [];
     foreach ($worth_field->currencies() as $curr_id) {
       $raw = $this->transactionStorage->runningBalance(
-        $this->getFirstWalletFieldAlias($values),
+        $values->{$this->fAlias},
         $curr_id,
         $values->xid,
         'xid'
@@ -80,26 +82,21 @@ class RunningBalance extends Worth {
    * helpers
    */
   private function getFirstWalletFieldAlias($values) {
-    static $falias;
-    if (!$falias) {
-      $q = $this->view->getQuery();
-      foreach ($q->tables as $table_name => $relations) {
-        foreach (array_keys($relations) as $alias) {
-          $info = $q->getTableInfo($alias);
-          if ($info['table'] == 'mcapi_wallet' && $info['join']->leftField == 'wallet_id') {
-            foreach ($q->fields as $falias => $f_info) {
-              if ($f_info['table'] == $info['alias']) {
-                continue 3;
-              }
+    $q = $this->view->getQuery();
+    foreach ($q->tables as $table_name => $relations) {
+      foreach (array_keys($relations) as $alias) {
+        $info = $q->getTableInfo($alias);
+        if ($info['table'] == 'mcapi_wallet' && $info['join']->leftField == 'wallet_id') {
+          foreach ($q->fields as $falias => $f_info) {
+            if ($f_info['table'] == $info['alias']) {
+              return $falias;
             }
           }
         }
       }
-      if (!$falias) {
-        throw new \Exception('Having difficulties rendering the running balance. Best to remove it');
-      }
     }
-    return $values->{$falias};
+    drupal_set_message($this->t('Running balance requires a relationship with the wallet_id field'), 'error');
+    throw new \Exception('Running balance requires that there be a relationship with the wallet_id field');
   }
 
 }
