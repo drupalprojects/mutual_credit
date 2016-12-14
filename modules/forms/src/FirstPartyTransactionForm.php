@@ -16,10 +16,15 @@ use Drupal\Component\Serialization\Json;
  */
 class FirstPartyTransactionForm extends TransactionForm {
 
-  /*
-   * The editform entityDisplay used to build the template transaction Entity.
+  /**
+   * The entity form mode
    */
-  private $entityDisplay;
+  protected $mode;
+
+  /**
+   * The thirdparty settings on the entityForm
+   */
+  protected $settings;
 
   /**
    * Constructor.
@@ -30,7 +35,9 @@ class FirstPartyTransactionForm extends TransactionForm {
       ->attributes->get('_route_object')
       ->getOptions();
     $id = 'mcapi_transaction.mcapi_transaction.' . $options['parameters']['mode'];
-    $this->entityDisplay = EntityFormDisplay::load($id);
+    $entityDisplay = EntityFormDisplay::load($id);
+    $this->settings = $entityDisplay->getThirdPartySetting('mcapi_forms', 'settings');
+    $this->mode = $entityDisplay->getMode();
   }
 
   /**
@@ -39,28 +46,26 @@ class FirstPartyTransactionForm extends TransactionForm {
   public function init(FormStateInterface $form_state) {
     parent::init($form_state);
     $props = [
-      'type' => $this->entityDisplay->getThirdPartySetting('mcapi_forms', 'type'),
+      'type' => $this->settings['transaction_type'],
     ];
     $this->entity = Transaction::create($props + $this->request->query->all());
   }
 
   /**
-   * Alter the original Transaction form.
-   *
-   * According to the 1stparty form settings saved in $this->entityDisplay.
+   * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-    $settings = $this->entityDisplay->getThirdPartySettings('mcapi_forms');
     // See class WalletReferenceAutocompleteWidget.
-    $form_state->set('restrictWallets', TRUE);
     $form = parent::form($form, $form_state);
+
+
     // Hide the state & type.
     $form['type']['#type'] = 'value';
-    $form['type']['#default_value'] = $settings['type'];
+    $form['type']['#default_value'] = $this->settings['transaction_type'];
     $form['state']['#type'] = 'value';
-    $form['state']['#value'] = Type::load($settings['type'])->start_state;
-    unset($form['creator']);
-    $form['#twig_template'] = str_replace(array('\r\n', '\n', '\r'), "<br/>", $settings['experience_twig']);
+    $form['state']['#value'] = Type::load($this->settings['transaction_type'])->start_state;
+    $form['creator']['#access'] = FALSE;
+    $form['#twig_template'] = str_replace(PHP_EOL, "<br/>", $this->settings['experience_twig']);
     return $form;
   }
 
@@ -69,8 +74,8 @@ class FirstPartyTransactionForm extends TransactionForm {
    */
   protected function actions(array $form, FormStateInterface $form_state) {
     $actions = parent::actions($form, $form_state);
-    $actions['submit']['#value'] = $this->entityDisplay->getThirdPartySetting('mcapi_forms', 'experience_button');
-    $preview_mode = $this->entityDisplay->getThirdPartySetting('mcapi_forms', 'experience_preview');
+    $actions['submit']['#value'] = $this->settings['experience_button'];
+    $preview_mode = $this->settings['experience_preview'];
 
     if ($preview_mode != TransactionActionBase::CONFIRM_NORMAL) {
       $actions['submit']['#attached']['library'][] = 'core/drupal.ajax';
@@ -86,7 +91,7 @@ class FirstPartyTransactionForm extends TransactionForm {
         $actions['submit']['#ajax'] = [
           'wrapper' => 'mcapi-transaction-1stparty-form',
           'method' => 'replace',
-          'url' => Url::fromRoute('mcapi.1stparty.' . $this->entityDisplay->get('mode')),
+          'url' => Url::fromRoute('mcapi.1stparty.' . $this->mode),
         ];
       }
     }
@@ -106,7 +111,7 @@ class FirstPartyTransactionForm extends TransactionForm {
    * {@inheritdoc}
    */
   public function title() {
-    return $this->entityDisplay->getThirdPartySetting('mcapi_forms', 'title');
+    return $this->settings['title'];
   }
 
 }

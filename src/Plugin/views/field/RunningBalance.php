@@ -3,8 +3,10 @@
 namespace Drupal\mcapi\Plugin\views\field;
 
 use Drupal\views\ResultRow;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\views\ViewExecutable;
+use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\Core\Entity\EntityTypeManager;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Field handler to provide running balance for a given transaction.
@@ -14,6 +16,8 @@ use Drupal\Core\Entity\EntityTypeManager;
  * @ingroup views_field_handlers
  *
  * @ViewsField("transaction_running_balance")
+ *
+ * @todo make an option for this field to sort on, serial or xid, or created
  */
 class RunningBalance extends Worth {
 
@@ -36,6 +40,15 @@ class RunningBalance extends Worth {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->transactionStorage = $entity_type_manager->getStorage('mcapi_transaction');
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+    parent::init($view, $display, $options);
+    $this->additional_fields['running_created'] = ['field' => 'created', 'table' =>  $this->table];
+  }
+
 
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
     return new static(
@@ -61,12 +74,13 @@ class RunningBalance extends Worth {
   public function render(ResultRow $values) {
     $worth_field = $this->getEntity($values)->worth;
     $vals = [];
+    print_r($this->aliases);
     foreach ($worth_field->currencies() as $curr_id) {
+      // @todo running balance means sorting by the same field the view is sorted by.
       $raw = $this->transactionStorage->runningBalance(
         $values->{$this->fAlias},
         $curr_id,
-        $values->xid,
-        'xid'
+        ['created' => $values->{$this->aliases['running_created']}]
       );
       $vals[] = ['curr_id' => $curr_id, 'value' => $raw];
     }
@@ -81,7 +95,7 @@ class RunningBalance extends Worth {
   /**
    * helpers
    */
-  private function getFirstWalletFieldAlias($values) {
+  private function getFirstWalletFieldAlias() {
     $q = $this->view->getQuery();
     foreach ($q->tables as $table_name => $relations) {
       foreach (array_keys($relations) as $alias) {
@@ -93,10 +107,42 @@ class RunningBalance extends Worth {
             }
           }
         }
+        elseif(isset($q->fields['wallet_id'])) {
+          return 'wallet_id';
+        }
       }
     }
-    drupal_set_message($this->t('Running balance requires a relationship with the wallet_id field'), 'error');
+    print_r($q->fields);
     throw new \Exception('Running balance requires that there be a relationship with the wallet_id field');
   }
 
 }
+/*
+$relations  = Array
+(
+    [mcapi_transactions_index] => Array
+        (
+            [count] => 1
+            [alias] => mcapi_transactions_index
+        )
+
+    [mcapi_wallet_mcapi_transactions_index] => Array
+        (
+            [count] => 1
+            [alias] => mcapi_wallet_mcapi_transactions_index
+        )
+
+    [mcapi_wallet_mcapi_transactions_index_1] => Array
+        (
+            [count] => 1
+            [alias] => mcapi_wallet_mcapi_transactions_index_1
+        )
+
+    [users_field_data_mcapi_wallet] => Array
+        (
+            [count] => 1
+            [alias] => users_field_data_mcapi_wallet
+        )
+
+)
+ */

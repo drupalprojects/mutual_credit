@@ -374,22 +374,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   }
 
   /**
-   * Get usage stats for this currency.
-   *
-   * @return array
-   *
-   * @deprecated Just use the ledgerStateQuery directly
-   */
-  public function stats() {
-    return $this->entityManager()
-      ->getStorage('mcapi_transaction')
-      ->ledgerStateQuery($this->id(), [])
-      ->execute()
-      ->fetch();
-  }
-
-
-  /**
    * {@inheritdoc}
    *
    * Override to never invalidate the entity's cache tag; the config system

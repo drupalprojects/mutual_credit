@@ -24,6 +24,7 @@ class TransactionRouteProvider extends DefaultHtmlRouteProvider {
 
     $route_collection
       ->get('entity.mcapi_transaction.canonical')
+      ->setDefault('_entity_view', 'mcapi_transaction.certificate')
       ->setOptions($options);
 
     $route_collection
@@ -32,6 +33,7 @@ class TransactionRouteProvider extends DefaultHtmlRouteProvider {
 
     $route_collection
       ->get('entity.mcapi_transaction.edit_form')
+      ->setRequirement('_entity_access', 'mcapi_transaction.edit')
       ->setRequirement('user', '\d+')
       ->setOptions($options);
 
@@ -44,10 +46,6 @@ class TransactionRouteProvider extends DefaultHtmlRouteProvider {
       ->setRequirement('user', '\d+')
       ->setOptions($options);
     $route_collection->add('mcapi.transaction.operation', $route);
-
-    $route = $route_collection
-      ->get('entity.mcapi_transaction.edit_form')
-      ->setRequirement('_entity_access', 'mcapi_transaction.edit');
 
     return $route_collection;
   }

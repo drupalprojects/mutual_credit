@@ -4,8 +4,8 @@ dependencies:
   module:
     - mcapi
     - user
-id: mcapi_wallet.payees
-field_name: payees
+id: mcapi_wallet.bursers
+field_name: bursers
 entity_type: mcapi_wallet
 type: entity_reference
 settings:

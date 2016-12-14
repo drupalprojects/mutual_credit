@@ -1,4 +1,3 @@
-#default tab
 mcapi.config.rules_tab:
   route_name: mcapi.admin_misc.fee
   title: 'Per-transaction fees'

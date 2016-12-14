@@ -2,11 +2,9 @@
 
 namespace Drupal\mcapi\Plugin\Field\FieldWidget;
 
-use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Field\Plugin\Field\FieldWidget\EntityReferenceAutocompleteWidget;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Field\FieldItemListInterface;
-use Drupal\mcapi\Mcapi;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 
 /**
@@ -15,11 +13,10 @@ use Symfony\Component\Validator\ConstraintViolationInterface;
  * @FieldWidget(
  *   id = "wallet_reference_autocomplete",
  *   label = @Translation("Wallets"),
- *   description = @Translation("Autocomplete field on wallets"),
+ *   description = @Translation("Select from all wallets"),
  *   field_types = {
  *     "wallet_reference"
- *   },
- *   multiple_values = false
+ *   }
  * )
  * @todo inject \Drupal::config('mcapi.settings')
  */
@@ -30,7 +27,7 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
    */
   public static function defaultSettings() {
     return parent::defaultSettings() + [
-      'hide_one_wallet' => FALSE,
+      'max_select' => 15,
     ];
   }
 
@@ -39,11 +36,10 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
    */
   public function settingsForm(array $form, FormStateInterface $form_state) {
     $element = parent::settingsForm($form, $form_state);
-    unset($element['size']);
-    $element['hide_one_wallet'] = [
-      '#title' => $this->t('Hide this field if there is only one wallet available.'),
-      '#type' => 'checkbox',
-      '#default_value' => $this->getSetting('hide_one_wallet'),
+    $element['max_select'] = [
+      '#title' => $this->t('Max number of wallets before select widget becomes autocomplete'),
+      '#type' => 'number',
+      '#default_value' => $this->getSetting('max_select'),
     ];
     return $element;
   }
@@ -54,10 +50,8 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
   public function settingsSummary() {
     $summary = parent::settingsSummary();
     // Size.
-    unset($summary[1]);
-    $message = $this->getSetting('hide_one_wallet') ?
-      $this->t('Hide widget for one wallet') :
-      $this->t('Show widget for one wallet');
+    //unset($summary[1]);
+    $message = $this->t('Max @num items in select widget', ['@num' => $this->getSetting('max_select') ]);
     $summary['hide_one'] = ['#markup' => $message];
     return $summary;
   }
@@ -68,76 +62,44 @@ class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
    * @see mcapi_field_widget_wallet_reference_autocomplete_form_alter
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
-    if ($form_state->get('restrictWallets')) {
-      $restriction = $this->fieldDefinition->getName() == PAYER_FIELDNAME ? 'payout' : 'payin';
-      // Used in wallet constraint validator.
-      $items->restricted = TRUE;
-    }
-    else {
-      $this->fieldDefinition->setSetting('handler_settings', []);
-      $restriction = '';
-      $items->restricted = FALSE;
-    }
-
     $referenced_entities = $items->referencedEntities();
     $default_value_wallet = isset($referenced_entities[$delta]) ? $referenced_entities[$delta] : NULL;
     if ($default_value_wallet && $default_value_wallet->isIntertrading()) {
-      $wids = [$default_value_wallet->id()];
+      $wid_options = [$default_value_wallet->id() => $default_value_wallet->label()];
     }
     else {
-      // Get all payer or payee wallets regardless of direction.
-      $wids = \Drupal::service('plugin.manager.entity_reference_selection')
+      // Get wallets the current user is permitted to pay in/out of
+      $entity_ids = \Drupal::service('plugin.manager.entity_reference_selection')
         ->getSelectionHandler($this->fieldDefinition)
-        ->queryEntities();
+        ->getReferenceableEntities(NULL, 'contains');
+      $wid_options = $entity_ids['mcapi_wallet'];
     }
-    $count = count($wids);
+    $count = count($wid_options);
 
     if (!$count) {
       drupal_set_message($this->t('No wallets to show for @role', ['@role' => $this->fieldDefinition->getLabel()]), 'error');
       $form['#disabled'] = TRUE;
       return [];
     }
-    $max = \Drupal::config('mcapi.settings')->get('wallet_widget_max_select');
     // Present different widgets according to the number of wallets to choose
     // from, and settings.
-    if ($count == 1) {
-      $wid = reset($wids);
-      $element['#value'] = $wid;
-      if ($this->getSetting('hide_one_wallet')) {
-        $element['#type'] = 'value';
-      }
-      else {
-        $element['#type'] = 'item';
-        $element['#markup'] = Wallet::load($wid)->label();
-      }
-    }
-    elseif ($count > $max) {
+    if ($count < $this->getSetting('max_select')) {
       $element += [
-        '#type' => 'wallet_entity_auto', //this is just a wrapper around element entity_autocomplete
-        '#selection_settings' => ['direction' => $restriction],
-        '#default_value' => $default_value_wallet,
-        '#placeholder' => $this->getSetting('placeholder'),
+        '#type' => 'select',
+        '#options' => $wid_options,
+        '#default_value' => $default_value_wallet ? $default_value_wallet->id() : '',
       ];
     }
     else {
       $element += [
-        '#type' => (\Drupal::config('mcapi.settings')->get('wallet_widget_max_radios')) ? 'select' : 'radios',
-        '#options' => Mcapi::entityLabelList('mcapi_wallet', $wids),
-        '#default_value' => $default_value_wallet ? $default_value_wallet->id() : '',
+        '#type' => 'wallet_entity_auto', //this is just a wrapper around element entity_autocomplete
+        //'#selection_settings' => ['restriction' => $restriction],
+        '#selection_settings' => $this->fieldDefinition->getSetting('handler_settings'),
+        '#default_value' => $default_value_wallet,
+        '#placeholder' => $this->getSetting('placeholder'),
       ];
     }
     return ['target_id' => $element];
-  }
-
-  /**
-   * try without this, just using the parent for normal and mass transactions
-   */
-  public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
-    //This helps the massPay form to validate when this widget manifests an array
-    if (is_array(reset($values)) && key($values) == '0') {
-      $values = ['target_id' => reset($values[0])];
-    }
-    return $values;
   }
 
   /**

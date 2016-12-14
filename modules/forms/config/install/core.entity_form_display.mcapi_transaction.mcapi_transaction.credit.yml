@@ -35,13 +35,10 @@ content:
       hide_one_wallet: '0'
     third_party_settings: {  }
   payer:
-    type: wallet_reference_autocomplete
-    weight: 0
+    type: my_wallet
+    weight: 1
     settings:
-      match_operator: CONTAINS
-      size: '60'
-      placeholder: 'Payer wallet'
-      hide_one_wallet: '0'
+      hide_one_wallet: 0
     third_party_settings: {  }
   worth:
     type: worth
@@ -58,14 +55,19 @@ hidden:
   type: true
 third_party_settings:
   mcapi_forms:
-    title: 'Credit another member'
-    wallet_link_title: 'Credit [mcapi_wallet:name]'
-    path: /transact/credit
-    menu_title: 'Credit'
-    menu_weight: '5'
-    menu_parent: 'account:'
-    type: default
-    direction: '-1'
-    experience_twig: 'I, {{ payer }}\r\nreceived {{ description }}\r\nfrom\r\n{{ payee }}\r\nand now credit them for\r\n{{ worth }}'
-    experience_button: Preview
-    experience_preview: 'page'
+    settings:
+    type: mcapi_form
+    mapping:
+      type: mcapi_form
+      title: 'Credit another member'
+      wallet_link_title: 'Credit [mcapi_wallet:name]'
+      path: /transact/credit
+      access_roles:
+        authenticated: authenticated
+      menu_title: 'Credit'
+      menu_weight: '5'
+      menu_parent: 'account:'
+      transaction_type: default
+      experience_twig: 'I, {{ payer }}\r\nreceived {{ description }}\r\nfrom\r\n{{ payee }}\r\nand now credit them for\r\n{{ worth }}'
+      experience_button: Preview
+      experience_preview: 'page'

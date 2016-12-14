@@ -2,15 +2,43 @@
 
 namespace Drupal\mcapi\ListBuilder;
 
+use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Config\Entity\DraggableListBuilder;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Entity\EntityTypeManager;
+use Drupal\Core\Entity\EntityTypeInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a listing of currencies.
  */
 class CurrencyListBuilder extends DraggableListBuilder {
+
+  /**
+   * @var \Drupal\Core\Entity\EntityTypeManager
+   */
+  protected $entityTypeManager;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct($entity_type, $storage, EntityTypeManager $entity_type_manager) {
+    parent::__construct($entity_type, $storage);
+    $this->entityTypeManager = $entity_type_manager;
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
+    return new static(
+      $entity_type,
+      $container->get('entity.manager')->getStorage($entity_type->id()),
+      $container->get('entity_type.manager')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -38,8 +66,11 @@ class CurrencyListBuilder extends DraggableListBuilder {
       return;
     }
     $row['title'] = ['#markup' => $entity->toLink()->toString()];
-
-    $stats = $entity->stats();
+    $stats = $this->entityTypeManager
+      ->getStorage('mcapi_transaction')
+      ->ledgerStateQuery($entity->id(), [])
+      ->execute()
+      ->fetch();
 
     // This includes deleted transactions.
     $row['volume'] = [

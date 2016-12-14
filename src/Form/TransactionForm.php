@@ -33,17 +33,6 @@ class TransactionForm extends ContentEntityForm {
   protected $currentUser;
 
   /**
-   * Flag indicating whether this form is restricted by wallet directionality.
-   *
-   * @var boolean
-   * whether the wallet widgets should be restricted by directionality
-   *
-   * @todo move this to the mcapi_forms module? probably not while the payin/payout
-   * constraints must be defined in BaseFieldDefinitions.
-   */
-  public $restrict = FALSE;
-
-  /**
    * Constructor.
    */
   public function __construct($entity_manager, $tempstore, $current_request, $current_user) {

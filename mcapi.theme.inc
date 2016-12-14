@@ -293,7 +293,11 @@ function gchart_axes($vals) {
 
 function template_preprocess_mcapi_currency(&$variables) {
   $currency = $variables['elements']['#mcapi_currency'];
-  $stats = $currency->stats();
+  $stats = \Drupal::entityTypeManager()
+    ->getStorage('mcapi_transaction')
+    ->ledgerStateQuery($currency->id(), [])
+    ->execute()
+    ->fetch();
   $variables['name'] = $currency->label();
   $variables['issuance'] = Currency::issuances()[$currency->issuance];
   $variables['volume'] = $currency->format($stats->volume);

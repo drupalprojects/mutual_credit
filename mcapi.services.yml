@@ -19,8 +19,14 @@ services:
     arguments: ['mcapi']
 
   #replaces Drupal\Core\Entity\Query\Sql\QueryFactory for transactions.
-  mcapi.query.sql:
-    class: Drupal\mcapi\Entity\QueryFactory
+  mcapi_transaction.query.sql:
+    class: Drupal\mcapi\Entity\TransactionQueryFactory
+    arguments: ['@database']
+    tags:
+      - { name: backend_overridable }
+  #replaces Drupal\Core\Entity\Query\Sql\QueryFactory for transactions.
+  mcapi_wallet.query.sql:
+    class: Drupal\mcapi\Entity\WalletQueryFactory
     arguments: ['@database']
     tags:
       - { name: backend_overridable }

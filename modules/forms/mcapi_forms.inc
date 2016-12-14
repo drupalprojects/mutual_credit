@@ -5,8 +5,9 @@
  * Functions to build designed transaction forms.
  */
 
-use Drupal\Core\Url;
 use Drupal\system\Entity\Menu;
+use Drupal\Core\Form\FormState;
+use Drupal\Core\Url;
 use Drupal\Core\Render\Element\PathElement;
 use Drupal\Core\Render\Element;
 use Drupal\mcapi\Plugin\TransactionActionBase;
@@ -24,7 +25,7 @@ function template_preprocess_first_party_transaction_form(&$vars) {
   if (strpos($twig_template, '{{ actions }}') === FALSE) {
     $twig_template .= "\n{{ actions }}";
   }
-  $vars['twig_template'] = $twig_template;
+  $vars['twig_template'] = str_replace(['\r\n', '\n','\r'], '<br />', $twig_template);
 }
 
 /**
@@ -43,7 +44,7 @@ function theme_first_party_transaction_form($vars) {
   $vars['twig_template'] .= '{{ hidden_elements }}';
   $hidden = '';
   foreach (Element::children($form) as $fieldname) {
-    if ($form[$fieldname]['#type'] == 'actions') {
+    if (isset($form[$fieldname]['#type']) && $form[$fieldname]['#type'] == 'actions') {
       $tokens[$fieldname] = $renderer->render($form[$fieldname]);
     }
     // If it is in the template, render the token.
@@ -57,10 +58,10 @@ function theme_first_party_transaction_form($vars) {
       mcapi_strip_wrappers_recursive($form[$fieldname]);
       $tokens[$fieldname] = $renderer->render($form[$fieldname]);
     }
-    elseif ($form[$fieldname]['#type'] == 'hidden' || $form[$fieldname]['#type'] == 'token') {
+    elseif (isset($form[$fieldname]['#type']) && ($form[$fieldname]['#type'] == 'hidden' || $form[$fieldname]['#type'] == 'token')) {
       $hidden .= $renderer->render($form[$fieldname]);
     }
-    elseif ($form[$fieldname]['#type'] == 'value') {
+    elseif (isset($form[$fieldname]['#type']) && $form[$fieldname]['#type'] == 'value') {
 
     }
     // Add the rendered token to the hidden elements.
@@ -102,7 +103,7 @@ function mcapi_strip_wrappers_recursive(&$element) {
 /**
  * Alter the form EntityFormDisplay form.
  */
-function mcapi_forms_display_decorate(&$form, $settings) {
+function mcapi_forms_display_decorate(&$form, FormState $form_state, $settings) {
   $form['#tree'] = TRUE;
   $w = 0;
   $form['form_title'] = [
@@ -121,31 +122,45 @@ function mcapi_forms_display_decorate(&$form, $settings) {
     '#weight' => -9,
     '#default_value' => $settings['wallet_link_title'],
   ];
-
-  $form['path'] = [
+  $form['routing'] = [
+    '#title' => t('Routing'),
+    '#type' => 'details',
+    '#collapsible' => TRUE,
+    '#tree' => FALSE,
+    '#weight' => -5
+  ];
+  $form['routing']['path'] = [
     '#title' => t('Path'),
     '#description' => t('The url path at which this form will appear. Must begin with / and be unique.'),
     '#type' => 'path',
-    '#weight' => -8,
-    '#default_value' => $settings['path'],
-    '#placeholder' => t('/internal/path'),
+    '#default_value' => $settings['path'] ?: '/',
+    '#placeholder' => '/path/to/form',
     '#convert_path' => PathElement::CONVERT_URL,
     '#element_validate' => ['mcapi_forms_unique_path'],
     '#required' => TRUE,
   ];
+  $form['routing']['access_roles'] = [
+    '#title' => t('Roles'),
+    '#description' => t('Only the checked roles will be able to access this display.'),
+    '#type' => 'checkboxes',
+    '#default_value' => $settings['access_roles'],
+    '#options' => array_map('\Drupal\Component\Utility\Html::escape', user_role_names(TRUE)),
+    '#required' => TRUE
+  ];
 
-  $form['menu'] = [
+  $form['routing']['menu'] = [
     '#title' => t('Menu link'),
     '#description' => t('Currently there is no special access control for these form displays'),
-    '#type' => 'details',
-    '#weight' => -5,
-    'title' => [
+    '#type' => 'fieldset',
+    '#tree' => 0,
+    '#weight' => 5,
+    'menu_title' => [
       '#title' => t('Link title'),
       '#type' => 'textfield',
       '#default_value' => $settings['menu_title'],
       '#weight' => 1,
     ],
-    'weight' => [
+    'menu_weight' => [
       '#title' => t('Weight'),
       '#type' => 'weight',
       '#default_value' => $settings['menu_weight'],
@@ -160,30 +175,18 @@ function mcapi_forms_display_decorate(&$form, $settings) {
   foreach (Menu::loadMultiple() as $menu_parent => $menu) {
     $custom_menus[$menu_parent] = $menu->label();
   }
-  $form['menu']['menu_parent'] = \Drupal::service('menu.parent_form_selector')->parentSelectElement(
+  $form['routing']['menu']['menu_parent'] = \Drupal::service('menu.parent_form_selector')->parentSelectElement(
     $settings['menu_parent']  ?: 'main:',
     'menu_link_content:7299677d-ac7b-4748-a2b8-d22cac2c9b62',
     menu_ui_get_menus()
   );
 
-  $form['type'] = [
+  $form['transaction_type'] = [
     '#type' => 'mcapi_types',
-    '#default_value' => $settings['type'],
-    '#weight' => -3,
+    '#description' => t('This also determines the starting state of the transaction.'),
+    '#default_value' => $settings['transaction_type'],
+    '#weight' => -8,
     '#required' => TRUE,
-  ];
-  $form['direction'] = [
-    '#title' => t('Direction'),
-    '#description' => t('Direction of payment relative to the current user'),
-    '#type' => 'radios',
-    '#options' => [
-      MCAPI_FORMS_DIR_BOTH => t("Both (Permission '@permission' required)", ['@permission' => t('Create 3rdparty transactions')], ['context' => 'payment direction']),
-      MCAPI_FORMS_DIR_OUTGOING => t('Outgoing', [], ['context' => 'payment direction']),
-      MCAPI_FORMS_DIR_INCOMING => t('Incoming', [], ['context' => 'payment direction']),
-    ],
-    '#default_value' => $settings['direction'],
-    '#required' => TRUE,
-    '#weight' => -2,
   ];
 
   list($required, $optional) = mcapi_forms_required_fields();
@@ -252,29 +255,35 @@ function mcapi_forms_display_decorate(&$form, $settings) {
       ),
     ]
   );
-
+  $form_state->set('original_roles', $settings['access_roles']);
   $form['actions']['submit']['#submit'][] = 'mcapi_forms_display_submit';
 }
 
 /**
  * Form submit callback.
  */
-function mcapi_forms_display_submit($form, $form_state) {
-  $entity = $form_state->getFormObject()->getEntity();
-  $entity->setThirdpartySetting('mcapi_forms', 'title', $form_state->getValue('form_title'));
-  $entity->setThirdpartySetting('mcapi_forms', 'wallet_link_title', $form_state->getValue('wallet_link_title'));
-  $entity->setThirdpartySetting('mcapi_forms', 'path', $form_state->getValue('path'));
-  $menu = $form_state->getValue('menu');
-  $entity->setThirdpartySetting('mcapi_forms', 'menu_title', $menu['title']);
-  $entity->setThirdpartySetting('mcapi_forms', 'menu_weight', $menu['weight']);
-  $entity->setThirdpartySetting('mcapi_forms', 'menu_parent', $menu['menu_parent']);
-  $entity->setThirdpartySetting('mcapi_forms', 'type', $form_state->getValue('type'));
-  $entity->setThirdpartySetting('mcapi_forms', 'direction', $form_state->getValue('direction'));
-  $experience = $form_state->getValue('experience');
-  $entity->setThirdpartySetting('mcapi_forms', 'experience_twig', $experience['twig']);
-  $entity->setThirdpartySetting('mcapi_forms', 'experience_button', $experience['button']);
-  $entity->setThirdpartySetting('mcapi_forms', 'experience_preview', $experience['preview']);
-  $entity->save();
+function mcapi_forms_display_submit($form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  $vals = &$form_state->getValues();
+  $settings = [
+    'title' => $vals['form_title'],
+    'wallet_link_title' => $vals['wallet_link_title'],
+    'transaction_type' => $vals['transaction_type'],
+    'path' => $vals['path'],
+    'access_roles' => $vals['access_roles'],
+    'menu_title' => $vals['menu_title'],
+    'menu_weight' => $vals['menu_weight'],
+    'menu_parent' => $vals['menu_parent'],
+    'experience_twig' => $vals['experience']['twig'],
+    'experience_button' => $vals['experience']['button'],
+    'experience_preview' => $vals['experience']['preview'],
+  ];
+  $form_state->getFormObject()->getEntity()
+    ->setThirdpartySetting('mcapi_forms', 'settings', $settings)
+    ->save();
+
+  if ($form_state->get('access_roles') != $settings['access_roles']) {
+    \Drupal::service('router.builder')->setRebuildNeeded();
+  }
 }
 
 /**
@@ -305,23 +314,12 @@ function validate_twig_template(array $element, $form_state) {
 
 /**
  * Is called from the form validator, so must be public.
- *
- * @todo check if we need this
  */
 function mcapi_forms_unique_path(&$element, $form_state) {
-  drupal_set_message('need to check for a unique path');
-  return;
-
-  $values = $form_state->getValues();
-  $dupe = \Drupal::database()->select('router', 'r')
-      ->fields('r', ['name'])
-      ->condition('name', 'mcapi.1stparty.' . $values['id'], '<>')
-      ->condition('path', $values['path'])
-      ->execute()->fetchField();
-  if ($dupe) {
-    $form_state->setError('path', t('Path is already used.'));
+  $new = Url::fromUserInput($form_state->getValue('path'))->getRouteName();
+  if ($new && substr($new, 15) != $form_state->getFormObject()->getEntity()->get('mode')) {
+    drupal_set_message(t('N.B. This has overriden an existing path!'), 'warning');
   }
-
 }
 
 /**

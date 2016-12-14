@@ -2,26 +2,22 @@
 
 namespace Drupal\mcapi\Controller;
 
-use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Storage\WalletStorage;
+use Drupal\Core\Controller\ControllerBase;
 
 /**
  * Returns all the wallets held by the given entity, in summary view mode.
  *
  * @note Only applicable when mcapi.settings config value wallet_tab is TRUE
  *
- * @todo inject or inherit from baseController
+ * @todo inject $routeMatch
  */
-class WalletController {
+class WalletController extends ControllerBase {
 
-  /**
-   * Constructor.
-   *
-   * Gets a wallet holder Content entity from the route.
-   */
-  public function __construct() {
+  public function getHolder() {
     $params = \Drupal::routeMatch()->getParameters()->all();
     list($entity_type_id, $entity_id) = each($params);
-    $this->holder = \Drupal::entityTypeManager()->getStorage($entity_type_id)->load($entity_id);
+    return $this->entityTypeManager()->getStorage($entity_type_id)->load($entity_id);
   }
 
   /**
@@ -31,7 +27,7 @@ class WalletController {
    *   The entity label of the wallet holder.
    */
   public function entityWalletsTitle() {
-    return $this->holder->label();
+    return $this->getHolder()->label();
   }
 
   /**
@@ -45,9 +41,8 @@ class WalletController {
    *   A renderable array.
    */
   public function entityWallets() {
-
-    $wallets = Mcapi::walletsOf($this->holder, TRUE);
-    return \Drupal::entityTypeManager()->getViewBuilder('mcapi_wallet')->viewMultiple($wallets);
+    $wallets = WalletStorage::walletsOf($this->getHolder(), TRUE);
+    return $this->entityTypeManager()->getViewBuilder('mcapi_wallet')->viewMultiple($wallets);
   }
 
 }

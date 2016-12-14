@@ -2,33 +2,63 @@
 
 namespace Drupal\mcapi\Plugin\Block;
 
-use Drupal\Core\Access\AccessResult;
-use Drupal\Core\Block\BlockBase;
-use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Currency;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Block\BlockBase;
+use Drupal\Core\Routing\CurrentRouteMatch;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Base block class for user transaction data.
  */
-class McapiBlockBase extends BlockBase {
+class McapiBlockBase extends BlockBase implements ContainerFactoryPluginInterface {
 
   const USER_MODE_CURRENT = 1;
   const USER_MODE_PROFILE = 0;
+
+  protected $entityTypeManager;
+  protected $currentUser;
+  protected $routeMatch;
 
   protected $account;
   protected $currencies;
 
   /**
-   * {@inheritdoc}
+   * Constructor
+   *
+   * @param array $configuration
+   * @param type $plugin_id
+   * @param type $plugin_definition
+   * @param EntityTypeManagerInterface $entityTypeManager
+   * @param AccountInterface $currentUser
+   * @param CurrentRouteMatch $current_route_match
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entityTypeManager, AccountInterface $currentUser, CurrentRouteMatch $current_route_match) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
-    //mtrace();//inject routeMatch & currentuser
+    $this->entityTypeManager = $entityTypeManager;
+    $this->currentUser = $currentUser;
+    $this->routeMatch = $current_route_match;
   }
 
+  /**
+   * Injection.
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('entity_type.manager'),
+      $container->get('current_user'),
+      $container->get('current_route_match')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -49,7 +79,7 @@ class McapiBlockBase extends BlockBase {
     // don't we need to call the parent?  See blockbase::access after alpha14.
     debug($this->getPluginDefinition(), 'check that block access is working');
     if ($this->configuration['user_source'] == static::USER_MODE_PROFILE) {
-      if (!\Drupal::routeMatch()->getParameters()->has('user')) {
+      if (!$this->routeMatch->getParameters()->has('user')) {
         return AccessResult::forbidden();
       }
     }
@@ -102,10 +132,10 @@ class McapiBlockBase extends BlockBase {
 
     if ($this->configuration['user_source'] == static::USER_MODE_PROFILE) {
       // We already know the parameter bag has 'user' from blockAccess
-      $this->account = \Drupal::routeMatch()->getParameter('user');
+      $this->account = $this->routeMatch->getParameter('user');
     }
     else {// Current user
-      $this->account = \Drupal::currentUser();
+      $this->account = $this->currentUser;
     }
 
     // Might want to move this to mcapi_exchanges.

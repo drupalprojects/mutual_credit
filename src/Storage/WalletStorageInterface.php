@@ -2,6 +2,7 @@
 
 namespace Drupal\mcapi\Storage;
 
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 
 /**
@@ -10,18 +11,15 @@ use Drupal\Core\Entity\EntityStorageInterface;
 interface WalletStorageInterface extends EntityStorageInterface {
 
   /**
-   * Get the wallets the given user can do the operation on.
+   * Retrieve all the wallets held by a given ContentEntity.
    *
-   * @param string $operation
-   *   Can be payin or payout.
-   * @param int $uid
-   *   A user id.
-   * @param string $match
-   *   A string to match against the wallet name.
+   * @param ContentEntityInterface $entity
+   *   The entity.
+   * @param bool $load
+   *   TRUE means return the fully loaded wallets.
    *
-   * @return integer[]
-   *   The wallet IDs.
+   * @return \Drupal\mcapi\Entity\WalletInterface[]
+   *   Or just the wallet ids if $load is FALSE.
    */
-  public function whichWalletsQuery($operation, $uid, $match = '');
-
+  public static function walletsOf(ContentEntityInterface $entity, $load = FALSE);
 }

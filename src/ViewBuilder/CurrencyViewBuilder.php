@@ -45,7 +45,7 @@ class CurrencyViewBuilder extends EntityViewBuilder {
     $build['#classes'] = ['blah'];
     $build['#id'] = ['blah'];
 
-    if ($earliest = Mcapi::earliestTransactionTime($currency)) {
+    if ($earliest = $this->entityManager->getStorage('mcapi_transaction')->earliestTransactionTime($currency)) {
       // $since needs to be set to the second previous to the first transaction;
       $conditions['since'] = $earliest - 1;
     }

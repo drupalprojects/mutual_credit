@@ -17,17 +17,19 @@ class RouteSubscriber extends RouteSubscriberBase {
    */
   protected function alterRoutes(RouteCollection $collection) {
     // Add a route for each form.
-    foreach (mcapi_form_displays_load(TRUE) as $mode => $display) {
-      $settings = $display->get('third_party_settings.mcapi_forms');
+    foreach (mcapi_form_displays_load() as $mode => $display) {
+      $settings = $display->getThirdPartySetting('mcapi_forms', 'settings');
+      if (!$settings['access_roles']) {
+        throw new \Exception('problem loading mcapi_form settings');
+      }
       $route = new Route($settings['path']);
       $route->setDefaults([
         '_entity_form' => 'mcapi_transaction.' . $mode,
         '_title_callback' => '\Drupal\mcapi_forms\FirstPartyTransactionForm::title',
       ]);
       $route->setRequirements([
-        '_user_is_logged_in' => 'TRUE',
-        '_entity_create_access' => 'mcapi_transaction',
-        '_custom_access' => '\Drupal\mcapi_forms\TransactionFormAccessCheck::access',
+        '_role' => implode(', ', array_filter($settings['access_roles'])),
+        '_entity_create_access' => 'mcapi_transaction'
       ]);
       $route->setOptions([
         'parameters' => [

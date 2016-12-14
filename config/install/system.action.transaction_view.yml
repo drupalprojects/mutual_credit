@@ -19,7 +19,7 @@ configuration:
   display: 0
   weight: 0
   access:
-    named: named
+    burser: burser
     manager: manager
     payer: payer
     payee: payee

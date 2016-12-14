@@ -58,12 +58,6 @@ mcapi.settings:
     wallet_log_tab:
       type: boolean
       label: Transaction log tab
-    wallet_widget_max_select:
-      type: integer
-      label: Dropdown threshhold
-    wallet_widget_max_radios:
-      type: integer
-      label: Radio button threshhold
     autoadd:
       type: boolean
       label: 'Auto-create a wallet for every new user'

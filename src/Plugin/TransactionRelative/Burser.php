@@ -2,7 +2,6 @@
 
 namespace Drupal\mcapi\Plugin\TransactionRelative;
 
-use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Plugin\TransactionRelativeInterface;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -14,12 +13,12 @@ use Drupal\Core\Database\Query\Condition;
  * Defines a nominated user relative to wallets in a transaction.
  *
  * @TransactionRelative(
- *   id = "named",
- *   label = @Translation("Named wallet user"),
+ *   id = "burser",
+ *   label = @Translation("Burser"),
  *   description = @Translation("A user nominated to pay in to the payer wallet or payout of the payee wallet")
  * )
  */
-class Named extends PluginBase implements TransactionRelativeInterface {
+class Burser extends PluginBase implements TransactionRelativeInterface {
 
   /**
    * {@inheritdoc}
@@ -38,36 +37,36 @@ class Named extends PluginBase implements TransactionRelativeInterface {
    * {@inheritdoc}
    */
   public function indexViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
-    debug('@todo Drupal\mcapi\Plugin\TransactionRelative\Named::IndexViewsCondition');
+    debug('@todo Drupal\mcapi\Plugin\TransactionRelative\Burser::IndexViewsCondition');
   }
 
   /**
    * {@inheritdoc}
    */
   public function entityViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
-    debug('@todo Drupal\mcapi\Plugin\TransactionRelative\Named::entityViewsCondition');
+    $query->join('mcapi_wallet', 'burser_wallet_payer', "burser_wallet_payer.wid = base_table.payer AND burser_wallet_payer.holder_entity_type = 'user'");
+    $query->join('mcapi_wallet', 'burser_wallet_payee', "burser_wallet_payee.wid = base_table.payee AND burser_wallet_payee.holder_entity_type = 'user'");
+    $query->leftjoin('mcapi_wallet__bursers', 'bursers_payer', "bursers_payer.entity_id = burser_wallet_payer.wid");
+    $query->leftjoin('mcapi_wallet__bursers', 'bursers_payee', "bursers_payee.entity_id = burser_wallet_payee.wid");
+    $b_or_group = $query->orConditionGroup();
+    $b_or_group->condition('bursers_payer.bursers_target_id', $uid)->condition('bursers_payee.bursers_target_id', $uid);
+    $or_group->condition($b_or_group);
   }
 
   /**
    * {@inheritdoc}
    */
   public function getUsers(TransactionInterface $transaction) {
-    $payer = $transaction->payer->entity;
-    $payee = $transaction->payee->entity;
-    $named = [];
+    $payer_wallet = $transaction->payer->entity;
+    $payee_wallet = $transaction->payee->entity;
+    $bursers = [];
     // @todo would be nice to refactor this, considering how the payers and payees fields are used elsewhere
-    foreach ([$payer, $payee] as $wallet) {
-      if ($wallet->payways->value == Wallet::PAYWAY_ANYONE_IN) {
-        $named = array_merge($named, $wallet->payers->getValue());
-      }
-      elseif ($wallet->payways->value == Wallet::PAYWAY_ANYONE_OUT) {
-        $named = array_merge($named, $wallet->payees->getValue());
-      }
-      elseif ($wallet->payways->value == Wallet::PAYWAY_ANYONE_BI) {
-        // Then theres no need to name users.
+    foreach ([$payer_wallet, $payee_wallet] as $wallet) {
+      foreach($wallet->bursers->referencedEntities() as $user) {
+        $bursers[] = $user->id();
       }
     }
-    return $named;
+    return $bursers;
   }
 
 }

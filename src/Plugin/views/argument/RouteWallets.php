@@ -3,7 +3,9 @@
 namespace Drupal\mcapi\Plugin\views\argument;
 
 use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Storage\WalletStorage;
 use Drupal\views\Plugin\views\argument\ArgumentPluginBase;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -23,23 +25,22 @@ class RouteWallets extends ArgumentPluginBase implements ContainerFactoryPluginI
    * @var \Drupal\Core\Routing\RouteMatchInterface
    */
   protected $routeMatch;
+  protected $entityTypeManager;
+  protected $walletStorage;
 
   /**
    * Constructor.
    *
    * @param array $configuration
-   *   A configuration array containing information about the plugin instance.
    * @param string $plugin_id
-   *   The plugin_id for the plugin instance.
-   * @param mixed $plugin_definition
-   *   The plugin implementation definition.
-   *
-   * @param \Drupal\Core\Routing\RouteMatchInterface $route_match
-   *   The route match.
+   * @param array $plugin_definition
+   * @param RouteMatchInterface $current_route_match
+   * @param EntityTypeManagerInterface $entity_type_manager
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, RouteMatchInterface $route_match) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, RouteMatchInterface $current_route_match, EntityTypeManagerInterface $entity_type_manager) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->routeMatch = $route_match;
+    $this->routeMatch = $current_route_match;
+    $this->entityTypeManager = $entity_type_manager;
   }
 
   /**
@@ -50,7 +51,8 @@ class RouteWallets extends ArgumentPluginBase implements ContainerFactoryPluginI
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('current_route_match')
+      $container->get('current_route_match'),
+      $container->get('entity_type.manager')
     );
   }
 
@@ -61,7 +63,6 @@ class RouteWallets extends ArgumentPluginBase implements ContainerFactoryPluginI
     $this->ensureMyTable();
   }
 
-
   /**
    * {@inheritdoc}
    */
@@ -70,10 +71,10 @@ class RouteWallets extends ArgumentPluginBase implements ContainerFactoryPluginI
     // contentEntity or ANY Owned Entity, only for ONE given specific entityType
     // so this function needs to decide whether to return an argument.
     foreach ($this->routeMatch->getParameters()->all() as $name => $val) {
-      if ($def = \Drupal::entityTypeManager()->getDefinition($name, FALSE)) {
+      if ($def = $this->entityTypeManager->getDefinition($name, FALSE)) {
         if (Mcapi::maxWalletsOfBundle($name, $def->getKey('bundle'))) {
-          $entity = \Drupal::entityTypeManager()->getStorage($name)->load($val);
-          $wids = Mcapi::walletsOf($entity);
+          $entity = $this->entityTypeManager->getStorage($name)->load($val);
+          $wids = WalletStorage::walletsOf($entity);
           $arg = reset($wids);
           $this->argument_validated = TRUE;
           return TRUE;

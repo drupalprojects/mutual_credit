@@ -35,6 +35,7 @@ class TransactionRelativeManager extends DefaultPluginManager {
    *   Names of plugins to activate. If empty, all will be activated.
    */
   public function activatePlugins($names = []) {
+    if (isset($names['named']))ddebug_backtrace();
     $active = $names ?: array_keys($this->getDefinitions());
     $this->active = array_filter($active);
     return $this;

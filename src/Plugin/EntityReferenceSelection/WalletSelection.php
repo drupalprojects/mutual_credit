@@ -2,11 +2,14 @@
 
 namespace Drupal\mcapi\Plugin\EntityReferenceSelection;
 
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Entity\Plugin\EntityReferenceSelection\DefaultSelection;
 
 /**
  * Provide default Wallet selection handler.
+ *
+ * The settings consist of one value, restriction, which can be in 3 modes
  *
  * @EntityReferenceSelection(
  *   id = "default:mcapi_wallet",
@@ -14,23 +17,33 @@ use Drupal\Core\Entity\Plugin\EntityReferenceSelection\DefaultSelection;
  *   entity_types = {"mcapi_wallet"},
  *   group = "default"
  * )
- * @todo inject things
+ * @todo inject the database
+ * @deprecated
  */
 class WalletSelection extends DefaultSelection {
 
   /**
+   * Possible values for the restriction setting.
+   */
+  const RESTRICTION_PAYIN = 'payin';
+  const RESTRICTION_PAYOUT = 'payout';
+  const RESTRICTION_MINE = 'currentuser';
+  const RESTRICTION_NONE = 'none';
+
+  /**
    * {@inheritdoc}
    */
-  public function getReferenceableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
-    $wids = $this->queryEntities($match);
+  public function __getReferenceableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
+    $query = $this->walletsQuery($match);
     if ($limit > 0) {
-      $wids = array_splice($wids, 0, $limit);
+      $query->range(0, $limit);
     }
+    //Quicker than calling Wallet::loadMultiple, esp since entityManager is loaded
     $entities = $this->entityManager
       ->getStorage('mcapi_wallet')
-      ->loadMultiple($wids);
+      ->loadMultiple($query->execute());
 
-    $options = [];
+    $options = ['mcapi_wallet' => []];
     foreach ($entities as $entity_id => $entity) {
       $options['mcapi_wallet'][$entity_id] = Html::escape($entity->label());
     }
@@ -40,18 +53,18 @@ class WalletSelection extends DefaultSelection {
   /**
    * {@inheritdoc}
    */
-  public function countReferenceableEntities($match = NULL, $match_operator = 'CONTAINS') {
-    $wids = $this->queryEntities();
-    return count($wids);
+  public function __countReferenceableEntities($match = NULL, $match_operator = 'CONTAINS') {
+    return $this->walletsQuery()->count()->execute();
   }
 
   /**
    * {@inheritdoc}
    */
-  public function validateReferenceableEntities(array $ids) {
+  public function __validateReferenceableEntities(array $ids) {
+    $valid_ids = $this->walletsQuery()->execute();
     // User 1 skips validation. this is helpful for importing.
-    if (\Drupal::currentUser()->id() != 1) {
-      $ids = array_intersect($ids, $this->queryEntities());
+    if ($this->currentUser->id() != 1) {
+      $ids = array_intersect($ids, $valid_ids);
     }
     return $ids;
   }
@@ -62,23 +75,37 @@ class WalletSelection extends DefaultSelection {
    * @param string $match
    *   A fragment of the wallet name.
    *
-   * @return integer[]
-   *   wallet ids
+   * @return Drupal\Core\Entity\Query\Sql\Query
+   *   An entity query object, unexecuted
    */
-  public function queryEntities($match = NULL) {
-    if ($restrict = @$this->configuration['handler_settings']['direction']) {
-      $wids = \Drupal::entityTypeManager()
-        ->getStorage('mcapi_wallet')
-        ->whichWalletsQuery($restrict, \Drupal::currentUser()->id(), $match);
+  public function __walletsQuery($match = NULL) {
+    $settings = &$this->configuration['handler_settings'];
+    $query = $this->entityManager->getStorage('mcapi_wallet')->getQuery();
+    if ($match) {
+      $query->condition('name', '%' . \Drupal::database()->escapeLike($match) . '%', 'LIKE');
     }
-    else {
-      $query = \Drupal::entityQuery('mcapi_wallet');
-      if ($match) {
-        $query->condition('name', '%' . \Drupal::database()->escapeLike($match) . '%', 'LIKE');
-      }
-      $wids = $query->execute();
+    if (isset($settings['exclude'])) {
+      debug($settings['exclude'], 'settings walletSeclection exclusion setting. See TransactionForm');
+      $query->condition('wid', (array)$settings['exclude'], 'IN');
     }
-    return $wids;
+    switch($settings['restriction']) {
+      case static::RESTRICTION_PAYIN :
+        $payways = [Wallet::PAYWAY_ANYONE_IN];
+
+      case static::RESTRICTION_PAYOUT:
+        if (!isset($payways)) {
+          $payways = [Wallet::PAYWAY_ANYONE_OUT];
+        }
+        $payways[] = Wallet::PAYWAY_ANYONE_BI;
+        $query->condition('payways', $payways, 'IN');
+        break;
+
+      case static::RESTRICTION_MINE:
+        $query->condition('holder_entity_type', 'user');
+        $query->condition('holder_entity_id', $this->currentUser->id());
+        break;
+    }
+    return $query;
   }
 
 
@@ -88,5 +115,4 @@ class WalletSelection extends DefaultSelection {
   public function inverse($ids) {
     return array_diff($this->queryEntities(), $ids);
   }
-
 }

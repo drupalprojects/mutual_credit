@@ -3,8 +3,7 @@ status: true
 dependencies:
   config:
     - core.entity_view_mode.mcapi_wallet.mini
-    - field.field.mcapi_wallet.mcapi_wallet.payees
-    - field.field.mcapi_wallet.mcapi_wallet.payers
+    - field.field.mcapi_wallet.mcapi_wallet.bursers
   module:
     - mcapi
 _core:
@@ -42,6 +41,5 @@ hidden:
   balance_bars: true
   histories: true
   holder: true
-  payees: true
-  payers: true
+  bursers: true
 

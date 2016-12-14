@@ -45,8 +45,9 @@ mcapi.admin_wallets:
     _title: 'Wallet Settings'
   requirements:
     _permission: 'configure mcapi'
+
 mcapi.admin.transaction_form.list:
-  path: '/admin/accounting/forms'
+  path: '/admin/accounting/misc/forms'
   defaults:
     _controller: 'Drupal\mcapi\Controller\FormList::buildPage'
     _title: 'Transaction forms'

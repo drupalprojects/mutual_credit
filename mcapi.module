@@ -6,6 +6,7 @@
  */
 
 use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Storage\WalletStorage;
 use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\system\Entity\Action;
@@ -75,7 +76,7 @@ function mcapi_help($route_name) {
 function mcapi_entity_view(array &$build, $entity, $display) {
   if ($display->getComponent('wallets_summaries')) {
     $wallets = [];
-    foreach (Mcapi::walletsOf($entity, TRUE) as $wallet) {
+    foreach (WalletStorage::walletsOf($entity, TRUE) as $wallet) {
       if ($wallet->access('view') && !$wallet->orphaned->value) {
         $wallets[] = $wallet;
       }
@@ -140,7 +141,7 @@ function mcapi_entity_update($entity) {
     // Only rename the wallet if the entity can have max 1 wallet.
     if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle()) == 1) {
       // Get the entity's one wallet, and rename it.
-      if ($wallets = Mcapi::walletsOf($entity, TRUE)) {
+      if ($wallets = WalletStorage::walletsOf($entity, TRUE)) {
         reset($wallets)->save();
       }
       elseif ($entity->id() != 1) {
@@ -219,7 +220,7 @@ function mcapi_mcapi_form_list() {
     'operations' => [],
   ];
   $forms['many21'] = [
-    'link' => Link::fromTextAndUrl(t('Many to one'), Url::fromRoute('mcapi.masspay.many21', [])),
+    'link' => Link::fromTextAndUrl(t('Many to one'), Url::fromRoute('mcapi.masspay', [])),
     'operations' => [],
   ];
   $forms['default'] = [
@@ -289,32 +290,27 @@ function mcapi_one_wallet_entity_views_displays() {
  * Provides per-transaction access control on the basis of only relatives being
  * able to see it. Relatives are defined in the transaction_view action
  * configuration.
+ *
+ * @note this does NOT affect views
  */
 function mcapi_query_mcapi_transaction_access_alter($query) {
   if (\Drupal::currentUser()->hasPermission('view all transactions')) {
     return;
   }
-  $tables = $query->getTables();
-  $table = reset($tables)['table'];
-
-  $relatives_plugins = Action::load('transaction_view')->getPlugin()->getConfiguration()['access'];
-  $relative_plugins = Mcapi::transactionRelatives($relatives_plugins)->getActivePlugins();
   // We filter transactions using one relative OR another.
-  $or_group = $query->orConditionGroup();
-
-  foreach ($relative_plugins as $plugin) {
-    if ($table == 'mcapi_transaction') {
-      $plugin->entityViewsCondition($query, $or_group, \Drupal::currentUser()->id());
-    }
-    elseif ($table = 'mcapi_transactions_index') {
-      debug('@todo check whether per-transaction access control is desirable on the index table');
-      $plugin->indexViewsCondition($query, $or_group, \Drupal::currentUser()->id());
-    }
+  $relatives_plugins = Action::load('transaction_view')->getPlugin()->getConfiguration()['access'];
+  $active_plugins = Mcapi::transactionRelatives($relatives_plugins)->getActivePlugins();
+  if (empty($active_plugins)) {
+    // Filter out everything.
+    $query->condition(1, 0);
+    return;
   }
-  // This should always be the case.
-  if ($plugin) {
-    $query->condition($or_group);
+  // Ensure the orGroup has at least one thing in it.
+  $or_group = $query->orConditionGroup()->condition('1',  1);
+  foreach ($active_plugins as $plugin) {
+    $plugin->entityViewsCondition($query, $or_group, \Drupal::currentUser()->id());
   }
+  $query->condition($or_group);
 }
 
 /**

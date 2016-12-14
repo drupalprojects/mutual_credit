@@ -5,9 +5,9 @@ namespace Drupal\mcapi\Plugin\migrate\process;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\ProcessPluginBase;
 use Drupal\migrate\Row;
+use Drupal\mcapi\Storage\WalletStorage;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\user\Entity\User;
-use Drupal\mcapi\Mcapi;
 
 /**
  * Check the payer or payee user has a wallet and swop the uid for the wallet id.
@@ -23,6 +23,8 @@ class CheckWallet extends ProcessPluginBase {
   /**
    * {@inheritdoc}
    * Transform the user id from the d7 ledger to a wallet id for the d8 ledger, creating a wallet if necessary.
+   *
+   * @todo inject
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
 
@@ -30,7 +32,7 @@ class CheckWallet extends ProcessPluginBase {
     $user_id = $row->getSourceProperty($destination_property);
     if (!isset($this->map[$user_id])) {
       $user = User::load($user_id);
-      $wids = Mcapi::walletsOf($user);
+      $wids = WalletStorage::walletsOf($user);
       if (empty($wids)) {
         $wallet = Wallet::Create(['holder' => $user]);
         $wallet->save();

@@ -2,13 +2,10 @@
 
 namespace Drupal\mcapi;
 
-use Drupal\mcapi\Entity\Wallet;
-use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\system\Entity\Action;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
 use Drupal\Core\Cache\CacheBackendInterface;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Component\Utility\Html;
 
 /**
@@ -83,52 +80,6 @@ class Mcapi {
   }
 
   /**
-   * Utility function.
-   *
-   * Loads any of the transaction operation actions.
-   *
-   * @param string $operation
-   *   May or may not begin with transaction_'.
-   *
-   * @todo alter the incoming $operation to be more consistent and harminise
-   * with $this::transactionActionsLoad().
-   */
-  public static function transactionActionLoad($operation) {
-    // Sometimes the $operation is from the url so it is shortened, and
-    // sometimes is the id of an action. There is a convention that all
-    // transaction actions take the form transaction_ONEWORD take the oneword
-    // from the given path.
-    if ($operation == 'operation') {
-      $operation = \Drupal::routeMatch()->getParameter('operation');
-    }
-    if (substr($operation, 0, 12) != 'transaction_') {
-      $action_name = 'transaction_' . $operation;
-    }
-    else {
-      $action_name = $operation;
-    }
-    if ($action = Action::load($action_name)) {
-      return $action;
-    }
-    elseif ($operation <> 'view label') {
-      throw new \Exception("No action with name '$operation'");
-    }
-  }
-
-  /**
-   * Utility function.
-   *
-   * Load those special transaction operations which are also actions.
-   *
-   * @todo move this to the TransactionActionManager?
-   */
-  public static function transactionActionsLoad() {
-    return \Drupal::entityTypeManager()
-      ->getStorage('action')
-      ->loadByProperties(['type' => 'mcapi_transaction']);
-  }
-
-  /**
    * Uasort callback for configuration entities.
    *
    * Should have been included in Drupal Core?
@@ -180,65 +131,6 @@ class Mcapi {
     return $list;
   }
 
-
-  /**
-   * Retrieve all the wallets held by a given ContentEntity.
-   *
-   * @param EntityInterface $entity
-   *   The entity.
-   * @param bool $load
-   *   TRUE means return the fully loaded wallets.
-   *
-   * @return \Drupal\mcapi\Entity\WalletInterface[]
-   *   Or just the wallet ids if $load is FALSE.
-   */
-  public static function walletsOf(EntityInterface $entity, $load = FALSE) {
-    $wids = \Drupal::entityQuery('mcapi_wallet')
-      ->condition('holder_entity_type', $entity->getEntityTypeId())
-      ->condition('holder_entity_id', $entity->id())
-      ->execute();
-    // Todo reduce all this paranoia checking
-    if (empty($wids)) {
-      if ($entity->isNew()) {
-        \Drupal::logger('mcapi')>error('Should not run walletsOf on an unsaved user',  ['exception' => new \Exception()]);
-      }
-      elseif ($entity->getEntityTypeId() == 'user' && $entity->id() != 1) {
-        echo ('User '. $entity->id() . ' has no wallets');
-        \Drupal::logger('mcapi')
-           ->debug('user '.$entity->id() .' has no wallets', ['exception' => new \Exception()]);
-        mtrace();
-      }
-    }
-
-    return $load ?
-      \Drupal::entityTypeManager()->getStorage('mcapi_wallet')->loadMultiple($wids) :
-      $wids;
-  }
-
-  /**
-   * Whether a user can payin to at least one and payout of at least one wallet.
-   *
-   * @param int $uid
-   *   The user ID.
-   *
-   * @return bool
-   *   TRUE if the $uid has access to enough wallets to trade.
-   */
-  public static function enoughWallets($uid) {
-    $walletStorage = \Drupal::entityTypeManager()->getStorage('mcapi_wallet');
-    $payin = $walletStorage->whichWalletsQuery('payin', $uid);
-    $payout = $walletStorage->whichWalletsQuery('payout', $uid);
-    if (count($payin) > 1 || count($payout) > 1) {
-      // There must be at least one wallet in each (and they must be different!)
-      return (count(array_unique(array_merge($payin, $payout))) > 1);
-    }
-    // This is deliberately ambiguous as to whether you have no wallets or the
-    // system has no other wallets.
-    if (\Drupal::currentUser()->isAuthenticated()) {
-      drupal_set_message(t('There are no wallets for you to trade with'), 'warning');
-    }
-  }
-
   /**
    * Service container.
    *
@@ -274,29 +166,6 @@ class Mcapi {
         Url::fromUri('http://twig.sensiolabs.org/doc/templates.html')
       );
     return implode(', ', $tokens) . '. ' . $link->toString();
-  }
-
-  /**
-   * get the time of the first transaction in a currency.
-   *
-   * @param CurrencyInterface $currency
-   *
-   * @return int
-   *   The unixtime.
-   *
-   * @todo move this to TransactionStorage
-   */
-  public static function earliestTransactionTime(CurrencyInterface $currency) {
-    static $results = [];
-    $curr_id = $currency->id();
-    if (!isset($results[$curr_id])) {
-      $query = db_select('mcapi_transactions_index');
-      $query->addExpression('MIN(created)');
-      $query->condition('state', 'done');
-      $query->condition('curr_id', $curr_id);
-      $results[$curr_id] = $query->execute()->fetchField();
-    }
-    return $results[$curr_id];
   }
 
 }

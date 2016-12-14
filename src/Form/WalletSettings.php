@@ -63,14 +63,6 @@ class WalletSettings extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     // Display a warning message.
     $display = EntityFormDisplay::load('mcapi_wallet.mcapi_wallet.default');
-    if (!$display or (!$display->getComponent('payees') and !$display->getComponent('payers'))) {
-      drupal_set_message($this->t('Field payers OR payees needs to be visible in the wallet form display.'), 'warning');
-      if (!\Drupal::moduleHandler()->moduleExists('field_ui')) {
-        // Todo improve this message.
-        drupal_set_message($this->t('Enable the Field UI module edit the form display.'), 'warning');
-      }
-    }
-
     $config = $this->configFactory()->get('mcapi.settings');
 
     // A wallet can be attached to any entity with an entity reference field
@@ -161,18 +153,6 @@ class WalletSettings extends ConfigFormBase {
     $form['user_interface'] = [
       '#title' => $this->t('User interface'),
       '#type' => 'details',
-      'wallet_widget_max_radios' => [
-        '#title' => $this->t('Radio button threshhold'),
-        '#description' => $this->t('Number of available wallets below which to show a radio button widget'),
-        '#type' => 'number',
-        '#default_value' => $config->get('wallet_widget_max_radios'),
-      ],
-      'wallet_widget_max_select' => [
-        '#title' => $this->t('Dropdown threshhold'),
-        '#description' => $this->t('Number of available wallets above which to show an autocomplete field'),
-        '#type' => 'number',
-        '#default_value' => $config->get('wallet_widget_max_select'),
-      ],
       '#weight' => 12,
     ];
 
@@ -211,8 +191,6 @@ class WalletSettings extends ConfigFormBase {
       'wallet_tab',
       'wallet_inex_tab',
       'wallet_log_tab',
-      'wallet_widget_max_select',
-      'wallet_widget_max_radios',
       'payways',
       'autoadd',
     ];

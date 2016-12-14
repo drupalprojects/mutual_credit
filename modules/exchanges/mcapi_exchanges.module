@@ -5,7 +5,7 @@
  * Hooks for mcapi_exchanges.module
  */
 
-use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Storage\WalletStorage;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\mcapi_exchanges\Exchanges;
 use Drupal\group\Entity\GroupContent;
@@ -92,24 +92,23 @@ function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $
 }
 
 /**
- * Implements hook_query_entity_query_ENTITY_TYPE_alter().
+ * Implements hook_query_entity_query_MCAPI_WALLER_alter().
  *
  * Restrict wallet queries to the current user's exchange.
  *
  * @see Drupal\mcapi\Plugin\Field\FieldWidget\WalletReferenceAutocompleteWidget::formElement
  */
 function mcapi_exchanges_query_entity_query_mcapi_wallet_alter(Select $query) {
-  $membership = group_exclusive_membership_get('exchange');
-  if ($membership) {
-    if ($wids = Exchanges::walletsInExchange($membership->getGroup())) {
-      drupal_set_message(count($wids) .' wallets in exchange '.$membership->getGroup()->label(), 'warning');
+  if ($membership = group_exclusive_membership_get('exchange')) {
+    $exchange = $membership->getGroup();
+    if ($wids = Exchanges::walletsInExchange($exchange)) {
+      drupal_set_message(count($wids) .' wallets in exchange '.$exchange->label(), 'warning');
       $query->condition('base_table.wid', $wids, 'IN');
     }
     else {
       \Drupal::logger('mcapi_exchanges')
-          ->debug(count($wids) .' wallets in exchange '.$membership->getGroup()->label(), ['exception' => new \Exception()]);
-
-      drupal_set_message('NB no wallets in exchange '.$membership->getGroup()->label(), 'warning');
+        ->debug(count($wids) .' wallets in exchange '.$exchange->label());
+      drupal_set_message('NB no wallets in exchange '.$exchange->label(), 'warning');
     }
   }
 }
@@ -234,14 +233,17 @@ function mcapi_exchanges_save_masspay_message($form, $form_state) {
  * @note This doesn't cover the case of entities moving between exchanges, which
  * we don't have a use-case for at the moment.
  */
-function mcapi_exchanges_group_content_insert(GroupContent $entity) {
-  $group = $entity->getGroup();
-  $inserted_entity = $entity->getEntity();
+function mcapi_exchanges_group_content_insert(GroupContent $groupContent) {
+  $group = $groupContent->getGroup();
+  $inserted_entity = $groupContent->getEntity();
   $inserted_entity_type_id = $inserted_entity->getEntityTypeId();
   // If any content is added to an exchange, and it has a wallet, then add the
   // wallet to the exchange as well
+  \Drupal::logger('mcapi_exchanges')->debug('mcapi_exchanges_group_content_insert on '.$inserted_entity_type_id .'in '.$group->bundle());
   if ($group->bundle() == 'exchange' && $inserted_entity_type_id != 'mcapi_wallet') {
-    $wids = Mcapi::WalletsOf($inserted_entity);
+    $wids = WalletStorage::WalletsOf($inserted_entity);
+
+    \Drupal::logger('mcapi_exchanges')->debug('... has '.count($wids).' wallets');
     if (!$wids) {
       return;
     }
@@ -271,3 +273,23 @@ function mcapi_exchanges_form_group_content_type_edit_form_alter(&$form, $form_s
   }
 }
 
+
+/**
+ * Implements hook_wallet_insert().
+ *
+ * Put a new wallet in the exchange of its parent
+ */
+function mcapi_exchanges_wallet_insert(\Drupal\mcapi\Entity\Wallet $wallet) {
+  $holder = $wallet->getHolder();
+  if ($groupContent = group_exclusive_membership_get('exchange', $holder)) {
+    $props = [
+      'gid' => $groupContent->getGroup()->id(),
+      'type' => 'exchange-wallet',
+      'entity_id' => $wallet->id(),
+    ];
+    GroupContent::Create($props)->save();
+    \Drupal::logger('mcapi_exchanges')
+      ->debug('Added wallet '.$wallet->id() .' to holders exchange '.$groupContent->getGroup()->id());
+  }
+
+}

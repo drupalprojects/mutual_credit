@@ -70,15 +70,8 @@ drupal_set_message('just checking wallet.transactions access op is being used');
       }
       // Named users on each wallet must be able to see transactions.
       // @todo these need testing.
-      elseif ($entity->payways->value == Wallet::PAYWAY_ANYONE_IN) {
-        foreach ($entity->payers->referencedEntities() as $user) {
-          if ($user->id() == $account->id()) {
-            return AccessResult::allowed()->addCacheableDependency($entity);
-          }
-        }
-      }
-      elseif ($entity->payways->value == Wallet::PAYWAY_ANYONE_OUT) {
-        foreach ($entity->payees->referencedEntities() as $user) {
+      else {
+        foreach ($entity->bursers->referencedEntities() as $user) {
           if ($user->id() == $account->id()) {
             return AccessResult::allowed()->addCacheableDependency($entity);
           }

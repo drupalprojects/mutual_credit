@@ -86,7 +86,7 @@ function mcapi_cc_save_wallet_settings($form, $form_state) {
     'login' => $form_state->getValue('ex_id'),
     'pass' => $form_state->getValue('ex_pass')
   ];
-  $wid = \Drupal\mcapi\Exchange::intertradingWalletId();
+  $wid = intertrading_wallet_id();
   \Drupal::keyValue('clearingcentral')
     ->set($wid, $settings);
 }
@@ -275,4 +275,37 @@ function mcapi_cc_mcapi_transaction_validate($transaction) {
     }
     throw new \Exception('Intertrading wallet error');
   }
+}
+
+
+/**
+ * Get the id of the intertrading wallet.
+ *
+ * If an exchange is specified, that means mcapi_exchanges.module is installed.
+ * Exceptionally, this can't be done with entityQuery because it filters out
+ * intertrading wallets.
+ *
+ * @param int $exchange_id
+ *   The ID of the exchange.
+ *
+ * @todo in the future, intertrading wallets will be identified using config.
+ */
+function intertrading_wallet_id($exchange_id = NULL) {
+  if (Self::multipleExchanges() && $exchange_id) {
+    // There might be a better name for this method, if there were many
+    // methods that were filtering on the current user's exchange.
+    $wid = db_select('mcapi_wallet', 'w')
+      ->fields('w', ['wid'])
+      ->condition('payways', Wallet::PAYWAY_AUTO)
+      ->condition('holder_entity_type', 'group')
+      ->condition('holder_entity_id', $group->id())
+      ->execute()->fetchField();
+  }
+  else {
+    $wallets = \Drupal::entityTypeManager()
+      ->getStorage('mcapi_wallet')
+      ->loadByProperties(['payways' => Wallet::PAYWAY_AUTO]);
+    $wid = reset($wallets)->id();
+  }
+  return $wid;
 }

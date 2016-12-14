@@ -6,7 +6,6 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountProxyInterface;
-use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Query;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 

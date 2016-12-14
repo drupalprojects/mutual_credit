@@ -5,7 +5,6 @@ namespace Drupal\mcapi\Plugin\Action;
 use Drupal\mcapi\Plugin\TransactionActionBase;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessResult;
-use Drupal\mcapi\Mcapi;
 
 /**
  * Confirmation form for creating a transaction.
@@ -29,7 +28,8 @@ class Save extends TransactionActionBase {
       $result = FALSE;
     }
     else {
-      $result = Mcapi::enoughWallets($account->id());
+      // Can't think of what other conditions might be needed.
+      $result = TRUE;
     }
     if ($return_as_object) {
       return $result ? AccessResult::allowed() : AccessResult::forbidden();

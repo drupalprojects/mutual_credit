@@ -16,8 +16,6 @@ access_personalised: 0
 wallet_tab: 1
 wallet_inex_tab: 1
 wallet_log_tab: 1
-wallet_widget_max_select: 15
-wallet_widget_max_radios: 3
 autoadd: 1
 render_unused: 1
 masspay_mail:

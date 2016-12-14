@@ -3,6 +3,7 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\mcapi\Mcapi;
+Use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -10,6 +11,26 @@ use Drupal\Core\Form\FormStateInterface;
  * Provides a form for forms.
  */
 class TransactionStatsFilterForm extends FormBase {
+
+  protected $entityTypeManager;
+
+  /**
+   * Constructor
+   *
+   * @param EntityTypeManager $entity_type_manager
+   */
+  public function __construct(EntityTypeManager $entity_type_manager) {
+    $this->entityTypeManager = $entity_type_manager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('entity_type.manager')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -41,12 +62,9 @@ class TransactionStatsFilterForm extends FormBase {
       '#required' => FALSE,
       '#default_value' => isset($previous['until']) ? $previous['until'] : REQUEST_TIME
     ];
-    $earliest = Mcapi::earliestTransactionTime($currency);
+    $earliest = $this->entityTypeManager->getStorage('mcapi_transaction')->earliestTransactionTime($currency);
     $next_year = strtotime('01-01-'.date('Y', $earliest));
     $next_month = strtotime('01-'. date('M', $earliest) .'-'.date('Y', $earliest));
-//    echo "\n<br />earliest: ".date('d-m-Y', $earliest);
-//    echo "\n<br />previous year: ".date('d-m-Y', $next_year);
-//    echo "\n<br />previous month: ".date('d-m-Y', $next_month);
 
     if ($next_year >= strtotime('01-01-'.date('Y'))) {
       // System is less than one year old, so show months

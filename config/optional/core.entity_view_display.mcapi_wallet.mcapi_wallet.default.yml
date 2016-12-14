@@ -2,8 +2,7 @@ langcode: en
 status: true
 dependencies:
   config:
-    - field.field.mcapi_wallet.mcapi_wallet.payees
-    - field.field.mcapi_wallet.mcapi_wallet.payers
+    - field.field.mcapi_wallet.mcapi_wallet.bursers
   module:
     - mcapi
 id: mcapi_wallet.mcapi_wallet.default
@@ -45,6 +44,5 @@ content:
     third_party_settings: {  }
 hidden:
   canonical_link: true
-  payees: true
-  payers: true
+  bursers: true
 

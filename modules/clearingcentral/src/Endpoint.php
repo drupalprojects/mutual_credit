@@ -59,7 +59,8 @@ class Endpoint extends SystemController {
       $this->logger->error("Unable to find intertrading wallet for exchange: ".$params[$key] . print_r($params, 1));
     }
 
-    clearingCentral($intertrading_wallet_id)->receive($post);
+    \Drupal::service('mcapi_cc.clearing_central')->receive($post);
+
     $return_code = $post['response'] == CEN_SUCCESS ? 201 : 200;
     $response = new Response(NULL, $return_code);
     $content = UrlHelper::buildQuery($post);

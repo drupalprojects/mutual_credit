@@ -29,6 +29,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFactoryPluginInterface {
 
+  const MAX = 100;
+
   /**
    * The transaction storage.
    *
@@ -101,7 +103,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    * {@inheritdoc}
    */
   protected function generateElements(array $values) {
-    if ($values['num'] <= 100) {
+    if ($values['num'] <= static::MAX) {
       $this->generateContent($values);
     }
     else {
@@ -152,16 +154,16 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     }
     $total = $values['num'];
     // Add the operations to create the transactions.
-    for ($num = 0; $num < floor($total / 50); $num++) {
+    for ($num = 0; $num < floor($total / static::MAX); $num++) {
       $values['batch'] = $num;
       $batch['operations'][] = [
         'devel_generate_operation',
         [$this, 'batchContentAddTransaction', $values],
       ];
     }
-    if ($num = $total % 100) {
+    if ($num = $total % static::MAX) {
       // Add the remainder.
-      $values['num'] = $total % 50;
+      $values['num'] = $total % static::MAX;
       $values['batch'] = $num++;
       $batch['operations'][] = [
         'devel_generate_operation',
@@ -281,8 +283,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
    *   2 wallet ids
    */
   public function get2RandWalletIds(array $conditions = []) {
-    $query = $this->getEntityQuery('mcapi_wallet')
-      ->condition('orphaned', 0);
+    $query = $this->getEntityQuery('mcapi_wallet');
     foreach ($conditions as $field => $value) {
       $query->condition($field, $value, is_array($value) ? 'IN' : '=');
     }
@@ -326,14 +327,15 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
   }
 
   public static function sortTransactions() {
+drupal_set_message('TransactionDevelGenerate  skipping sorting');return;//test what happens to user 1 transactions
     $db = \Drupal::database();
     $times = $db->select('mcapi_transaction', 't')
       ->fields('t', ['serial', 'created'])
       ->execute()->fetchAllKeyed();
-    $keys = array_keys($times);
-    sort($keys);
+    $serials = array_keys($times);
+    sort($serials);
     sort($times);
-    $new = array_combine($keys, $times);
+    $new = array_combine($serials, $times);
     foreach ($new as $serial => $created) {
       //assuming that $created is unique and clashes are extremely unlikely
       $db->update('mcapi_transaction')

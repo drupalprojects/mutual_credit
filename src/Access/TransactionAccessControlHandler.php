@@ -2,11 +2,11 @@
 
 namespace Drupal\mcapi\Access;
 
+use Drupal\mcapi\TransactionOperations;
 use Drupal\Core\Entity\EntityAccessControlHandler;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessResult;
-use Drupal\mcapi\Mcapi;
 
 /**
  * Defines an access controller option for the mcapi_transaction entity.
@@ -35,7 +35,7 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
       // @todo URGENT. Handle the named payees and payers
       return $return_as_object ? AccessResult::allowed()->cachePerUser() : TRUE;
     }
-    return Mcapi::transactionActionLoad($operation)
+    return TransactionOperations::loadOperation($operation)
       ->getPlugin()
       ->access($transaction, $account, $return_as_object)
       ->cachePerUser()

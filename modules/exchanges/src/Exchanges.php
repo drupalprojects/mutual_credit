@@ -97,17 +97,5 @@ class Exchanges extends Exchange {
     return $wallet_ids;
   }
 
-  /**
-   * @todo move this to the walletStorage
-   */
-  public static function getIntertradingWalletId($group) {
-    return db_select('mcapi_wallet', 'w')
-      ->fields('w', ['wid'])
-      ->condition('payways', Wallet::PAYWAY_AUTO)
-      ->condition('holder_entity_type', 'group')
-      ->condition('holder_entity_id', $group->id())
-      ->execute()->fetchField();
-
-  }
 
 }

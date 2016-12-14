@@ -75,7 +75,10 @@ class Exchange {
    *   The entity being deleted.
    */
   public static function orphan(ContentEntityInterface $holder) {
-    foreach (Mcapi::walletsOf($holder, TRUE) as $wallet) {
+    $wallets = \Drupal::entityTypeManager()
+      ->getStorage('mcapi_wallet')
+      ->walletsOf($holder, \TRUE);
+    foreach ($wallets as $wallet) {
       if (!$wallet->isVirgin()) {
         // Move the wallet.
         $new_holder_entity = \Drupal::moduleHandler()->moduleExists('mcapi_exchanges') ?
@@ -117,28 +120,6 @@ class Exchange {
         return;
       }
     }
-  }
-
-  /**
-   * Identify an exchange's intertrading wallet.
-   *
-   * @param int $exchange_id
-   *   The ID of the exchange.
-   */
-  public static function intertradingWalletId($exchange_id = NULL) {
-    if (Self::multipleExchanges() && $exchange_id) {
-      drupal_set_message('is this ever used?');
-      // There might be a better name for this method, if there were many
-      // methods that were filtering on the current user's exchange.
-      $wid = Exchanges::getIntertradingWalletId($exchange_id);
-    }
-    else {
-      $wallets = \Drupal::entityTypeManager()
-        ->getStorage('mcapi_wallet')
-        ->loadByProperties(['payways' => Wallet::PAYWAY_AUTO]);
-      $wid = reset($wallets)->id();
-    }
-    return $wid;
   }
 
   /**

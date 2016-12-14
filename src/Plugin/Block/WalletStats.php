@@ -2,8 +2,6 @@
 
 namespace Drupal\mcapi\Plugin\Block;
 
-use Drupal\mcapi\Mcapi;
-
 /**
  * Displays balances for all the wallets belonging to an entity.
  *
@@ -23,7 +21,7 @@ class WalletStats extends McapiBlockBase {
     // @todo where do we get the entity from?
     return [
       '#theme' => 'mcapi_wallets',
-      '#wallets' => Mcapi::walletsOf($this->account),
+      '#wallets' => $this->entityTypeManager->getStorage('mcapi_wallet')->walletsOf($this->account),
     ];
   }
 

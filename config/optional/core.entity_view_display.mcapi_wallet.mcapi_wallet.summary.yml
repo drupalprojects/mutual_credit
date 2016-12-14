@@ -3,12 +3,9 @@ status: true
 dependencies:
   config:
     - core.entity_view_mode.mcapi_wallet.summary
-    - field.field.mcapi_wallet.mcapi_wallet.payees
-    - field.field.mcapi_wallet.mcapi_wallet.payers
+    - field.field.mcapi_wallet.mcapi_wallet.bursers
   module:
     - mcapi
-_core:
-  default_config_hash: fYT4USC7AVc0PvczMNngzcH9ICecngO5YigF5WLslQE
 id: mcapi_wallet.mcapi_wallet.summary
 targetEntityType: mcapi_wallet
 bundle: mcapi_wallet
@@ -32,7 +29,6 @@ hidden:
   histories: true
   holder_link: true
   link_income_expenditure: true
-  payees: true
-  payers: true
+  bursers: true
   stats: true
 

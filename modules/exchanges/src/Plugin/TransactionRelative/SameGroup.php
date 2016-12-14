@@ -66,9 +66,9 @@ class SameGroup extends PluginBase implements TransactionRelativeInterface {
   public function entityViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
     // Get the groups of user $uid
     $account = \Drupal\user\Entity\User::load($uid);
-    $user_member_of = \Drupal::service('group.membership_loader')->loadByUser($account);
+    $user_memberships = \Drupal::service('group.membership_loader')->loadByUser($account);
     $gids = [];
-    foreach ($user_member_of as $membership) {
+    foreach ($user_memberships as $membership) {
       $gids[] = $membership->getGroup()->id();
     }
     if ($gids) {

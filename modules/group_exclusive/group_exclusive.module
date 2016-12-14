@@ -70,7 +70,7 @@ function group_exclusive_entity_type_alter(array &$entity_types) {
  * @param string $group_type
  *   The group bundle name, or type.
  * @param ContentEntityInterface $entity
- *   Any content entity
+ *   Any content entity (defaults to the current user)
  *
  * @return \Drupal\group\GroupMembership | NULL
  */

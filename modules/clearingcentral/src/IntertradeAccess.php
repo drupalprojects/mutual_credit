@@ -8,7 +8,7 @@
 
 namespace Drupal\mcapi_cc;
 
-use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Storage\WalletStorage;
 use Drupal\mcapi\Entity\Wallet;
 use Symfony\Component\Routing\Route;
 use Drupal\Core\Routing\RouteMatchInterface;
@@ -29,7 +29,7 @@ class IntertradeAccess extends EntityAccessCheck {
     $user = \Drupal\user\Entity\User::load($account->id());
     if ($operation == 'credit') {
       //if I control any wallet I can pay out of.
-      foreach (Mcapi::walletsOf($user, TRUE) as $wallet) {
+      foreach (WalletStorage::walletsOf($user, TRUE) as $wallet) {
         if ($wallet->payways->value != Wallet::PAYWAY_ANYONE_IN) {
           $result = AccessResult::allowed();
         }
@@ -37,7 +37,7 @@ class IntertradeAccess extends EntityAccessCheck {
     }
     elseif ($operation == 'bill') {
       //if I control any wallet I can pay out of.
-      foreach (Mcapi::walletsOf($user, TRUE) as $wallet) {
+      foreach (WalletStorage::walletsOf($user, TRUE) as $wallet) {
         if ($wallet->payways->value != Wallet::PAYWAY_ANYONE_OUT) {
           $result = AccessResult::allowed();
         }

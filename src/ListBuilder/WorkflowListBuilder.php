@@ -3,15 +3,15 @@
 namespace Drupal\mcapi\ListBuilder;
 
 use Drupal\mcapi\Plugin\TransactionActionBase;
+use Drupal\mcapi\TransactionOperations;
+use Drupal\mcapi\Entity\Type;
+use Drupal\mcapi\Entity\State;
+use Drupal\system\Entity\Action;
 use Drupal\Core\Url;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Form\FormInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
-use Drupal\system\Entity\Action;
-use Drupal\mcapi\Entity\Type;
-use Drupal\mcapi\Entity\State;
-use Drupal\mcapi\Mcapi;
 
 /**
  * Displays the workflow page in the management menu admin/accounting/workflow.
@@ -23,7 +23,7 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
    */
   public function buildHeader() {
     return [
-      'name' => t('Action'),
+      'name' => t('Operation'),
       'description' => t('Description'),
       'operations' => '',
       'weight' => t('Weight'),
@@ -77,10 +77,9 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form[] = $this->visualise();
-    $attributes = ['style' => 'width:100%', 'id' => 'actions-table'];
     $form['plugins'] = [
       '#type' => 'table',
-      '#caption' => $this->t('Other actions may be available at admin/config/system/actions'),
+      '#caption' => $this->t('Other operations may be available to add at admin/config/system/actions'),
       '#header' => $this->buildHeader(),
       '#tabledrag' => [
         [
@@ -89,12 +88,15 @@ class WorkflowListBuilder extends ControllerBase implements FormInterface {
           'group' => 'weight',
         ],
       ],
+      '#attributes' => [
+        'style' => 'width:100%',
+        'id' => 'actions-table'
+      ],
       // '#attributes' => new Attribute($attributes)
       // @todo Attribute doesn't work according to the documentation
       // @see https://api.drupal.org/api/drupal/core!includes!common.inc/function/drupal_attach_tabledrag/8
-      '#attributes' => $attributes,
     ];
-    foreach (Mcapi::transactionActionsLoad() as $action_id => $action) {
+    foreach (TransactionOperations::loadAllActions() as $action_id => $action) {
       if ($action->getPlugin() instanceof TransactionActionBase) {
         $form['plugins'][$action_id] = $this->buildRow($action);
       }

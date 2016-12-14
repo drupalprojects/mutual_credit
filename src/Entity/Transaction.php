@@ -4,6 +4,7 @@ namespace Drupal\mcapi\Entity;
 
 use Drupal\mcapi\Event\TransactionAssembleEvent;
 use Drupal\mcapi\McapiEvents;
+use Drupal\mcapi\Plugin\EntityReferenceSelection\WalletSelection;
 use Drupal\user\EntityOwnerInterface;
 use Drupal\user\UserInterface;
 use Drupal\Core\Cache\Cache;
@@ -250,9 +251,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setDescription(t('The giving wallet'))
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
-      ->addConstraint('CanPayout')
       ->setCardinality(1)
-      ->setSetting('handler_settings', ['direction' => 'payout'])
+      ->setSetting('handler_settings', ['restriction' => WalletSelection::RESTRICTION_PAYOUT])
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayOptions('form', ['type' => 'wallet_reference_autocomplete', 'weight' => 1])
       ->setDisplayConfigurable('view', TRUE)
@@ -263,9 +263,8 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setDescription(t('The receiving wallet'))
       ->setReadOnly(TRUE)
       ->setRequired(TRUE)
-      ->addConstraint('CanPayin')
       ->setCardinality(1)
-      ->setSetting('handler_settings', ['direction' => 'payin'])
+      ->setSetting('handler_settings', ['restriction' => WalletSelection::RESTRICTION_PAYIN])
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayOptions('form', ['type' => 'wallet_reference_autocomplete', 'weight' => 2])
       ->setDisplayConfigurable('view', TRUE)

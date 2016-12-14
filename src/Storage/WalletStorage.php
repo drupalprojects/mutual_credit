@@ -2,8 +2,10 @@
 
 namespace Drupal\mcapi\Storage;
 
-use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\user\Entity\User;
+use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 
 /**
  * Storage controller for wallet entity.
@@ -18,52 +20,56 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
     $entity->setHolder($values['holder']);
     return $entity;
   }
-  
+
   /**
    * {@inheritdoc}
-   *
-   * Similar to an entityQuery, but not!
-   *
-   * @todo this is called more than once per user per transaction form. So
-   * either cache the results, with right tags, or at least save the results
-   * per $uid and operation.
    */
-  public function whichWalletsQuery($operation, $uid, $match = '') {
-    $query = $this->database->select('mcapi_wallet', 'base_table')
-      ->fields('base_table', ['wid'])
-      ->condition('orphaned', 0);
-    if ($match) {
-      $query->condition('base_table.name', '%' . $this->database->escapeLike($match) . '%', 'LIKE');
+  public static function walletsOf(ContentEntityInterface $entity, $load = FALSE) {
+    // There's no elegant static way to get an entityType's entityQuery object
+    // or storage
+    $wids = \Drupal::entityQuery('mcapi_wallet')
+      ->condition('holder_entity_type', $entity->getEntityTypeId())
+      ->condition('holder_entity_id', $entity->id())
+      ->execute();
+    // @todo reduce all this paranoia checking once we are sure its not needed
+    if (empty($wids)) {
+      if ($entity->isNew()) {
+        \Drupal::logger('mcapi')
+          ->error('Should not run walletsOf on an unsaved user',  ['exception' => new \Exception()]);
+      }
+      elseif ($entity->getEntityTypeId() == 'user' && $entity->id() != 1) {
+        \Drupal::logger('mcapi')
+          ->debug('user '.$entity->id() .' has no wallets', ['exception' => new \Exception()]);
+      }
     }
-    // Include users who have been nominated to pay in or out of wallets.
-    $or = $query->orConditionGroup();
+    return $load ?
+      Wallet::loadMultiple($wids) :
+      $wids;
+  }
 
-    if ($operation) {
-      $users = $query->orConditionGroup();
-      if ($operation == 'payin') {
-        $users->condition('base_table.payways', [Wallet::PAYWAY_ANYONE_IN, Wallet::PAYWAY_ANYONE_BI], 'IN');
-        $query->leftjoin('mcapi_wallet__payers', 'payers', "payers.payers_target_id = base_table.holder_entity_id");
-        $users->condition('payers.payers_target_id', $uid);
-      }
-      elseif ($operation == 'payout') {
-        $users->condition('base_table.payways', [Wallet::PAYWAY_ANYONE_OUT, Wallet::PAYWAY_ANYONE_BI], 'IN');
-        $query->leftjoin('mcapi_wallet__payees', 'payees', "payees.payees_target_id = base_table.holder_entity_id");
-        $users->condition('payees.payees_target_id', $uid);
-      }
-      $or->condition($users);
-    }
-    // Now ensure the wallet holder is included.
-    $holder = $query->andConditionGroup();
-    $holder->condition('holder_entity_type', 'user');
-    $holder->condition('holder_entity_id', $uid);
-    $or->condition($holder);
-    $query->condition($or);
-    $query->addTag('whichWallets');
-    // Allow modification as if it was an entityquery, i.e. hook_query_entity_query_ENTITY_TYPE_alter
-    $query->addTag('entity_query_mcapi_wallet');
-    // This would normally be added by a real entityQuery @see Drupal\mcapi\Entity\Query::prepare().
-    $holder->condition('base_table.payways', Wallet::PAYWAY_AUTO, '<>');
-    return $query->execute()->fetchCol();
+  /**
+   * {@inheritdoc}
+   */
+  public function getQueryServiceName() {
+    return 'mcapi_wallet.query.sql';
+  }
+
+  /**
+   * Get the wallets a user controls, which means holds, is burser of, or is the
+   * entityOwner of the holder.
+   *
+   * @param int $uid
+   *
+   * @return type
+   */
+  public function myWallets($uid) {
+    $wids = array_merge(
+      static::walletsOf(User::load($uid)),
+      // What's the best way to do a reverse lookup? EntityQuery?
+      $wids = $this->getQuery()->condition('bursers', $uid)->execute()
+    );
+    return $wids;
   }
 
 }
+

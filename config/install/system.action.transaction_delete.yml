@@ -28,6 +28,4 @@ configuration:
     payee: 0
     payer: 0
     manager: manager
-    pending_signatory: 0
-    signatory: 0
-
+    burser: burser

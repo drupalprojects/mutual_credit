@@ -17,7 +17,7 @@ class RemoteTransactionCreditForm extends RemoteTransactionForm {
   public function init(FormStateInterface $form_state) {
     parent::init($form_state);
 
-    $this->entity->payee->target_id = \Drupal\mcapi\Exchange::intertradingWalletId($this->exchange);
+    $this->entity->payee->target_id = intertrading_wallet_id($this->exchange);
 
   }
 
@@ -32,6 +32,7 @@ class RemoteTransactionCreditForm extends RemoteTransactionForm {
       $form = parent::form($form, $form_state);
       $form['remote_user_id']['#title'] = $this->t('Id of remote seller to credit');
       $form['payee']['#type'] = 'intertrading_wallet';
+      $form['payee']['#value'] = intertrading_wallet_id();
       $form['payer']['widget'][0]['target_id']['#title'] = $this->t('Local wallet to be billed');
       $form['outgoing'] = [
         '#type' => 'value',

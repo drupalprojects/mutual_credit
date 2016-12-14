@@ -15,7 +15,8 @@ class AccountingAdmin extends SystemController {
    * {@inheritdoc}
    */
   public function systemAdminMenuBlockPage() {
-    if (!Mcapi::enoughWallets($this->currentUser()->id())) {
+    // Show a warning if there aren't enough wallets to trade
+    if ($this->queryFactory->get('mcapi_wallet')->count()->execute() < 2) {
       $message[] = $this->t("There aren't enough wallets for you to create a transaction.");
       if (Mcapi::maxWalletsOfBundle('user', 'user') == 1) {
         $message[] = $this->l(

@@ -2,6 +2,7 @@
 
 namespace Drupal\mcapi\Storage;
 
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\Core\Entity\EntityInterface;
 
@@ -249,6 +250,9 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   /**
    * Add an array of conditions to the select query.
    *
+   * This is more flexible than entityQuery which runs on the transaction table
+   * itself. This has no access control.
+   *
    * @param string $curr_id
    *   The ID of a currency.
    * @param array $conditions
@@ -358,30 +362,32 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
    *
    * @note The running balance views field isn't used in any default views.
    */
-  public function runningBalance($wid, $curr_id, $until, $sort_field = 'xid') {
+  public function runningBalance($wid, $curr_id, array $before) {
+    list($sort_key, $val) = each($before);
     // The running balance depends the order of the transactions. we will assume
     // the order of creation is what's wanted because that corresponds to the
     // order of the xid. NB it is possible to change the apparent creation date.
     $query = $this->database->select('mcapi_transactions_index');
-    $query->addExpression('SUM(diff)', 'balance');
-    return $query->condition('wallet_id', $wid)
+    $query->addExpression('SUM(diff)');
+    $query = $query->condition('wallet_id', $wid)
       ->condition('curr_id', $curr_id)
-      ->condition($sort_field, $until, '<=')
-      ->execute()
-      ->fetchField();
+      ->condition($sort_key, $val, '<=');
+    return $query->execute()->fetchField();
   }
 
   /**
    * {@inheritdoc}
    */
   public function getQueryServiceName() {
-    return 'mcapi.query.sql';
+    return 'mcapi_transaction.query.sql';
   }
 
   /**
    * {@inheritdoc}
    *
    * Overriding this because transaction entityQuery returns xids and serials.
+   *
+   * @note this is subject to transaction access control because it is on the main transaction table
    */
   public function loadByProperties(array $values = array()) {
     // Build a query to fetch the entity IDs.
@@ -486,5 +492,17 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       ->execute()
       ->fetchCol();
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function earliestTransactionTime(CurrencyInterface $currency) {
+    $query = $this->database->select('mcapi_transactions_index');
+    $query->addExpression('MIN(created)');
+    $query->condition('state', 'done');
+    $query->condition('curr_id', $curr_id);
+    return $query->execute()->fetchField();
+  }
+
 
 }

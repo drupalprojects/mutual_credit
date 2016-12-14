@@ -111,8 +111,7 @@ db_drop_table('mcapi_wallet_exchanges_index');
 db_drop_table('mcapi_transaction__worth');
 db_drop_table('mcapi_exchange__currencies');
 db_drop_table('mcapi_signatures');
-db_drop_table('mcapi_wallet__payers');
-db_drop_table('mcapi_wallet__payees');
+db_drop_table('mcapi_wallet__bursers');
 db_delete('config')->condition('name', '%mcapi%', 'LIKE')->execute();
 db_delete('config')->condition('name', 'system.action.transaction%', 'LIKE')->execute();
 db_delete('config')->condition('name', [

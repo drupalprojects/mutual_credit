@@ -3,11 +3,8 @@
 namespace Drupal\mcapi\Plugin\Block;
 
 use Drupal\mcapi\Exchange;
-use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Block\BlockBase;
-use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Displays all the wallets of an entity.
@@ -22,26 +19,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  */
 class Currencies extends BlockBase implements ContainerFactoryPluginInterface {
-
-  /**
-   * {@inheritdoc}
-   */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManager $entity_type_manager) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->entityTypeManager = $entity_type_manager;
-  }
-
-  /**
-   * Injection.
-   */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static(
-      $configuration,
-      $plugin_id,
-      $plugin_definition,
-      $container->get('entity_type.manager')
-    );
-  }
 
   /**
    * {@inheritdoc}

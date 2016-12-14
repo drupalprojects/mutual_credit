@@ -2,6 +2,7 @@
 
 namespace Drupal\mcapi\Storage;
 
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 
 /**
@@ -99,7 +100,7 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    * @return int
    *   Raw currency value.
    */
-  public function runningBalance($wid, $curr_id, $until, $sort_field = 'xid');
+  public function runningBalance($wid, $curr_id, array $before);
 
   /**
    * Get all the balances at the moment of the timestamp.
@@ -152,4 +153,14 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    */
   public function currenciesUsed($wid);
 
+
+  /**
+   * Get the time of the first transaction in a currency.
+   *
+   * @param CurrencyInterface $currency
+   *
+   * @return int
+   *   The unixtime.
+   */
+  public static function earliestTransactionTime(CurrencyInterface $currency);
 }

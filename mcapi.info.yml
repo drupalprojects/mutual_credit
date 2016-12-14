@@ -4,8 +4,8 @@ package: Community Accounting
 configure: mcapi.admin
 core: 8.x
 type: module
+version: '8.x-4.0-beta10'
 dependencies:
-  - system (>=8.2.0)
   - action
 #dependency on rules is temporary
   - rules

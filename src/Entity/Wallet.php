@@ -149,21 +149,11 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     // If the holding entity isn't a user, then we need to add the user owner to
     // the list of payees and payers.
     elseif ($this->holder_entity_type->value != 'user') {
-      // This could be shorter to add a reference if it doesn't exist already.
-      // @todo do we need to save to both fields?
-      if (in_array($this->payways->value, [Wallet::PAYWAY_ANYONE_OUT, Wallet::PAYWAY_ANYONE_BI])) {
-        $payees = $this->payees->referencedEntities();
-        $payees[] = $this->getOwner();
-        $payees = array_unique($payees);
-        $this->payees->setValue($payees);
-        drupal_set_message(t("Allowing owner of @type to be a payee for the @type's wallet", ['@type' => $this->holder_entity_type->value]));
-      }
-      if (in_array($this->payways->value, [Wallet::PAYWAY_ANYONE_IN, Wallet::PAYWAY_ANYONE_BI])) {
-        $payers = $this->payers->referencedEntities();
-        $payers[] = $this->getOwner();
-        $this->payers->setValue($payers);
-        drupal_set_message(t("Allowing owner of @type to be a payer for the @type's wallet", ['@type' => $this->holder_entity_type->value]));
-      }
+      $bursers = $this->bursers->referencedEntities();
+      $bursers[] = $this->getOwner();
+      $bursers = array_unique($bursers);
+      $this->bursers->setValue($bursers);
+      drupal_set_message(t("Allowing owner of @type to be a payee for the @type's wallet", ['@type' => $this->holder_entity_type->value]));
     }
   }
 

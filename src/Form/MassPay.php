@@ -109,8 +109,6 @@ class MassPay extends ContentEntityForm {
         }
       }
     }
-    // Don't restrict wallets by payin/payout settings
-    $form_state->set('restrictWallets', FALSE);
     unset($form['type'], $form['creator'], $form['created']);
     $form['description']['#weight'] = 5;
 
@@ -175,7 +173,7 @@ class MassPay extends ContentEntityForm {
     $form['mode']['#weight'] = 2;
     $form[PAYER_FIELDNAME]['#weight'] = 3;
     $form['worth']['#weight'] = 4;
-    unset($form[PAYEE_FIELDNAME]['#selection_settings']);
+    //unset($form[PAYEE_FIELDNAME]['#selection_settings']);
     $form[PAYER_FIELDNAME]['#tags'] = TRUE;
     $form['mode']['#title'] = $this->t('Will receive from');
   }
@@ -190,7 +188,7 @@ class MassPay extends ContentEntityForm {
     $form['worth']['#weight'] = 4;
     $form['description']['#weight'] = 5;
     $form[PAYEE_FIELDNAME]['#tags'] = TRUE;
-    unset($form[PAYER_FIELDNAME]['#selection_settings']);
+    //unset($form[PAYER_FIELDNAME]['#selection_settings']);
     $form['mode']['#title'] = $this->t('Will pay');
   }
 

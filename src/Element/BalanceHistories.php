@@ -32,6 +32,8 @@ class BalanceHistories extends RenderElement {
   public static function preRender($element) {
     $storage = \Drupal::entityTypeManager()->getStorage('mcapi_transaction');
     $wid = $element['#wallet']->id();
+    // On a large system we don't want to try getting history of all currencies.
+    // This is the only occurrence of currenciesUsed
     foreach ($storage->currenciesUsed($wid) as $curr_id) {
       $currency = Currency::load($curr_id);
       $points = $storage->historyOfWallet($wid, $curr_id);

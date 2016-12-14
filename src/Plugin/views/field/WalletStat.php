@@ -2,19 +2,18 @@
 
 namespace Drupal\mcapi\Plugin\views\field;
 
+use Drupal\mcapi\Storage\WalletStorage;
 use Drupal\views\ResultRow;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
-use Drupal\mcapi\Mcapi;
-use Drupal\mcapi\Entity\Wallet;
 
 /**
  * Field handler provides current stat for given wallet via Wallet::getStatAll.
  *
- * @note reads from the transaction index table
- *
  * @ingroup views_field_handlers
  *
  * @ViewsField("wallet_stat")
+ *
+ * @todo injection
  */
 class WalletStat extends FieldPluginBase {
 
@@ -31,7 +30,7 @@ class WalletStat extends FieldPluginBase {
   public function render(ResultRow $values) {
     $entity = $this->getEntity($values);
     if ($entity->getEntityTypeId() != 'mcapi_wallet') {
-      $entities = Mcapi::walletsOf($entity, TRUE);
+      $entities = WalletStorage::walletsOf($entity, TRUE);
       $wallet = reset($entities);
     }
     else {

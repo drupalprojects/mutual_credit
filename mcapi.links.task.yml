@@ -52,8 +52,14 @@ mcapi.admin.transactions.default_tab:
   weight: 0
 
 #default tab used only if this module is extended
-mcapi.misc_settings.tab:
+mcapi.misc_settings.default_tab:
   title: Miscellaneous
   route_name: mcapi.admin_misc
   base_route: mcapi.admin_misc
   weight: 0
+mcapi.misc_forms.tab:
+  title: Transaction forms
+  route_name: mcapi.admin.transaction_form.list
+  base_route: mcapi.admin_misc
+  weight: 3
+

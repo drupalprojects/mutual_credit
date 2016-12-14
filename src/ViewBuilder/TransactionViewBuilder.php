@@ -2,7 +2,9 @@
 
 namespace Drupal\mcapi\ViewBuilder;
 
+use Drupal\mcapi\TransactionOperations;
 use Drupal\system\Entity\Action;
+use Drupal\Core\Link;
 use Drupal\Core\Utility\Token;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Routing\CurrentRouteMatch;
@@ -58,6 +60,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
     $build = parent::getBuildDefaults($entity, $view_mode);
     switch ($view_mode) {
       case 'full':
+        $view_mode = 'certificate_ops';
       case 'certificate_ops':
       case 'certificate':
         $build['#theme'] = 'mcapi_transaction_twig';
@@ -79,11 +82,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
         if ($view_mode == 'sentence') {
           break;
         }
-        $build['link_list'] = [
-          '#theme' => 'item_list',
-          '#type' => 'ul',
-          '#items' => $this->links($entity)
-        ];
+        $build['link_list'] = $this->linkList($transaction);
         break;
 
       default:
@@ -117,32 +116,26 @@ class TransactionViewBuilder extends EntityViewBuilder {
       // No action links on the action page itself
       // todo inject routeMatch //need to cache by route in that case.
       if ($this->routeMatch->getRouteName() != 'mcapi.transaction.operation' && $transaction->id()) {
-        foreach (\Drupal::entityTypeManager()->getListBuilder('mcapi_transaction')->getOperations($transaction) as $op) {
-          //@todo how to incorporate the rest of the operations
-          //$links['#items'][] = [
-          $links[] = [
-            '#type' => 'link',
-            '#title' => $op['title'],
-            '#url' => $op['url'],
-          ];
-        }
-        if ($links) {
-          $build[$id]['links'] = [
-            '#theme' => 'item_list',
-            '#list_type' => 'ul',
-            '#items' => $links,
-            '#attributes' => ['class' => ['transaction-operations']],
-          ];
-        }
+        $build[$id]['links'] = $this->linkList($transaction);
       }
     }
   }
 
-  public function links($transaction) {
-    foreach (\Drupal::entityTypeManager()->getListBuilder('mcapi_transaction')->getOperations($transaction) as $data) {
-      $links[] = \Drupal\Core\Link::fromTextAndUrl($data['title'], $data['url']);
+  private function linkList($transaction) {
+    $output = [];
+    foreach (TransactionOperations::linkList($transaction) as $link) {
+      // TODO what about the other properties in $data?
+      $links[] = Link::fromTextAndUrl($link['title'], $link['url']);
     }
-    return $links;
+    if ($links) {
+      $output = [
+        '#theme' => 'item_list',
+        '#type' => 'ul',
+        '#items' => $links,
+        '#attributes' => ['class' => ['transaction-operations']],
+      ];
+    }
+    return $output;
   }
 
 }

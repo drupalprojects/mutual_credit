@@ -22,6 +22,7 @@ configuration:
     creator: 0
     authenticated: 0
     anon: 0
+    burser: 0
   page_title: 'Are you sure you want to unerase this transaction?'
   format: certificate
   twig: ''

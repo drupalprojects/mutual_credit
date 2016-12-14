@@ -32,6 +32,7 @@ class ClearingCentral implements IntertradingInterface {
   const CLEARING_CENTRAL_IP = '69.61.35.151';
 
   /**
+   * Constructor
    *
    * @param Drupal\Core\Config\ConfigFactory $config_factory
    * @param GuzzleHttp $http_client
@@ -221,17 +222,17 @@ class ClearingCentral implements IntertradingInterface {
     return $codes[$code];
   }
 
-
-
   /**
    * Convert a transaction entity to a Clearing central remote transaction array
    *
    * @param TransactionInterface $transaction
    *
    * @return array
+   *
+   * @todo make this work for multiple exchanges
    */
   private function prepareToSend(TransactionInterface $transaction, $outgoing, $remote_exchange_id, $remote_user_id) {
-    $wid = \Drupal\mcapi\Exchange::intertradingWalletId();
+    $wid = intertrading_wallet_id();
     $currency = Currency::load($intertrading_settings['curr_id']);
     $CcTransaction = [
       'txid' => $transaction->uuid->value,

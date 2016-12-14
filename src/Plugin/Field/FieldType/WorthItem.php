@@ -75,21 +75,6 @@ class WorthItem extends FieldItemBase {
   /**
    * {@inheritdoc}
    */
-  public function setValue($value, $notify = TRUE) {
-    if (!isset($value['value'])) {
-      return;
-    }
-    $this->set('curr_id', $value['curr_id']);
-    $this->set('value', $value['value']);
-    // Notify the parent of any changes.
-    if ($notify && isset($this->parent)) {
-      $this->parent->onChange($this->name);
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function isEmpty() {
     if ($this->curr_id && $this->currency && $this->currency->zero) {
       return FALSE;

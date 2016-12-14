@@ -2,7 +2,7 @@
 
 namespace Drupal\mcapi_exchanges\Plugin\GroupContentEnabler;
 
-use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Storage\WalletStorage;
 use Drupal\group\Access\GroupAccessResult;
 use Drupal\group\Entity\GroupInterface;
 use Drupal\group\Entity\GroupContentInterface;
@@ -48,31 +48,14 @@ class GroupTransactions extends GroupContentEnablerBase {
         'weight' => 7,
       ];
     }
-    if (!\Drupal::moduleHandler()->moduleExists('mcapi_forms')) {
-      return $operations;
-    }
-    if ($group->hasPermission('create transactions', $account)) {
-      $uid = $account->id();
-      foreach (mcapi_form_displays_load() as $displayEntity) {
-        foreach (Mcapi::walletsOf(User::load($uid), FALSE) as $wallet_id) {
-          $settings = $displayEntity->getThirdPartySettings('mcapi_forms');
-          if (mcapi_forms_access_direction($uid, $settings['direction'])) {
-            switch($settings['direction']) {
-              case MCAPI_FORMS_DIR_INCOMING:
-                $key = 'payer';
-                break;
-              case MCAPI_FORMS_DIR_OUTGOING:
-                $key = 'payee';
-                break;
-              default:
-                continue;
-            }
-            $operations["create-transaction"] = [
-              'title' => $settings['title'],
-              'url' => Url::fromUserInput($settings['path'], ['query' => [$key => $wallet_id]]),
-              'weight' => 7,
-            ];
-          }
+    if (\Drupal::moduleHandler()->moduleExists('mcapi_forms')) {
+      if ($group->hasPermission('create transactions', $account)) {
+        foreach(_mcapi_forms_quick_links() as $data) {
+          $operations["create-transaction"] = [
+           'title' => $data['title'],
+           'url' => $data['url'],
+           'weight' => 7,
+         ];
         }
       }
     }

@@ -2,19 +2,19 @@
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\McapiEvents;
 use Drupal\mcapi\Event\TransactionSaveEvents;
+use Drupal\mcapi\TransactionOperations;
 use Drupal\Core\Entity\ContentEntityConfirmFormBase;
 use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Routing\CurrentRouteMatch;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher;
 use Drupal\Core\Render\Renderer;
 use Drupal\Core\Utility\Token;
+use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * I don't know if it is a good idea to extend the confirm form if we want ajax.
@@ -48,7 +48,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
    */
   public function __construct(EntityTypeManager $entity_type_manager, CurrentRouteMatch $route_match, RequestStack $request_stack, ContainerAwareEventDispatcher $event_dispatcher, Renderer $renderer, Token $token) {
     $this->viewBuilder = $entity_type_manager->getViewBuilder('mcapi_transaction');
-    $this->action = Mcapi::transactionActionLoad($route_match->getparameter('operation'));
+    $this->action = TransactionOperations::loadOperation($route_match->getparameter('operation'));
     $this->plugin = $this->action->getPlugin();
     $this->config = $this->plugin->getConfiguration();
     $this->eventDispatcher = $event_dispatcher;

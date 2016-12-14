@@ -1,0 +1,37 @@
+mcapi_form:
+  type: mapping
+  label: '3rd party transaction form display settings'
+  mapping:
+    title:
+      type: label
+      label: Title of the form
+    wallet_link_title:
+      type: label
+      label: Text of link to the form on a wallet
+    path:
+      type: path
+      label: Path
+    access_roles:
+      type: sequence
+      label: Roles which can access this form
+    menu_title:
+      type: label
+      label: Title of the menu link
+    menu_weight:
+      type: integer
+      label: Weight of the menu link
+    menu_parent:
+      type: string
+      label: name of the menu
+    transaction_type:
+      type: string
+      label: Transaction type
+    experience_twig:
+      type: label
+      label: Twig template for the form
+    experience_button:
+      type: label
+      label: Contents of submit button
+    experience_preview:
+      type: integer
+      label: Transaction preview mode

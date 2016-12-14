@@ -2,7 +2,7 @@
 
 namespace Drupal\mcapi\Plugin\Block;
 
-use \Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Storage\WalletStorage;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Session\AccountInterface;
@@ -32,9 +32,8 @@ class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
   /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, $entity_type_manager, $request) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->entityTypeManager = $entity_type_manager;
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, $entity_type_manager, $current_user, $route_match, $request) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $entity_type_manager, $current_user, $route_match);
 
     if ($this->configuration['user_source'] == SELF::MCAPIBLOCK_MODE_CONTEXT) {
       if ($request->attributes->has('_entity')) {
@@ -55,6 +54,8 @@ class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
       $plugin_id,
       $plugin_definition,
       $container->get('entity_type.manager'),
+      $container->get('current_user'),
+      $container->get('current_route_match'),
       $container->get('request_stack')->getCurrentRequest()
     );
   }
@@ -112,7 +113,7 @@ class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
     return $this->entityTypeManager
       ->getViewBuilder('mcapi_wallet')
       ->viewMultiple(
-        Mcapi::walletsOf($this->holderEntity, TRUE),
+        WalletStorage::walletsOf($this->holderEntity, TRUE),
         'mini'
       );
   }

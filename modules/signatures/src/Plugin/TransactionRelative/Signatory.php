@@ -31,16 +31,28 @@ class Signatory extends PluginBase implements TransactionRelativeInterface {
    * {@inheritdoc}
    */
   public function indexViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
-
+    drupal_set_message('@todo access control for signatories');
   }
 
   /**
    * {@inheritdoc}
    */
   public function entityViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
-    $query->join('mcapi_wallet', 'signature_wallets', 'mcapi_transaction.payer = signature_wallets.wid OR mcapi_transaction.payee = signature_wallets.wid');
-    $query->join('users', 'signatory_users', "users.uid = signature_wallets.wallet_holder_id. AND signature_wallets.wallet_holder_type = 'user'");
-    $query->join('mcapi_signatures', 'signatories', 'signatories.uid = owner.uid');
+    $query->join(
+      'mcapi_wallet',
+      'signature_wallets',
+      'mcapi_transaction.payer = signature_wallets.wid OR mcapi_transaction.payee = signature_wallets.wid'
+    );
+    $query->join(
+      'users',
+      'signatory_users',
+      "signatory_users.uid = signature_wallets.holder_entity_id AND signature_wallets.holder_entity_type = 'user'"
+    );
+    $query->join(
+      'mcapi_signatures',
+      'signatories',
+      'signatories.uid = signatory_users.uid'
+    );
     $or_group->condition('signatories.uid', $uid);
   }
 

@@ -1,4 +1,3 @@
-uuid: 65bd7e15-cc59-49dc-9400-afd5fa6d5513
 langcode: en
 status: true
 dependencies:
@@ -19,7 +18,7 @@ configuration:
     pending: pending
   access:
     pending_signatory: pending_signatory
-    named: 0
+    burser: 0
     manager: 0
     payer: 0
     payee: 0
