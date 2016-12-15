@@ -74,7 +74,6 @@ class RunningBalance extends Worth {
   public function render(ResultRow $values) {
     $worth_field = $this->getEntity($values)->worth;
     $vals = [];
-    print_r($this->aliases);
     foreach ($worth_field->currencies() as $curr_id) {
       // @todo running balance means sorting by the same field the view is sorted by.
       $raw = $this->transactionStorage->runningBalance(
@@ -112,37 +111,7 @@ class RunningBalance extends Worth {
         }
       }
     }
-    print_r($q->fields);
     throw new \Exception('Running balance requires that there be a relationship with the wallet_id field');
   }
 
 }
-/*
-$relations  = Array
-(
-    [mcapi_transactions_index] => Array
-        (
-            [count] => 1
-            [alias] => mcapi_transactions_index
-        )
-
-    [mcapi_wallet_mcapi_transactions_index] => Array
-        (
-            [count] => 1
-            [alias] => mcapi_wallet_mcapi_transactions_index
-        )
-
-    [mcapi_wallet_mcapi_transactions_index_1] => Array
-        (
-            [count] => 1
-            [alias] => mcapi_wallet_mcapi_transactions_index_1
-        )
-
-    [users_field_data_mcapi_wallet] => Array
-        (
-            [count] => 1
-            [alias] => users_field_data_mcapi_wallet
-        )
-
-)
- */

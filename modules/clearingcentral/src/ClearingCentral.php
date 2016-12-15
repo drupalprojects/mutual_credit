@@ -253,7 +253,7 @@ class ClearingCentral implements IntertradingInterface {
         'amount' => $transaction->amount
       ];
     }
-    elseif ($payee->payways->value == Wallet::PAYWAY_AUTO) {
+    elseif ($payee->system->value == TRUE) {
       $CcTransaction += [
         'seller_nid' => $this->exchange_id,
         'password' => $this->pass,

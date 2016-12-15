@@ -30,13 +30,6 @@ class Manager extends PluginBase implements TransactionRelativeInterface {
   /**
    * {@inheritdoc}
    */
-  public function indexViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
-
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function entityViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
     // don't limit the view at all.
   }

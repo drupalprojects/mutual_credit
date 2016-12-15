@@ -61,12 +61,13 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
    * @param int $uid
    *
    * @return type
+   *
+   * @todo make this include the entity owners of the holders, but how?
    */
   public function myWallets($uid) {
     $wids = array_merge(
       static::walletsOf(User::load($uid)),
-      // What's the best way to do a reverse lookup? EntityQuery?
-      $wids = $this->getQuery()->condition('bursers', $uid)->execute()
+      $this->getQuery()->condition('bursers', $uid)->execute()
     );
     return $wids;
   }

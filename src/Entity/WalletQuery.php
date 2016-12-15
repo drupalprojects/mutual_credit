@@ -10,7 +10,10 @@ use Drupal\Core\Entity\Query\Sql\Query as BaseQuery;
 class WalletQuery extends BaseQuery {
 
   public function prepare() {
-    $this->condition('orphaned', 0);
+    // Skip orphaned wallets
+    $this->condition('holder_entity_type', '', '<>');
+    // Skip system wallets
+    //$this->condition('system', '0');
     return parent::prepare();
   }
 }

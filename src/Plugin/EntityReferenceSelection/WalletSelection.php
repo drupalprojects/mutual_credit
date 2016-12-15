@@ -89,17 +89,6 @@ class WalletSelection extends DefaultSelection {
       $query->condition('wid', (array)$settings['exclude'], 'IN');
     }
     switch($settings['restriction']) {
-      case static::RESTRICTION_PAYIN :
-        $payways = [Wallet::PAYWAY_ANYONE_IN];
-
-      case static::RESTRICTION_PAYOUT:
-        if (!isset($payways)) {
-          $payways = [Wallet::PAYWAY_ANYONE_OUT];
-        }
-        $payways[] = Wallet::PAYWAY_ANYONE_BI;
-        $query->condition('payways', $payways, 'IN');
-        break;
-
       case static::RESTRICTION_MINE:
         $query->condition('holder_entity_type', 'user');
         $query->condition('holder_entity_id', $this->currentUser->id());

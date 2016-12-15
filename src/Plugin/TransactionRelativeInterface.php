@@ -38,18 +38,6 @@ interface TransactionRelativeInterface {
   public function entityViewsCondition(AlterableInterface $query, Condition $or_group, $uid);
 
   /**
-   * Filter a db query on the transaction index tbl to show only the relatives.
-   *
-   * @param AlterableInterface $query
-   *   A query being built.
-   * @param Condition $or_group
-   *   A db condition to augment.
-   * @param int $uid
-   *   The user id related to the transactions to be selected.
-   */
-  public function indexViewsCondition(AlterableInterface $query, Condition $or_group, $uid);
-
-  /**
    * Get the ids of users who are related to the transaction.
    *
    * @param TransactionInterface $transaction

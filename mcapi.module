@@ -77,7 +77,7 @@ function mcapi_entity_view(array &$build, $entity, $display) {
   if ($display->getComponent('wallets_summaries')) {
     $wallets = [];
     foreach (WalletStorage::walletsOf($entity, TRUE) as $wallet) {
-      if ($wallet->access('view') && !$wallet->orphaned->value) {
+      if ($wallet->access('view')) {
         $wallets[] = $wallet;
       }
     }
@@ -160,8 +160,8 @@ function mcapi_entity_update($entity) {
  */
 function mcapi_entity_predelete($entity) {
   if ($entity instanceof ContentEntityInterface) {
-    if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())) {
-      Exchange::orphan($entity);
+    if ($wallets = Drupal\mcapi\Storage\WalletStorage::walletsOf($entity, TRUE)) {
+      $wallet->set('holder_entity_id', 0)->set('holder_entity_type', '')->save();
     }
   }
 }

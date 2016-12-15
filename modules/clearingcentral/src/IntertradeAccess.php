@@ -3,46 +3,28 @@
 /**
  * @file
  * Contains \Drupal\mcapi_cc\IntertradeAccess.
- * Custom Access control handler for users to intertrade
+ * Custom Route Access control handler for users to intertrade
  */
 
 namespace Drupal\mcapi_cc;
 
-use Drupal\mcapi\Storage\WalletStorage;
-use Drupal\mcapi\Entity\Wallet;
-use Symfony\Component\Routing\Route;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityAccessCheck;
+use Symfony\Component\Routing\Route;
 
 class IntertradeAccess extends EntityAccessCheck {
 
   /**
-   * find out which if any of the two intertrading directions the user can access
-   *
-   * @return AccessResultInterface
+   * Access the route if yoiur exchanges intertrading wallet is configured
    */
   public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
     $result = AccessResult::forbidden();
-    $operation = $route->getOptions()['parameters']['operation'];
-    $user = \Drupal\user\Entity\User::load($account->id());
-    if ($operation == 'credit') {
-      //if I control any wallet I can pay out of.
-      foreach (WalletStorage::walletsOf($user, TRUE) as $wallet) {
-        if ($wallet->payways->value != Wallet::PAYWAY_ANYONE_IN) {
-          $result = AccessResult::allowed();
-        }
-      }
-    }
-    elseif ($operation == 'bill') {
-      //if I control any wallet I can pay out of.
-      foreach (WalletStorage::walletsOf($user, TRUE) as $wallet) {
-        if ($wallet->payways->value != Wallet::PAYWAY_ANYONE_OUT) {
-          $result = AccessResult::allowed();
-        }
-      }
-    }
+
+    $settings = mcapi_cc_settings(intertrading_wallet_id());
+    $result = $settings['login'] ? AccessResult::allowed() : AccessResult::forbidden();
+
     return $result->cachePerUser();
   }
 }

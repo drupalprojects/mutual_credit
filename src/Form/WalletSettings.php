@@ -129,15 +129,6 @@ class WalletSettings extends ConfigFormBase {
       '#default_value' => $config->get('render_unused'),
       '#weight' => 7,
     ];
-
-    $form['payways'] = [
-      '#title' => $this->t('Default payment direction'),
-      '#description' => $this->t('Setting given to new wallets'),
-      '#type' => 'radios',
-      '#options' => Wallet::payWays(),
-      '#default_value' => $config->get('payways'),
-      '#weight' => 9,
-    ];
     $form['public'] = [
       '#title' => $this->t('Default wallet visibility'),
       '#description' => $this->t('Setting given to new wallets'),
@@ -146,7 +137,7 @@ class WalletSettings extends ConfigFormBase {
         0 => $this->t('Can only be seen by the owners and admins'),
         1 => $this->t("Can be seen by anybody with 'view public wallets' permission"),
       ],
-      '#default_value' => $config->get('payways'),
+      '#default_value' => $config->get('public'),
       '#weight' => 9,
     ];
 
@@ -191,7 +182,6 @@ class WalletSettings extends ConfigFormBase {
       'wallet_tab',
       'wallet_inex_tab',
       'wallet_log_tab',
-      'payways',
       'autoadd',
     ];
 

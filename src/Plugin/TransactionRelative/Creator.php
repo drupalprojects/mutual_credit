@@ -30,16 +30,7 @@ class Creator extends PluginBase implements TransactionRelativeInterface {
   /**
    * {@inheritdoc}
    */
-  public function indexViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
-
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function entityViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
-    // @todo do we need to actually look up the alias here?
-    // print_R(get_class_methods($query))
     $or_group->condition('base_table.creator', $uid);
   }
 

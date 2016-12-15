@@ -39,9 +39,6 @@ mcapi.settings:
     mail_errors:
       type: string
       label: Send diagnostics to user 1 by mail
-    payways:
-      type: string
-      label: Payment direction
     entity_types:
       type: sequence
       label: Max number of wallets

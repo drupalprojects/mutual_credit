@@ -30,13 +30,6 @@ class Signatory extends PluginBase implements TransactionRelativeInterface {
   /**
    * {@inheritdoc}
    */
-  public function indexViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
-    drupal_set_message('@todo access control for signatories');
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function entityViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
     $query->join(
       'mcapi_wallet',

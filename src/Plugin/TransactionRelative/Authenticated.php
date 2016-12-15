@@ -31,15 +31,6 @@ class Authenticated extends PluginBase implements TransactionRelativeInterface {
   /**
    * {@inheritdoc}
    */
-  public function indexViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
-    if (!$uid) {
-      $query->condition('xid = 0');
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function entityViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
     if (!$uid) {
       $query->condition('xid = 0');

@@ -5,6 +5,7 @@ const CEN_SUCCESS = 1;//response code
 
 use Drupal\Core\Link;
 use Drupal\mcapi_cc\ClearingCentral;
+use Drupal\mcapi\Entity\Transaction;
 
 /**
  * Implements hook_form_wallet_form_alter().
@@ -149,7 +150,7 @@ function mcapi_cc_mcapi_transaction_insert($transaction)  {
 function mcapi_cc_group_insert($entity) {
   if ($entity->bundle() == 'exchange') {
     Wallet::create([
-      'payways' => Wallet::PAYWAY_AUTO,
+      'system' => TRUE,
       'holder' => $entity
     ])->save();
   }
@@ -253,33 +254,29 @@ function mcapi_cc_wallet_name($field_items) {
  * @return Drupal\mcapi_cc\ClearingCentral
  */
 function clearingCentral($intertrading_wallet_id) {
-  $settings = \Drupal::keyValue('clearingcentral')->get($intertrading_wallet_id);
+  $settings = mcapi_cc_settings($intertrading_wallet_id);
   return \Drupal::service('mcapi_cc.clearing_central')
     ->init($settings['curr_id'], $settings['login'], $settings['pass']);
 }
 
-
 /**
- * Implements hook_mcapi_transaction_validate().
+ * Test whether a transaction is intertrading
  *
- * Check that intertrading wallet is not being misused.
+ * @param Transaction $transaction
+ *
+ * @return The exchange of the intertrading wallet, or true if mcapi_exchanges
+ * module is not installed.
  */
-function mcapi_cc_mcapi_transaction_validate($transaction) {
-  if ($transaction->payer->entity->payways->value == Wallet::PAYWAY_AUTO || $transaction->payee->entity->payways->value == Wallet::PAYWAY_AUTO) {
-    // There MUST be a child transaction also with an intertrading wallet in a different exchange.
-    foreach ($transaction->children as $child) {
-      if ($child->payer->entity->payways->value == Wallet::PAYWAY_AUTO || $child->payee->entity->payways->value == Wallet::PAYWAY_AUTO) {
-        drupal_set_message('intertrading transaction looks good', 'warning');
-        continue 2;
-      }
+function is_intertrading_transaction($transaction) {
+  foreach (['payer', 'payee'] as $wallet) {
+    if ($transaction->{$wallet}->entity->system->value) {
+      return $entity->getholder();
     }
-    throw new \Exception('Intertrading wallet error');
   }
 }
 
-
 /**
- * Get the id of the intertrading wallet.
+ * Get the id of the intertrading wallet for a given exchange.
  *
  * If an exchange is specified, that means mcapi_exchanges.module is installed.
  * Exceptionally, this can't be done with entityQuery because it filters out
@@ -291,21 +288,21 @@ function mcapi_cc_mcapi_transaction_validate($transaction) {
  * @todo in the future, intertrading wallets will be identified using config.
  */
 function intertrading_wallet_id($exchange_id = NULL) {
-  if (Self::multipleExchanges() && $exchange_id) {
-    // There might be a better name for this method, if there were many
-    // methods that were filtering on the current user's exchange.
-    $wid = db_select('mcapi_wallet', 'w')
-      ->fields('w', ['wid'])
-      ->condition('payways', Wallet::PAYWAY_AUTO)
+  $query = db_select('mcapi_wallet', 'w')
+    ->fields('w', ['wid'])
+    ->condition('system', TRUE);
+  if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges') && $exchange_id) {
+    // Find the system wallet belonging to the given exchange.
+    // Note this should really be in WalletStorage class
+    $query
       ->condition('holder_entity_type', 'group')
-      ->condition('holder_entity_id', $group->id())
-      ->execute()->fetchField();
+      ->condition('holder_entity_id', $exchange_id);
   }
   else {
-    $wallets = \Drupal::entityTypeManager()
-      ->getStorage('mcapi_wallet')
-      ->loadByProperties(['payways' => Wallet::PAYWAY_AUTO]);
-    $wid = reset($wallets)->id();
+    // There can be only one and it belongs to user 1
+    $query
+      ->condition('holder_entity_type', 'user')
+      ->condition('holder_entity_id', 1);
   }
-  return $wid;
+  return $query->execute()->fetchField();
 }

@@ -42,27 +42,6 @@ class SameGroup extends PluginBase implements TransactionRelativeInterface {
   /**
    * {@inheritdoc}
    */
-  public function indexViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
-    // Get the groups of user $uid
-    $account = \Drupal\user\Entity\User::load($uid);
-    $user_member_of = \Drupal::service('group.membership_loader')->loadByUser($account);
-    $gids = [];
-    foreach ($user_member_of as $membership) {
-      $gids[] = $membership->getGroup()->id();
-    }
-    if ($gids) {
-      $or_group->condition('gc.gid',  $gids, 'IN');
-      $query->join(
-        'group_content_field_data',
-        'gc',
-        "gc.type = 'exchange-transactions' AND gc.entity_id = mcapi_transactions_index.xid"
-      );
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function entityViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
     // Get the groups of user $uid
     $account = \Drupal\user\Entity\User::load($uid);

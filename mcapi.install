@@ -49,7 +49,6 @@ function mcapi_install() {
     }
     // Give every existing user a wallet.
     Wallet::create([
-      'payways' => Wallet::PAYWAY_ANYONE_BI,
       'holder' => $account,
     ])->save();
   }

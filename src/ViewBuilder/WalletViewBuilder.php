@@ -58,7 +58,7 @@ class WalletViewBuilder extends EntityViewBuilder {
   /**
    * {@inheritdoc}
    *
-   * For multiple nice wallets see theme callback 'mcapi_wallets'.
+   * @note For multiple nice wallets see theme callback 'mcapi_wallets'.
    */
   protected function getBuildDefaults(EntityInterface $entity, $view_mode) {
     $build = parent::getBuildDefaults($entity, $view_mode);
@@ -73,9 +73,6 @@ class WalletViewBuilder extends EntityViewBuilder {
    * Put the Holder entity's name with the wallet name in brackets.
    */
   public static function defaultLabel($wallet) {
-    if ($wallet->payways->value == Wallet::PAYWAY_AUTO) {
-      return t('Import/Export');
-    }
     $name = $wallet->name->value;
     $holdername = $wallet->getHolder()->label();
     if ($name) {

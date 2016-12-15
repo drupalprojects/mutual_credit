@@ -65,33 +65,8 @@ use Drupal\Core\Field\BaseFieldDefinition;
  */
 class Wallet extends ContentEntityBase implements WalletInterface {
 
-  // Anyone can pay into this wallet
-  const PAYWAY_ANYONE_IN = 'I';
-  // Anyone can pay out from this wallet
-  const PAYWAY_ANYONE_OUT = 'O';
-  // Anyone can pay into and out of this wallet
-  const PAYWAY_ANYONE_BI = 'B';
-  /**
-   * Only system can interact with this wallet
-   *
-   * @var string
-   */
-  const PAYWAY_AUTO = 'A';
-
   private $holder;
   private $stats = [];
-  private $access = [];
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function payWays() {
-    return [
-      Self::PAYWAY_ANYONE_IN => t('Anyone can pay into this wallet'),
-      Self::PAYWAY_ANYONE_OUT => t('Anyone can pay out of this wallet'),
-      Self::PAYWAY_ANYONE_BI => t('Anyone can pay in or out of this wallet'),
-    ];
-  }
 
   /**
    * {@inheritdoc}
@@ -131,11 +106,6 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     }
     $values['holder_entity_type'] = $values['holder']->getEntityTypeId();
     $values['holder_entity_id'] = $values['holder']->id();
-
-    // Now set the default permissions.
-    if (!isset($values['payways'])) {
-      $values['payways'] = \Drupal::config('mcapi.settings')->get('payways');
-    }
   }
 
   /**
@@ -161,20 +131,9 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * {@inheritdoc}
    */
   public function autoName() {
-    if (Mcapi::maxWalletsOfBundle($this->getHolder()->getEntityTypeId(), $this->getHolder()->bundle()) == 1
-    || $this->payways->value == Self::PAYWAY_AUTO) {
-      if ($this->payways->value == Self::PAYWAY_AUTO) {
-        $label = $this->getHolder()->label();
-        // When this module being installed as part of an installation profile.
-        if ($label == 'placeholder-for-uid-1') {
-          $label == 'System';
-        }
-        return $label . ' ' . t('Import/Export');
-      }
-      else {
-        // For the user entity we might use ->getDisplayName()
-        return $this->getHolder()->label();
-      }
+    if (Mcapi::maxWalletsOfBundle($this->getHolder()->getEntityTypeId(), $this->getHolder()->bundle()) == 1) {
+      // For the user entity we might use ->getDisplayName()
+      return $this->getHolder()->label();
     }
     return FALSE;
   }
@@ -217,11 +176,6 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     // If we leave the default to be NULL it is difficult to filter with mysql.
       ->setConstraints(['NotNull' => []]);
 
-    $fields['payways'] = BaseFieldDefinition::create('string')
-      ->setLabel(t('Payment direction'))
-      ->setDescription(t('Everybody can pay in, out, or both'))
-      ->setSetting('length', 1);
-
     $fields['public'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Public'))
       ->setDescription(t("Visible to everyone with 'view public wallets' permission"))
@@ -232,10 +186,11 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       ->setDescription(t('The time that the wallet was created.'))
       ->setRevisionable(FALSE);
 
-    $fields['orphaned'] = BaseFieldDefinition::create('boolean')
-      ->setLabel(t('Orphaned'))
-      ->setDescription(t('TRUE if this wallet is not currently held'))
+    $fields['system'] = BaseFieldDefinition::create('boolean')
+      ->setLabel(t('System'))
+      ->setDescription(t('TRUE if this wallet is controlled by the system'))
       ->setDefaultValue(0);
+
     return $fields;
   }
 
@@ -328,7 +283,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * {@inheritdoc}
    */
   public function isIntertrading() {
-    return $this->payways->value == Self::PAYWAY_AUTO;
+    throw new exception('deprecated function Wallet::isIntertrading');
   }
 
   /**

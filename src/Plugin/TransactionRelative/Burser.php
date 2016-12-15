@@ -36,13 +36,6 @@ class Burser extends PluginBase implements TransactionRelativeInterface {
   /**
    * {@inheritdoc}
    */
-  public function indexViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
-    debug('@todo Drupal\mcapi\Plugin\TransactionRelative\Burser::IndexViewsCondition');
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function entityViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
     $query->join('mcapi_wallet', 'burser_wallet_payer', "burser_wallet_payer.wid = base_table.payer AND burser_wallet_payer.holder_entity_type = 'user'");
     $query->join('mcapi_wallet', 'burser_wallet_payee', "burser_wallet_payee.wid = base_table.payee AND burser_wallet_payee.holder_entity_type = 'user'");

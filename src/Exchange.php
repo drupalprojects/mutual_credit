@@ -66,63 +66,6 @@ class Exchange {
   }
 
   /**
-   * Handle the deletion of the wallet's parent.
-   *
-   * If the wallet has no transactions it can be deleted. Otherwise make the
-   * passed exchange the parent, must be found.
-   *
-   * @param ContentEntityInterface $holder
-   *   The entity being deleted.
-   */
-  public static function orphan(ContentEntityInterface $holder) {
-    $wallets = \Drupal::entityTypeManager()
-      ->getStorage('mcapi_wallet')
-      ->walletsOf($holder, \TRUE);
-    foreach ($wallets as $wallet) {
-      if (!$wallet->isVirgin()) {
-        // Move the wallet.
-        $new_holder_entity = \Drupal::moduleHandler()->moduleExists('mcapi_exchanges') ?
-        // @todo this is a bit inelegant
-          Exchanges::findNewHolder($holder) :
-          User::load(1);
-        $new_holder_entity = class_exists('\Drupal\mcapi_exchanges\Exchanges') ?
-          Exchange::findNewHolder($holder) :
-          User::load(1);
-        $new_name = t(
-          "Formerly @name's wallet: @label",
-          ['@name' => $wallet->label(), '@label' => $wallet->label(NULL, FALSE)]
-        );
-        $wallet->set('name', $new_name)
-          ->set('holder_entity_type', $new_holder_entity->getEntityTypeId())
-          ->set('holder_entity_id', $new_holder_entity->id())
-          ->save();
-        // @note this implies the number of wallets an exchange can own to be unlimited.
-        // or more likely that this max isn't checked during orphaning
-        drupal_set_message(t(
-          "@name's wallets are now owned by @entity_type @entity_label", [
-            '@name' => $wallet->label(),
-            '@entity_type' => $new_holder_entity->getEntityType()->getLabel(),
-            // Todo I tried toLink but it doesn't render from here.
-            '@entity_label' => $new_holder_entity->label(),
-          ]
-        ));
-        \Drupal::logger('mcapi')->notice(
-          'Wallet @wid was orphaned to @entitytype @id', [
-            '@wid' => $wallet->id(),
-            '@entitytype' => $new_holder_entity->getEntityTypeId(),
-            '@id' => $new_holder_entity->id(),
-          ]
-        );
-      }
-      else {
-        drupal_set_message(t('Deleted unused wallet @wallet_id', ['@wallet_id'  => $wallet->label()]));
-        $wallet->delete();
-        return;
-      }
-    }
-  }
-
-  /**
    * Identify a new parent entity for a wallet.
    */
   public static function findNewHolder(ContentEntityInterface $previous_holder) {

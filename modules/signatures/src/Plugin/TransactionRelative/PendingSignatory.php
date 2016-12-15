@@ -62,13 +62,6 @@ class PendingSignatory extends PluginBase implements TransactionRelativeInterfac
   /**
    * {@inheritdoc}
    */
-  public function indexViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
-
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function entityViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
     $query->join('mcapi_wallet', 'signature_wallets', 'mcapi_transaction.payer = signature_wallets.wid OR mcapi_transaction.payee = signature_wallets.wid');
     $query->join('users', 'signatory_users', "signatory_users.uid = signature_wallets.holder_entity_id AND signature_wallets.holder_entity_type = 'user'");

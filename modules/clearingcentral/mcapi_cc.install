@@ -1,6 +1,7 @@
 <?php
 
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\user\Entity\User;
 
 /**
  * Implements hook_install().
@@ -10,7 +11,8 @@ use Drupal\mcapi\Entity\Wallet;
 function mcapi_cc_install() {
   // Create an intertrading wallet on user 1.
   Wallet::create([
-    'payways' => Wallet::PAYWAY_AUTO,
+    'system' => TRUE,
+    'holder' => User::load(1)
   ])->save();
 }
 
