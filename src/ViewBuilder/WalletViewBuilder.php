@@ -2,13 +2,10 @@
 
 namespace Drupal\mcapi\ViewBuilder;
 
-use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Entity\EntityViewBuilder;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Url;
-use Drupal\Core\Language\LanguageManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -20,22 +17,10 @@ class WalletViewBuilder extends EntityViewBuilder {
   private $accessManager;
 
   /**
-   * Constructs a new EntityViewBuilder.
-   *
-   * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
-   *   The entity type definition.
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
-   *   The entity manager service.
-   * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
-   *   The language manager.
+   * Constructor
    */
-  public function __construct(EntityTypeInterface $entity_type, EntityTypeManagerInterface $entity_type_manager, LanguageManagerInterface $language_manager, $local_task_manager, $access_manager, $entity_manager) {
-    // @todo use the parent when the entityTypeManager is applied
-    $this->entityTypeId = $entity_type->id();
-    $this->entityType = $entity_type;
-    $this->entityManager = $entity_manager;
-    $this->languageManager = $language_manager;
-    // parent::__construct($entity_type,$entity_type_manager,$language_manager).
+  public function __construct($entity_type, $entity_manager, $language_manager, $theme_registry = NULL, $local_task_manager, $access_manager) {
+    parent::__construct($entity_type, $entity_manager, $language_manager, $theme_registry);
     $this->localTaskManager = $local_task_manager;
     $this->accessManager = $access_manager;
   }
@@ -46,12 +31,11 @@ class WalletViewBuilder extends EntityViewBuilder {
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
     return new static(
       $entity_type,
-      $container->get('entity_type.manager'),
+      $container->get('entity.manager'),
       $container->get('language_manager'),
+      $container->get('theme.registry'),
       $container->get('plugin.manager.menu.local_task'),
-      $container->get('access_manager'),
-    // Deprecated.
-      $container->get('entity.manager')
+      $container->get('access_manager')
     );
   }
 

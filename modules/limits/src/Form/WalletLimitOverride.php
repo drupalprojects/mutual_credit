@@ -56,7 +56,7 @@ class WalletLimitOverride extends FormBase {
     // $form['#attached']['html_head']
     $limiter = WalletLimiter::create($wallet);
     $overrides = $limiter->overrides();
-    foreach (Exchange::currenciesAvailable($wallet) as $currency) {
+    foreach (mcapi_currencies_available($wallet) as $currency) {
       $config = $currency->getThirdPartySettings('mcapi_limits');
       if (!$config || $config['plugin'] == 'none') {
         continue;

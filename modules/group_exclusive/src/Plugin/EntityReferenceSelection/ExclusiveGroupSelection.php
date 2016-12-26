@@ -18,7 +18,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   id = "exclusive_group",
  *   label = @Translation("Entities in exclusive group"),
  *   group = "exclusive_group",
- *   deriver = "Drupal\group\Plugin\EntityReferenceSelection\GroupSelectionDeriver",
+ *   deriver = "Drupal\group_exclusive\Plugin\EntityReferenceSelection\GroupSelectionDeriver",
  *   weight = 2
  * )
  */

@@ -100,8 +100,8 @@ class CommonCurrencyConstraint extends CompositeConstraintBase {
    */
   private function uncommonCurrencies(WalletInterface $w1, WalletInterface $w2, FieldItemListInterface $worth) {
     $curr_keys = $worth->currencies();
-    $wallet1_currencies = Exchange::currenciesAvailable($w1);
-    $wallet2_currencies = Exchange::currenciesAvailable($w2);
+    $wallet1_currencies = mcapi_currencies_available($w1);
+    $wallet2_currencies = mcapi_currencies_available($w2);
     // All of the $curr_keys must be in both arrays.
     return array_merge(
       array_diff($curr_keys, array_keys($wallet1_currencies)),

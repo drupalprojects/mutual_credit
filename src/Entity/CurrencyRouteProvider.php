@@ -4,7 +4,6 @@ namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Symfony\Component\Routing\Route;
 
 /**
  * Provides routes for the user entity.
@@ -20,12 +19,12 @@ class CurrencyRouteProvider extends DefaultHtmlRouteProvider {
 
     $route_collection->get('entity.mcapi_currency.edit_form')->setOption('_admin_route', TRUE);
     $route_collection->get('entity.mcapi_currency.delete_form')->setOption('_admin_route', TRUE);
-
-    $route_collection->get('entity.mcapi_currency.collection')
-      ->setDefault('_title', 'Currencies')
-      ->setRequirement('_permission', 'manage mcapi')
-      ->setOption('_admin_route', TRUE);
-    ;
+    // Had some trouble installing once because this route wasn't available yet
+    if ($route = $route_collection->get('entity.mcapi_currency.collection')) {
+      $route->setDefault('_title', 'Currencies')
+        ->setRequirement('_permission', 'manage mcapi')
+        ->setOption('_admin_route', TRUE);
+    }
 
     return $route_collection;
   }

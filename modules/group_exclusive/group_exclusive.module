@@ -4,54 +4,20 @@ use Drupal\group\Entity\GroupContent;
 use Drupal\user\Entity\User;
 use Drupal\Core\Entity\ContentEntityInterface;
 
-
-
 /**
- * Implements hook_menu_links_discovered_alter().
+ * @file
  *
- * Disable unwanted menu items put in the main menu by core modules.
- *
- * @note this disabling can be re-enabled by user 1
+ * @note the joining process must force users to join one group of every
+ * exclusive type.
  */
-function group_exclusive_menu_links_discovered_alter(&$links) {
-  // This is put there by the admin_toolbar_tools module
-  if (group_exclusive_members()) {
-    //$links['user.admin_create']['parent'] = 'entity.group.collection';
-  }
-}
 
 /**
  * Implements hook_menu_local_tasks_alter().
  */
 function group_exclusive_local_tasks_alter(&$definitions) {
   if (group_exclusive_members()) {
-    // This route now has a group in the path, see Drupal\group_exclusive\RouteSubscriber::alterRoutes
-    if (isset($definitions['user.register'])) {
-      // move the user/register tab to the group
-      $definitions['user.register']['base_route'] = 'entity.group.canonical';
-    }
-  }
-}
-
-/**
- * Implements hook_menu_local_actions_alter().
- *
- * if any group at all forces memberships to be exclusive then move the
- * user.register action to the group's canonical page.
- *
- * @see \Drupal\group_exclusive\RouteSubscriber
- */
-function group_exclusive_menu_local_actions_alter(&$definitions) {
-  if (group_exclusive_members()) {
-    if (isset($definitions['user.register'])) {
-      // This route now has a group in the path, see Drupal\group_exclusive\RouteSubscriber::alterRoutes
-      // move the user/register tab to the group
-      $definitions['user.register']['base_route'][] = 'entity.group.canonical';
-      debug($definitions['user.register']);
-    }
-    else {
-      debug('local action user.register does not exist');
-    }
+    // This will be an action instead.
+    unset($definitions['user.register']);
   }
 }
 
@@ -78,26 +44,25 @@ function group_exclusive_membership_get($group_type, ContentEntityInterface $ent
   if (!$entity) {
     $entity = User::load(\Drupal::currentUser()->id());
   }
-  if ($entity->isNew()) {
-    return NULL;
-  }
-  static $results = [];
-  $entity_id = $entity->id();
-  $plugin_id = $group_type.'-group_membership';
-  if (!isset($results[$plugin_id][$entity_id])) {
-    if (!in_array($plugin_id, \Drupal::config('group_exclusive.settings')->get('plugins'))) {
-      throw new \Exception("Group type $group_type is not exclusive.");
-    }
-    $groupContent = NULL;
-    foreach (GroupContent::loadByEntity($entity) as $groupContent) {
-      if ($group_type == $groupContent->getGroup()->bundle()) {
-        break;
+  if (!$entity->isNew()) {
+    static $results = [];
+    $entity_id = $entity->id();
+    $plugin_id = $group_type.'-group_membership';
+    if (!isset($results[$plugin_id][$entity_id])) {
+      if (!in_array($plugin_id, \Drupal::config('group_exclusive.settings')->get('plugins'))) {
+        throw new \Exception("Group type $group_type is not exclusive.");
       }
       $groupContent = NULL;
+      foreach (GroupContent::loadByEntity($entity) as $groupContent) {
+        if ($group_type == $groupContent->getGroup()->bundle()) {
+          break;
+        }
+        $groupContent = NULL;
+      }
+      $results[$plugin_id][$entity_id] = $groupContent;
     }
-    $results[$plugin_id][$entity_id] = $groupContent;
+    return $results[$plugin_id][$entity_id];
   }
-  return $results[$plugin_id][$entity_id];
 }
 
 /**
@@ -161,15 +126,15 @@ function group_exclusive_submit_group_entity_type(&$form, $form_state) {
  *   The group bundle names
  */
 function group_exclusive_members() {
-  static $exclusive_memberships = NULL;
-  if (is_null($exclusive_memberships)) {
+  static $exclusive_group_types;
+  if (!isset($exclusive_group_types)) {
     $settings = \Drupal::config('group_exclusive.settings')->get('plugins');
     $exclusive_memberships = [];
     foreach ($settings as $plugin_id) {
       if (substr($plugin_id, -16) == 'group_membership') {
-        $exclusive_memberships[] = substr($plugin_id, 0, -17);
+        $exclusive_group_types[] = substr($plugin_id, 0, -17);
       }
     }
   }
-  return $exclusive_memberships;
+  return $exclusive_group_types;
 }

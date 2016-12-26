@@ -87,7 +87,10 @@ class MyWalletWidget extends OptionsButtonsWidget {
     }
     else {
       $element['#type'] = 'radios';
-      $element['#theme_wrappers'] = [];
+      foreach ($wallet_ids as $wid) {
+        $element['#options'][$wid] = Wallet::load($wid)->label();
+        $element['#pre_render'] = [];
+      }
     }
     return ['target_id' => $element];
   }

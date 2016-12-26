@@ -4,7 +4,6 @@ namespace Drupal\mcapi_cc\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\group\Entity\GroupInterface;
-use Drupal\mcapi_exchanges\Exchanges;
 
 /**
  * Returns a list of intertrading transactions.
@@ -22,8 +21,7 @@ class Transactions extends ControllerBase {
    */
   public function showIntertradingWallet(GroupInterface $group) {
     // @todo show the view of the intertrading wallet.
-    $wallet = Exchanges::getIntertradingWallet($group);
-    return views_embed_view('wallet_statement', 'embed_1', $wallet->id());
+    return views_embed_view('wallet_statement', 'embed_1', intertrading_wallet_id());
   }
 
   public function intertradingWalletTitle(GroupInterface $group) {

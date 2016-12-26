@@ -7,7 +7,7 @@
 
 use Drupal\mcapi\Storage\WalletStorage;
 use Drupal\mcapi\Entity\TransactionInterface;
-use Drupal\mcapi_exchanges\Exchanges;
+use Drupal\group\Entity\GroupInterface;
 use Drupal\group\Entity\GroupContent;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Database\Driver\mysql\Select;
@@ -88,7 +88,7 @@ function template_preprocess_currencies(&$vars) {
  * Implements hook_field_widget_WIDGET_TYPE_form_alter()
  */
 function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $context) {
-  $element['#allowed_curr_ids'] = array_keys(Exchanges::currenciesAvailableToUser());
+  $element['#allowed_curr_ids'] = array_keys(mcapi_currencies_available());
 }
 
 /**
@@ -101,7 +101,7 @@ function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $
 function mcapi_exchanges_query_entity_query_mcapi_wallet_alter(Select $query) {
   if ($membership = group_exclusive_membership_get('exchange')) {
     $exchange = $membership->getGroup();
-    if ($wids = Exchanges::walletsInExchange($exchange)) {
+    if ($wids = wallets_in_exchange($exchange)) {
       drupal_set_message(count($wids) .' wallets in exchange '.$exchange->label(), 'warning');
       $query->condition('base_table.wid', $wids, 'IN');
     }
@@ -130,7 +130,7 @@ function mcapi_exchanges_query_entity_query_mcapi_wallet_alter(Select $query) {
  * @deprecated ?
  */
 function mcapi_exchanges_default_currency_id(ContentEntityInterface $exchange, $field_definition) {
-  drupal_set_message('mcapi_exchanges_default_currency_id');
+  drupal_set_message('mcapi_exchanges_default_currency_id deprecated?');
   $curr_ids = [];
   // Default currencies for the currency field are all the currencies of the
   // exchanges of which the current user is a member.
@@ -292,4 +292,27 @@ function mcapi_exchanges_wallet_insert(\Drupal\mcapi\Entity\Wallet $wallet) {
       ->debug('Added wallet '.$wallet->id() .' to holders exchange '.$groupContent->getGroup()->id());
   }
 
+}
+
+/**
+ * Get all the wallets whose holders are members of the given exchange(s).
+ *
+ * This is where things get ugly but we've saved having to maintain a field
+ * showing what wallets are in what exchanges
+ *
+ * @param GroupInterface $exchange
+ *   The exchange whose wallet ids are needed
+ *
+ * @return int[]
+ *   All the wallet ids in the given exchanges except intertrading
+ */
+function wallets_in_exchange(GroupInterface $exchange) {
+  $contents = \Drupal::entityTypeManager()
+    ->getStorage('group_content')
+    ->loadByProperties(['gid'=> $exchange->id(), 'type' => 'exchange-wallet']);
+  $wallet_ids = [];
+  foreach ($contents as $content) {
+    $wallet_ids[] = $content->getEntity()->id();
+  }
+  return $wallet_ids;
 }

@@ -36,27 +36,33 @@ class ExchangesWalletAccessControlHandler extends WalletAccessControlHandler {
     // If the result isn't conclusive then we handle it.
     if ($result->isNeutral()) {
       // Check that the current user is the same exchange as the wallet.
-      // @todo rewrite this when wallets are in exchanges directly
       drupal_set_message('@todo rewrite ExchangesWalletAccessControlHandler');
       $user = User::load($account->id());
-      $exchange_membership = group_exclusive_membership_get('exchange', $user);
-      if (!$exchange_membership) {
-        $result = AccessResult::neutral();
-      }
-      $owner_membership = group_exclusive_membership_get('exchange', $entity->getOwner());
-      if ($exchange_membership->getGroup()->id() == $owner_membership->getGroup()->id()) {
-        switch ($op) {
-          case 'view':
-            // Grant access if the $account shares an exchange with wallet's owner.
-            $result = AccessResult::allowed();
-            break;
-          case 'update':
-            // Grant access if the $account has permission to edit all
-            $result = GroupAccessResult::allowedIfHasGroupPermission($exchange_membership->getGroup(), 'manage transactions');
-            break;
-          case 'delete':
-            // Can only delete wallet if there are no transactions.
-            $result = AccessResult::allowedIf($entity->isVirgin());
+      if ($exchange_membership = group_exclusive_membership_get('exchange', $user) and $wallet_membership = group_exclusive_membership_get('exchange', $entity)) {
+        $exchange = $exchange_membership->getGroup();
+        if ($exchange->id() == $wallet_membership->getGroup()->id()) {
+          switch ($op) {
+            case 'view':
+              // View if the $account is in the same exchange as the wallet.
+              $result = AccessResult::allowed();
+              break;
+            case 'update':
+              // Update if the $account is the wallet's owner or the account has permission to edit all
+              $result = GroupAccessResult::allowedIfHasGroupPermission($exchange, 'manage transactions')
+                ->orIf(AccessResult::allowedIf($account->id() == $entity->getownerId()))
+                ->orIf(AccessResult::allowedIfHasPermission('manaage mcapi'));
+              break;
+            case 'delete':
+              if (!$entity->isVirgin())  {
+                $result = AccessResult::forbidden();
+              }
+              // Can only delete wallet if there are no transactions.
+              else {
+                $result = GroupAccessResult::allowedIfHasGroupPermission($exchange, 'manage transactions')
+                  ->orIf(AccessResult::allowedIf($account->id() == $entity->getownerId()))
+                  ->orIf(AccessResult::allowedIfHasPermission('manaage mcapi'));
+              }
+          }
         }
       }
     }

@@ -28,10 +28,10 @@ class ExchangeRoleAccessCheck implements AccessInterface {
    * @return \Drupal\Core\Access\AccessResultInterface
    *   The access result.
    *
-   * @deprecated
+   * @deprecated unless https://www.drupal.org/node/2813907 accepted
    */
   public function access(Route $route, RouteMatchInterface $route_match, AccountInterface $account) {
-    $roles = $route->getRequirement('_exchange_role');
+    $roles = $route->getRequirement('_group_permission');
 
     // Don't interfere if no role was specified.
     if ($roles === NULL) {
@@ -54,6 +54,7 @@ class ExchangeRoleAccessCheck implements AccessInterface {
       }
     }
     $roles = explode(';', $roles);
+    return GroupAccessResult::allowed();
     return GroupAccessResult::allowedIfHasGroupRoles($group, $account, $roles);
   }
 

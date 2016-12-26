@@ -65,6 +65,28 @@ interface WalletInterface extends ContentEntityInterface {
    */
   public function getStat($curr_id, $stat);
 
+
+  /**
+   * Get the balance for a particular currency
+   *
+   * @param string $curr_id
+   *
+   * @return string
+   *   The formatted balance
+   */
+  public function balance($curr_id, $display = Currency::DISPLAY_NORMAL, $linked = TRUE);
+
+  /**
+   * Get the balance(s) of the current wallet, in worth format.
+   *
+   * @param string $stat
+   *   Which stat we want to receive.
+   *
+   * @return array
+   *   Worth values in no particular order, each with curr_id and (raw) value.
+   */
+  public function getStatAll($stat = 'balance');
+
   /**
    * Get all the transactions in a given period.
    *

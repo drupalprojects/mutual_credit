@@ -3,7 +3,6 @@
 namespace Drupal\mcapi\Entity;
 
 use Drupal\user\UserInterface;
-use Drupal\mcapi\Exchange;
 use Drupal\user\Entity\User;
 use Drupal\mcapi\Mcapi;
 use Drupal\Core\Entity\ContentEntityBase;
@@ -160,13 +159,11 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     $fields['holder_entity_type'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Holder type'))
       ->setDescription(t('The entity type of the wallet holder'))
-      ->setSetting('max_length', 32)
-      ->setRequired(TRUE);
+      ->setSetting('max_length', 32);
 
     $fields['holder_entity_id'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Holder ID'))
-      ->setDescription(t('The entity id of the wallet holder'))
-      ->setRequired(TRUE);
+      ->setDescription(t('The entity id of the wallet holder'));
 
     $fields['name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Wallet name'))
@@ -201,7 +198,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     if (!$this->stats) {
       $transactionStorage = $this->entityTypeManager()->getStorage('mcapi_transaction');
       // Fill in the values of any unused, available currencies.
-      foreach (Exchange::currenciesAvailable($this) as $currency) {
+      foreach (mcapi_currencies_available($this) as $currency) {
         $curr_id = $currency->id();
         $this->stats[$curr_id] = $transactionStorage->walletSummary($curr_id, $this->id());
       }
@@ -222,6 +219,14 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   /**
    * {@inheritdoc}
    */
+  public function balance($curr_id, $display = Currency::DISPLAY_NORMAL, $linked = TRUE) {
+    $stats = $this->getStats($curr_id);
+    return Currency::load($curr_id)->format($stats['balance'], $display, $linked);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getStat($curr_id, $stat) {
     $stats = $this->getStats($curr_id);
     if (array_key_exists($curr_id, $stats)) {
@@ -230,13 +235,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   }
 
   /**
-   * Get the balance(s) of the current wallet, in worth format.
-   *
-   * @param string $stat
-   *   Which stat we want to receive.
-   *
-   * @return array
-   *   Worth values in no particular order, each with curr_id and (raw) value.
+   * {@inheritdoc}
    */
   public function getStatAll($stat = 'balance') {
     $worth = [];
@@ -284,14 +283,6 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    */
   public function isIntertrading() {
     throw new exception('deprecated function Wallet::isIntertrading');
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function currenciesAvailable() {
-    debug('disintermediated', 'this function is not needed any more');
-    return Exchange::currenciesAvailable($this);
   }
 
   /**

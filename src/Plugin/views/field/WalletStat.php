@@ -40,6 +40,7 @@ class WalletStat extends FieldPluginBase {
       $stat = $this->definition['stat'];
       $val = $wallet->getStatAll($stat);
       switch ($stat) {
+        // Worth value
         case 'volume':
         case 'incoming':
         case 'outgoing':
@@ -48,13 +49,13 @@ class WalletStat extends FieldPluginBase {
             '#type' => 'worths_view',
             '#worths' => $val,
           ];
-
+        // This is an integer
         case 'trades':
         case 'partners':
           return $val;
       }
     }
-    return $this->t('No transactions yet.');
+    return '';
   }
 
 }

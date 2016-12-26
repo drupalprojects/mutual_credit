@@ -23,15 +23,5 @@ class RouteSubscriber extends RouteSubscriberBase {
     }
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public static function getSubscribedEvents() {
-    return [
-      RoutingEvents::ALTER => [
-        ['onAlterRoutes', 0],
-      ],
-    ];
-  }
 
 }

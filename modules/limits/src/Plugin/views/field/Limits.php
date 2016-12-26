@@ -62,11 +62,6 @@ class Limits extends FieldPluginBase {
    */
   public function render(ResultRow $values) {
     $wallet = $this->getEntity($values);
-//    if (empty($this->options['currencies'])) {
-//      $this->options['currencies'] = Exchange::currenciesAvailableToUser($account);
-//    }
-//    debug('check Drupal\mcapi_limits\Plugin\views\field\Limits.');
-
     module_load_include('inc', 'mcapi_limits');
     return mcapi_view_limits($wallet);
   }

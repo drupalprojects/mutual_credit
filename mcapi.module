@@ -7,8 +7,9 @@
 
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Storage\WalletStorage;
-use Drupal\mcapi\Exchange;
+use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Entity\Wallet;
+use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\system\Entity\Action;
 use Drupal\user\Entity\User;
 use Drupal\Core\Url;
@@ -159,9 +160,18 @@ function mcapi_entity_update($entity) {
  * Orphan any wallets owned by the deleted entity.
  */
 function mcapi_entity_predelete($entity) {
-  if ($entity instanceof ContentEntityInterface) {
-    if ($wallets = Drupal\mcapi\Storage\WalletStorage::walletsOf($entity, TRUE)) {
-      $wallet->set('holder_entity_id', 0)->set('holder_entity_type', '')->save();
+  if ($entity instanceof ContentEntityInterface and !($entity instanceOf WalletInterface)) {
+    foreach ($wallets = Drupal\mcapi\Storage\WalletStorage::walletsOf($entity, TRUE) as $wallet) {
+      $transactions = \Drupal::entityQuery('mcapi_transaction')->condition('involving', $wallet->id())->execute();
+      if ($transactions)  {
+        drupal_set_message('orphaning wallets of '.$wallet->holder_entity_type->value.' '.$wallet->holder_entity_id->value);
+        $wallet->holder_entity_id->value = 0;
+        $wallet->holder_entity_type->value = '';
+        $wallet->save();
+      }
+      else {
+        $wallet->delete();
+      }
     }
   }
 }
@@ -344,3 +354,32 @@ function mcapi_mail($key, &$message, $params) {
     $message['body'][] = str_replace('[user:name]', User::load($params['recipient_id'])->getDisplayName(), $params['body']);
   }
 }
+
+/**
+ * Get the currencies available to any ContentEntity in a group.
+ *
+ * @param ContentEntityInterface $entity
+ *
+ * @return Currency[]
+ *   The currencies available.
+ */
+function mcapi_currencies_available(ContentEntityInterface $entity = NULL) {
+  if (!$entity) {
+     $entity = User::load(\Drupal::currentUser()->id());
+   }
+   // Either the wallet holder is an exchange, or is in an exchange
+   if (\Drupal::moduleHandler()->moduleExists('mcapi_exchanges')) {
+     if($memship = group_exclusive_membership_get('exchange', $entity)) {
+       $currencies = $memship->getGroup()->currencies->referencedEntities();
+     }
+   }
+   if (!isset($currencies)) {
+     $currencies = Currency::loadMultiple();
+   }
+   foreach ($currencies as $currency) {
+     $output[$currency->id()] = $currency;
+   }
+   uasort($currencies, '\Drupal\mcapi\Mcapi::uasortWeight');
+
+   return $currencies;
+ }

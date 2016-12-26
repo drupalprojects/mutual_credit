@@ -62,7 +62,7 @@ class WalletLimiter {
     }
     $limits = [];
     // Get the default limits.
-    $needed_currencies = Exchange::currenciesAvailable($this->wallet);
+    $needed_currencies = mcapi_currencies_available($this->wallet);
     foreach ($needed_currencies as $curr_id => $currency) {
       $limits[$curr_id] = $this->defaults($currency);
     }
@@ -215,7 +215,7 @@ class WalletLimiter {
    */
   private function overridable() {
     $overridable_curr_ids = [];
-    foreach (Exchange::currenciesAvailable($this->wallet) as $currency) {
+    foreach (mcapi_currencies_available($this->wallet) as $currency) {
       $config = $currency->getThirdPartySettings('mcapi_limits');
       if (!empty($config['override'])) {
         $overridable_curr_ids[] = $currency->id();

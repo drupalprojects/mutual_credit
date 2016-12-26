@@ -47,13 +47,14 @@ function theme_first_party_transaction_form($vars) {
     if (isset($form[$fieldname]['#type']) && $form[$fieldname]['#type'] == 'actions') {
       $tokens[$fieldname] = $renderer->render($form[$fieldname]);
     }
-    // If it is in the template, render the token.
+    // Handle the worth field
     elseif ($fieldname === 'worth') {
       unset($form[$fieldname]['widget']['#title']);
       unset($form[$fieldname]['widget']['#description']);
       // don't want to strip the wrappers.
       $tokens[$fieldname] = $renderer->render($form['worth']);
     }
+    // If it is in the template, render the token.
     elseif (strpos($vars['twig_template'], '{ ' . $fieldname . ' }}')) {
       mcapi_strip_wrappers_recursive($form[$fieldname]);
       $tokens[$fieldname] = $renderer->render($form[$fieldname]);

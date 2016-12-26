@@ -244,7 +244,7 @@ function limits_settings_subform($form, FormStateInterface $form_state) {
  *   A renderable array.
  */
 function mcapi_view_limits(WalletInterface $wallet, $curr_ids = []) {
-  $currencies = Exchange::currenciesAvailable($wallet);
+  $currencies = mcapi_currencies_available($wallet);
   if ($curr_ids) {
     $currencies = array_intersect_key($currencies, array_flip($curr_ids));
   }

@@ -1,0 +1,11 @@
+group.user.admin_create:
+  path: '/group/{group}/people/create'
+  defaults:
+    _entity_form: 'user.register'
+    _title: 'Add user'
+  requirements:
+    _group_permission: 'administer members'
+  options:
+    parameters:
+      group:
+        type: entity:group

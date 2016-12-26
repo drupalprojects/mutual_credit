@@ -5,7 +5,8 @@ namespace Drupal\mcapi_exchanges\Plugin\DevelGenerate;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\ce_group_address\Plugin\DevelGenerate\NeighbourhoodsGenerate;
 use Drupal\group\Entity\Group;
-use Drupal\group\Plugin\DevelGenerate\GroupDevelGenerate;
+//use Drupal\group\Plugin\DevelGenerate\GroupDevelGenerate; // Doesn't exist yet
+use Drupal\group_exclusive\Plugin\DevelGenerate\GroupDevelGenerate;
 use Drupal\address\Repository\CountryRepository;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;

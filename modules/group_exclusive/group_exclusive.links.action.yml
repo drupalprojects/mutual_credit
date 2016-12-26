@@ -1,0 +1,11 @@
+group.user.admin_create:
+  title: 'Add new user'
+  route_name: group.user.admin_create
+  appears_on:
+    - entity.group.canonical
+
+group.user.register:
+  title: 'Join'
+  route_name: user.register
+  appears_on:
+    - entity.group.canonical

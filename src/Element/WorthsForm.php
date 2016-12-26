@@ -47,7 +47,7 @@ class WorthsForm extends FormElement {
     // Populate #allowed_curr_ids from the default value OR all currencies.
     if (empty($element['#default_value'])) {
       if (empty($element['#allowed_curr_ids'])) {
-        $element['#allowed_curr_ids'] = array_keys(Exchange::currenciesAvailableToUser());
+        $element['#allowed_curr_ids'] = array_keys(mcapi_currencies_available());
       }
       $element['#default_value'] = [];
       foreach ($element['#allowed_curr_ids'] as $curr_id) {
@@ -141,7 +141,7 @@ class WorthsForm extends FormElement {
    */
   private static function currMap($value) {
     if (empty($value)) {
-      return array_keys(Exchange::currenciesAvailableToUser());
+      return array_keys(mcapi_currencies_available());
     }
     $map = [];
     foreach ($value as $key => $item) {

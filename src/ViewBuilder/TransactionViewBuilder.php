@@ -82,7 +82,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
         if ($view_mode == 'sentence') {
           break;
         }
-        $build['link_list'] = $this->linkList($transaction);
+        $build['link_list'] = $this->linkList($entity);
         break;
 
       default:

@@ -240,8 +240,8 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
     ];
 
     // find a currency that's common to both wallets.
-    $payer_currencies = Exchange::currenciesAvailable(Wallet::load($props['payer']));
-    $payee_currencies = Exchange::currenciesAvailable(Wallet::load($props['payee']));
+    $payer_currencies = mcapi_currencies_available(Wallet::load($props['payer']));
+    $payee_currencies = mcapi_currencies_available(Wallet::load($props['payee']));
     $curr_ids = array_intersect_key($payer_currencies, $payee_currencies);
     if (!$curr_ids) {
       // Fail silently.

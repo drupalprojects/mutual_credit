@@ -75,19 +75,19 @@ class WorthWidget extends WidgetBase {
     $curr_ids = array_filter($this->getSetting('currencies'));
     if (empty($curr_ids)) {
       // Get all the currencies available to the current user
-      $curr_ids = array_keys(Exchange::currenciesAvailableToUser());
+      $curr_ids = array_keys(mcapi_currencies_available());
     }
     elseif ($this->getSetting('exclude')) {
       $curr_ids = array_diff(array_keys(Currency::loadMultiple()), $curr_ids);
     }
     // Because this is a multiple widget, ignore delta value and put all items.
-    $element += array(
+    $element += [
       '#title' => $this->fieldDefinition->label(),
       '#title_display' => 'attribute',
       '#type' => 'worths_form',
       '#default_value' => $items->getValue() ?: NULL,
       '#allowed_curr_ids' => $curr_ids,
-    );
+    ];
 
     unset($element['#description']);
     return $element;

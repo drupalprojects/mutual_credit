@@ -3,7 +3,6 @@
 namespace Drupal\mcapi_exchanges\Plugin\DevelGenerate;
 
 use Drupal\mcapi\Entity\Transaction;
-use Drupal\mcapi_exchanges\Exchanges;
 use Drupal\mcapi\Plugin\DevelGenerate\TransactionDevelGenerate;
 use Drupal\group\Entity\GroupContent;
 use Drupal\group\Entity\Group;
@@ -63,7 +62,7 @@ class ExchangeTransactionDevelGenerate extends TransactionDevelGenerate {
   public function get2RandWalletIds(array $conditions = []) {
     $exids = $this->getEntityQuery('group')->condition('type', 'exchange')->execute();
     $exchange = Group::load($exids[array_rand($exids)]);
-    $wids = Exchanges::walletsInExchange($exchange);
+    $wids = wallets_in_exchange($exchange);
     shuffle($wids);
     if (count($wids) < 2) {
       $msg = 'Only '.count($wids).' wallets in exchange: '.$exchange->id().': '.print_r($wids, 1);

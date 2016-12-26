@@ -2,12 +2,12 @@
 
 namespace Drupal\mcapi_exchanges\Overrides;
 
-use Drupal\mcapi_exchanges\Exchanges;
 use Drupal\mcapi\ListBuilder\CurrencyListBuilder;
 use Drupal\group\GroupMembershipLoader;
 use Drupal\group\Entity\Group;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
+use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
@@ -28,12 +28,13 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
    *
    * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
    * @param \Drupal\Core\Entity\EntityStorageInterface $storage
+   * @param \Drupal\Core\Entity\EntityTypeManager $entity_type_manager
    * @param \Drupal\Core\Session\AccountInterface $current_user
    * @param \Drupal\Core\Entity\Query\QueryFactory $entity_query
    * @param \Drupal\group\GroupMembershipLoader $membership_loader
    */
-  public function __construct($entity_type, $storage, AccountInterface $current_user, QueryFactory $entity_query, GroupMembershipLoader $membership_loader) {
-    parent::__construct($entity_type, $storage);
+  public function __construct($entity_type, $storage, EntityTypeManager $entity_type_manager, AccountInterface $current_user, QueryFactory $entity_query, GroupMembershipLoader $membership_loader) {
+    parent::__construct($entity_type, $storage, $entity_type_manager);
     $this->currentUser = $current_user;
     $this->entityQuery = $entity_query;
     $this->membershipLoader = $membership_loader;
@@ -45,7 +46,8 @@ class CurrencyListBuilderExchanges extends CurrencyListBuilder {
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
     return new static(
       $entity_type,
-      $container->get('entity_type.manager')->getStorage('mcapi_currency'),
+      $container->get('entity_type.manager')->getStorage($entity_type->id()),
+      $container->get('entity_type.manager'),
       $container->get('current_user'),
       $container->get('entity.query'),
       $container->get('group.membership_loader')

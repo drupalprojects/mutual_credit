@@ -24,7 +24,7 @@ class Currencies extends BlockBase implements ContainerFactoryPluginInterface {
    * {@inheritdoc}
    */
   public function build() {
-    $currencies = Exchange::currenciesAvailableToUser();
+    $currencies = mcapi_currencies_available();
     return $this->entityTypeManager
       ->getViewBuilder('mcapi_currency')
       ->viewMultiple($currencies, 'summary');

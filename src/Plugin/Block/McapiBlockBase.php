@@ -140,7 +140,8 @@ class McapiBlockBase extends BlockBase implements ContainerFactoryPluginInterfac
 
     // Might want to move this to mcapi_exchanges.
     if (empty($this->configuration['curr_ids'])) {
-      $this->currencies = Exchange::currenciesAvailableToUser($this->account);
+      $user = User::load($this->account->id());
+      $this->currencies = mcapi_currencies_available($user);
     }
     else {
       $this->currencies = Currency::loadMultiple($this->configuration['curr_ids']);
