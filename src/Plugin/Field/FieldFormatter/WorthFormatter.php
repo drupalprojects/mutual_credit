@@ -2,15 +2,14 @@
 
 namespace Drupal\mcapi\Plugin\Field\FieldFormatter;
 
+use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Element\WorthsView;
 use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\mcapi\Entity\Currency;
 
 /**
  * Plugin implementation of the 'worth' formatter.
- *
- * @todo inject config
  *
  * @FieldFormatter(
  *   id = "worth",
@@ -34,7 +33,12 @@ class WorthFormatter extends FormatterBase {
       '#required' => TRUE,
       '#default_value' => $this->getSetting('format'),
     ];
-    // curr_id setting can only be set in Drupal\mcapi\Plugin\views\field\Worth.
+    $form['context'] = [
+      '#title' => $this->t("Context"),
+      '#type' => 'radios',
+      '#options' => WorthsView::options(),
+      '#default_value' => $this->getSetting('context'),
+    ];
     return $form;
   }
 
@@ -44,6 +48,7 @@ class WorthFormatter extends FormatterBase {
   public static function defaultSettings() {
     $settings = parent::defaultSettings();
     $settings['format'] = Currency::DISPLAY_NORMAL;
+    $settings['context'] = WorthsView::MODE_TRANSACTION;
     return $settings;
   }
 
@@ -58,20 +63,15 @@ class WorthFormatter extends FormatterBase {
    * {@inheritdoc}
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
-    if ($items->count() == 1 && $items->first()->value == 0) {
-      $elements = [
-        '#markup' => \Drupal::config('mcapi.settings')->get('zero_snippet'),
-      ];
-    }
-    else {
-      $elements = [
-        0 => [
-          '#type' => 'worths_view',
-          '#format' => $this->getSetting('format'),
-          '#worths' => $items->getValue(),
-        ],
-      ];
-    }
+    return [
+      0 => [
+        '#type' => 'worths_view',
+        '#worths' => $items->getValue(),
+        '#format' => $this->getSetting('format'),
+        '#context' => $this->getSetting('context')
+      ],
+    ];
+
     return $elements;
   }
 

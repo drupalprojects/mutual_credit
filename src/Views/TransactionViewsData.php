@@ -12,7 +12,7 @@ class TransactionViewsData extends EntityViewsData {
   /**
    * {@inheritdoc}
    *
-   * @todo see Drupal\taxonomy\TermViewsData to see how an index table can be incporated after beta 11
+   * @todo see Drupal\taxonomy\TermViewsData to see how an index table can be incorporated after beta 11
    */
   public function getViewsData() {
     $data = parent::getViewsData();
@@ -74,9 +74,6 @@ class TransactionViewsData extends EntityViewsData {
       'id' => 'date_fulldate',
     ];
 
-    // \Drupal/views/EntityViewsData::getViewsData has no way to retrieve the
-    // index table from the TransactionStorageSchema so we add the fields
-    // individually here.
     $data['mcapi_transactions_index']['table'] = [
       'group' => $this->t('Transaction index'),
       'provider' => 'mcapi',
@@ -336,7 +333,6 @@ class TransactionViewsData extends EntityViewsData {
         'field' => 'wallet_id'
       ]
     ];
-
     return $data;
   }
 

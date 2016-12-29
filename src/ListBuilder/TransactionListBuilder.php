@@ -2,6 +2,9 @@
 
 namespace Drupal\mcapi\ListBuilder;
 
+use \Drupal\mcapi\Entity\Type;
+use \Drupal\mcapi\Entity\State;
+use Drupal\mcapi\Element\WorthsView;
 use Drupal\mcapi\TransactionOperations;
 use Drupal\Core\Entity\EntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
@@ -58,9 +61,9 @@ class TransactionListBuilder extends EntityListBuilder {
       $row['payer']['data'] = $entity->payer->entity->toLink();
       $row['payee']['data'] = $entity->payee->entity->toLink();
       $row['description']['data'] = $entity->toLink($entity->description->value);
-      $row['worth']['data'] = $entity->worth->view(['label' => 'hidden']);
-      $row['type']['data'] = \Drupal\mcapi\Entity\Type::load($entity->type->target_id)->label();
-      $row['state']['data'] = \Drupal\mcapi\Entity\State::load($entity->state->target_id)->label();
+      $row['worth']['data'] = $entity->worth->view(['label' => 'hidden', 'context' => WorthsView::MODE_TRANSACTION]);
+      $row['type']['data'] = Type::load($entity->type->target_id)->label();
+      $row['state']['data'] = State::load($entity->state->target_id)->label();
       $row += $actions;
     }
     return $actions;

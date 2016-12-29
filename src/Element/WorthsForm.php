@@ -4,7 +4,6 @@ namespace Drupal\mcapi\Element;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
-use Drupal\mcapi\Exchange;
 
 /**
  * Provides a worth field form element.

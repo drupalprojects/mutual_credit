@@ -243,6 +243,16 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setSetting('target_type', 'mcapi_transaction')
       ->setReadOnly(TRUE);
 
+
+    $required = !\Drupal::entityQuery('mcapi_currency')
+      ->condition('zero', '', '<>')
+      ->count()->execute();
+    $fields['worth'] = BaseFieldDefinition::create('worth')
+      ->setLabel(t('Worth'))
+      ->setDescription(t('Value of the transaction (one or more currencies)'))
+      ->setCardinality(-1)
+      ->setRequired(TRUE);
+    
     // I wanted to add the CanPayout and CanPayin constraints in the widget
     // builder but I couldn't see how. So at the moment they apply to all entity
     // forms, but they only run code when $items->restricted is TRUE.
@@ -250,7 +260,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setLabel(t('Payer'))
       ->setDescription(t('The giving wallet'))
       ->setReadOnly(TRUE)
-      ->setRequired(TRUE)
       ->setCardinality(1)
       ->setSetting('handler_settings', ['restriction' => WalletSelection::RESTRICTION_PAYOUT])
       ->setDisplayConfigurable('form', TRUE)
@@ -338,6 +347,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
     $flatarray = [$transaction];
     if (!empty($transaction->children)) {
       foreach ($transaction->children as $child) {
+        // These transactions haven't necessarily been saved, so don't have an id
         $flatarray[] = $child;
       }
     }

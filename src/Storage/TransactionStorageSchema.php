@@ -26,10 +26,10 @@ class TransactionStorageSchema extends SqlContentEntityStorageSchema {
         'columns' => ['wid' => 'wid'],
       ],
     ];
+    // Regardless of whether the TransactionStorage in on-site, these are
+    // kept in Drupal. This allows for views integration as long as the
+    // storage controller respects the index.
     $tables['mcapi_transactions_index'] = [
-      // Regardless of whether the TransactionStorage in on-site, the index is
-      // kept in Drupal. This allows for views integration as long as the
-      // storage controller respects the index.
       'description' => 'A more queryable way of storing transactions',
       'fields' => [
         'xid' => [

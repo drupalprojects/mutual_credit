@@ -2,9 +2,11 @@
 
 namespace Drupal\mcapi\Plugin\views\field;
 
+use Drupal\mcapi\Element\WorthsView;
 use Drupal\mcapi\Storage\WalletStorage;
 use Drupal\views\ResultRow;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Field handler provides current stat for given wallet via Wallet::getStatAll.
@@ -13,10 +15,30 @@ use Drupal\views\Plugin\views\field\FieldPluginBase;
  *
  * @ViewsField("wallet_stat")
  *
- * @todo injection
+ * @note for aggregated worths, see src/Plugin/views/query/Sql::getAggregationInfo()
  */
 class WalletStat extends FieldPluginBase {
 
+  protected function defineOptions() {
+    $options = parent::defineOptions();
+    $options['context'] = ['default' => TRUE];
+    return $options;
+  }
+
+  /**
+   * Default options form that provides the label widget that all fields
+   * should have.
+   */
+  public function buildOptionsForm(&$form, FormStateInterface $form_state) {
+    parent::buildOptionsForm($form, $form_state);
+    $form['context'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Worth view context'),
+      '#options' => WorthsView::options(),
+      '#default_value' => $this->options['context'],
+      '#weight' => 10,
+    ];
+  }
   /**
    * {@inheritdoc}
    */
@@ -38,7 +60,7 @@ class WalletStat extends FieldPluginBase {
     }
     if ($wallet) {
       $stat = $this->definition['stat'];
-      $val = $wallet->getStatAll($stat);
+      $vals = $wallet->getStatAll($stat);
       switch ($stat) {
         // Worth value
         case 'volume':
@@ -47,7 +69,8 @@ class WalletStat extends FieldPluginBase {
         case 'balance':
           return [
             '#type' => 'worths_view',
-            '#worths' => $val,
+            '#worths' => $vals,
+            '#context' => $this->options['context']
           ];
         // This is an integer
         case 'trades':
@@ -55,7 +78,7 @@ class WalletStat extends FieldPluginBase {
           return $val;
       }
     }
-    return '';
+    return 'none';
   }
 
 }

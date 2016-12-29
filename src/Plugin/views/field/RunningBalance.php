@@ -2,6 +2,7 @@
 
 namespace Drupal\mcapi\Plugin\views\field;
 
+use Drupal\mcapi\Element\WorthsView;
 use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
@@ -86,6 +87,7 @@ class RunningBalance extends Worth {
     $worth_field->setValue($vals);
     $options = [
       'label' => 'hidden',
+      'context' => WorthsView::MODE_TRANSACTION,
       'settings' => [],
     ];
     return $worth_field->view($options);

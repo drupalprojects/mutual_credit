@@ -1,10 +1,8 @@
-uuid: 0e6ea44b-42fa-4bf3-a709-9fb03d63f459
 langcode: en
 status: true
 dependencies:
   config:
     - core.entity_form_mode.mcapi_transaction.bill
-    - field.field.mcapi_transaction.mcapi_transaction.worth
   module:
     - mcapi
     - mcapi_forms

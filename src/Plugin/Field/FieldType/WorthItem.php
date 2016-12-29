@@ -109,11 +109,4 @@ class WorthItem extends FieldItemBase {
     parent::onChange($property_name, $notify);
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function getString() {
-    return $this->currency->format($this->value, 'normal');
-  }
-
 }

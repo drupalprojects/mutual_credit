@@ -14,6 +14,10 @@ class WalletQuery extends BaseQuery {
     $this->condition('holder_entity_type', '', '<>');
     // Skip system wallets
     //$this->condition('system', '0');
+
     return parent::prepare();
+
+
   }
+
 }

@@ -58,10 +58,10 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       'changed',
       'child',
     ];
-    $query = $this->database->insert('mcapi_transactions_index')->fields($fields);
+    $indexQuery = $this->database->insert('mcapi_transactions_index')->fields($fields);
 
     foreach ($entity->worth->getValue() as $worth) {
-      $query->values($common + [
+      $indexQuery->values($common + [
         'wallet_id' => $record->payer,
         'partner_id' => $record->payee,
         'incoming' => 0,
@@ -70,7 +70,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         'curr_id' => $worth['curr_id'],
         'volume' => $worth['value'],
       ]);
-      $query->values($common + [
+      $indexQuery->values($common + [
         'wallet_id' => $record->payee,
         'partner_id' => $record->payer,
         'incoming' => $worth['value'],
@@ -79,8 +79,13 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         'curr_id' => $worth['curr_id'],
         'volume' => $worth['value'],
       ]);
+
     }
-    $query->execute();
+    $indexQuery->execute();
+    // Now  this is saved, we update the transaction totals table from it.
+    foreach ($entity->worth->currencies() as $curr_id) {
+      $this->updateTransactionTotals($curr_id, [$record->payer, $record->payee]);
+    }
     return $return;
   }
 
@@ -101,13 +106,11 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     parent::doDelete($transactions);
     $this->resetCache(array_keys($transactions));
     $this->indexDrop($serials);
-    \Drupal::logger('mcapi')->notice(
-      'Transactions deleted by user @uid; Serials: @serials',
-      [
-        '@uid' => \Drupal::currentuser()->id(),
-        '@serials' => implode(', ', array_keys($transactions)),
-      ]
-    );
+    foreach ($transactions as $transaction) {
+      foreach ($transaction->worth->currencies() as $curr_id) {
+        $this->updateTransactionTotals($curr_id, [$transaction->payer->target_id, $transaction->payee->target_id]);
+      }
+    }
   }
 
   /**
@@ -161,6 +164,17 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         WHERE state IN ($states)
       ) "
     );
+
+    db_truncate('mcapi_transaction_totals')->execute();
+    $balances = $this->database->select('mcapi_transactions_index', 'i')
+      ->fields('i', ['wallet_id', 'curr_id'])->distinct();
+    $rows = [];
+    foreach ($balances as $bal) {
+      $rows[$bal['curr_id']] = $bal['wallet_id'];
+    }
+    foreach ($rows as $curr_id => $row) {
+      $this->updateTransactionTotals($curr_id, $wids);
+    }
   }
 
   /**
@@ -196,21 +210,6 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
         ->condition('serial', $serials, 'IN')
         ->execute();
     }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function walletSummary($curr_id, $wallet_id, array $conditions = []) {
-    $conditions['wallet_id'] = $wallet_id;
-    $query = $this->getMcapiIndexQuery($curr_id, $conditions);
-    $query->addExpression('COUNT(DISTINCT i.serial)', 'trades');
-    $query->addExpression('COALESCE(SUM(i.incoming), 0)', 'gross_in');
-    $query->addExpression('COALESCE(SUM(i.outgoing), 0)', 'gross_out');
-    $query->addExpression('COALESCE(SUM(i.diff), 0)', 'balance');
-    $query->addExpression('COALESCE(SUM(i.volume), 0)', 'volume');
-    $query->addExpression('COUNT(DISTINCT i.partner_id)', 'partners');
-    return $query->execute()->fetch(\PDO::FETCH_ASSOC);
   }
 
   /**
@@ -504,5 +503,40 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     return $query->execute()->fetchField();
   }
 
+  /**
+   * Update the transaction totals table.
+   *
+   * @param string $curr_id
+   * @param array $wids
+   */
+  private function updateTransactionTotals($curr_id, array $wids) {
+    foreach ($wids as $wid) {
+      $q1 = $this->getMcapiIndexQuery($curr_id, ['wallet_id' => $wid]);
+      $q1->addExpression('COUNT(DISTINCT i.serial)', 'trades');
+      $q1->addExpression('COALESCE(SUM(i.incoming), 0)', 'gross_in');
+      $q1->addExpression('COALESCE(SUM(i.outgoing), 0)', 'gross_out');
+      $q1->addExpression('COALESCE(SUM(i.diff), 0)', 'balance');
+      $q1->addExpression('COALESCE(SUM(i.volume), 0)', 'volume');
+      $q1->addExpression('COUNT(DISTINCT i.partner_id)', 'partners');
+      $fields = $q1->execute()->fetch(\PDO::FETCH_ASSOC);
+      $this->database->merge('mcapi_transaction_totals')
+        ->keys(['wid' => $wid, 'curr_id' => $curr_id])
+        ->fields($fields)
+        ->execute();
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function walletSummary($curr_id, $wallet_id, array $conditions = []) {
+    $conditions['wallet_id'] = $wallet_id;
+    $defaults = ['balance' => NULL, 'volume' => NULL, 'gross_in' => NULL, 'gross_out' => NULL, 'trades' => 0, 'partners' => 0];
+    $query = $this->database->select('mcapi_transaction_totals', 'tt')
+      ->fields('tt', array_keys($defaults))
+      ->condition('wid', $wallet_id)
+      ->condition('curr_id', $curr_id);
+    return $query->execute()->fetch(\PDO::FETCH_ASSOC) ?: $defaults;
+  }
 
 }

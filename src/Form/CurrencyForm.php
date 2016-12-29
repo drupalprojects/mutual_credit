@@ -191,14 +191,6 @@ class CurrencyForm extends EntityForm {
     else {
       drupal_set_message(t('Currency %label has been added.', ['%label' => $currency->label()]));
     }
-
-    $required = !\Drupal::entityTypeManager()
-      ->getStorage('mcapi_currency')->getQuery()
-      ->condition('zero', '', '<>')
-      ->count();
-    FieldConfig::load('mcapi_transaction.mcapi_transaction.worth')
-      ->set('required', $required)
-      ->save();
     $form_state->setRedirect('entity.mcapi_currency.collection');
   }
 

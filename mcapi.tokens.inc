@@ -40,7 +40,7 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
           break;
 
         case 'description':
-          $replacements[$original] = $transaction->description->getString();
+          $replacements[$original] = \Drupal::renderer()->render($transaction->description->view());
           break;
 
         case 'created':
@@ -51,9 +51,8 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
           $replacements[$original] = $transaction->toUrl();
           break;
 
-        // The field module did this in d7 but can't find where to debug in d8.
         case 'worth':
-          $replacements[$original] = $transaction->worth->getString();
+          $replacements[$original] = \Drupal::renderer()->render($transaction->worth->view());
       }
     }
 

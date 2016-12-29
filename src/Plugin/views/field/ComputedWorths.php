@@ -2,21 +2,21 @@
 
 namespace Drupal\mcapi\Plugin\views\field;
 
+use Drupal\mcapi\Element\WorthsView;
+use Drupal\mcapi\Entity\Currency;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\mcapi\Entity\Currency;
 
 /**
- * When we look at transaction index table, we need to view one worth at a time.
+ * The computed worth field cannot be retrieved by the views query so we take it
+ * from the loaded entity instead.
  *
  * @ingroup views_field_handlers
  *
- * @ViewsField("worth")
- * 
- * @note for aggregated worths, see src/Plugin/views/query/Sql::getAggregationInfo()
+ * @ViewsField("computed_worths")
  */
-class Worth extends FieldPluginBase {
+class ComputedWorths extends FieldPluginBase {
 
   /**
    * {@inheritdoc}
@@ -24,6 +24,7 @@ class Worth extends FieldPluginBase {
   protected function defineOptions() {
     $options = parent::defineOptions();
     $options['format'] = ['default' => Currency::DISPLAY_NORMAL];
+    $options['context'] = ['default' => TRUE];
     return $options;
   }
 
@@ -38,22 +39,33 @@ class Worth extends FieldPluginBase {
       '#options' => Currency::formats(),
       '#default_value' => $this->options['format'],
     );
+    $form['context'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Worth view context'),
+      '#options' => WorthsView::options(),
+      '#default_value' => $this->options['context'],
+      '#weight' => 10,
+    ];
     parent::buildOptionsForm($form, $form_state);
   }
 
   /**
    * {@inheritdoc}
-   *
-   * @note aggregation may cause problems with formatting.
-   *
-   * @todo if there is a currency filter on this view, we would want to only show that currency part of each worth value
+   */
+
+  public function query() {
+    $this->addAdditionalFields();
+  }
+
+  /**
+   * {@inheritdoc}
    */
   public function render(ResultRow $values) {
-    if ($curr_id = $this->getValue($values, 'curr_id')) {
-      return Currency::load($curr_id)
-        ->format($this->getValue($values), $this->options['format']);
-    }
-    // Otherwise there was no result - nothing to format
+    //Mcnasty
+    $fieldname = substr($this->getField(), 1);
+    return $this->getEntity($values)
+      ->{$fieldname}
+      ->view(['label' => 'hidden', 'context' => WorthsView::MODE_BALANCE]);
   }
 
 }

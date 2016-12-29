@@ -356,7 +356,7 @@ function mcapi_mail($key, &$message, $params) {
 }
 
 /**
- * Get the currencies available to any ContentEntity in a group.
+ * Get the currencies available to any ContentEntity (in a group).
  *
  * @param ContentEntityInterface $entity
  *

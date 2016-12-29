@@ -26,6 +26,49 @@ class WalletViewsData extends EntityViewsData {
       ]
     ];
 
+    $data['mcapi_wallet']['balance'] = [
+      'title' => $this->t('Wallet balance'),
+      'help' => $this->t("Sum of all this wallet's credits minus debits"),
+      'field' => [
+        'id' => 'computed_worths',
+      ]
+    ];
+    $data['mcapi_wallet']['volume'] = [
+      'title' => $this->t('Wallet volume'),
+      'help' => $this->t("Sum of all this wallet's transactions"),
+      'field' => [
+        'id' => 'computed_worths',
+      ]
+    ];
+    $data['mcapi_wallet']['gross_in'] = [
+      'title' => $this->t('Gross income'),
+      'help' => $this->t("Sum of all this wallet's income ever"),
+      'field' => [
+        'id' => 'computed_worths',
+      ]
+    ];
+    $data['mcapi_wallet']['gross_out'] = [
+      'title' => $this->t('Gross expenditure'),
+      'help' => $this->t("Sum of all this wallet's outgoings ever"),
+      'field' => [
+        'id' => 'computed_worths',
+      ]
+    ];
+    $data['mcapi_wallet']['trades'] = [
+      'title' => $this->t('Wallet trades'),
+      'help' => $this->t("Number of transactions involving this wallet"),
+      'field' => [
+        'id' => 'mcapi_dummy',
+      ]
+    ];
+    $data['mcapi_wallet']['partners'] = [
+      'title' => $this->t('Number of partners'),
+      'help' => $this->t("Number of unique trading partners"),
+      'field' => [
+        'id' => 'mcapi_dummy',
+      ]
+    ];
+
 
     foreach (array_keys(\Drupal\mcapi\Mcapi::walletableBundles()) as $entity_type_id) {
       $entity_type = \Drupal::entityTypeManager()->getDefinition($entity_type_id);
@@ -44,15 +87,12 @@ class WalletViewsData extends EntityViewsData {
     $data['mcapi_wallet']['holder_entity_type']['field']['id'] = 'mcapi_holder_type';
     $data['mcapi_wallet']['holder_entity_type']['field']['help'] = $this->t("The wallet holder's translated EntityType name");
 
-    $this->addWalletSummaries($data['mcapi_wallet']);
-
     // This allows us to do group queries such as find the balance per wallet.
     $data['mcapi_transactions_index']['table']['join'] = [
       'mcapi_wallet' => [
         'left_field' => 'wid',
         'field' => 'wallet_id',
         'required' => TRUE,
-        // 'type' => 'RIGHT'.
       ],
     ];
 
@@ -70,35 +110,4 @@ class WalletViewsData extends EntityViewsData {
 
     return $data;
   }
-
-  /**
-   * This is added to all walletable entity types.
-   */
-  public static function addWalletSummaries(array &$table) {
-    $table['summary_balance'] = [
-      'title' => t('Current balance'),
-      'description' => t("Balances of entity's first wallet"),
-      'field' => [
-        'id' => 'wallet_stat',
-        'stat' => 'balance',
-      ],
-    ];
-    $table['summary_trades'] = [
-      'title' => t('Transaction count'),
-      'description' => t("Number of trades in entity's first wallet"),
-      'field' => [
-        'id' => 'wallet_stat',
-        'stat' => 'trades',
-      ],
-    ];
-    $table['summary_volume'] = [
-      'title' => t('Trading volume'),
-      'description' => t("Volumes entity's first wallet"),
-      'field' => [
-        'id' => 'wallet_stat',
-        'stat' => 'volume',
-      ],
-    ];
-  }
-
 }

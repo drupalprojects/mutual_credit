@@ -1,13 +1,9 @@
 langcode: en
 status: true
 dependencies:
-  config:
-    - field.storage.mcapi_transaction.worth
   module:
     - mcapi
     - user
-_core:
-  default_config_hash: C7u4VukaTqe3wamWU-6PT3umRZ3oHhPswvosKgsO-Uc
 id: income_expenditure
 label: 'Income & Expenditure'
 module: mcapi
@@ -613,8 +609,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-      tags:
-        - 'config:field.storage.mcapi_transaction.worth'
+      tags: {  }
   user_attachment:
     display_plugin: attachment
     id: user_attachment
@@ -687,8 +682,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-      tags:
-        - 'config:field.storage.mcapi_transaction.worth'
+      tags: {  }
   user_page:
     display_plugin: page
     id: user_page
@@ -1042,8 +1036,6 @@ display:
           separator: ', '
           field_api_classes: false
           dependencies:
-            config:
-              - field.storage.mcapi_transaction.worth
             module:
               - field
           plugin_id: field
@@ -1191,8 +1183,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-      tags:
-        - 'config:field.storage.mcapi_transaction.worth'
+      tags: {  }
   wallet_attachment:
     display_plugin: attachment
     id: wallet_attachment
@@ -1549,8 +1540,6 @@ display:
           separator: ', '
           field_api_classes: false
           dependencies:
-            config:
-              - field.storage.mcapi_transaction.worth
             module:
               - field
           plugin_id: field
@@ -1697,8 +1686,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-      tags:
-        - 'config:field.storage.mcapi_transaction.worth'
+      tags: {  }
   wallet_page:
     display_plugin: page
     id: wallet_page
@@ -2074,8 +2062,6 @@ display:
           separator: ', '
           field_api_classes: false
           dependencies:
-            config:
-              - field.storage.mcapi_transaction.worth
             module:
               - field
           plugin_id: field
@@ -2205,6 +2191,5 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-      tags:
-        - 'config:field.storage.mcapi_transaction.worth'
+      tags: {  }
 

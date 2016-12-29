@@ -7,7 +7,7 @@ id: system_trade_stats
 label: 'System trade stats'
 module: mcapi
 description: 'trade stats accross the whole system'
-tag: Community Accounting
+tag: 'Community Accounting'
 base_table: mcapi_transactions_index
 base_field: xid
 core: 8.x
@@ -43,39 +43,141 @@ display:
           sort_asc_label: Asc
           sort_desc_label: Desc
       pager:
-        type: full
+        type: none
         options:
-          items_per_page: 10
           offset: 0
-          id: 0
-          total_pages: null
-          expose:
-            items_per_page: false
-            items_per_page_label: 'Items per page'
-            items_per_page_options: '5, 10, 25, 50'
-            items_per_page_options_all: false
-            items_per_page_options_all_label: '- All -'
-            offset: false
-            offset_label: Offset
-          tags:
-            previous: '‹ previous'
-            next: 'next ›'
-            first: '« first'
-            last: 'last »'
-          quantity: 9
       style:
         type: default
+        options:
+          grouping: {  }
+          row_class: ''
+          default_row_class: true
+          uses_fields: false
       row:
         type: fields
+        options:
+          inline: {  }
+          separator: ''
+          hide_empty: false
+          default_field_elements: true
       fields:
-        outgoing:
-          id: outgoing
+        curr_id:
+          id: curr_id
           table: mcapi_transactions_index
-          field: outgoing
+          field: curr_id
           relationship: none
-          group_type: sum
+          group_type: group
           admin_label: ''
-          label: Volume
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          entity_type: mcapi_transaction
+          plugin_id: standard
+        serial:
+          id: serial
+          table: mcapi_transactions_index
+          field: serial
+          relationship: none
+          group_type: count
+          admin_label: ''
+          label: Trades
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          set_precision: false
+          precision: 0
+          decimal: .
+          separator: ','
+          format_plural: 0
+          format_plural_string: "1\x03@count"
+          prefix: ''
+          suffix: ''
+          entity_type: null
+          entity_field: null
+          plugin_id: standard
+        partner_id:
+          id: partner_id
+          table: mcapi_transactions_index
+          field: partner_id
+          relationship: none
+          group_type: count_distinct
+          admin_label: ''
+          label: Traders
           exclude: false
           alter:
             alter_text: false
@@ -124,68 +226,16 @@ display:
           format_plural_string: "1\x03@count"
           prefix: ''
           suffix: ''
-          format: normal
           entity_type: mcapi_transaction
-          plugin_id: worth
-        partner_id:
-          id: partner_id
+          plugin_id: standard
+        volume:
+          id: volume
           table: mcapi_transactions_index
-          field: partner_id
+          field: volume
           relationship: none
-          group_type: count_distinct
+          group_type: sum
           admin_label: ''
-          label: 'Active wallets'
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          link: 0
-          entity_type: mcapi_transaction
-          plugin_id: entity_label
-        curr_id:
-          id: curr_id
-          table: mcapi_transactions_index
-          field: curr_id
-          relationship: none
-          group_type: group
-          admin_label: ''
-          label: Currency
+          label: Volume
           exclude: false
           alter:
             alter_text: false
@@ -226,8 +276,17 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
+          set_precision: false
+          precision: 0
+          decimal: .
+          separator: ','
+          format_plural: 0
+          format_plural_string: "1\x03@count"
+          prefix: ''
+          suffix: ''
+          format: 2
           entity_type: mcapi_transaction
-          plugin_id: standard
+          plugin_id: worth
       filters:
         outgoing:
           id: outgoing
@@ -270,7 +329,6 @@ display:
           entity_type: mcapi_transaction
           plugin_id: numeric
       sorts: {  }
-      title: 'System trade stats'
       header: {  }
       footer: {  }
       empty: {  }
@@ -283,7 +341,7 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          default_action: 'not found'
+          default_action: ignore
           exception:
             value: all
             title_enable: false
@@ -312,146 +370,25 @@ display:
           plugin_id: standard
       display_extenders: {  }
       group_by: true
+      title: 'System trade stats'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_interface'
+        - url
+      tags: {  }
   block_1:
     display_plugin: block
     id: block_1
-    display_title: 'Per-currency block'
-    position: 2
-    display_options:
-      display_extenders: {  }
-      pager:
-        type: some
-        options:
-          items_per_page: 1
-          offset: 0
-      defaults:
-        pager: false
-        fields: false
-      fields:
-        outgoing:
-          id: outgoing
-          table: mcapi_transactions_index
-          field: outgoing
-          relationship: none
-          group_type: sum
-          admin_label: ''
-          label: Volume
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          set_precision: false
-          precision: 0
-          decimal: .
-          separator: ','
-          format_plural: 0
-          format_plural_string: "1\x03@count"
-          prefix: ''
-          suffix: ''
-          format: normal
-          entity_type: mcapi_transaction
-          plugin_id: worth
-        partner_id:
-          id: partner_id
-          table: mcapi_transactions_index
-          field: partner_id
-          relationship: none
-          group_type: count_distinct
-          admin_label: ''
-          label: 'Active wallets'
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          link: 0
-          entity_type: mcapi_transaction
-          plugin_id: entity_label
-      block_description: 'Currency stats'
-      allow:
-        items_per_page: false
-      display_description: ''
-  page_1:
-    display_plugin: page
-    id: page_1
-    display_title: 'All currencies'
+    display_title: Block
     position: 1
     display_options:
       display_extenders: {  }
-      path: system-trade-stats
-      arguments: {  }
-      defaults:
-        arguments: false
-      display_description: ''
+      block_category: 'Community Accounting'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_interface'
+        - url
+      tags: {  }
 

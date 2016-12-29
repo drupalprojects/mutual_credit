@@ -2,7 +2,6 @@ langcode: en
 status: true
 dependencies:
   config:
-    - field.storage.mcapi_transaction.worth
     - system.menu.main
     - user.role.authenticated
   module:
@@ -13,7 +12,7 @@ id: mcapi_transactions
 label: Transactions
 module: mcapi
 description: 'A list of all transactions'
-tag: Community accounting
+tag: 'Community accounting'
 base_table: mcapi_transaction
 base_field: xid
 core: 8.x
@@ -483,14 +482,14 @@ display:
           link: 1
           plugin_id: mcapi_description
           provider: mcapi
-        worth:
-          id: worth
+        worth__curr_id:
+          id: worth__curr_id
           table: mcapi_transaction__worth
-          field: worth
+          field: worth__curr_id
           relationship: none
           group_type: group
           admin_label: ''
-          label: Value(s)
+          label: Worth
           exclude: false
           alter:
             alter_text: false
@@ -509,7 +508,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: null
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -533,7 +532,9 @@ display:
           hide_alter_empty: true
           click_sort_column: value
           type: worth
-          settings: {  }
+          settings:
+            format: '2'
+            context: transaction
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -544,13 +545,9 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-          dependencies:
-            config:
-              - field.storage.mcapi_transaction.worth
-            module:
-              - field
+          entity_type: mcapi_transaction
+          entity_field: worth
           plugin_id: field
-          provider: field
         created:
           id: created
           table: mcapi_transaction
@@ -1096,8 +1093,7 @@ display:
         - 'languages:language_interface'
         - url
         - url.query_args
-      tags:
-        - 'config:field.storage.mcapi_transaction.worth'
+      tags: {  }
   admin:
     display_plugin: page
     id: admin
@@ -1148,8 +1144,7 @@ display:
         - 'languages:language_interface'
         - url
         - url.query_args
-      tags:
-        - 'config:field.storage.mcapi_transaction.worth'
+      tags: {  }
   block:
     display_plugin: block
     id: block
@@ -1674,14 +1669,14 @@ display:
           link: 1
           plugin_id: mcapi_description
           provider: mcapi
-        worth:
-          id: worth
+        worth__curr_id:
+          id: worth__curr_id
           table: mcapi_transaction__worth
-          field: worth
+          field: worth__curr_id
           relationship: none
           group_type: group
           admin_label: ''
-          label: Value(s)
+          label: Worth
           exclude: false
           alter:
             alter_text: false
@@ -1700,7 +1695,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: null
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1724,7 +1719,9 @@ display:
           hide_alter_empty: true
           click_sort_column: value
           type: worth
-          settings: {  }
+          settings:
+            format: '2'
+            context: transaction
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -1735,13 +1732,9 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-          dependencies:
-            config:
-              - field.storage.mcapi_transaction.worth
-            module:
-              - field
+          entity_type: mcapi_transaction
+          entity_field: worth
           plugin_id: field
-          provider: field
       defaults:
         fields: false
         filters: false
@@ -1902,8 +1895,7 @@ display:
         - 'languages:language_interface'
         - url
         - url.query_args
-      tags:
-        - 'config:field.storage.mcapi_transaction.worth'
+      tags: {  }
   simple:
     display_plugin: page
     id: simple
@@ -2278,19 +2270,14 @@ display:
           link: 1
           plugin_id: mcapi_description
           provider: mcapi
-        worth:
-          id: worth
+        worth__curr_id:
+          id: worth__curr_id
           table: mcapi_transaction__worth
-          field: worth
+          field: worth__curr_id
           relationship: none
           group_type: group
           admin_label: ''
-          dependencies:
-            config:
-              - field.storage.mcapi_transaction.worth
-            module:
-              - field
-          label: Value(s)
+          label: Worth
           exclude: false
           alter:
             alter_text: false
@@ -2309,7 +2296,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: null
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -2333,7 +2320,9 @@ display:
           hide_alter_empty: true
           click_sort_column: value
           type: worth
-          settings: {  }
+          settings:
+            format: '2'
+            context: transaction
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -2344,8 +2333,9 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+          entity_type: mcapi_transaction
+          entity_field: worth
           plugin_id: field
-          provider: field
         operations:
           id: operations
           table: mcapi_transaction
@@ -2411,6 +2401,5 @@ display:
         - 'languages:language_interface'
         - url.query_args
         - user.roles
-      tags:
-        - 'config:field.storage.mcapi_transaction.worth'
+      tags: {  }
 

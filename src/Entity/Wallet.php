@@ -188,6 +188,55 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       ->setDescription(t('TRUE if this wallet is controlled by the system'))
       ->setDefaultValue(0);
 
+    // Following are computed fields, just for display
+    $fields['holder'] = BaseFieldDefinition::create('entity_reference')
+      ->setDescription(t("The entity holding this wallet"))
+      ->setComputed(TRUE)
+      ->setClass('\Drupal\mcapi\Plugin\Field\Walletholder')
+      ->setDisplayConfigurable('view', TRUE);
+    $fields['balance'] = BaseFieldDefinition::create('worth')
+      ->setLabel(t('Balance'))
+      ->setDescription(t("Sum of all this wallet's credits minus debits"))
+      ->setComputed(TRUE)
+      ->setClass('\Drupal\mcapi\Plugin\Field\WalletBalance')
+      ->setReadOnly(TRUE)
+      ->setDisplayConfigurable('view', TRUE);
+    $fields['volume'] = BaseFieldDefinition::create('worth')
+      ->setLabel(t('Volume'))
+      ->setDescription(t("Sum of all this wallet's transactions"))
+      ->setComputed(TRUE)
+      ->setClass('\Drupal\mcapi\Plugin\Field\WalletVolume')
+      ->setReadOnly(TRUE)
+      ->setDisplayConfigurable('view', TRUE);
+    $fields['gross_in'] = BaseFieldDefinition::create('worth')
+      ->setLabel(t('Gross income'))
+      ->setDescription(t("Sum of all this wallet's income ever"))
+      ->setComputed(TRUE)
+      ->setClass('\Drupal\mcapi\Plugin\Field\WalletIncome')
+      ->setReadOnly(TRUE)
+      ->setDisplayConfigurable('view', TRUE);
+    $fields['gross_out'] = BaseFieldDefinition::create('worth')
+      ->setLabel(t('Gross expenditure'))
+      ->setDescription(t("Sum of all this wallet's outgoings ever"))
+      ->setComputed(TRUE)
+      ->setClass('\Drupal\mcapi\Plugin\Field\WalletOutgoing')
+      ->setReadOnly(TRUE)
+      ->setDisplayConfigurable('view', TRUE);
+    $fields['trades'] = BaseFieldDefinition::create('integer')
+      ->setLabel(t('Trades'))
+      ->setDescription(t("Number of transactions involving this wallet"))
+      ->setComputed(TRUE)
+      ->setClass('\Drupal\mcapi\Plugin\Field\WalletTrades')
+      ->setReadOnly(TRUE)
+      ->setDisplayConfigurable('view', TRUE);
+    $fields['partners'] = BaseFieldDefinition::create('integer')
+      ->setLabel(t('Number of partners'))
+      ->setDescription(t("Number of unique trading partners"))
+      ->setComputed(TRUE)
+      ->setClass('\Drupal\mcapi\Plugin\Field\WalletPartners')
+      ->setReadOnly(TRUE)
+      ->setDisplayConfigurable('view', TRUE);
+
     return $fields;
   }
 

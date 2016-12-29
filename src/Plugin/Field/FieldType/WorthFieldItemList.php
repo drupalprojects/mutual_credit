@@ -2,7 +2,6 @@
 
 namespace Drupal\mcapi\Plugin\Field\FieldType;
 
-use Drupal\Core\Render\Markup;
 use Drupal\Core\Field\FieldItemList;
 
 /**
@@ -25,22 +24,6 @@ class WorthFieldItemList extends FieldItemList {
 
   /**
    * {@inheritdoc}
-   *
-   * @todo Revisit the need when all entity types are converted to NG entities.
-   */
-  public function getValue($include_computed = FALSE) {
-    $values = array();
-    foreach ($this->list as $delta => $item) {
-      $val = $item->value;
-      if (strlen($val)) {
-        $values[$delta] = $item->getValue();
-      }
-    }
-    return $values;
-  }
-
-  /**
-   * {@inheritdoc}
    */
   public function setValue($values, $notify = TRUE) {
     parent::setValue($values, $notify);
@@ -59,25 +42,9 @@ class WorthFieldItemList extends FieldItemList {
   public function currencies($full = FALSE) {
     $c = [];
     foreach ($this->list as $item) {
-      if ($full) {
-        $c[$item->curr_id] = $item->currency;
-      }
-      else {
-        $c[] = $item->curr_id;
-      }
+      $c[$item->curr_id]  = $full ? $item->currency : $item->curr_id;
     }
     return $c;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getString() {
-    foreach ($this->list as $item) {
-      $worths[] = $item->getString();
-    }
-    $string = implode(\Drupal::config('mcapi.settings')->get('worths_delimiter'), $worths);
-    return Markup::create($string);
   }
 
   /**

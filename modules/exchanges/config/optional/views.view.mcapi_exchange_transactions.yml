@@ -2,7 +2,6 @@ langcode: en
 status: true
 dependencies:
   config:
-    - field.storage.mcapi_transaction.worth
     - system.menu.main
     - user.role.authenticated
   module:
@@ -10,8 +9,6 @@ dependencies:
     - mcapi
     - system
     - user
-_core:
-  default_config_hash: nOvoSUKprodcEqbhWOUtD6Ud31oAIpkE-JO83UxRen4
 id: mcapi_exchange_transactions
 label: Transactions
 module: mcapi
@@ -570,8 +567,6 @@ display:
           separator: ', '
           field_api_classes: false
           dependencies:
-            config:
-              - field.storage.mcapi_transaction.worth
             module:
               - field
           plugin_id: field
@@ -1252,8 +1247,7 @@ display:
         - route
         - url
         - url.query_args
-      tags:
-        - 'config:field.storage.mcapi_transaction.worth'
+      tags: { }
   admin_collection:
     display_plugin: page
     id: admin_collection
@@ -1306,8 +1300,7 @@ display:
         - 'languages:language_interface'
         - url
         - url.query_args
-      tags:
-        - 'config:field.storage.mcapi_transaction.worth'
+      tags: { }
   block:
     display_plugin: block
     id: block
@@ -1897,8 +1890,6 @@ display:
           separator: ', '
           field_api_classes: false
           dependencies:
-            config:
-              - field.storage.mcapi_transaction.worth
             module:
               - field
           plugin_id: field
@@ -2100,8 +2091,7 @@ display:
         - 'languages:language_interface'
         - url
         - url.query_args
-      tags:
-        - 'config:field.storage.mcapi_transaction.worth'
+      tags: { }
   group_admin:
     display_plugin: page
     id: group_admin
@@ -2484,8 +2474,6 @@ display:
           group_type: group
           admin_label: ''
           dependencies:
-            config:
-              - field.storage.mcapi_transaction.worth
             module:
               - field
           label: Value(s)
@@ -2612,8 +2600,7 @@ display:
         - route
         - url
         - url.query_args
-      tags:
-        - 'config:field.storage.mcapi_transaction.worth'
+      tags: { }
   simple:
     display_plugin: page
     id: simple
@@ -2997,8 +2984,6 @@ display:
           group_type: group
           admin_label: ''
           dependencies:
-            config:
-              - field.storage.mcapi_transaction.worth
             module:
               - field
           label: Value(s)
@@ -3124,6 +3109,5 @@ display:
         - url
         - url.query_args
         - user.roles
-      tags:
-        - 'config:field.storage.mcapi_transaction.worth'
+      tags: { }
 

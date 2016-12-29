@@ -3,7 +3,6 @@ status: true
 dependencies:
   config:
     - core.entity_view_mode.mcapi_transaction.search_index
-    - field.field.mcapi_transaction.mcapi_transaction.worth
   module:
     - mcapi
     - search

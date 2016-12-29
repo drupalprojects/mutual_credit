@@ -14,8 +14,8 @@ use Drupal\mcapi\Mcapi;
  * Implements hook_views_data_alter().
  */
 function mcapi_views_data_alter(&$data) {
-  foreach (Mcapi::walletableBundles() as $entity_type => $bundles) {
-    $table_name = \Drupal::entityTypeManager()->getDefinition($entity_type)->getBaseTable();
-    WalletViewsData::addWalletSummaries($data[$table_name]);
-  }
+//  foreach (Mcapi::walletableBundles() as $entity_type => $bundles) {
+//    $table_name = \Drupal::entityTypeManager()->getDefinition($entity_type)->getBaseTable();
+//    WalletViewsData::addWalletSummaries($data[$table_name]);
+//  }
 }
