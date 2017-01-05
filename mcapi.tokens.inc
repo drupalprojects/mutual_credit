@@ -40,7 +40,8 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
           break;
 
         case 'description':
-          $replacements[$original] = \Drupal::renderer()->render($transaction->description->view());
+          $renderable = $transaction->description->view(['label' => 'hidden']);
+          $replacements[$original] = strip_tags(\Drupal::service('renderer')->render($renderable));
           break;
 
         case 'created':
@@ -52,7 +53,8 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
           break;
 
         case 'worth':
-          $replacements[$original] = \Drupal::renderer()->render($transaction->worth->view());
+          $renderable = $transaction->worth->view(['label' => 'hidden']);
+          $replacements[$original] = \Drupal::service('renderer')->render($renderable);
       }
     }
 

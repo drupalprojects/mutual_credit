@@ -18,23 +18,15 @@ class WalletViewsData extends EntityViewsData {
 
     $data['mcapi_wallet']['name']['help'] = $this->t("When the holder can hold one wallet only, the wallet inherits the name of its holder");
 
-    $data['mcapi_wallet']['holder'] = [
-      'title' => $this->t('Link to holding entity'),
-      'help' => $this->t('Could be any entity implementing OwnerInterface'),
-      'field' => [
-        'id' => 'mcapi_wallet_holder',
-      ]
-    ];
-
     $data['mcapi_wallet']['balance'] = [
-      'title' => $this->t('Wallet balance'),
+      'title' => $this->t('Balance'),
       'help' => $this->t("Sum of all this wallet's credits minus debits"),
       'field' => [
         'id' => 'computed_worths',
       ]
     ];
     $data['mcapi_wallet']['volume'] = [
-      'title' => $this->t('Wallet volume'),
+      'title' => $this->t('Volume of transactions'),
       'help' => $this->t("Sum of all this wallet's transactions"),
       'field' => [
         'id' => 'computed_worths',
@@ -55,20 +47,31 @@ class WalletViewsData extends EntityViewsData {
       ]
     ];
     $data['mcapi_wallet']['trades'] = [
-      'title' => $this->t('Wallet trades'),
+      'title' => $this->t('Number of trades'),
       'help' => $this->t("Number of transactions involving this wallet"),
       'field' => [
         'id' => 'mcapi_dummy',
       ]
     ];
     $data['mcapi_wallet']['partners'] = [
-      'title' => $this->t('Number of partners'),
+      'title' => $this->t('Partner count'),
       'help' => $this->t("Number of unique trading partners"),
       'field' => [
         'id' => 'mcapi_dummy',
       ]
     ];
 
+    unset(
+        $data['mcapi_wallet']['holder_entity_type'],
+        $data['mcapi_wallet']['holder_entity_id']
+    );
+    $data['mcapi_wallet']['holder'] = [
+      'title' => $this->t('Link to holding entity'),
+      'help' => $this->t('Could be any entity implementing OwnerInterface'),
+      'field' => [
+        'id' => 'mcapi_wallet_holder',
+      ]
+    ];
 
     foreach (array_keys(\Drupal\mcapi\Mcapi::walletableBundles()) as $entity_type_id) {
       $entity_type = \Drupal::entityTypeManager()->getDefinition($entity_type_id);

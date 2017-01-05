@@ -3,25 +3,23 @@
 namespace Drupal\mcapi\Plugin\Field;
 
 use Drupal\Core\Field\EntityReferenceFieldItemList;
+use Drupal\Core\TypedData\TraversableTypedDataInterface;
 
 /**
- * A computed field adding upt the transaction volume of a wallet.
+ * A computed field adding up the transaction volume of a wallet.
  */
-class WalletVolume extends EntityReferenceFieldItemList {
-
-  public static function createInstance($definition, $name = NULL, TraversableTypedDataInterface $parent = NULL) {
-    mtrace();// looking for a chance to inject the $container
-    return new static($definition, $name, $parent);
-  }
+class WalletHolder extends EntityReferenceFieldItemList {
 
   /**
    * {@inheritdoc}
    */
   public function getValue($include_computed = FALSE) {
     $wallet = $this->getEntity();
-    return \Drupal::entityTypeManager()
-      ->getStorage($wallet->holder_entity_type->value)
-      ->load($wallet->holder_entity_id->value);
+    return [
+      'entity_type_id' => $wallet->holder_entity_type->value,
+      'target_id' => $wallet->holder_entity_id->value,
+    ];
+
   }
 
   /**
@@ -31,6 +29,30 @@ class WalletVolume extends EntityReferenceFieldItemList {
     $wallet = $this->getEntity();
     $wallet->holder_entity_type->value = $value->getEntitytypeId();
     $wallet->holder_entity_id->value = $value->id();
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __get($property_name) {
+    if ($property_name == 'entity') {
+      return \Drupal::entityTypeManager()
+      ->getStorage($this->getEntity()->holder_entity_type->value)
+      ->load($this->getEntity()->holder_entity_id->value);
+    }
+    // For empty fields, $entity->field->property is NULL.
+    if ($item = $this->first()) {
+      return $item->__get($property_name);
+    }
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public function referencedEntities() {
+    return [$this->entity];
   }
 
 }

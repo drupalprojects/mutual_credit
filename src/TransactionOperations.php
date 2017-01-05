@@ -119,11 +119,6 @@ class TransactionOperations {
     if ($action = Action::load($action_name)) {
       return $action;
     }
-    elseif ($operation <> 'view label') {
-      mtrace();
-      throw new \Exception("No action with name '$operation'");
-      mtrace();
-    }
   }
 
   /**

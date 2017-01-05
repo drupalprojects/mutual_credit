@@ -18,8 +18,5 @@ permissions:
   - 'edit own post node'
   - 'view post node'
   - 'create transactions'
-  - 'create-edit-delete own smallads'
   - 'access subgroup overview'
-  - 'view subgroup:local_project content'
-  - 'view subgroup:neighbourhood content'
 

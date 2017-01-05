@@ -93,3 +93,6 @@ div.mcapi_transaction-sentence ul>li {
   padding: 0 0 0 1em;
 }
 
+div.field--type-worth, div.field--type-worth div.field__item {
+  display:inline
+}

@@ -18,28 +18,6 @@ class WalletHolder extends Standard {
   /**
    * {@inheritdoc}
    */
-  protected function defineOptions() {
-    $options = parent::defineOptions();
-    $options['owner'] = array('default' => '');
-    return $options;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function buildOptionsForm(&$form, FormStateInterface $form_state) {
-    parent::buildOptionsForm($form, $form_state);
-    $form['owner']  = [
-      '#title' => $this->t('Show the wallet owner'),
-      '#description' => $this->t('The holder can be any entity but the owner is always a user'),
-      '#type' => 'checkbox',
-      '#default_value' => $this->options['owner'],
-    ];
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function query() {
     // $this->addAdditionalFields();
   }
@@ -49,15 +27,12 @@ class WalletHolder extends Standard {
    */
   public function render(ResultRow $values) {
     $wallet = $this->getEntity($values);
-    $holder = $wallet->getHolder();
+    mdump($wallet);die();
+    return $wallet->holder
+      ->entity
+      ->toLink()
+      ->toString();
 
-    if ($this->options['owner'] and $holder->getEntityTypeId() != 'user') {
-      $entity = $holder->getOwner();
-    }
-    else {
-      $entity = $holder;
-    }
-    return $entity->toLink()->toString();
   }
 
 }

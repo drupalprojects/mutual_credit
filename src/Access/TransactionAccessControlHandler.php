@@ -31,16 +31,24 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
    */
   public function access(EntityInterface $transaction, $operation, AccountInterface $account = NULL, $return_as_object = FALSE) {
     $account = $this->prepareUser($account);
+    if ($operation == 'view label') {
+      $operation = 'view';
+    }
     if ($operation === 'view' && $account->hasPermission('view all transactions')) {
       // @todo URGENT. Handle the named payees and payers
-      return $return_as_object ? AccessResult::allowed()->cachePerUser() : TRUE;
+      $result = AccessResult::allowed()->cachePerUser();
     }
-    return TransactionOperations::loadOperation($operation)
-      ->getPlugin()
-      ->access($transaction, $account, $return_as_object)
-      ->cachePerUser()
-      ->addCacheableDependency($transaction);
+    if ($action =  TransactionOperations::loadOperation($operation)) {
+      $result = $action->getPlugin()
+        ->access($transaction, $account, TRUE)
+        ->cachePerUser()
+        ->addCacheableDependency($transaction);
+    }
+    else {
+      $result = AccessResult::forbidden()->cachePerPermissions();
+      debug('No action for transaction access operation: '.$operation);
+    }
+    return $return_as_object ? $result: $result->isAllowed();
   }
-
 
 }

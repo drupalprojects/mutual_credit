@@ -115,15 +115,6 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     if ($name = $this->autoName()) {
       $this->name->value = $name;
     }
-    // If the holding entity isn't a user, then we need to add the user owner to
-    // the list of payees and payers.
-    elseif ($this->holder_entity_type->value != 'user') {
-      $bursers = $this->bursers->referencedEntities();
-      $bursers[] = $this->getOwner();
-      $bursers = array_unique($bursers);
-      $this->bursers->setValue($bursers);
-      drupal_set_message(t("Allowing owner of @type to be a payee for the @type's wallet", ['@type' => $this->holder_entity_type->value]));
-    }
   }
 
   /**
@@ -188,12 +179,21 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       ->setDescription(t('TRUE if this wallet is controlled by the system'))
       ->setDefaultValue(0);
 
+    $fields['bursers'] = BaseFieldDefinition::create('burser_reference')
+      ->setLabel(t('Bursers'))
+      ->setDescription(t('Nominated users, including the owner, who can use this wallet'))
+      ->setSetting('target_type', 'user')
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE)
+      ->setCardinality(-1);
+
     // Following are computed fields, just for display
     $fields['holder'] = BaseFieldDefinition::create('entity_reference')
       ->setDescription(t("The entity holding this wallet"))
       ->setComputed(TRUE)
-      ->setClass('\Drupal\mcapi\Plugin\Field\Walletholder')
+      ->setClass('\Drupal\mcapi\Plugin\Field\WalletHolder')
       ->setDisplayConfigurable('view', TRUE);
+    // Might also like an owner field as well.
     $fields['balance'] = BaseFieldDefinition::create('worth')
       ->setLabel(t('Balance'))
       ->setDescription(t("Sum of all this wallet's credits minus debits"))

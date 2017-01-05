@@ -5,7 +5,7 @@ namespace Drupal\mcapi\Plugin\Field\FieldType;
 use Drupal\Core\Field\FieldItemList;
 
 /**
- * Represents a configurable entity worth field.
+ * Represents a entity worth field.
  */
 class WorthFieldItemList extends FieldItemList {
 

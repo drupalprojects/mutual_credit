@@ -142,14 +142,8 @@ function mcapi_entity_update($entity) {
     // Only rename the wallet if the entity can have max 1 wallet.
     if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle()) == 1) {
       // Get the entity's one wallet, and rename it.
-      if ($wallets = WalletStorage::walletsOf($entity, TRUE)) {
-        reset($wallets)->save();
-      }
-      elseif ($entity->id() != 1) {
-        //user 1 is resaved during setup
-        mtrace();
-        throw new \Exception($entity->getEntityTypeId() . ' should have 1 wallet.');
-      }
+      $wallets = WalletStorage::walletsOf($entity, TRUE);
+      reset($wallets)->save();
     }
   }
 }

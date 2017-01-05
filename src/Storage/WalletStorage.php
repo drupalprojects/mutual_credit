@@ -60,11 +60,13 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
    *
    * @param int $uid
    *
-   * @return type
+   * @return int[]
+   *   The wallet ids.
    *
    * @todo make this include the entity owners of the holders, but how?
    */
   public function myWallets($uid) {
+
     $wids = array_merge(
       static::walletsOf(User::load($uid)),
       $this->getQuery()->condition('bursers', $uid)->execute()

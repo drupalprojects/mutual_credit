@@ -8,7 +8,7 @@ id: wallet_transactions
 label: 'Transactions in a wallet'
 module: mcapi
 description: ''
-tag: Community accounting
+tag: 'Community accounting'
 base_table: mcapi_transactions_index
 base_field: xid
 core: 8.x
@@ -304,7 +304,7 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          format: '2'
+          format: blank
           set_precision: false
           precision: 0
           decimal: .
@@ -363,7 +363,7 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          format: '2'
+          format: blank
           set_precision: false
           precision: 0
           decimal: .
@@ -486,7 +486,7 @@ display:
           group_type: group
           admin_label: ''
           operator: '='
-          value: false
+          value: ''
           group: 1
           exposed: false
           expose:

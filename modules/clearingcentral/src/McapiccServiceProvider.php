@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\cforge;
+namespace Drupal\mcapi_cc;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\DependencyInjection\ServiceProviderBase;

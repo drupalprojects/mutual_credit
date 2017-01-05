@@ -3,11 +3,8 @@ status: true
 dependencies:
   config:
     - core.entity_view_mode.mcapi_wallet.mini
-    - field.field.mcapi_wallet.mcapi_wallet.bursers
   module:
     - mcapi
-_core:
-  default_config_hash: VTY3vqc653LegTX-i2MPV1vog3GZs7vearfJOl60wGI
 id: mcapi_wallet.mcapi_wallet.mini
 targetEntityType: mcapi_wallet
 bundle: mcapi_wallet

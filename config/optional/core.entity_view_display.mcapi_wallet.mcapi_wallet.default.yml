@@ -1,8 +1,6 @@
 langcode: en
 status: true
 dependencies:
-  config:
-    - field.field.mcapi_wallet.mcapi_wallet.bursers
   module:
     - mcapi
 id: mcapi_wallet.mcapi_wallet.default

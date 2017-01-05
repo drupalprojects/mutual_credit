@@ -7,7 +7,6 @@ use Drupal\Core\TypedData\DataDefinition;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\TypedData\DataReferenceDefinition;
-use Drupal\Core\Entity\TypedData\EntityDataDefinition;
 
 /**
  * Plugin implementation of the 'worth' field type.
@@ -108,5 +107,37 @@ class WorthItem extends FieldItemBase {
     }
     parent::onChange($property_name, $notify);
   }
+
+
+  /**
+   * Set the value of the field from the formatted value coming, say from a
+   * widget.
+   *
+   * @param mixed $formatted_value
+   *   Value or array from currency widget
+   * @param string $curr_id
+   *
+   * @deprecated not used.
+   */
+//  public function setValueFormatted($formatted_value, $curr_id = NULL) {
+//    if (empty($curr_id)) {
+//      $currency = reset(Currency::loadMultiple());
+//    }
+//    foreach ($this->values as $key => $value) {
+//      if ($value['curr_id'] == $curr_id) {
+//        $reuse = 1;
+//        continue;
+//      }
+//    }
+//    $value = [
+//      'curr_id' => $this->currency->id(),
+//      'value' => $this->currency->unformat((array)$formatted_value)
+//    ];
+//    if (!$reuse) {
+//      $key++;
+//    }
+//    $this->values[$key] = $value;
+//  }
+
 
 }

@@ -3,7 +3,6 @@ status: true
 dependencies:
   config:
     - core.entity_view_mode.mcapi_wallet.summary
-    - field.field.mcapi_wallet.mcapi_wallet.bursers
   module:
     - mcapi
 id: mcapi_wallet.mcapi_wallet.summary

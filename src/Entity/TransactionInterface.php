@@ -38,4 +38,12 @@ interface TransactionInterface extends ContentEntityInterface {
    */
   public function assemble();
 
+  /**
+   * Returns the time that the transaction was created.
+   *
+   * @return int
+   *   The timestamp of when the transaction was created.
+   */
+  public function getCreatedTime();
+
 }

@@ -25,12 +25,7 @@ class Burser extends PluginBase implements TransactionRelativeInterface {
    */
   public function isRelative(TransactionInterface $transaction, AccountInterface $account) {
     $targets = $this->getUsers($transaction);
-    $id = $account->id();
-    foreach ($targets as $target) {
-      if ($id == $target['target_id']) {
-        return TRUE;
-      }
-    }
+    return in_array($account->id(), $targets);
   }
 
   /**
@@ -47,7 +42,11 @@ class Burser extends PluginBase implements TransactionRelativeInterface {
   }
 
   /**
-   * {@inheritdoc}
+   * Get the users who have bursor power over one of the wallets in the transaction
+   *
+   * @param TransactionInterface $transaction
+   * @return int[]
+   *   The ids of the users.
    */
   public function getUsers(TransactionInterface $transaction) {
     $payer_wallet = $transaction->payer->entity;

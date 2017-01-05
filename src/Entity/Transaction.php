@@ -252,7 +252,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
       ->setDescription(t('Value of the transaction (one or more currencies)'))
       ->setCardinality(-1)
       ->setRequired(TRUE);
-    
+
     // I wanted to add the CanPayout and CanPayin constraints in the widget
     // builder but I couldn't see how. So at the moment they apply to all entity
     // forms, but they only run code when $items->restricted is TRUE.
@@ -410,6 +410,16 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    */
   public function setOwnerId($uid) {
     $this->creator->targetId = $uid;
+  }
+
+    /**
+   * {@inheritdoc}
+   */
+  public function getCreatedTime() {
+    if (isset($this->get('created')->value)) {
+      return $this->get('created')->value;
+    }
+    return NULL;
   }
 
 }

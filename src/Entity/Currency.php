@@ -136,7 +136,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * 'raw' integer value from the db into a rendered currency value, or form
    * widget and back again.
    *
-   * @var string
+   * @var array
    *
    * @todo the format is irregular, the initial zeros should be replaced for 9s
    */
@@ -303,11 +303,11 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    */
   public function unformat(array $parts) {
     // Num of $parts is always one more than the number of $this->format_nums.
-    // Need to work backwards.
+    // Need to work backwards from the smallest unit e.g. cents to the multiples of it e.g. dollars
     $format = array_reverse($this->format_nums, TRUE);
     $raw = $divisor = 0;
     foreach ($format as $key => $value) {
-      if (!isset($parts[$key])) ;
+      if (!isset($parts[$key])) continue;
       $raw += $parts[$key] * ($divisor + 1);
       $divisor = $value;
     }

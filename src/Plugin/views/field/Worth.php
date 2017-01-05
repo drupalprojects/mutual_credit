@@ -13,7 +13,7 @@ use Drupal\mcapi\Entity\Currency;
  * @ingroup views_field_handlers
  *
  * @ViewsField("worth")
- * 
+ *
  * @note for aggregated worths, see src/Plugin/views/query/Sql::getAggregationInfo()
  */
 class Worth extends FieldPluginBase {
@@ -35,7 +35,7 @@ class Worth extends FieldPluginBase {
       '#title' => t('Format'),
       '#decriptions' => $this->t('Not all formats support multiple cardinality.'),
       '#type' => 'radios',
-      '#options' => Currency::formats(),
+      '#options' => ['blank' => t('Normal, with 0 as empty field')] + Currency::formats(),
       '#default_value' => $this->options['format'],
     );
     parent::buildOptionsForm($form, $form_state);
@@ -50,6 +50,10 @@ class Worth extends FieldPluginBase {
    */
   public function render(ResultRow $values) {
     if ($curr_id = $this->getValue($values, 'curr_id')) {
+      $value = $this->getValue($values);
+      if ($value == 0 && $this->options['format'] == 'blank') {
+        return '';
+      }
       return Currency::load($curr_id)
         ->format($this->getValue($values), $this->options['format']);
     }

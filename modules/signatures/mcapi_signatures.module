@@ -200,16 +200,18 @@ function mcapi_signatures_entity_extra_field_info() {
  * For user entities. Show the pending transactions on the user.
  */
 function mcapi_signatures_user_view(array &$build, $account, $display) {
-  if ($display->getComponent('waiting_on_me')) {
+  if ($info = $display->getComponent('waiting_on_me')) {
     $build['mcapi_signatures']['#attached']['library'] = ['mcapi_signatures/signatures'];
+    $build['mcapi_signatures']['#weight'] = $info['weight'];
     $build['mcapi_signatures']['my_sig_needed'] = views_embed_view(
       'mcapi_pending_signatures',
       'my_sig_needed',
       $account->id()
     );
   }
-  if ($display->getComponent('waiting_on_others')) {
+  if ($info = $display->getComponent('waiting_on_others')) {
     $build['mcapi_signatures']['#attached']['library'] = ['mcapi_signatures/signatures'];
+    $build['mcapi_signatures']['#weight'] = $info['weight'];
     $build['mcapi_signatures']['other_sig_needed'] = views_embed_view(
       'mcapi_pending_signatures',
       'other_sig_needed',
