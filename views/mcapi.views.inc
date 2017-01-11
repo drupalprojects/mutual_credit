@@ -59,7 +59,7 @@ class transactionDefaultViewsController extends EntityDefaultViewsController {
     );
     $data['mcapi_transactions']['payee'] = array(
       'title' => t('Payee'),
-      'help' => t('The user who gave currency in the transaction.'),
+      'help' => t('The user who received currency in the transaction.'),
       'field' => array(
         'handler' => 'views_handler_field_user_name',
       ),

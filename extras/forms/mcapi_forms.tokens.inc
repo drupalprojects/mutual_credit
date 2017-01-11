@@ -50,7 +50,6 @@ function mcapi_forms_tokens($type, $tokens, array $objects, array $options = arr
     }
     $replacements[$original] .= drupal_render($element);
   }
-
   return $replacements;
 }
 

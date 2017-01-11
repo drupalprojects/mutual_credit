@@ -66,7 +66,7 @@ function transaction_cluster_create(stdclass $transaction, $really = TRUE) {
  *   the transaction cluster, with serial number and xids
  */
 function transaction_cluster_write(array $cluster, $really = TRUE, $skip_validation = FALSE) {
-  static $timediff = 0;
+  static $i = 0;
   if (!empty(current($cluster)->serial)) {
     throw new Exception ('Cannot insert transactions which already have a serial numbers: '.$transaction->serial);
   }
@@ -77,13 +77,18 @@ function transaction_cluster_write(array $cluster, $really = TRUE, $skip_validat
   $serial = entity_get_controller('transaction')->next_serial();
   module_invoke_all('transaction_pre_insert', $cluster);
   $created = $cluster[0]->created ? : REQUEST_TIME -1;
+  //if the time of the transaction is not now, then add the number of seconds which have elapsed today
+  if (REQUEST_TIME != $created) {
+    //this prevents a date widget creating all transactions on the first second of a day
+    $created += (REQUEST_TIME - strtotime(date(d-M-Y), REQUEST_TIME));
+  }
 
   try{
     $t = db_transaction();
     foreach ($cluster as $transaction) {
       $transaction->serial = $serial;
       //it makes a mess of the running balances if transactions with the same serial number have the same time as well.
-      $transaction->created = $created + $timediff++;
+      $transaction->created = $created + $i++;
       //this property is used for example in the intertrading module to save the remote participant's details.
       $transaction->data = (isset($transaction->extra)) ? $transaction->extra : array();
       entity_get_controller('transaction')->insert($transaction, $really);
@@ -919,7 +924,7 @@ function transaction_view($transactions, $view_mode = 'certificate', $suppress_o
       '#theme_wrappers' => array('transaction'),
       '#class' => array(
          'transaction',
-         $view_mode == 'certificate' ? 'certificate' : 'sentence',
+         $view_mode == 'certificate' ? 'certificate' : variable_get('mcapi_sentence'),
          'state-'.$transaction->state,
          $transaction->type
       ),
@@ -932,7 +937,7 @@ function transaction_view($transactions, $view_mode = 'certificate', $suppress_o
         $tx['#links'] = $suppress_ops ? array() : transaction_get_links($transaction, TRUE, FALSE);
         break;
       default: //an arbitrary token string, don't forget there is a token for [transaction:links]
-        $sentence = variable_get('mcapi_sentence', mcapi_sentence_default());
+        $sentence = $view_mode;
         $sentence = $suppress_ops ? str_replace('[transaction:links]', '', $sentence) : $sentence;
         $tx['#markup'] = token_replace(
           $sentence,

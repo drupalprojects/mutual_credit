@@ -3,7 +3,7 @@
 
 define ('TRANSACTION_STATE_PENDING', -1);
 
-/*
+/**
  * Introduces a new transaction state, 'pending', and
  * modifies existing default transaction forms to create pending transactions
  * Pending transactions require at least one signature
@@ -14,8 +14,8 @@ define ('TRANSACTION_STATE_PENDING', -1);
  * There is also a 'cancel' operation for pendingf transactions, permissions defined in the currency.
   */
 
-/*
- * implements hook_help()
+/**
+ * implements hook_help().
  */
 function mcapi_signatures_help($path) {
   if ($path != 'admin/accounting/signatures') return;
@@ -23,8 +23,8 @@ function mcapi_signatures_help($path) {
   return $help;
 }
 
-/*
- * implements hook_menu()
+/**
+ * implements hook_menu().
  */
 function mcapi_signatures_menu() {
   //this item makes it possible to sign on someone elses behalf, if the link is provided.
@@ -55,9 +55,10 @@ function mcapi_signall_access($account) {
   }
 }
 
-/*
- * Implements hook_entity_load()
- * put the signatories property on every transaction entity
+/**
+ * Implements hook_entity_load().
+ *
+ * Put the signatories property on every transaction entity
  */
 function mcapi_signatures_entity_load($entities, $type) {
   if ($type == 'transaction') {
@@ -68,9 +69,10 @@ function mcapi_signatures_entity_load($entities, $type) {
   }
 }
 
-/*
- * implements mcapi hook_mcapi_create
- * saves the new signatures with the new transaction
+/**
+ * Implements mcapi hook_mcapi_create().
+ *
+ * Saves the new signatures with the new transaction
  */
 function mcapi_signatures_transaction_cluster_write($cluster, $really) {
   module_load_include('inc', 'mcapi_signatures');
@@ -79,9 +81,10 @@ function mcapi_signatures_transaction_cluster_write($cluster, $really) {
   mcapi_sig_transaction_create($transaction, $really);
 }
 
-/*
- * Implements hook_entity_delete()
- * remove the signatories from the database
+/**
+ * Implements hook_entity_delete().
+ *
+ * Remove the signatories from the database.
  */
 function mcapi_signatures_entity_delete($transaction, $type) {
   if ($type == 'transaction') {
@@ -94,8 +97,9 @@ function mcapi_signatures_entity_delete($transaction, $type) {
 //MAY BE FIRED DIFFERENTLY IN DIFFERENT DELETE MODES
 
 /**
- * implement mcapi hook_transaction_undo
- * ensures that signatures for undone transactions are not left pending.
+ * implement mcapi hook_transaction_undo().
+ *
+ * Ensures that signatures for undone transactions are not left pending.
  */
  //could equally use hook_undo pending if it exists....
 function mcapi_signatures_transaction_undo($serial) {
@@ -104,9 +108,8 @@ function mcapi_signatures_transaction_undo($serial) {
     ->execute();
 }
 
-/*
- * Implements hook_mcapi_info_states
- * declare the pending transaction state.
+/**
+ * Implements hook_mcapi_info_states().
  */
 function mcapi_signatures_mcapi_info_states() {
   return array(
@@ -138,8 +141,8 @@ function mcapi_get_signatories($serial = NULL, $uid = NULL) {
 }
 
 
-/*
- * implements hook_form_FORM_ID_alter
+/**
+ * implements hook_form_FORM_ID_alter().
  * changing state of all transaction forms EXCEPT those made with mcapi_forms module
  */
 function mcapi_signatures_form_transaction_form_alter(&$form, &$form_state, $form_id) {
@@ -147,9 +150,10 @@ function mcapi_signatures_form_transaction_form_alter(&$form, &$form_state, $for
   module_load_include('inc', 'mcapi_signatures');
   _set_form_state_to_pending($form, $form_state);
 }
-/*
- * implements hook_form_FORMID_alter
- * this has to run AFTER the mcapi_forms implementation
+/**
+ * implements hook_form_FORMID_alter().
+ *
+ * @note This has to run AFTER the mcapi_forms implementation
  */
 function mcapi_signatures_form_mcapi_forms_form_alter(&$form, &$form_state) {
   //changing state of all ONLY transaction forms made with mcapi_forms module
@@ -159,8 +163,8 @@ function mcapi_signatures_form_mcapi_forms_form_alter(&$form, &$form_state) {
   }
 }
 
-/*
- * implements hook_block_info
+/**
+ * implements hook_block_info().
  */
 function mcapi_signatures_block_info() {
   //these may be possible to construct in views, but in the end it was easier to write my own functions
@@ -176,8 +180,8 @@ function mcapi_signatures_block_info() {
     )
   );
 }
-/*
- * implements hook_block_view
+/**
+ * Implements hook_block_view().
  */
 function mcapi_signatures_block_view($delta) {
   module_load_include('inc', 'mcapi');
@@ -198,22 +202,23 @@ function mcapi_signatures_block_view($delta) {
   }
   return array('title' => $title, 'content' => $content);
 }
-/*
- * implements hook_block_configure
+/**
+ * Implements hook_block_configure().
  */
 function mcapi_signatures_block_configure($delta) {
   return mcapi_block_configure($delta);
 }
-/*
- * implements hook_block_save
+/**
+ * implements hook_block_save().
  */
 function mcapi_signatures_block_save($delta, $values) {
   return mcapi_block_save($delta, $values);
 }
 
-/*
- * implements hook_block_info_alter
- * adjusts the blocks declared by the default view
+/**
+ * implements hook_block_info_alter().
+ *
+ * Adjusts the blocks declared by the default view.
  */
 function mcapi_signatures_block_info_alter(&$blocks) {
   //because this view requires an argument which probably comes from the url
@@ -223,9 +228,10 @@ function mcapi_signatures_block_info_alter(&$blocks) {
   }
 }
 
-/*
- * implements hook_block_view_alter
- * appends the 'signatures needed' view to the mcapi-balance block
+/**
+ * implements hook_block_view_alter().
+ *
+ * Appends the 'signatures needed' view to the mcapi-balance block.
  */
 function mcapi_signatures_block_view_balances_alter(&$data, $block) {
   if (isset($data['#settings']['account'])) {
@@ -241,8 +247,9 @@ function mcapi_signatures_block_view_balances_alter(&$data, $block) {
 }
 
 /*
- * implements hook_cron
- * checks integrity of signatures and transactions
+ * Implements hook_cron().
+ *
+ * Checks integrity of signatures and transactions.
  */
 function mcapi_signatures_cron() {
   //call me paranoid, but I'd like to just check data integrity
@@ -254,8 +261,8 @@ function mcapi_signatures_cron() {
 
 
 
-/*
- * implements hook_theme
+/**
+ * Implements hook_theme().
  */
 function mcapi_signatures_theme() {
   $items['pending_signatures'] = array(
@@ -267,25 +274,27 @@ function mcapi_signatures_theme() {
   return $items;
 }
 
-/*
- * implements hook_theme_registry_alter
- * adds the pending section to the transaction certificate
+/**
+ * Implements hook_theme_registry_alter().
+ *
+ * Adds the pending section to the transaction certificate.
  */
 function mcapi_signatures_theme_registry_alter(&$items) {
   $items['certificate']['variables']['pending'] = array();
 }
 
-/*
- * implement hook_transaction_view_alter
+/**
+ * Implement hook_transaction_view_alter().
  */
 function mcapi_signatures_init() {
   drupal_add_css(drupal_get_path('module', 'mcapi_signatures').'/signatures.css');
 }
 
 
-/*
- * implements theming hook_process_transaction
- * adds the sign_link to the transaction certificate, in accordance with mcapi_signatures_theme_registry_alter
+/**
+ * Implements theming hook_process_transaction().
+ *
+ * Adds the sign_link to the transaction certificate, in accordance with mcapi_signatures_theme_registry_alter.
  */
 function mcapi_signatures_preprocess_certificate(&$variables) {
   $transaction = &$variables['object'];
@@ -297,18 +306,20 @@ function mcapi_signatures_preprocess_certificate(&$variables) {
   }
 }
 
-/*
- * implements mcapi hook transaction_operations
- * each callback refers to 2 functions - itself and CALLBACK_views
+/**
+ * implements mcapi hook transaction_operations().
+ *
+ * Each callback refers to 2 functions - itself and CALLBACK_views.
  */
 function mcapi_signatures_transaction_operations() {
   module_load_include('inc', 'mcapi_signatures');
   return _mcapi_signatures_transaction_operations();
 }
 
-/*
- * implements mcapi hook transaction_access_callbacks
- * each callback refers to 2 functions - itself and CALLBACK_views
+/**
+ * Implements mcapi hook transaction_access_callbacks().
+ * 
+ * Each callback refers to 2 functions - itself and CALLBACK_views
  * each callback recieves 3 arguments
  */
 function mcapi_signatures_transaction_access_callbacks() {
@@ -317,8 +328,8 @@ function mcapi_signatures_transaction_access_callbacks() {
   );
 }
 
-/*
- * callback for transaction_access
+/**
+ * Callback for transaction_access
  */
 function transaction_access_callback_signatory($transaction) {
   //the pending_signatures property doesn't exist duing the confirmation stage of the transaction creation form
@@ -328,7 +339,7 @@ function transaction_access_callback_signatory($transaction) {
   return in_array($GLOBALS['user']->uid, array_keys($transaction->pending_signatures));
 }
 
-/*
+/**
  * callback for transaction view access for views
  */
 function transaction_access_callback_signatory_views($query, $condition, $state) {
@@ -351,9 +362,10 @@ function transaction_access_callback_signatory_views($query, $condition, $state)
   $query->distinct();
 }
 
-/*
- * implements hook_mcapicurrencies_default_alter
- * allows signatories and accountants to view pending transactions on the default currency
+/**
+ * Implements hook_mcapicurrencies_default_alter().
+ * 
+ * Allows signatories and accountants to view pending transactions on the default currency
  * its here coz its small and tidier than creating a mcapicurrencies_default.inc file
  */
 function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
@@ -366,8 +378,8 @@ function mcapi_signatures_mcapicurrencies_default_alter(&$currencies) {
   );
 }
 
-/*
- * implements hook_user_delete
+/**
+ * Implements hook_user_delete().
  * delete all pending transactions and remove all signatures
  */
 function mcapi_signatures_user_delete($account) {
@@ -378,8 +390,9 @@ function mcapi_signatures_user_delete($account) {
   db_delete('mcapi_signatures')->condition('uid', $account->uid)->execute();
 }
 
-/*
- * implements alter hook_user_cancel_confirm_form_alter().
+/**
+ * Implements alter hook_user_cancel_confirm_form_alter().
+ *
  * Explain what happens to pending transactions
  */
 function mcapi_signatures_form_user_cancel_confirm_form_alter(&$form, &$form_state) {
@@ -387,7 +400,7 @@ function mcapi_signatures_form_user_cancel_confirm_form_alter(&$form, &$form_sta
 }
 
 /*
- * Implements views hook_views_api
+ * Implements views hook_views_api().
  */
 function mcapi_signatures_views_api() {
   return array(

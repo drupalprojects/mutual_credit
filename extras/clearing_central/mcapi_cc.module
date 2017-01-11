@@ -49,7 +49,7 @@ function mcapi_cc_menu() {
     'type' => MENU_DEFAULT_LOCAL_TASK
   );
   $items['transact/remote/pay'] = array(
-    'title' => 'Remote credit ',
+    'title' => 'Remote credit',
     'description' => 'Credit a member in another CES exchange',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mcapi_cc_remote_credit_form'),

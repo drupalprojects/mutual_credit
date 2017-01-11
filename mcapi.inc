@@ -737,6 +737,11 @@ function _worth_element_process($element, &$form_state) {
  */
 function theme_worth_item(&$variables) {
   $currency = currency_load($variables['currcode']);
+  // TODO this is appropriate when showing a transaction worth, but maybe not when showing a balance in another context
+  if ($variables['quantity'] == 0 && $currency->display['zero']) {
+    return $currency->display['zero'];
+  }
+  
   list($integer, $cents) = currency_explode($variables['quantity']);
   switch($currency->display['divisions']) {
     case CURRENCY_DIVISION_MODE_CUSTOM :

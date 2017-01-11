@@ -200,12 +200,16 @@ function mcapi_get_form($mcapi_form_id, $transaction = NULL) {
         }
       }
       if ($direction == 'incoming') {
-        $defaults['payer'] = $entity->uid;
         $defaults['payee'] = $GLOBALS['user']->uid;
+        if ($defaults['payee'] != $entity->uid) {
+          $defaults['payer'] = $entity->uid;
+        }
       }
       else {
         $defaults['payer'] = $GLOBALS['user']->uid;
-        $defaults['payee'] = $entity->uid;
+        if ($defaults['payee'] != $entity->uid) {
+          $defaults['payee'] = $entity->uid;
+        }
       }
       //that was all very nice matching instance for instance, but really we want the node title in the transaction description
       if ($entity_type == 'node' && $field_name = variable_get('transaction_description_field')) {

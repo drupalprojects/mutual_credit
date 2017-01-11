@@ -88,6 +88,9 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       if (property_exists($transaction, 'secondperson')) {
         $form['secondperson']['#default_value'] = $transaction->secondperson;
       }
+      else {
+        $form['secondperson']['#default_value'] = $settings['secondperson']['preset'];
+      }
       //specifies which user_chooser widget
       $uchoo_setup = explode(':', $settings['secondperson']['user_chooser_config']);
       $form['secondperson']['#type'] = 'user_chooser_few';
@@ -96,9 +99,6 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       $form['secondperson']['#required'] = TRUE;
       $form['secondperson']['#multiple'] = FALSE;
       $form['secondperson']['#exclude'] = array($GLOBALS['user']->uid);
-      if (!isset($form['secondperson']['#default_value'])) {
-        $form['secondperson']['#default_value'] = $settings['secondperson']['preset'];
-      }
       $type = $settings['direction']['widget'] ? $settings['direction']['widget'] : 'select';
       $options = ($type == 'select' && empty($settings['direction']['preset'])) ? array(t('Please choose...')) : array();
       $form['direction'] = array(
@@ -117,21 +117,10 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       array_unshift($form['#validate'], 'mcapi_forms_validate_secondperson');
     }
     if (strpos($settings['experience']['template'], 'created]')) {
-      if (module_exists('date_popup')) {
-        $form['created'] = array(
-          //this widget seems unable to submit the unixtime that the transaction form expects.
-          //probably need to rework the transaction form and maybe the transaction object and theme preprocessor.
-          '#type' => 'date_popup',
-          '#date_type' => DATE_UNIX,
-          '#date_format' => 'm/d/Y'//replaces the 'short' date format so as to exclude hours, mins & seconds
-        );
-      }
-      //else {
-        $form['created'] = array(
-          '#type' => 'date',
-          '#element_validate' => array('mcapi_date_validate')
-        );
-      //}
+      $form['created'] = array(
+        '#type' => 'date',
+        '#element_validate' => array('mcapi_date_validate'),
+      );
     }
     if ($form['#settings']['experience']['sure_title']) {
       $form['buttons']['submit']['#value'] = t('Preview');
@@ -140,7 +129,9 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
   elseif ($form['#step'] == 2) {
     //we unset most of the fields so they don't display or change from what's in storage
     foreach(element_children($form) as $fieldname) {
-      if (in_array($fieldname, array('buttons', 'form_id', 'form_build_id', 'form_token'))) continue;
+      if (in_array($fieldname, array('buttons', 'form_id', 'form_build_id', 'form_token'))) {
+        continue;
+      }
       unset($form[$fieldname]);
     }
     //put the back button only for last step if there are values from step 1
@@ -148,8 +139,7 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
       $transactions = &$form_state['transactions'];//these have no xid keys
       mcapi_hide_tabs();
       $form['buttons']['back'] = array(
-        '#type' => 'submit',
-        '#value' => t('Back'),
+        '#markup' => '<input id = "edit-back" action="action" type="button" value="Back" onclick="history.go(-1);" />',
         '#weight' => -1
       );
       array_unshift($form['#submit'], 'mcapi_forms_form_presubmit');
@@ -246,6 +236,8 @@ function theme_mcapi_form($variables) {
         }
       }
     }
+    // There's no ui for this so its no optional
+    unset($form['created']['#theme_wrappers']);
     return token_replace(
       check_markup($form['#template'], MCAPIFORM_STRING_FORMAT),
       array('mcapiform' => $form, 'user' => $GLOBALS['user']),
@@ -285,11 +277,6 @@ function mcapi_forms_validate($form, &$form_state) {
   if (!empty($form_state['clicked_button']['#submit']) && in_array('mcapi_transaction_undo_confirm_form', $form_state['clicked_button']['#submit'])) {
     return;
   }
-  //this is because the popup widget returns a date string while the created field expects a unixtime
-  if (!empty($form_state['values']['created']) && !is_integer($form_state['values']['created'])) {
-//    form_set_value($form['created'], strtotime($form_state['values']['created']), $form_state);
-  }
-
   $form_state['rebuild'] = FALSE;
   //go back if that button was pressed
   if (isset($form_state['values']['back']) && $form_state['values']['op'] == $form_state['values']['back']) {
@@ -384,7 +371,6 @@ if (!function_exists('array_replace_recursive')) {
 }
 
 function mcapi_date_validate(&$element, &$form_state) {
-  if (!array_key_exists('created', $form_state['values']));
   date_validate($element, $form_state);
   $d = $form_state['values']['created'];
   form_set_value($element, strtotime($d['year'] .'-'. $d['month'] .'-'. $d['day']), $form_state);

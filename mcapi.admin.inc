@@ -677,18 +677,6 @@ function mcapi_currency_validate_divisions(&$element, &$form_state) {
 }
 
 /**
- * Validate callback for transaction form 'currcode' element
- */
-function mcapi_validate_currcode(&$element, &$form_state) {
-  if (isset($element['#value']) && $element['#value']) {
-    $currency = currency_load($element['#value']);
-    if (!is_object($currency)) { //you would also check here if the user had permission to use this currency
-      form_error($element, t('Invalid currency specified: @num', array('@num' => $element['#value'])));
-    }
-  }
-}
-
-/**
  * menu access callback
  * access to the ctools currency edit page
  */
@@ -927,7 +915,7 @@ function mcapi_transaction_entity_uid_form($context) {
     'transaction_types' => array(),
     'otheruser' => 1,
     'worth_items' => array(
-      'worths' => array(), 
+      'worths' => array(),
       'round' => 'down'
     )
   );
@@ -1124,7 +1112,8 @@ function _transaction_operations() {
       $info += array(
         'access form' => 'operations_config_default_access',
         'op' => $op,
-        'module' => $module
+        'module' => $module,
+        'sure' => '',
       );
       mcapi_operation_include($info);
       $props = array('submit callback', 'access callback', 'form callback');

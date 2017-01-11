@@ -178,34 +178,29 @@ function list_pending_for_uid($uid, $currcodes = array()) {
  * Content callback
  *
  * Show pending transactions waiting for the signature of a certain user.
+ *
+ * @param int $uid
+ *   The user who needs to sign
+ *
+ * @return array
+ *   A renderable array of the transaction sentences
  */
-function list_waiting_on_uid($uid, $currcodes = array()) {
-  $output = array();
+function list_waiting_on_uid($uid) {
   $serials = transactions_needing_sig_of_user($uid);
   if ($serials) {
     $transactions = array();
     foreach ($serials as $serial) {
       $transaction = transaction_load($serial);
-      if (!transaction_operation_access('view', $transaction)) continue;
+      if (!transaction_operation_access('view', $transaction)) {
+        continue;
+      }
       $transactions[$transaction->xid] = $transaction;
     }
-    if (empty($transactions)) return array();
-    $output[] = transaction_view($transactions, variable_get('mcapi_sentence', mcapi_sentence_default()), TRUE);
+    if ($transactions) {
+      return transaction_view($transactions, variable_get('mcapi_sentence', mcapi_sentence_default()));
+    }
   }
-  if (count($output) > 1) {
-    //add a link to sign all the users transactions at once.
-    //actually need to check permissions here!!!
-    $output[] = array(
-      '#theme' => 'link',
-      '#text' => t('Sign all'),
-      '#path' => "user/$uid/signall",
-      '#options' => array(
-        'attributes' => array(),
-        'html' => FALSE
-      )
-    );
-  }
-  return $output;
+  return array();
 }
 
 /**
@@ -219,12 +214,13 @@ function list_waiting_not_on_uid($uid, $currcodes = array()) {
   $serials = transaction_filter(array('involving' => $uid, 'state' => TRANSACTION_STATE_PENDING));
   $transactions = transaction_load(array_unique($serials));
   foreach ($transactions as $serial => $transaction) {
-    if (!transaction_operation_access('view', $transaction)) continue;
-    $signatures = $transaction->pending_signatures;
-    unset($signatures[$uid]);
-    $waiting_on = array_filter($signatures);
-    if ($waiting_on) {
-      $volitional_transactions[$transaction->xid] = $transaction;
+    if (transaction_operation_access('view', $transaction)) {
+      $signatures = $transaction->pending_signatures;
+      unset($signatures[$uid]);
+      $waiting_on = array_filter($signatures);
+      if ($waiting_on) {
+        $volitional_transactions[$transaction->xid] = $transaction;
+      }
     }
   }
   if (count($volitional_transactions)) {
