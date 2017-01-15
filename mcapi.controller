@@ -224,13 +224,13 @@ class mcapiEntityController extends EntityAPIController {
       $xids = array_keys(transaction_filter(array('serial' => $transaction->serial)));
       $this->resetCache($xids);
       $this->invoke('update', $transaction);
+      field_attach_update('transaction', $transaction);
     }
     catch (Exception $e) {
       $t->rollback();
       watchdog_exception($this->entityType, $e);
       throw $e;
     }
-    module_invoke_all('entity_update', $transaction, 'transaction');
   }
 
   /**

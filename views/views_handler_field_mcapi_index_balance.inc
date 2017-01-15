@@ -39,10 +39,8 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
         return 'error';
       }
     }
-    //the running balance depends the order of the transactions
-    //order or creation is not enough if they were created at the same time
-    //created date is not necessarily unique per transaction, so needs a secondary sort.
-
+    // The running balance depends the order of the transactions
+    // Except some were created at the same time, so needs a secondary sort.
     return array(
       '#theme' => 'worth_item',
       '#currcode' => $currcode,
@@ -52,7 +50,8 @@ class views_handler_field_mcapi_index_balance extends views_handler_field {
           AND created <= :created
           AND currcode = '$currcode'",
         array(':created' => $values->{$this->aliases['created']})
-      )->fetchField()
+      )->fetchField(),
+      '#aggregate' => TRUE
     );
   }
 }

@@ -35,7 +35,8 @@ define('TRANSACTION_BUILD_INFO_ARG', 0);
 
 /**
  * Community Accounting API wrapper function, see transaction.api.php
- * arguments:
+ *
+ * Arguments:
  *   $transaction - an object, probably originally created by entity_controller->create()
  *   $really - Boolean whether to actually save this, or just test-write and revoke.
  * Defaults to TRUE to be compatible with the Entity API 'save callback'
@@ -55,7 +56,8 @@ function transaction_cluster_create(stdclass $transaction, $really = TRUE) {
 
 /**
  * Community Accounting API function, see transaction.api.php
- * all will be given the SAME serial number, which is what makes them a cluster
+ *
+ * All will be given the SAME serial number, which is what makes them a cluster
  * return the serial number if $really is TRUE
  * this should always be inside a try!!!
  * @param array $cluster
@@ -111,25 +113,8 @@ function transaction_cluster_write(array $cluster, $really = TRUE, $skip_validat
 }
 
 /**
- * Community Accounting API wrapper function, see transaction.api.php
- * update the transaction and notify the rest of the system
- * WARNING updating a transaction will NOT update the dependent transactions
- * $transaction is the main, or volitional transaction. $children are ignored
- * $op is the machine name of the operation
- */
-function transaction_update($transaction, $old_state = NULL) {
-  //entity_metadata_wrapper('transaction', $transaction)->update();
-  entity_get_controller('transaction')->update($transaction, $transaction->state);
-  //this will have fired
-  //hook_entity_presave
-  //hook_entity_insert OR hook_entity_update
-  //it is rare that field API fields will have changed, but we'll just save them here to be sure.
-  field_attach_update('transaction', $transaction);
-  module_invoke_all('transaction_update', $transaction, $old_state);
-}
-
-/**
  * Community Accounting API function, see transaction.api.php
+ *
  * Undo according to the appropriate delete mode.
  * NB No accounting checks take place before deletings.
  */
@@ -137,7 +122,9 @@ function transaction_undo($serial, $mode = NULL) {
   //load all the transactions sharing this serial as equals in an array, not as parent/children
   $xids = array_keys(transaction_filter(array('serial' => $serial)));
   $transactions = entity_load('transaction', $xids);
-  if (is_null($mode)) $mode = variable_get('mcapi_controller_delete_mode');
+  if (is_null($mode)) {
+    $mode = variable_get('mcapi_controller_delete_mode');
+  }
   switch($mode) {
     case MCAPI_CURRENCY_UNDO_ERASE:
       $transaction = current($transactions);
@@ -177,7 +164,7 @@ function transaction_totals($uid, $currcode = NULL, $filters = array()) {
 /**
  * Community Accounting API wrapper function,
  *
- * Load a transaction cluster by serial number
+ * Load a transaction cluster by serial number.
  *
  * This is used to as a menu loader, so can't be in an inc file
  * @see transaction.api.php
@@ -328,6 +315,7 @@ function mcapi_theme() {
       'variables' => array(
         'currcode' => NULL,
         'quantity' => '',
+        'aggregate' => FALSE,
       ),
       'file' => 'mcapi.inc'
     ),
@@ -1017,6 +1005,12 @@ function currencies_load($account = NULL) {
   return $filtered;
 }
 
+/**
+ * Get all the currencies of the given issuance types.
+ *
+ * @return stdClass[]
+ *   The currencies.
+ */
 function currencies_filter() {
   $currencies = currencies_load();
   $output = array();
@@ -1028,9 +1022,18 @@ function currencies_filter() {
 }
 
 /**
+ *
  * Returns some or all of the operations, from hook_transaction_operations.
+ *
+ * @param bool $localize
+ *   TRUE if the operations should be translated
+ * @param bool $all
+ *   TRUE to include internal operations (those with no access callback)
+ *
+ * @return array[]
+ *   $operations keyed by the op id
  */
-function transaction_operations($localize = '1', $all = '0') {
+function transaction_operations($localize = TRUE, $all = FALSE) {
   $all_operations = &drupal_static(__FUNCTION__);
   static $preloaded = array();
   $key = strval($localize).strval($all);
@@ -1080,6 +1083,7 @@ function mcapi_trigger_info() {
 
 /*
  * Pull trigger transaction_cluster_alter().
+ *
  * sends the volitional transaction to the action callbacks where it can be changed.
  * Action callbacks may return a new transaction to be added to the $transactions
  */
@@ -1097,6 +1101,7 @@ function trigger_transaction_cluster_alter(&$cluster) {
 
 /*
  * Pull trigger transaction_update().
+ *
  * will only fire if the trigger module is enabled
  * if the $old_state is set, that indicates this was a workflow operation
  */
@@ -1108,7 +1113,8 @@ function trigger_transaction_update($transaction, $old_state = NULL) {
 
 /*
  * Pull trigger transaction_undo().
- * will only fire if the trigger module is enabled
+ *
+ * Will only fire if the trigger module is enabled
  * if the $old_state is set, that indicates this was a workflow operation
  */
 function trigger_transaction_undo($serial) {
@@ -1120,7 +1126,8 @@ function trigger_transaction_undo($serial) {
 
 /*
  * Pull trigger transaction_post_insert().
- * will only fire if the trigger module is enabled
+ *
+ * Will only fire if the trigger module is enabled
  */
 function trigger_transaction_post_insert($serial) {
   foreach (trigger_get_assigned_actions('transaction_post_insert') as $aid => $info) {
@@ -1486,12 +1493,17 @@ function _currcode_options() {
   return $options;
 }
 
+/**
+ * Hacky solution to my not understanding how to build fields properly
+ */
 function _worthitems_to_worths(array $worthitems) {
   $currencies = currencies_load();
   $worths = array();
   foreach ($worthitems as $worth_item) {
-    if (isset($currencies[$worth_item['currcode']])) {
-      $worths[$worth_item['currcode']] = isset($worth_item['quantity']) ? $worth_item['quantity'] : @$worth_item['main_quant'];
+    if (isset($worth_item['currcode'])) {
+      if (isset($currencies[$worth_item['currcode']])) {
+        $worths[$worth_item['currcode']] = isset($worth_item['quantity']) ? $worth_item['quantity'] : @$worth_item['main_quant'];
+      }
     }
   }
   return $worths;

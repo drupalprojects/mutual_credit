@@ -77,6 +77,7 @@ class views_handler_field_mcapi_users_totals extends views_handler_field {
           '#theme' => 'worth_item',
           '#quantity' => $quant,
           '#currcode' => $currcode,
+          '#aggregate' => TRUE,
           '#suffix' => $this->options['separator']
         );
       }

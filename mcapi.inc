@@ -301,7 +301,8 @@ function mcapi_view_access($op, $transaction, $currency) {
 }
 
 /**
- * access callback for transaction operation 'undo'
+ * Access callback for transaction operation 'undo'
+ *
  * Undo is the only 'exposed' operation in this module
  */
 function transaction_op_undo_access($op, $transaction, $currency) {
@@ -351,21 +352,29 @@ function transaction_access_callback_creator($transaction) {
 }
 
 /**
- * action callback
- * mail the transaction participants, and cc
+ * action callback.
+ *
+ * Mail the transaction participants, and cc
  * NB Ignored here, but note that $transaction may have ->dependents property
  * with other transactions and other payees / payers
  */
 function mcapi_transaction_mail_action($transaction, $settings, $old_state) {
   //the actions settings allow to filter by transaction type and state
-  if (!isset($settings['state']) || ($transaction->state != $settings['state'])) return;
-  if (empty($settings['transaction_types'][$transaction->type])) return;
-
-  $params = $settings + array('transaction' => $transaction);
-  foreach (array($transaction->payer, $transaction->payee) as $uid) {
-    if ($GLOBALS['user']->uid != $uid) {
-      $params['user'] = user_load($uid);
-      drupal_mail('mcapi', 'transaction_mail_action', $params['user']->mail, user_preferred_language($params['user']), $params);
+  if (isset($settings['state']) && ($transaction->state == $settings['state'])) {
+    if ($settings['transaction_types'][$transaction->type]) {
+      $params = $settings + array('transaction' => $transaction);
+      foreach (array($transaction->payer, $transaction->payee) as $uid) {
+        if ($GLOBALS['user']->uid != $uid) {
+          $params['user'] = user_load($uid);
+          drupal_mail(
+            'mcapi',
+            'transaction_mail_action',
+            $params['user']->mail,
+            user_preferred_language($params['user']),
+            $params
+          );
+        }
+      }
     }
   }
 }
@@ -378,8 +387,9 @@ function _mcapi_validate_mail_element($element, &$form_state) {
 }
 
 /**
- * action callback for hook_transaction_cluster_alter
- * Alters the original transaction and/or returns a dependent
+ * action callback for hook_transaction_cluster_alter.
+ *
+ * Alters the original transaction and/or returns a dependent.
  */
 function mcapi_dependent_transaction_action($transaction, $settings) {
   if (!in_array($transaction->type, $settings['conditions']['transaction_types'])) return;
@@ -423,13 +433,13 @@ function mcapi_dependent_transaction_action($transaction, $settings) {
       break;
   }
   $child['description'] = @$settings['presets']['description'];
-
   return entity_create('transaction', $child);
 }
 
 
 /**
- * calculate a transaction quantity based on a provided formala and input quantity
+ * Calculate a transaction quantity based on a provided formala and input quantity.
+ *
  * $formula can be
  * number => returns the number as a quantity, regardless of $base_quant
  * percentage of the $base_quant
@@ -738,10 +748,10 @@ function _worth_element_process($element, &$form_state) {
 function theme_worth_item(&$variables) {
   $currency = currency_load($variables['currcode']);
   // TODO this is appropriate when showing a transaction worth, but maybe not when showing a balance in another context
-  if ($variables['quantity'] == 0 && $currency->display['zero']) {
+  if ($variables['quantity'] == 0 && $currency->display['zero'] && !$variables['aggregate']) {
     return $currency->display['zero'];
   }
-  
+
   list($integer, $cents) = currency_explode($variables['quantity']);
   switch($currency->display['divisions']) {
     case CURRENCY_DIVISION_MODE_CUSTOM :

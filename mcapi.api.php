@@ -73,11 +73,9 @@ catch(exception $e){}
 /*
  * All changes to transactions should be passed through this
  * it saves the new state and field API and fires hooks and triggers wotnot
- * if the $old_state is set, that indicates this was a workflow operation
- * Calls hook_transaction_update
  */
 try {
-  transaction_update($newly_saved_transaction, $old_state);
+  entity_get_controller('transaction')->update($transaction, $new_state);
 }
 catch(exception $e){}
 

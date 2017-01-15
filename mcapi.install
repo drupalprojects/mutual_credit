@@ -631,7 +631,7 @@ function mcapi_update_7003(&$sandbox) {
     mcapi_upgrade_transactions_finished();
     db_drop_table('mc_currencies');
     db_drop_table('mc_cache');
-    db_drop_table('mc_exchanges');    
+    db_drop_table('mc_exchanges');
   }
 }
 
@@ -813,7 +813,9 @@ function mcapi_update_7006() {
   module_load_include('admin.inc', 'mcapi');
   $form = mcapi_transaction_mail_action_form();
   //special exception for mail_all_signatories_action
-  if (isset($form['mail'])) $form = $form['mail'];
+  if (isset($form['mail'])) {
+    $form = $form['mail'];
+  }
   //this is tricky but we're getting the default values out of the action form
   foreach (element_children($form) as $fieldname) {
     if (isset($form[$fieldname]['#default_value'])) {
@@ -923,6 +925,7 @@ function mcapi_update_7014() {
       ->execute();
   }
 }
+
 
 /**
  * refresh currencies whose internal format has changed - again
@@ -1145,4 +1148,21 @@ function mcapi_update_7026() {
   db_change_field('mcapi_transactions', 'payer', 'payer', $spec);
   $spec['description'] = 'the user id of the payee';
   db_change_field('mcapi_transactions', 'payee', 'payee', $spec);
+}
+
+/**
+ * The default mcapi_transaction_mail_action is missing a parameter which prevents it from firing
+ */
+function mcapi_update_7027() {
+  $actions = db_query("SELECT aid, parameters FROM {actions} WHERE callback = 'mcapi_transaction_mail_action'")->fetchAllKeyed();
+  foreach ($actions as $aid => $serialized) {
+     $info = unserialize($serialized);
+     if (!isset($info[state])) {
+       $info['state'] = TRANSACTION_STATE_FINISHED;
+    }
+    db_update('actions')
+      ->fields(array('parameters' => serialize($info)))
+      ->condition('aid', $aid)
+      ->execute();
+  }
 }

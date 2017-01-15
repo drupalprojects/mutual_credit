@@ -300,7 +300,8 @@ function mcapi_signatures_write($transaction) {
     //change the state of the loaded object, then change the state in the db
     $transaction->state = TRANSACTION_STATE_FINISHED;
     //save and act on the state change
-    transaction_update($transaction, TRANSACTION_STATE_PENDING);
+    //transaction_update($transaction, TRANSACTION_STATE_PENDING);
+    entity_get_controller('transaction')->update($transaction, TRANSACTION_STATE_FINISHED);
   }
   return array_filter($transaction->pending_signatures);
 }
@@ -417,16 +418,22 @@ function mcapi_sig_transaction_create($transaction, $really = 0) {
 
 //send a mail to each signatory notifying users their signature is needed
 function signature_send_initial_notification($transaction, $config) {
-  if (empty($config['notify'])) return;
-  $params = array(
-    'transaction' => $transaction,
-    'mail_template' => variable_get('mcapi_sign_notify_template', array('subject' => '', 'body' => '')),
-  );
-  $recipients = array_keys(array_filter($transaction->pending_signatures));
-  //send the mail, using the module settings for this transaction
-  foreach(user_load_multiple($recipients) as $account) {
-    $params['user'] = $account;
-    drupal_mail('mcapi_signatures', 'blah', $account->mail, user_preferred_language($account), $params);
+  if ($config['notify']) {
+    $params = array(
+      'transaction' => $transaction,
+      'mail_template' => variable_get('mcapi_sign_notify_template', array('subject' => '', 'body' => '')),
+    );
+    $recipients = array_keys(array_filter($transaction->pending_signatures));
+    //send the mail, using the module settings for this transaction
+    foreach(user_load_multiple($recipients) as $account) {
+      drupal_mail(
+        'mcapi_signatures',
+        'pending', 
+        $account->mail,
+        user_preferred_language($account),
+        $params + array('user' => $account)
+      );
+    }
   }
 }
 
@@ -434,9 +441,11 @@ function signature_send_initial_notification($transaction, $config) {
  * Implements hook_mail().
  */
 function mcapi_signatures_mail($key, &$message, $params) {
-  $options = array('language' => $message['language'], 'sanitize' => FALSE);
-  $message['subject'] = token_replace($params['mail_template']['subject'], $params, $options);
-  $message['body'][] = token_replace($params['mail_template']['body'], $params, $options);
+  if ($key == 'pending') {
+    $options = array('language' => $message['language'], 'sanitize' => FALSE);
+    $message['subject'] = token_replace($params['mail_template']['subject'], $params, $options);
+    $message['body'][] = token_replace($params['mail_template']['body'], $params, $options);
+  }
 }
 
 function _signature_settings_default($type) {
