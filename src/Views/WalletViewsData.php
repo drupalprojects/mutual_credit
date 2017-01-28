@@ -107,7 +107,8 @@ class WalletViewsData extends EntityViewsData {
         'base field' => 'wid',
         'field' => 'uid',
         'label' => $this->t('First wallet'),
-        'id' => 'standard',
+        'id' => 'mcapi_first_wallet',
+        'click sortable'  => FALSE
       ]
     ];
 

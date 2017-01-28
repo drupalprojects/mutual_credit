@@ -16,5 +16,11 @@ class WalletVolume extends FieldItemList {
     return $this->getEntity()->getStatAll('volume');
   }
 
+  public function __toString() {
+    $worth = $this->getValue();
+    $currency = Currency::load($worth[0]['curr_id']);
+    return (string)$currency->format($worth[0]['value'], Currency::DISPLAY_NORMAL, FALSE);
+  }
+
 }
 

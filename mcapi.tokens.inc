@@ -28,10 +28,18 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
           break;
 
         case PAYER_FIELDNAME:
-          $replacements[$original] = $transaction->payer->entity->getHolder()->toLink()->toString();
+          $replacements[$original] = $transaction->payer->entity->toLink()->toString();
           break;
 
         case PAYEE_FIELDNAME:
+          $replacements[$original] = $transaction->payee->entity->toLink()->toString();
+          break;
+
+        case 'payer-holder':
+          $replacements[$original] = $transaction->payer->entity->getHolder()->toLink()->toString();
+          break;
+
+        case 'payer-holder':
           $replacements[$original] = $transaction->payee->entity->getHolder()->toLink()->toString();
           break;
 
@@ -41,7 +49,7 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
 
         case 'description':
           $renderable = $transaction->description->view(['label' => 'hidden']);
-          $replacements[$original] = strip_tags(\Drupal::service('renderer')->render($renderable));
+          $replacements[$original] = strip_tags(\Drupal::service('renderer')->renderPlain($renderable));
           break;
 
         case 'created':
@@ -54,7 +62,7 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
 
         case 'worth':
           $renderable = $transaction->worth->view(['label' => 'hidden']);
-          $replacements[$original] = \Drupal::service('renderer')->render($renderable);
+          $replacements[$original] = \Drupal::service('renderer')->renderPlain($renderable);
       }
     }
 
@@ -162,8 +170,16 @@ function mcapi_token_info() {
     ];
   }
 
-  $info['tokens']['xaction']['url'] = [
-    'name' => t('Absolute link'),
+  $info['tokens']['xaction'] = [
+    'url' => [
+      'name' => t('Absolute link'),
+    ],
+    'payer-holder' => [
+      'name' => t('Payer holder'),
+    ],
+    'payee-holder' => [
+      'name' => t('Payee holder'),
+    ]
   ];
 
   $info['tokens']['wallet'] = [

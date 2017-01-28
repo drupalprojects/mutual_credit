@@ -5,12 +5,10 @@ namespace Drupal\mcapi\Entity;
 use Drupal\mcapi\Event\TransactionAssembleEvent;
 use Drupal\mcapi\McapiEvents;
 use Drupal\mcapi\Plugin\EntityReferenceSelection\WalletSelection;
-use Drupal\user\EntityOwnerInterface;
 use Drupal\user\UserInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\Core\Entity\EntityChangedInterface;
 use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\EntityTypeInterface;
@@ -62,7 +60,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *   }
  * )
  */
-class Transaction extends ContentEntityBase implements TransactionInterface, EntityChangedInterface, EntityOwnerInterface {
+class Transaction extends ContentEntityBase implements TransactionInterface {
 
   use EntityChangedTrait;
 
@@ -416,10 +414,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface, Ent
    * {@inheritdoc}
    */
   public function getCreatedTime() {
-    if (isset($this->get('created')->value)) {
-      return $this->get('created')->value;
-    }
-    return NULL;
+    return $this->get('created')->value;
   }
 
 }

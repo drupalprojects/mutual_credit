@@ -63,6 +63,7 @@ class ComputedWorths extends FieldPluginBase {
   public function render(ResultRow $values) {
     //Mcnasty
     $fieldname = substr($this->getField(), 1);
+
     return $this->getEntity($values)
       ->{$fieldname}
       ->view(['label' => 'hidden', 'context' => WorthsView::MODE_BALANCE]);

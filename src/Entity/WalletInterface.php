@@ -6,27 +6,11 @@ use Drupal\Core\Entity\ContentEntityInterface;
 
 /**
  * Provides an interface defining an exchange entity.
+ *
+ * @note This does NOT implement entityOwnerInterface because the owner is derived
+ * from the holder, so you can't set the owner
  */
 interface WalletInterface extends ContentEntityInterface {
-
-  /**
-   * Return the holding entity entity.
-   *
-   * @return ContentEntityInterface
-   *   The one entity to which this wallet belongs.
-   */
-  public function getHolder();
-
-  /**
-   * Set the holder entity.
-   *
-   * @param ContentEntityInterface $entity
-   *   The entity which is to hold the wallet.
-   *
-   * @return WalletInterface
-   *   The one entity to which this wallet belongs.
-   */
-  public function setHolder(ContentEntityInterface $entity);
 
   /**
    * Get the trading stats for all currencies allowed or used in the wallet.
@@ -124,14 +108,6 @@ interface WalletInterface extends ContentEntityInterface {
    *   the entity.
    */
   public function getOwnerId();
-
-  /**
-   * Determine whether this wallet was named automatically.
-   *
-   * @return string|NULL
-   *   The name or FALSE if the wallet isn't autonamed.
-   */
-  public function autoName();
 
   /**
    * Check whether a wallet has ever been used. i.e. whether the journal

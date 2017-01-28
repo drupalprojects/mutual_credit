@@ -3,7 +3,6 @@
 namespace Drupal\mcapi\Plugin\views\argument_default;
 
 use Drupal\mcapi\Storage\WalletStorage;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Routing\CurrentRouteMatch;
 use Drupal\views\Plugin\views\argument_default\ArgumentDefaultPluginBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -17,6 +16,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   id = "route_wallet",
  *   title = @Translation("First wallet from route entity")
  * )
+ * 
+ * @todo test whether this is used and needed in relation to the very similar @ViewsArgument
  */
 class RouteWallets extends ArgumentDefaultPluginBase {
 
@@ -51,7 +52,7 @@ class RouteWallets extends ArgumentDefaultPluginBase {
   /**
    * Return the default argument.
    *
-   * @todo inject the service
+   * This looks ugly and wrong.
    */
   public function getArgument() {
     // there's no validator in core either for ANY entity or for ANY

@@ -41,6 +41,14 @@ interface CurrencyInterface extends ConfigEntityInterface {
    *   Markup containing the formatted value.
    */
   public function format($raw_num);
+  
+  /**
+   * Get the moment the currency was first used.
+   *
+   * @return int
+   *   The unixtime of the first transaction creation.
+   */
+  public function firstUsed();
 
   /**
    * Determine whether it is allowed to deleted this currency.

@@ -280,8 +280,7 @@ function mcapi_exchanges_form_group_content_type_edit_form_alter(&$form, $form_s
  * Put a new wallet in the exchange of its parent
  */
 function mcapi_exchanges_wallet_insert(\Drupal\mcapi\Entity\Wallet $wallet) {
-  $holder = $wallet->getHolder();
-  if ($groupContent = group_exclusive_membership_get('exchange', $holder)) {
+  if ($groupContent = group_exclusive_membership_get('exchange', $wallet->getHolder())) {
     $props = [
       'gid' => $groupContent->getGroup()->id(),
       'type' => 'exchange-wallet',

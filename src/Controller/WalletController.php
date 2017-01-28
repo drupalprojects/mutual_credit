@@ -42,7 +42,9 @@ class WalletController extends ControllerBase {
    */
   public function entityWallets() {
     $wallets = WalletStorage::walletsOf($this->getHolder(), TRUE);
-    return $this->entityTypeManager()->getViewBuilder('mcapi_wallet')->viewMultiple($wallets);
+    return $this->entityTypeManager()
+      ->getViewBuilder('mcapi_wallet')
+      ->viewMultiple($wallets);
   }
 
 }

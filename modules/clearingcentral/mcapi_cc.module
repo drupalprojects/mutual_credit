@@ -268,9 +268,10 @@ function clearingCentral($intertrading_wallet_id) {
  * module is not installed.
  */
 function is_intertrading_transaction($transaction) {
+  die('is_intertrading_transaction() yet to be written.');
   foreach (['payer', 'payee'] as $wallet) {
     if ($transaction->{$wallet}->entity->system->value) {
-      return $entity->getholder();
+      return $entity->getHolder();
     }
   }
 }

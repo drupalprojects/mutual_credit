@@ -15,15 +15,6 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
   /**
    * {@inheritdoc}
    */
-  protected function doCreate(array $values) {
-    $entity = parent::doCreate($values);
-    $entity->setHolder($values['holder']);
-    return $entity;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public static function walletsOf(ContentEntityInterface $entity, $load = FALSE) {
     // There's no elegant static way to get an entityType's entityQuery object
     // or storage

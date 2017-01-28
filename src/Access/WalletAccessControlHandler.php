@@ -20,6 +20,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
    * {@inheritdoc}
    */
   public function createAccess($entity_bundle = NULL, AccountInterface $account = NULL, array $context = [], $return_as_object = FALSE) {
+    $this->prepareUser($account);
     // This fetches the entity we are viewing - the would-be holder of the
     // wallet we would add.
     $params = \Drupal::routeMatch()->getParameters()->all();
@@ -44,6 +45,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
    * {@inheritdoc}
    */
   protected function checkAccess(EntityInterface $entity, $op, AccountInterface $account) {
+    $this->prepareUser($account);
     if ($account->hasPermission('manage mcapi')) {
       if ($op == 'delete') {
         // Don't cache

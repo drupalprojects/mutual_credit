@@ -3,7 +3,6 @@
 namespace Drupal\mcapi\Form;
 
 use Drupal\mcapi\Mcapi;
-use Drupal\mcapi\Entity\Wallet;
 use Drupal\user\Entity\User;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
@@ -71,6 +70,8 @@ class WalletForm extends ContentEntityForm {
         '#required' => FALSE,
         '#maxlength' => 48,
         '#size' => 48,
+        //populate the name only if there is more than one wallet
+        '#access' => Mcapi::maxWalletsOfBundle($this->getHolder()->getEntityTypeId(), $this->getHolder()->bundle()) > 1
       ];
     }
 

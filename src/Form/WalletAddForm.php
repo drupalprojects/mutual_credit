@@ -13,37 +13,24 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class WalletAddForm extends ContentEntityForm {
 
-  private $holder;
-  private $pluginManager;
+  private $holder_entity_type;
+  private $holder_entity_id;
+  private $entityTypeManager;
 
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
-    return 'wallet_add_form';
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getEntityFromRouteMatch(RouteMatchInterface $route_match, $entity_type_id) {
-    $params = $route_match->getParameters()->all();
-    $entity = $this->entityManager
-      ->getStorage($entity_type_id)
-      ->create(['holder' => reset($params)]);
-    return $entity;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function __construct($route_match, $entity_type_manager, $database) {
+  public function __construct(RouteMatchInterface $route_match, $entity_type_manager, $database) {
     $params = $route_match->getParameters();
-    $this->holder = $entity_type_manager
-      ->getStorage($params->getIterator()->key())
-      ->load($params->getIterator()->current()->id());
-    $this->database = $database;
+    $this->holder_entity_type = $params->getIterator()->key();
+    $this->holder_id = $params->getIterator()->current()->id();
+    $this->entityTypeManager = $entity_type_manager->getStorage('mcapi_wallet');
 
+    // alternative method of extracting vals from params?
+    $params = $route_match->getParameters()->all();
+    debug($params);
+
+    $this->database = $database;
   }
 
   /**
@@ -55,6 +42,13 @@ class WalletAddForm extends ContentEntityForm {
       $container->get('entity_type.manager'),
       $container->get('database')
     );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFormId() {
+    return 'wallet_add_form';
   }
 
   /**
@@ -78,24 +72,14 @@ class WalletAddForm extends ContentEntityForm {
       '#type' => 'value',
       '#value' => NULL,
     ];
-    $form['holder_entity_type'] = [
-      '#type' => 'value',
-      '#value' => $this->holder->getEntityTypeId(),
-    ];
-    $form['holder_entity_id'] = [
-      '#type' => 'value',
-      '#value' => $this->holder->id(),
-    ];
     $form['name'] = [
       '#type' => 'textfield',
       '#title' => t('Name or purpose of wallet'),
       '#default_value' => '',
       '#required' => '',
+      '#access' => Mcapi::maxWalletsOfBundle($this->holder_entity_type, $this->getHolder()->bundle()) > 1
     ];
 
-    if (Mcapi::maxWalletsOfBundle($this->holder->getEntityTypeId(), $this->holder->bundle()) == 1) {
-      $form['name']['#access'] = FALSE;
-    }
     return $form;
   }
 
@@ -118,8 +102,8 @@ class WalletAddForm extends ContentEntityForm {
     $query = $this->walletQuery->condition('name', $values['name'])->execute();
 
     if (!\Drupal::config('mcapi.settings')->get('unique_names')) {
-      $query->condition('holder_entity_id', $values['holder_entity_id']);
-      $query->condition('holder_entity_type', $values['holder_entity_type']);
+      $query->condition('holder_entity_id', $this->holder_entity_id);
+      $query->condition('holder_entity_type', $this->holder_entity_type);
     }
     if ($query->execute()) {
       $form_state->setErrorByName(
@@ -135,6 +119,12 @@ class WalletAddForm extends ContentEntityForm {
   public function save(array $form, FormStateInterface $form_state) {
     $this->entity->save();
     $form_state->setRedirectUrl($this->entity->toUrl('edit-form'));
+  }
+
+  private function getHolder() {
+    return $this->entityTypeManager
+      ->getStorage($this->holder_entity_type)
+      ->load($this->holder_entity_id);
   }
 
 }

@@ -495,11 +495,11 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
   /**
    * {@inheritdoc}
    */
-  public static function earliestTransactionTime(CurrencyInterface $currency) {
+  public function firstUsed(CurrencyInterface $currency) {
     $query = $this->database->select('mcapi_transactions_index');
     $query->addExpression('MIN(created)');
     $query->condition('state', 'done');
-    $query->condition('curr_id', $curr_id);
+    $query->condition('curr_id', $currency->id());
     return $query->execute()->fetchField();
   }
 

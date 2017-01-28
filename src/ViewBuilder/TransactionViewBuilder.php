@@ -95,13 +95,15 @@ class TransactionViewBuilder extends EntityViewBuilder {
           'type-' . $entity->type->target_id,
           'state-' . $entity->state->target_id,
         ],
-        'id' => 'transaction-' . ($entity->serial->value ?: 0),
       ],
       '#attached' => [
         // For some reason in Renderer::updatestack, this bubbles up twice.
         'library' => ['mcapi/mcapi.transaction'],
       ],
     ];
+    if (!$entity->isNew()) {
+       $build['#attributes']['class']['id'] = 'transaction-'.$entity->serial->value;
+    }
     unset($build['#cache']);
     // @todo we might need to use the post-render cache to get the links right instead of template_preprocess_mcapi_transaction
     return $build;
@@ -121,8 +123,14 @@ class TransactionViewBuilder extends EntityViewBuilder {
     }
   }
 
+  /**
+   *
+   * @param Transaction $transaction
+   * @return array
+   *   A renderable array
+   */
   private function linkList($transaction) {
-    $output = [];
+    $output = $links = [];
     foreach (TransactionOperations::linkList($transaction) as $link) {
       // TODO what about the other properties in $data?
       $links[] = Link::fromTextAndUrl($link['title'], $link['url']);

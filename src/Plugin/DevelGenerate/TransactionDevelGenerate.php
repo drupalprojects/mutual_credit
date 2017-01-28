@@ -253,6 +253,7 @@ class TransactionDevelGenerate extends DevelGenerateBase implements ContainerFac
       'value' => $currency->sampleValue()
     ];
     $transaction = Transaction::create($props);
+    $this->populateFields($transaction);
     // We're not using generateExampleData here because it makes a mess.
     // But that means we might miss other fields on the transaction.
 

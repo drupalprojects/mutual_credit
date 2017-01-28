@@ -7,9 +7,6 @@
  * @ingroup views_module_handlers
  */
 
-use \Drupal\mcapi\Views\WalletViewsData;
-use Drupal\mcapi\Mcapi;
-
 /**
  * Implements hook_views_data_alter().
  */

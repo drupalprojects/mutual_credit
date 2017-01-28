@@ -59,7 +59,9 @@ function mcapi_exchanges_install() {
     ->condition('holder_entity_id', 1)
     ->execute();
   if ($wids) {
-    $wallet= Wallet::load(reset($wids))->setHolder($exchange)->save();
+    $wallet = Wallet::load(reset($wids));
+    $wallet->holder = $exchange;
+    $wallet->save();
   }
   // Put every other user users in the default exchanges.
   foreach (User::loadMultiple() as $id => $account) {

@@ -52,22 +52,6 @@ class WalletViewBuilder extends EntityViewBuilder {
   }
 
   /**
-   * Default Wallet entity_label_callback.
-   *
-   * Put the Holder entity's name with the wallet name in brackets.
-   */
-  public static function defaultLabel($wallet) {
-    $name = $wallet->name->value;
-    $holdername = $wallet->getHolder()->label();
-    if ($name) {
-      return $holdername . ' (' . $name . ')';
-    }
-    else {
-      return $holdername;
-    }
-  }
-
-  /**
    * {@inheritdoc}
    */
   public function buildComponents(array &$build, array $entities, array $displays, $view_mode) {
@@ -127,11 +111,10 @@ class WalletViewBuilder extends EntityViewBuilder {
         ];
       }
       if ($info = $display->getComponent('holder_link')) {
-        $holder = $wallet->getHolder();
         $build[$key]['holder_link'] = [
           '#type' => 'link',
-          '#title' => $this->t('Held by %name', ['%name' => $holder->label()]),
-          '#url' => $holder->toUrl('canonical'),
+          '#title' => $this->t('Held by %name', ['%name' => $wallet->getHolder()->label()]),
+          '#url' => $wallet->getHolder()->toUrl('canonical'),
           '#attributes' => ['class' => 'wallet-link'],
           '#weight' => $info['weight'],
         ];

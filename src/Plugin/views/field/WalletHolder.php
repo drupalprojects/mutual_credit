@@ -27,12 +27,7 @@ class WalletHolder extends Standard {
    */
   public function render(ResultRow $values) {
     $wallet = $this->getEntity($values);
-    mdump($wallet);die();
-    return $wallet->holder
-      ->entity
-      ->toLink()
-      ->toString();
-
+    return $wallet->getHolder()->toLink()->toString();
   }
 
 }

@@ -83,4 +83,12 @@ class WorthFieldItemList extends FieldItemList {
     return $val;
   }
 
+  public function __toString() {
+    $vals = [];
+    foreach ($this->list as $item) {
+      $vals[] = (string)$item;
+    }
+    return implode(' | ', $vals);
+  }
+
 }

@@ -261,7 +261,7 @@ class ClearingCentral implements IntertradingInterface {
         'seller_name' => $payee->label(),
         'buyer_nid' => $remote_exchange_id,
         'buyer_id' => $remote_user_id,
-        'amount' => $currency->format($transaction->worth->value, Currency::DISPLAY_PLAIN)
+        'amount' => $transaction->worth->format(Currency::DISPLAY_PLAIN)
       ];
     }
     return $CcTransaction;

@@ -46,8 +46,8 @@ function mcapi_signatures_views_data() {
       'base' => 'mcapi_transaction',
       'base field' => 'serial',
       'field' => 'serial',
-      'label' => t('Transaction'),
-      'relationship field' => 'serial',
+      'label' => t('Transactions to sign'),
+      //'relationship field' => 'serial',
     ],
   ];
 
@@ -59,7 +59,7 @@ function mcapi_signatures_views_data() {
     ],
     'filter' => [
       'title' => t('User is a signatory'),
-      'help' => t('transactions on which the current user is / is not a signatory'),
+      'help' => t('transactions on which the CURRENT user is / is not a signatory'),
       'id' => 'user_current',
     ],
     'argument' => [
@@ -69,9 +69,9 @@ function mcapi_signatures_views_data() {
     'relationship' => [
       'id' => 'standard',
       'base' => 'users',
-      'field' => 'uid',
+      'base field' => 'uid',
       'label' => t('Signatory'),
-      'relationship field' => 'uid',
+      //'relationship field' => 'uid',
     ],
   ];
   $data['mcapi_signatures']['signed'] = [

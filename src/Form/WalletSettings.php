@@ -8,7 +8,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
-use Drupal\mcapi\Entity\Wallet;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -73,10 +72,7 @@ class WalletSettings extends ConfigFormBase {
     );
     $form['entity_types'] = [
       '#title' => $this->t('Max number of wallets'),
-      '#description' => $this->t(
-        "Wallets can be owned by any entity type which implements %interface and has an entity_reference field to 'exchange' entities.",
-        ['%interface' => $link->toString()]
-      ),
+      '#description' => $this->t("Where only one wallet is allowed, that wallet will inherit the name of the entity which holds it"),
       '#type' => 'fieldset',
       '#weight' => 2,
       '#tree' => TRUE,

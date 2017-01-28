@@ -2,10 +2,10 @@
 
 namespace Drupal\mcapi\Form;
 
-use Drupal\mcapi\Mcapi;
 Use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a form for forms.
@@ -62,7 +62,7 @@ class TransactionStatsFilterForm extends FormBase {
       '#required' => FALSE,
       '#default_value' => isset($previous['until']) ? $previous['until'] : REQUEST_TIME
     ];
-    $earliest = $this->entityTypeManager->getStorage('mcapi_transaction')->earliestTransactionTime($currency);
+    $earliest = $currency->firstUsed();
     $next_year = strtotime('01-01-'.date('Y', $earliest));
     $next_month = strtotime('01-'. date('M', $earliest) .'-'.date('Y', $earliest));
 

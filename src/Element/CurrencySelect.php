@@ -6,6 +6,7 @@ use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Mcapi;
 use Drupal\Core\Render\Element\FormElement;
 use Drupal\Core\Render\Element\Checkboxes;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Provides a widget to select currencies.
@@ -46,13 +47,15 @@ class CurrencySelect extends FormElement {
     elseif ($element['#options'] == 'all') {
       $element['#options'] = Mcapi::entityLabelList('mcapi_currency');
     }
-    if (count($element['#options']) == 1) {
-      $element['#type'] = 'hidden';
-      $element['#value'] = key($element['#options']);
-      $element['#default_value'] = key($element['#options']);
-      unset($element['#theme_wrappers'], $element['#options']);
-    }
-    elseif ($element['#multiple']) {
+    // For some reason the hidden field doesn't appear in $request->request->all()
+//    if (count($element['#options']) == 1) {
+//      $element['#type'] = 'hidden';
+//      $element['#value'] = key($element['#options']);
+//      $element['#default_value'] = key($element['#options']);
+//      unset($element['#theme_wrappers'], $element['#options']);
+//    }
+//    else
+    if ($element['#multiple']) {
       // Have to do some of the checkbox processing manually coz we missed it.
       $element['#type'] = 'checkboxes';
       $element['#value'] = array_filter($element['#default_value']);

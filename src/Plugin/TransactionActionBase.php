@@ -63,12 +63,8 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
     if (!$account) {
       $account = $this->currentUser;
     }
-    $result = $this->accessOp($object, $account) && $this->accessState($object, $account);
-
-    if (!$return_as_object) {
-      return $result;
-    }
-    return $result ? AccessResult::allowed() : AccessResult::forbidden();
+    $access = $this->accessOp($object, $account) && $this->accessState($object, $account);
+    return $return_as_object ? AccessResult::allowedIf($access) : $access;
   }
 
   /**
@@ -81,10 +77,10 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
    *
    * @return bool
    *   TRUE if the transaction is in a viewable state
+   *
    */
-  protected function accessState(TransactionInterface $transaction, AccountInterface $account = NULL) {
-    $state = $transaction->state->target_id;
-    return !empty($this->configuration['states'][$state]);
+  protected function accessState(TransactionInterface $transaction, AccountInterface $account) {
+    return $account->id() == 1 or $this->configuration['states'][$transaction->state->target_id];
   }
 
   /**

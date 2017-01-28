@@ -1,11 +1,11 @@
 <?php
 
-namespace Drupal\mcapi;
+namespace Drupal\mcapi\Plugin\Field;
 
 use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\TypedData\DataDefinitionInterface;
 use Drupal\Core\TypedData\TypedDataInterface;
-use Drupal\Core\TypedData\TypedData;
+use Drupal\Core\Field\EntityReferenceFieldItemList;
 
 /**
  * A computed property for the loaded currency in a worth field.
@@ -13,7 +13,7 @@ use Drupal\Core\TypedData\TypedData;
  * Required settings (below the definition's 'settings' key) are:
  *  - currency source: The currency.
  */
-class CurrencyComputed extends TypedData {
+class CurrencyComputedProperty extends EntityReferenceFieldItemList {
 
   /**
    * Cached computed currency.
@@ -36,12 +36,11 @@ class CurrencyComputed extends TypedData {
    * {@inheritdoc}
    */
   public function getValue($langcode = NULL) {
-    if ($this->currency !== NULL) {
-      return $this->currency;
+    if (empty($this->currency)) {
+      $source_prop = $this->definition->getSetting('currency source');
+      $value = $this->getParent()->{$source_prop};
+      $this->currency = Currency::load($value);
     }
-    $source_prop = $this->definition->getSetting('currency source');
-    $value = $this->getParent()->{$source_prop};
-    $this->currency = Currency::load($value);
     return $this->currency;
   }
 

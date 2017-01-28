@@ -3,12 +3,9 @@
 namespace Drupal\mcapi\Entity;
 
 use Drupal\user\UserInterface;
-use Drupal\user\Entity\User;
 use Drupal\mcapi\Mcapi;
 use Drupal\Core\Entity\ContentEntityBase;
-use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Field\BaseFieldDefinition;
 
@@ -45,7 +42,6 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *   },
  *   admin_permission = "configure mcapi",
  *   base_table = "mcapi_wallet",
- *   __label_callback = "Drupal\mcapi\ViewBuilder\WalletViewBuilder::DefaultLabel",
  *   entity_keys = {
  *     "label" = "name",
  *     "id" = "wid",
@@ -64,69 +60,28 @@ use Drupal\Core\Field\BaseFieldDefinition;
  */
 class Wallet extends ContentEntityBase implements WalletInterface {
 
-  private $holder;
   private $stats = [];
 
   /**
    * {@inheritdoc}
+   *
+   * Holders with max 1 wallet pass their names onto their wallets, otherwise
+   * use the name field, otherwise provide a generic default
    */
-  public function getHolder() {
-    if (!isset($this->holder)) {
-      $this->holder = $this->entityTypeManager()
-        ->getStorage($this->holder_entity_type->value)
-        ->load($this->holder_entity_id->value);
-      // In the impossible event that there is no owner, set.
-      if (!$this->holder) {
-        throw new \Exception('Holder of wallet ' . $this->id() . ' does not exist: ' . $this->holder_entity_type->value . ' ' . $this->holder_entity_id->value);
-      }
+  public function label() {
+    $holder = $this->getHolder();
+    $max_wallets = Mcapi::maxWalletsOfBundle($holder->getEntityTypeId(), $holder->bundle());
+    if ($max_wallets == 1) {
+      $label = $holder->label();
     }
-    return $this->holder;
+    elseif ($label = $this->name->value){}
+    else {
+      $label = t('Wallet #@num', ['@num' => $wallet->id()]);
+    }
+
+    return $label;
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function setHolder(ContentEntityInterface $entity) {
-    $this->holder = $entity;
-    $this->holder_entity_id->value = $entity->id();
-    $this->holder_entity_type->value = $entity->getEntityTypeId();
-    return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
-    if (!isset($values['holder'])) {
-      // This is an error or a temp entityType.
-      // @see _field_create_entity_from_ids
-      // set a temp holder.
-      $values['holder'] = User::load(1);
-    }
-    $values['holder_entity_type'] = $values['holder']->getEntityTypeId();
-    $values['holder_entity_id'] = $values['holder']->id();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function presave(EntityStorageInterface $storage) {
-    // Autoname the wallet if it is its holders only wallet.
-    if ($name = $this->autoName()) {
-      $this->name->value = $name;
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function autoName() {
-    if (Mcapi::maxWalletsOfBundle($this->getHolder()->getEntityTypeId(), $this->getHolder()->bundle()) == 1) {
-      // For the user entity we might use ->getDisplayName()
-      return $this->getHolder()->label();
-    }
-    return FALSE;
-  }
 
   /**
    * {@inheritdoc}
@@ -187,18 +142,17 @@ class Wallet extends ContentEntityBase implements WalletInterface {
       ->setDisplayConfigurable('view', TRUE)
       ->setCardinality(-1);
 
-    // Following are computed fields, just for display
-    $fields['holder'] = BaseFieldDefinition::create('entity_reference')
+    // Following are computed fields, just for display esp by views
+    $fields['holder'] = BaseFieldDefinition::create('wallet_holder')
       ->setDescription(t("The entity holding this wallet"))
       ->setComputed(TRUE)
-      ->setClass('\Drupal\mcapi\Plugin\Field\WalletHolder')
       ->setDisplayConfigurable('view', TRUE);
     // Might also like an owner field as well.
     $fields['balance'] = BaseFieldDefinition::create('worth')
       ->setLabel(t('Balance'))
       ->setDescription(t("Sum of all this wallet's credits minus debits"))
       ->setComputed(TRUE)
-      ->setClass('\Drupal\mcapi\Plugin\Field\WalletBalance')
+      ->setClass('\Drupal\mcapi\Plugin\Field\WalletBalance')  //$this->definition['class']
       ->setReadOnly(TRUE)
       ->setDisplayConfigurable('view', TRUE);
     $fields['volume'] = BaseFieldDefinition::create('worth')
@@ -341,15 +295,20 @@ class Wallet extends ContentEntityBase implements WalletInterface {
     return $this->getOwner()->id();
   }
 
+  public function getHolder() {
+    return $this->holder->entity;
+  }
+
   /**
    * {@inheritdoc}
    */
   public function getOwner() {
-    $holder = $this->getHolder();
-    return $holder instanceof UserInterface ?
-      $holder :
+    $holder_entity = $this->getHolder();
+
+    return $holder_entity instanceof UserInterface ?
+      $holder_entity :
       // All wallet holders, whatever entity type, implement OwnerInterface.
-      $holder->getOwner();
+      $holder_entity->getOwner();
   }
 
   /**

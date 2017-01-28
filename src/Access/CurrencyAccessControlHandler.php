@@ -40,7 +40,7 @@ class CurrencyAccessControlHandler extends EntityAccessControlHandler implements
    * {@inheritdoc}
    */
   public function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
-
+    $this->prepareUser($account);
     switch ($operation) {
       case 'view':
         return AccessResult::allowed()->cachePerPermissions();

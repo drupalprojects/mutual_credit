@@ -3,11 +3,13 @@
 namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Entity\EntityChangedInterface;
+use Drupal\user\EntityOwnerInterface;
 
 /**
  * Interface for Transaction entity.
  */
-interface TransactionInterface extends ContentEntityInterface {
+interface TransactionInterface extends ContentEntityInterface, EntityChangedInterface, EntityOwnerInterface {
 
   /**
    * Load many transactions and key them by serial number instead of xid.

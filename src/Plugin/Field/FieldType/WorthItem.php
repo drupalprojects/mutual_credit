@@ -2,6 +2,7 @@
 
 namespace Drupal\mcapi\Plugin\Field\FieldType;
 
+use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Field\FieldItemBase;
 use Drupal\Core\TypedData\DataDefinition;
 use Drupal\Core\Field\FieldDefinitionInterface;
@@ -44,7 +45,7 @@ class WorthItem extends FieldItemBase {
       ->setLabel(t('Currency'))
       ->setComputed(TRUE)
       ->addConstraint('EntityType', 'mcapi_currency')
-      ->setClass('\Drupal\mcapi\CurrencyComputed')
+      ->setClass('\Drupal\mcapi\Plugin\Field\CurrencyComputedProperty')
       ->setSetting('currency source', 'curr_id');
     return $properties;
   }
@@ -75,10 +76,10 @@ class WorthItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public function isEmpty() {
-    if ($this->curr_id && $this->currency && $this->currency->zero) {
+    if ($this->currency->zero) {
       return FALSE;
     }
-    return $this->get('value')->getValue() == 0;
+    return $this->value == 0;
   }
 
   /**
@@ -108,6 +109,13 @@ class WorthItem extends FieldItemBase {
     parent::onChange($property_name, $notify);
   }
 
+  public function __toString() {
+    return $this->format(Currency::DISPLAY_NORMAL);
+  }
+
+  public function format($mode) {
+    return (string)$this->currency->format($this->value, $mode, FALSE);
+  }
 
   /**
    * Set the value of the field from the formatted value coming, say from a

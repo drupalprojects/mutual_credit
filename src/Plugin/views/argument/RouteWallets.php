@@ -16,6 +16,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @ingroup views_argument_handlers
  *
  * @ViewsArgument("route_wallet")
+ *
+ * @todo test whether this is used and needed in relation to the very similar @ViewsArgumentDefault
  */
 class RouteWallets extends ArgumentPluginBase implements ContainerFactoryPluginInterface {
 

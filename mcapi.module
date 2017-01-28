@@ -114,20 +114,12 @@ function mcapi_entity_insert($entity) {
     $type = $entity->getEntityTypeId();
     // NB autoadd applies to ALL entity types or to none.
     if (Mcapi::maxWalletsOfBundle($type, $entity->bundle())) {
-      // No need to check what the max is; this is the first wallet created for
-      // this entity.
-      $props = [
-        'holder' => $entity,
-        'name' => t('Default'),
-      ];
-      if ($entity->hasField('created')) {
-        $props['created'] = $entity->created->value;
+      $props['holder'] = $entity;
+      //the first wallet also shares the entity's creation time
+      if (method_exists($entity, 'getCreatedTime')) {
+        $props['created'] = $entity->getCreatedTime();
       }
       Wallet::create($props)->save();
-      \Drupal::logger('mcapi')->notice(
-        'Wallet autocreated for new @entitytype @id',
-        ['@entitytype' => $type, '@id' => $entity->id()]
-      );
     }
   }
 }
@@ -235,59 +227,6 @@ function mcapi_mcapi_form_list() {
 }
 
 /**
- * Implements hook_entity_form_display_alter().
- *
- * Ensure on startup that the worth field is visible in the entity form. This is
- * nasty but there was no other way.
- * @deprecated
- */
-function __mcapi_entity_form_display_alter($display, $display_context) {
-  if ($display_context['bundle'] == 'mcapi_transaction') {
-    $settings = $display->getComponent('worth');
-    $settings['visible'] = TRUE;
-    $display->setComponent('worth', $settings);
-  }
-}
-
-/**
- * Implements hook_entity_view_display_alter().
- * Ensure the worth element is visible on all transaction displays
- * @deprecated
- */
-function __mcapi_entity_view_display_alter($display, $display_context) {
-  if ($display_context['bundle'] == 'mcapi_transaction') {
-    $settings = $display->getComponent('worth');
-    $settings['visible'] = TRUE;
-    $display->setComponent('worth', $settings);
-  }
-}
-
-/**
- * Retrieve any enabled views 'embed' displays for which arg 1 is a wallet_id.
- *
- * @todo make some settings here, or some responsivness to the actual views,
- * then cache it
- */
-function mcapi_one_wallet_entity_views_displays() {
-  // Probably also need to return a path component and the menu link title.
-  return [
-    'wallet_transactions' => [
-      'display_id' => 'embed',
-      'path' => 'transactions',
-      // Might be a good idea to get this from the views display, translated.
-      'title' => t('Transactions'),
-    ],
-    'income_expenditure' => [
-      // Can't seem to attach the outgoing transactions to an embed.
-      'display_id' => 'embed_1',
-      'path' => 'inex',
-      // Might be a good idea to get this from the views display, translated.
-      'title' => t('Income & Expenditure'),
-    ],
-  ];
-}
-
-/**
  * Implements hook_query_MCAPI_TRANSACTION_ACCESS_alter().
  *
  * EntityQuery tag added by Drupal\Core\Entity\Query\Sql\Select::prepare.
@@ -305,9 +244,7 @@ function mcapi_query_mcapi_transaction_access_alter($query) {
   $relatives_plugins = Action::load('transaction_view')->getPlugin()->getConfiguration()['access'];
   $active_plugins = Mcapi::transactionRelatives($relatives_plugins)->getActivePlugins();
   if (empty($active_plugins)) {
-    // Filter out everything.
-    $query->condition(1, 0);
-    return;
+    throw new \Exception('No results for transaction entity query because there were no active relatives for the view operation');
   }
   // Ensure the orGroup has at least one thing in it.
   $or_group = $query->orConditionGroup()->condition('1',  1);

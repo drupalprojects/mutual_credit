@@ -16,5 +16,11 @@ class WalletIncome extends FieldItemList {
     return $this->getEntity()->getStatAll('gross_in');
   }
 
+  public function __toString() {
+    $worth = $this->getValue();
+    $currency = Currency::load($worth[0]['curr_id']);
+    return (string)$currency->format($worth[0]['value'], Currency::DISPLAY_NORMAL, FALSE);
+  }
+
 }
 

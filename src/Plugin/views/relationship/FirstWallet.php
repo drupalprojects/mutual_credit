@@ -6,7 +6,7 @@ use Drupal\views\Plugin\views\relationship\RelationshipPluginBase;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Argument handler relating a wallet to its owner
+ * Argument handler relating a holder entity to a wallet it holds
  *
  * @ViewsRelationship("mcapi_first_wallet")
  */
@@ -16,8 +16,6 @@ class FirstWallet extends RelationshipPluginBase {
    * {@inheritdoc}
    */
   protected function defineOptions() {
-    // $options = parent::defineOptions();//produces an error if base field not in $this->definition
-    // unset($options['required']);
     return [];
   }
 
@@ -35,10 +33,8 @@ class FirstWallet extends RelationshipPluginBase {
    * {@inheritdoc}
    */
   public function query() {
-    $this->definition['left_field'] = 'holder_entity_id';
-    $this->realField = 'holder_entity_id';
     parent::query();
-    $this->query->addWhereExpression(0, $this->tableAlias.".holder_entity_type = '".$this->definition['holder_entity_type']."'");
+    $this->query->addWhereExpression(0, $this->alias.".holder_entity_type = '".$this->definition['entity_type']."'");
   }
 
 }

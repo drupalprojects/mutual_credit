@@ -129,7 +129,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    */
   public $ticks;
 
-  /*
+  /**
    * The format of the currency display.
    *
    * Intricately formatted expression which tells the system how to transform a
@@ -141,6 +141,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * @todo the format is irregular, the initial zeros should be replaced for 9s
    */
   public $format;
+  public $format_nums;
 
   /**
    * {@inheritdoc}
@@ -188,9 +189,15 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * {@inheritdoc}
    */
   public function volume(array $conditions = []) {
-    return \Drupal::entityTypeManager()
+    return $this->entityTypeManager()
       ->getStorage('mcapi_transaction')
       ->volume($this->id(), $conditions);
+  }
+
+  public function firstUsed() {
+    return $this->entityTypeManager()
+      ->getStorage('mcapi_transaction')
+      ->firstUsed($this);
   }
 
   /**

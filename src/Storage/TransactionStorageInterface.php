@@ -74,6 +74,14 @@ interface TransactionStorageInterface extends EntityStorageInterface {
   public function historyOfWallet($wallet_id, $curr_id, $since);
 
   /**
+   * Get the moment the currency was first used.
+   *
+   * @return int
+   *   The unixtime of the first transaction creation.
+   */
+  public function firstUsed(CurrencyInterface $currency);
+
+  /**
    * Return the ids of all the wallets which HAVE USED this currency.
    *
    * @param string $curr_id
@@ -153,14 +161,4 @@ interface TransactionStorageInterface extends EntityStorageInterface {
    */
   public function currenciesUsed($wid);
 
-
-  /**
-   * Get the time of the first transaction in a currency.
-   *
-   * @param CurrencyInterface $currency
-   *
-   * @return int
-   *   The unixtime.
-   */
-  public static function earliestTransactionTime(CurrencyInterface $currency);
 }

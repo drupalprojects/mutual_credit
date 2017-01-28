@@ -16,14 +16,17 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
   /**
    * {@inheritdoc}
    */
-  public function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = NULL) {
+  public function createAccess($entity_bundle = NULL, AccountInterface $account = NULL, array $context = array(), $return_as_object = FALSE) {
+    $result = parent::createAccess($entity_bundle, $account, $context, $return_as_object);
+
     $wids = \Drupal::entityQuery('mcapi_wallet')
       ->condition('holder_entity_type',  'user')
       ->condition('holder_entity_id',  $account->id())
       ->execute();
-    return  $wids ?
-      AccessResult::Allowed()->addCacheableDependency($account) :
-      AccessResult::Forbidden()->addCacheableDependency($account);
+    if ($return_as_object) {
+      return $result->andIf(AccessResult::allowedIf(!empty($wids)))->addCacheableDependency($account);
+    }
+    else return $result && !empty($wids);
   }
 
   /**
@@ -38,7 +41,7 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
       // @todo URGENT. Handle the named payees and payers
       $result = AccessResult::allowed()->cachePerUser();
     }
-    if ($action =  TransactionOperations::loadOperation($operation)) {
+    elseif ($action = TransactionOperations::loadOperation($operation)) {
       $result = $action->getPlugin()
         ->access($transaction, $account, TRUE)
         ->cachePerUser()
@@ -46,7 +49,6 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
     }
     else {
       $result = AccessResult::forbidden()->cachePerPermissions();
-      debug('No action for transaction access operation: '.$operation);
     }
     return $return_as_object ? $result: $result->isAllowed();
   }

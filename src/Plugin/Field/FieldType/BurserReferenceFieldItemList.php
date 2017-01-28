@@ -13,13 +13,12 @@ class BurserReferenceFieldItemList extends EntityReferenceFieldItemList {
    * {@inheritdoc}
    */
   public function setValue($values, $notify = TRUE) {
-    // Support passing in only the value of the first item, either as a literal
-    // (value of the first property) or as an array of properties.
     if (isset($values) && (!is_array($values) || (!empty($values) && !is_numeric(current(array_keys($values)))))) {
       $values = array(0 => $values);
     }
+    //if the first value is not the wallet's owner, then shunt it in.
     $walletOwnerId = $this->getEntity()->getOwnerId();
-    if ($values[0]['target_id'] != $walletOwnerId) {
+    if (isset($values[0]['target_id']) && $values[0]['target_id'] != $walletOwnerId) {
       array_unshift($values, ['target_id' => $walletOwnerId]);
     }
     parent::setValue($values, $notify);
@@ -27,22 +26,25 @@ class BurserReferenceFieldItemList extends EntityReferenceFieldItemList {
 
   /**
    * {@inheritdoc}
+   * This doesn't work because we can't getEntity() while it is still being created
+   * @see presave()
    */
-  public function __set($property_name, $value) {
-    // For empty fields, $entity->field->property = $value automatically
-    // creates the item before assigning the value.
-    $item = $this->first() ?: $this->appendItem();
-    $item->__set('target_id', $this->getEntity()->getOwnerId());
+  public function _____applyDefaultValue($notify = TRUE) {
+    if ($wallet->holder_entity_type->value == 'user') {
+      $target = $wallet->holder_entity_id->value;
+    }
+    else {
+      $target = \Drupal::entityTypeManager()
+        ->getStorage($wallet->holder_entity_type->value)
+        ->load($wallet->holder_entity_id->value)->getOwnerId();
+    }
+    $value = ['target_id' => $target];
+    $this->setValue($value, $notify);
+    return $this;
   }
 
-
-  /**
-   * {@inheritdoc}
-   */
-  public function applyDefaultValue($notify = TRUE) {
-    $value = ['target_id' => $this->getEntity()->getOwnerId()];
-    $this->setValue([$value], $notify);
-    return $this;
+  public function preSave() {
+    $this->setValue([$this->getValue()]);
   }
 
 }

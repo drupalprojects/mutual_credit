@@ -74,25 +74,14 @@ class View extends TransactionActionBase {
    * {@inheritdoc}
    */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
-    if (!$account) {
-      $account = $this->currentUser;
+    $result = parent::access($object, $account, TRUE);
+    if ($result->isAllowed()) {
+      $params = $this->routeMatch->getRawParameters()->all();
+      $result->forbiddenIf(isset($params['mcapi_transaction']) && $params['mcapi_transaction'] == $object->serial->value);
     }
-    $result = parent::access($object, $account, $return_as_object);
-    $params = $this->routeMatch->getRawParameters()->all();
-    if ($return_as_object) {
-      if ($result->isAllowed()) {
-        $result->forbiddenIf(isset($params['mcapi_transaction']) && $params['mcapi_transaction'] == $object->serial->value);
-      }
-      $result->addCacheableDependency($object)->cachePerUser();
-    }
-    else {
-      if ($result) {
-        if (isset($params['mcapi_transaction']) && $params['mcapi_transaction'] == $object->serial->value) {
-          $result = FALSE;
-        }
-      }
-    }
-    return $result;
+    return $return_as_object ?
+      $result->addCacheableDependency($object)->cachePerUser() :
+      $result->isAllowed();
   }
 
 }
