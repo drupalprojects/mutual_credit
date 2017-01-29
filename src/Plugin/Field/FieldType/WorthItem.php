@@ -76,7 +76,7 @@ class WorthItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public function isEmpty() {
-    if ($this->currency->zero) {
+    if ($this->curr_id and $this->currency->zero) {
       return FALSE;
     }
     return $this->value == 0;

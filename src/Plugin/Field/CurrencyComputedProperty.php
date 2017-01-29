@@ -38,7 +38,9 @@ class CurrencyComputedProperty extends EntityReferenceFieldItemList {
   public function getValue($langcode = NULL) {
     if (empty($this->currency)) {
       $source_prop = $this->definition->getSetting('currency source');
-      $value = $this->getParent()->{$source_prop};
+      $parentWorthItem = $this->getParent();
+      /* @var $parentWorthItem Drupal\mcapi\Plugin\Field\FieldType\WorthItem */
+      $value = $parentWorthItem->{$source_prop};
       $this->currency = Currency::load($value);
     }
     return $this->currency;
