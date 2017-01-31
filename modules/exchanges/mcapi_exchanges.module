@@ -149,6 +149,7 @@ function mcapi_exchanges_default_currency_id(ContentEntityInterface $exchange, $
  */
 function mcapi_exchanges_modules_installed($modules) {
   // Completely replace this view with config from this module.
+  drupal_set_message('mcapi_exchanges_modules_installed');
   if ($view = \Drupal::ConfigFactory()->getEditable('views.view.mcapi_transactions')) {
     $view->delete();
   }
@@ -254,7 +255,6 @@ function mcapi_exchanges_group_content_insert(GroupContent $groupContent) {
         'entity_id' => $wid,
       ];
       GroupContent::Create($props)->save();
-      drupal_set_message('Adding wallet of '.$inserted_entity_type_id.' '. $inserted_entity->id()  .' to group'.$group->label());
     }
   }
 }

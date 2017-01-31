@@ -80,7 +80,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
    *
    */
   protected function accessState(TransactionInterface $transaction, AccountInterface $account) {
-    return $account->id() == 1 or $this->configuration['states'][$transaction->state->target_id];
+    return $account->id() == 1 or !empty($this->configuration['states'][$transaction->state->target_id]);
   }
 
   /**

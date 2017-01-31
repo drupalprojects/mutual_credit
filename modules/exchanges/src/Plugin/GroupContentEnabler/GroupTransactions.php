@@ -68,6 +68,7 @@ class GroupTransactions extends GroupContentEnablerBase {
   public function getPermissions() {
     $permissions['manage transactions']['title'] = 'Manage transactions & wallets';
     $permissions['create transactions']['title'] = 'Register transactions';
+    $permissions['view transactions']['title'] = 'View transactions';
     return $permissions;
   }
 

@@ -80,7 +80,7 @@ function mcapi_exchanges_uninstall() {
   $configs = [
     'field.storage.group.active',
     'core.entity_form_display.group_content.exchange-group_membership.default',
-    'field.field.group_content.exchange-group_membership.group_roles',
+    //'field.field.group_content.exchange-group_membership.group_roles',
     'field.storage.group.currencies',
     'group.%',
     '%group.exchange%'
@@ -89,16 +89,4 @@ function mcapi_exchanges_uninstall() {
     db_delete('config')->condition('name', $name, 'LIKE')->execute();
   }
 
-}
-
-/**
- * Implements hook_module_preinstall().
- */
-function mcapi_exchanges_module_preinstall($module) {
-  // Hard to know where to put this code
-  if (class_exists('\Drupal\views\Entity\View')) {
-    if ($view = \Drupal\views\Entity\View::load('mcapi_transactions')) {
-      $view->delete();
-    }
-  }
 }

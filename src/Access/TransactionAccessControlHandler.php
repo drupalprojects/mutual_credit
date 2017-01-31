@@ -24,7 +24,7 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
       ->condition('holder_entity_id',  $account->id())
       ->execute();
     if ($return_as_object) {
-      return $result->andIf(AccessResult::allowedIf(!empty($wids)))->addCacheableDependency($account);
+      return $result->orIf(AccessResult::allowedIf(!empty($wids)))->addCacheableDependency($account);
     }
     else return $result && !empty($wids);
   }

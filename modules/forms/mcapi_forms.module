@@ -170,12 +170,14 @@ function mcapi_forms_entity_extra_field_info() {
   ];
 }
 
-
 /**
  * Implements hook_ENTITY_TYPE_view().
  */
 function mcapi_forms_mcapi_wallet_view(array &$build, $entity, $display) {
   if ($display->getComponent('trade_with')) {
+    if ($entity->holder_entity_type->value == 'user' and $entity->holder_entity_id->value == \Drupal::currentUser()->id() ) {
+      return;
+    }
     foreach (_mcapi_forms_quick_links($entity) as $data) {
       $build['wallet_link_'.$display->id()] = [
         '#type' => 'link',
@@ -213,12 +215,12 @@ function _mcapi_forms_quick_links(WalletInterface $wallet = NULL) {
       continue;
     }
     $settings = $display->getThirdPartySetting('mcapi_forms', 'settings');
-    $options = [];
     if ($wallet) {
       $options['query'] = [$key => $wallet->id()];
       $title = str_replace('[mcapi_wallet:name]', $wallet->label(), $settings['wallet_link_title']);
     }
     else {
+      $options = [];
       $title = $settings['title'];
     }
     $info[$display->id()] = [

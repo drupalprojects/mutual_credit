@@ -21,6 +21,7 @@ class ExchangeId extends ArgumentDefaultPluginBase implements CacheableDependenc
    */
   public function getArgument() {
     if ($mem = group_exclusive_membership_get('exchange')) {
+      echo $mem->getGroup()->id();
       return $mem->getGroup()->id();
     }
   }

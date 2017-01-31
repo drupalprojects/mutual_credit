@@ -135,7 +135,9 @@ function mcapi_entity_update($entity) {
     if (Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle()) == 1) {
       // Get the entity's one wallet, and rename it.
       $wallets = WalletStorage::walletsOf($entity, TRUE);
-      reset($wallets)->save();
+      if ($wallet = reset($wallets)) {
+        $wallet->save();
+      }
     }
   }
 }

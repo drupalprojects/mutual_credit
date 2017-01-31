@@ -13,3 +13,7 @@ services:
     class: 'Drupal\group_exclusive\GroupTypeAccessCheck'
     tags:
       - { name: 'access_check', applies_to: '_group_type' }
+  access_check.group.role:
+    class: 'Drupal\group_exclusive\GroupRoleAccessCheck'
+    tags:
+      - { name: 'access_check', applies_to: '_group_role' }

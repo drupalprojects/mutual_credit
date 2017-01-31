@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\mcapi_exchanges\Plugin\views\access;
+namespace Drupal\group_exclusive\Plugin\views\access;
 
 use Drupal\group\Entity\GroupRole;
 use Drupal\views\Plugin\views\access\AccessPluginBase;
@@ -19,12 +19,14 @@ use Symfony\Component\Routing\Route;
  * @ingroup views_access_plugins
  *
  * @ViewsAccess(
- *   id = "exchange_role",
- *   title = @Translation("Role in Exchange"),
- *   help = @Translation("Access will be granted to users with the specified role in their exchange.")
+ *   id = "group_role",
+ *   title = @Translation("Role in Group"),
+ *   help = @Translation("Access will be granted to users with the specified role in their group.")
  * )
+ *
+ * @deprecated
  */
-class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterface {
+class GroupRole extends AccessPluginBase implements CacheableDependencyInterface {
 
   /**
    * {@inheritdoc}
@@ -34,7 +36,7 @@ class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterf
   /**
    * @var Drupal\group\GroupInterface.
    */
-  protected $exchange;
+  protected $group;
 
   /**
    * The Role storage handler
@@ -51,9 +53,6 @@ class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterf
   public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManager $entity_type_manager) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->roleStorage = $entity_type_manager->getStorage('group_role');
-    if ($group_content = group_exclusive_membership_get('exchange')) {
-      $this->exchange = $group_content->getGroup();
-    }
   }
 
   /**
@@ -72,9 +71,18 @@ class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterf
    * {@inheritdoc}
    */
   public function access(AccountInterface $account) {
-    if ($this->exchange) {
+    //@todo There is a data mismatch here.
+    // Note that certain group types are known to be exclusive
+    // Note that certain roles have been chosen, from all possible group types
+
+    //$this->options['role_ids']
+
+    if ($group_content = group_exclusive_membership_get('exchange')) {
+      $group = $group_content->getGroup();
+    }
+    if ($group) {
       foreach ($this->options['role_ids'] as $rid) {
-        if($this->exchange->hasRole($rid, $account)) {
+        if($group->hasRole($rid, $account)) {
           return TRUE;
         }
       }
@@ -85,7 +93,7 @@ class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterf
    * {@inheritdoc}
    */
   public function alterRouteDefinition(Route $route) {
-    $route->setRequirement('_exchange_role', implode(';', array_filter($this->options['role_ids'])));
+    $route->setRequirement('_group_role', implode(';', array_filter($this->options['role_ids'])));
     // Upcast any %group path key the user may have configured so the
     // '_group_role' access check will receive a properly loaded group.
     $route->setOption('parameters', ['group' => ['type' => 'entity:group']]);
@@ -116,7 +124,7 @@ class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterf
    */
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     parent::buildOptionsForm($form, $form_state);
-    // Get list of exchange roles
+    // Get list of group roles
     $roles = [];
 
     $roles = $this->roleStorage->loadByProperties(['group_type' => 'exchange']);
@@ -124,16 +132,16 @@ class ExchangeRole extends AccessPluginBase implements CacheableDependencyInterf
       $options[$role_id] = strip_tags($role->label());
     }
 
-    $form['role_ids'] = array(
+    $form['role_ids'] = [
+      '#title' => $this->t('Group roles'),
       '#type' => 'checkboxes',
       '#description' => $this->t('N.B. This is a way of filtering by group type.'),
       '#options' => $options,
-      '#title' => $this->t('Group roles'),
       '#default_value' => $this->options['role_ids'],
-      '#description' => $this->t('Only users with a selected exchange role will be able to access this display.<br /><strong>Warning:</strong> This will only work if there is an exchange {group} parameter in the route. If not, it will always deny access.'),
+      '#description' => $this->t('Only users with a selected group role will be able to access this display.<br /><strong>Warning:</strong> This will only work if there is an {group} parameter in the route. If not, it will always deny access.'),
       '#multiple' => TRUE,
       '#required' => TRUE
-    );
+    ];
   }
 
   /**
