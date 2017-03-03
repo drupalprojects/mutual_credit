@@ -3,7 +3,6 @@
 namespace Drupal\mcapi\Plugin\Field\FieldWidget;
 
 use Drupal\mcapi\Mcapi;
-use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\WidgetBase;
@@ -82,13 +81,12 @@ class WorthWidget extends WidgetBase {
     }
     // Because this is a multiple widget, ignore delta value and put all items.
     $element += [
-      '#title' => $this->fieldDefinition->label(),
+      '#title' => $this->fieldDefinition->getLabel(),
       '#title_display' => 'attribute',
       '#type' => 'worths_form',
       '#default_value' => $items->getValue() ?: NULL,
       '#allowed_curr_ids' => $curr_ids,
     ];
-
     unset($element['#description']);
     return $element;
   }

@@ -10,21 +10,7 @@ use Drupal\user\EntityOwnerInterface;
  * Interface for Transaction entity.
  */
 interface TransactionInterface extends ContentEntityInterface, EntityChangedInterface, EntityOwnerInterface {
-
-  /**
-   * Load many transactions and key them by serial number instead of xid.
-   *
-   * This is usually needed when taking the transaction id from the url,
-   * otherwise, entityQuery works with the xids, same as other entities.
-   *
-   * @param int $serial
-   *   A serial number.
-   *
-   * @return \Drupal\mcapi\Entity\TransactionInterface
-   *   The fully loaded transaction with children.
-   */
-  public static function loadBySerial($serial);
-
+  
   /**
    * Get transactions as a flat array, i.e. without children.
    *

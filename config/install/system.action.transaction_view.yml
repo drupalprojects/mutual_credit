@@ -20,12 +20,12 @@ configuration:
   display: 0
   weight: 0
   access:
-    burser: burser
-    manager: manager
-    payer: payer
-    payee: payee
-    creator: creator
-    authenticated: 0
+    burser: ''
+    manager: ''
+    payer: ''
+    payee: ''
+    creator: ''
+    authenticated: authenticated
   page_title: ''
   format: twig
   button: ''

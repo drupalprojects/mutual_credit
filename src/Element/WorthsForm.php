@@ -44,11 +44,13 @@ class WorthsForm extends FormElement {
    */
   public static function processDefaults($element, FormStateInterface $form_state, $form) {
     // Populate #allowed_curr_ids from the default value OR all currencies.
-    if (empty($element['#default_value'])) {
+
+    if (empty($element['#default_value']) or empty($element['#default_value'][0])) {
       if (empty($element['#allowed_curr_ids'])) {
         $element['#allowed_curr_ids'] = array_keys(mcapi_currencies_available());
       }
       $element['#default_value'] = [];
+
       foreach ($element['#allowed_curr_ids'] as $curr_id) {
         $element['#default_value'][] = [
           'curr_id' => $curr_id,

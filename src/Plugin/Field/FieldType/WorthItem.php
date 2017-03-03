@@ -38,13 +38,12 @@ class WorthItem extends FieldItemBase {
    */
   public static function propertydefinitions(FieldStorageDefinitionInterface $field_definition) {
     $properties['curr_id'] = DataDefinition::create('string')
-      ->setLabel(t('@label ID', ['Currency']));
+      ->setLabel(t('Currency ID'));
     $properties['value'] = DataDefinition::create('integer')
       ->setLabel(t('Value'));
     $properties['currency'] = DataReferenceDefinition::create('entity')
       ->setLabel(t('Currency'))
       ->setComputed(TRUE)
-      ->addConstraint('EntityType', 'mcapi_currency')
       ->setClass('\Drupal\mcapi\Plugin\Field\CurrencyComputedProperty')
       ->setSetting('currency source', 'curr_id');
     return $properties;

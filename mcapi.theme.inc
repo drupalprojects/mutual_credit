@@ -4,7 +4,6 @@
  * @file
  * Theme preprocessor functions.
  */
-
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Render\Element;
@@ -34,7 +33,8 @@ function template_preprocess_wallet_stats(&$vars) {
  */
 function template_preprocess_mcapi_wallet(&$vars) {
   $wallet = $vars['element']['#mcapi_wallet'];
-  if (Mcapi::maxWalletsOfBundle($wallet->getHolder()->getEntityTypeId(), $wallet->getHolder()->bundle()) > 1) {
+  $holder = $wallet->getHolder();
+  if (Mcapi::maxWalletsOfBundle($holder->getEntityTypeId(), $holder->bundle()) > 1) {
     $vars['label'] = $wallet->label();
   }
   $vars['canonical'] = $wallet->toUrl('canonical')->toString();

@@ -115,7 +115,7 @@ function mcapi_entity_insert($entity) {
     // NB autoadd applies to ALL entity types or to none.
     if (Mcapi::maxWalletsOfBundle($type, $entity->bundle())) {
       $props['holder'] = $entity;
-      //the first wallet also shares the entity's creation time
+      //this first wallet of the entity shares the entity's creation time
       if (method_exists($entity, 'getCreatedTime')) {
         $props['created'] = $entity->getCreatedTime();
       }
@@ -312,7 +312,7 @@ function mcapi_currencies_available(ContentEntityInterface $entity = NULL) {
    foreach ($currencies as $currency) {
      $output[$currency->id()] = $currency;
    }
-   uasort($currencies, '\Drupal\mcapi\Mcapi::uasortWeight');
+   uasort($output, '\Drupal\mcapi\Mcapi::uasortWeight');
 
-   return $currencies;
+   return $output;
  }

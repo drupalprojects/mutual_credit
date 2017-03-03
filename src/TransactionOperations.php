@@ -29,7 +29,7 @@ class TransactionOperations {
    *
    * @todo cache these by user and transaction
    */
-  public static function linkList(TransactionInterface $transaction) {
+  public static function get(TransactionInterface $transaction) {
     $operations = [];
 
     foreach (static::loadAllActions() as $action_name => $action) {

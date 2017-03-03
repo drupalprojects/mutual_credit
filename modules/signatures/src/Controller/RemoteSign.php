@@ -3,7 +3,7 @@
 namespace Drupal\mcapi_signatures\Controller;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Controller\ControllerBase;
-use \Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Storage\TransactionStorage;
 
 /**
  * Add a signature from a user who may not be logged in.
@@ -45,7 +45,7 @@ class RemoteSign extends ControllerBase {
       drupal_set_message(t('Invalid link'));
       return $this->redirect('entity.user.canonical');
     }
-    $transaction = Transaction::loadBySerial($serial);
+    $transaction = TransactionStorage::loadBySerial($serial);
     if ($this->signatures->setTransaction($transaction)->waitingOn($uid)) {
       $account = $this->currentUser();
       if ($account->isAuthenticated()) {

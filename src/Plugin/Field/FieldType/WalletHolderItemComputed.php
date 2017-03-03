@@ -34,10 +34,15 @@ class WalletHolderItemComputed extends EntityReferenceItem {
   public function __get($property_name) {
     if ($property_name == 'entity') {
       if (!$this->holder) {
-        $value = $this->getValue();
-        $this->holder = \Drupal::entityTypeManager()
-          ->getStorage($value['entity_type_id'])
-          ->load($value['target_id']);
+        if ($value = $this->getValue()) {
+          $this->holder = \Drupal::entityTypeManager()
+            ->getStorage($value['entity_type_id'])
+            ->load($value['target_id']);
+        }
+        else {
+          \Drupal::logger('mcapi')->debug("Couldn't find wallet in computed field - may appear orphaned");
+          return;
+        }
       }
       return $this->holder;
     }
@@ -51,10 +56,12 @@ class WalletHolderItemComputed extends EntityReferenceItem {
     $wallet = $this->getEntity();
     // This value is as similar as we can get to a normal entity reference value
     // without having configured the target_type
-    return [
-      'entity_type_id' => $wallet->holder_entity_type->value,
-      'target_id' => $wallet->holder_entity_id->value,
-    ];
+    if ($wallet->holder_entity_type->value && $wallet->holder_entity_id->value) {
+      return [
+        'entity_type_id' => $wallet->holder_entity_type->value,
+        'target_id' => $wallet->holder_entity_id->value,
+      ];
+    }
   }
 
   /**

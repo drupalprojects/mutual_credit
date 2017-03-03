@@ -83,7 +83,7 @@ class ExclusiveGroupContext implements ContextProviderInterface {
     $cacheability = new CacheableMetadata();
     $cacheability->setCacheContexts(['route']);
     $context->addCacheableDependency($cacheability);
-    return ['group' => $context];
+    return ['exclusive_group' => $context];
   }
 
   /**
@@ -91,7 +91,7 @@ class ExclusiveGroupContext implements ContextProviderInterface {
    */
   public function getAvailableContexts() {
     $context = new Context(new ContextDefinition('entity:group', $this->t('Group from URL')));
-    return ['group' => $context];
+    return ['exclusive_group' => $context];
   }
 
   protected function getGroupsFromUser() {

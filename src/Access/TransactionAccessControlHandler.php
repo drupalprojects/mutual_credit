@@ -17,6 +17,7 @@ class TransactionAccessControlHandler extends EntityAccessControlHandler {
    * {@inheritdoc}
    */
   public function createAccess($entity_bundle = NULL, AccountInterface $account = NULL, array $context = array(), $return_as_object = FALSE) {
+    $account = $this->prepareUser($account);
     $result = parent::createAccess($entity_bundle, $account, $context, $return_as_object);
 
     $wids = \Drupal::entityQuery('mcapi_wallet')

@@ -56,7 +56,6 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *   },
  *   constraints = {
  *     "DifferentWallets" = {},
- *     "CommonCurrency" = {}
  *   }
  * )
  */
@@ -78,21 +77,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     parent::__construct($values, $entity_type, $bundle, $translations);
     $this->moduleHandler = \Drupal::moduleHandler();
     $this->eventDispatcher = \Drupal::service('event_dispatcher');
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function loadBySerial($serial) {
-    $transactions = \Drupal::entityTypeManager()
-      ->getStorage('mcapi_transaction')
-      ->loadByProperties(['serial' => $serial]);
-    if ($transactions) {
-      $transaction = array_shift($transactions);
-      $transaction->children = $transactions;
-      return $transaction;
-    }
-    throw new \Exception('No transaction with serial '.$serial);
   }
 
   /**
@@ -249,7 +233,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setLabel(t('Worth'))
       ->setDescription(t('Value of the transaction (one or more currencies)'))
       ->setCardinality(-1)
-      ->setRequired(TRUE);
+      ->setRequired(TRUE)
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE);
 
     // I wanted to add the CanPayout and CanPayin constraints in the widget
     // builder but I couldn't see how. So at the moment they apply to all entity
@@ -415,6 +401,14 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    */
   public function getCreatedTime() {
     return $this->get('created')->value;
+  }
+
+  public function toArray() {
+    $array = parent::toArray();
+    foreach ($array->children as &$transaction) {
+      $transaction = $transaction->toArray();
+    }
+    return $array;
   }
 
 }

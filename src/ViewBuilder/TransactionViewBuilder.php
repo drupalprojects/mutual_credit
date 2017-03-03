@@ -63,6 +63,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
         $view_mode = 'certificate_ops';
       case 'certificate_ops':
       case 'certificate':
+        echo 1;
         $build['#theme'] = 'mcapi_transaction_twig';
         $build['#mcapi_transaction']->twig = Action::load('transaction_view')
           ->getPlugin()
@@ -118,7 +119,7 @@ class TransactionViewBuilder extends EntityViewBuilder {
       // No action links on the action page itself
       // todo inject routeMatch //need to cache by route in that case.
       if ($this->routeMatch->getRouteName() != 'mcapi.transaction.operation' && $transaction->id()) {
-        $build[$id]['links'] = $this->linkList($transaction);
+        $build[$id]['links'] = $this->linkList($transaction, $view_mode == 'certificate_ops');
       }
     }
   }
@@ -129,9 +130,13 @@ class TransactionViewBuilder extends EntityViewBuilder {
    * @return array
    *   A renderable array
    */
-  private function linkList($transaction) {
-    $output = $links = [];
-    foreach (TransactionOperations::linkList($transaction) as $link) {
+  private function linkList($transaction, $exclude_view = FALSE) {
+    $output = $operations = [];
+    $operations = TransactionOperations::get($transaction);
+    if ($exclude_view) {
+      unset($operations['transaction_view']);
+    }
+    foreach ($operations as $link) {
       // TODO what about the other properties in $data?
       $links[] = Link::fromTextAndUrl($link['title'], $link['url']);
     }

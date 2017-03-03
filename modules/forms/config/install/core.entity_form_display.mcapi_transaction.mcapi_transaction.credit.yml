@@ -54,9 +54,6 @@ hidden:
 third_party_settings:
   mcapi_forms:
     settings:
-    type: mcapi_form
-    mapping:
-      type: mcapi_form
       title: 'Credit another member'
       wallet_link_title: 'Credit [mcapi_wallet:name]'
       path: /transact/credit

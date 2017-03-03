@@ -49,7 +49,7 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
 
         case 'description':
           $renderable = $transaction->description->view(['label' => 'hidden']);
-          $replacements[$original] = strip_tags(\Drupal::service('renderer')->renderPlain($renderable));
+          $replacements[$original] = trim(strip_tags(\Drupal::service('renderer')->renderPlain($renderable)));
           break;
 
         case 'created':

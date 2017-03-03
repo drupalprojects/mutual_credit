@@ -53,8 +53,7 @@ hidden:
   type: true
 third_party_settings:
   mcapi_forms:
-    type: mcapi_form
-    mapping:
+    settings:
       title: 'Bill another member'
       wallet_link_title: 'Bill [mcapi_wallet:name]'
       path: /transact/bill

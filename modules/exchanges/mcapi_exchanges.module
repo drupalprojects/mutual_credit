@@ -9,6 +9,7 @@ use Drupal\mcapi\Storage\WalletStorage;
 use Drupal\mcapi\Entity\TransactionInterface;
 use Drupal\group\Entity\GroupInterface;
 use Drupal\group\Entity\GroupContent;
+use Drupal\user\Entity\User;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Database\Driver\mysql\Select;
 use Drupal\Core\Link;
@@ -99,10 +100,14 @@ function mcapi_exchanges_field_widget_worth_form_alter(&$element, $form_state, $
  * @see Drupal\mcapi\Plugin\Field\FieldWidget\WalletReferenceAutocompleteWidget::formElement
  */
 function mcapi_exchanges_query_entity_query_mcapi_wallet_alter(Select $query) {
-  if ($membership = group_exclusive_membership_get('exchange')) {
+
+  return;
+
+  if ($membership = mcapi_exchange_current_membership()) {
     $exchange = $membership->getGroup();
     if ($wids = wallets_in_exchange($exchange)) {
-      drupal_set_message(count($wids) .' wallets in exchange '.$exchange->label(), 'warning');
+      //drupal_set_message(count($wids) .' wallets in exchange '.$exchange->label(), 'warning');
+      debug($wids, 'wallets in exchange '.$exchange->label());
       $query->condition('base_table.wid', $wids, 'IN');
     }
     else {
@@ -314,4 +319,32 @@ function wallets_in_exchange(GroupInterface $exchange) {
     $wallet_ids[] = $content->getEntity()->id();
   }
   return $wallet_ids;
+}
+
+function mcapi_exchange_current_membership() {
+  $current_user = User::load(\Drupal::currentUser()->id());
+  foreach (GroupContent::loadByEntity($current_user) as $groupContent) {
+    if ($groupContent->getGroupContentType()->getGroupTypeId() == 'exchange') {
+      return $groupContent;
+    }
+  }
+}
+
+/**
+ * Implement hook_entity_view
+ *
+ * Diagnostic to show which groups an entity is is
+ */
+function mcapi_exchanges_entity_view(&$build, $entity, $display, $view_mode) {
+  if (\Drupal::currentUser()->id() == 1 && $entity instanceof ContentEntityInterface) {
+    if ($contents = GroupContent::loadByEntity($entity)) {
+      foreach ($contents as $content) {
+        $groupnames[] = $content->getGroup()->label();
+      }
+      drupal_set_message($entity->getEntityTypeId() .$entity->label() .'is member of group '. implode(', ', $groupnames));
+    }
+    else {
+      drupal_set_message($entity->getEntityTypeId() .$entity->label() .'is not in any groups.');
+    }
+  }
 }

@@ -11,6 +11,25 @@ class TransactionStorage extends TransactionIndexStorage {
 
   /**
    * {@inheritdoc}
+   */
+  public static function loadBySerial($serial, $exception_fail = TRUE) {
+    $transactions = \Drupal::entityTypeManager()
+      ->getStorage('mcapi_transaction')
+      ->loadByProperties(['serial' => $serial]);
+    ksort($transactions);
+    if ($transactions) {
+      $transaction = array_shift($transactions);
+      $transaction->children = $transactions;
+      return $transaction;
+    }
+    if ($exception_fail) {
+      throw new \Exception('No transaction with serial '.$serial);
+    }
+  }
+
+
+  /**
+   * {@inheritdoc}
    *
    * Because the transaction entity is keyed by serial number not xid,
    * and because it contains child entities,

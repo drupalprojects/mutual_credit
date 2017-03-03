@@ -2,9 +2,11 @@
 
 namespace Drupal\mcapi;
 
-use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Storage\TransactionStorage;
+use Drupal\user\PrivateTempStoreFactory;
 use Drupal\Core\ParamConverter\EntityConverter;
 use Symfony\Component\Routing\Route;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Provides upcasting for a transaction entity to be used in the Views UI.
@@ -24,12 +26,17 @@ use Symfony\Component\Routing\Route;
  */
 class TransactionSerialConverter extends EntityConverter {
 
+  protected $tempStore;
+
   /**
    * Constructs a new EntityConverter.
    *
-   * Pverride parent because no params are needed
+   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_type_manager
+   *   The entity manager.
    */
-  public function __construct() {}
+  public function __construct(PrivateTempStoreFactory $user_tempstore) {
+    $this->tempStore = $user_tempstore;
+  }
 
   /**
    * {@inheritdoc}
@@ -39,9 +46,12 @@ class TransactionSerialConverter extends EntityConverter {
     // transaction has been saved. The transaction is retrieved therefore not in
     // the normal way from the database but from the tempstore.
     if ($value) {
-      return Transaction::loadBySerial($value);
+      if ($transaction = TransactionStorage::loadBySerial($value, FALSE)) {
+        return $transaction;
+      }
+      throw new NotFoundHttpException();
     }
-    return \Drupal::service('user.private_tempstore')
+    return $this->tempStore
       ->get('TransactionForm')
       ->get('mcapi_transaction');
   }

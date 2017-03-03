@@ -4,3 +4,18 @@ services:
     arguments: ['@config.factory']
     tags:
      - { name: event_subscriber }
+
+  group.exchange_context:
+    class: 'Drupal\mcapi_exchanges\Context\ExchangeContext'
+    arguments: ['@group.membership_loader']
+    tags:
+      - { name: 'context_provider' }
+
+  access_check.exchange.permission:
+    class: 'Drupal\mcapi_exchanges\Access\ExchangePermissionAccessCheck'
+    tags:
+      - { name: 'access_check', applies_to: '_exchange_permission' }
+  access_check.exchange.role:
+    class: 'Drupal\mcapi_exchanges\Access\ExchangeRoleAccessCheck'
+    tags:
+      - { name: 'access_check', applies_to: '_exchange_role' }

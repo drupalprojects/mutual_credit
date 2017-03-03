@@ -1,4 +1,5 @@
-mcapi_form:
+
+core.entity_form_display.mcapi_transaction.mcapi_transaction.*.third_party.settings:
   type: mapping
   label: '3rd party transaction form display settings'
   mapping:

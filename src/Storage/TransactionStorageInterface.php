@@ -11,6 +11,20 @@ use Drupal\Core\Entity\EntityStorageInterface;
 interface TransactionStorageInterface extends EntityStorageInterface {
 
   /**
+   * Load many transactions and key them by serial number instead of xid.
+   *
+   * This is usually needed when taking the transaction id from the url,
+   * otherwise, entityQuery works with the xids, same as other entities.
+   *
+   * @param int $serial
+   *   A serial number.
+   *
+   * @return \Drupal\mcapi\Entity\TransactionInterface
+   *   The fully loaded transaction with children.
+   */
+  public static function loadBySerial($serial, $exception_fail = TRUE);
+  
+  /**
    * Truncate and rebuild the index table.
    */
   public function indexRebuild();

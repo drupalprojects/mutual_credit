@@ -3,7 +3,8 @@
 namespace Drupal\mcapi_signatures;
 
 use Drupal\Core\Form\FormStateInterface;
-use \Drupal\Core\Form\ConfirmFormBase;
+use Drupal\Core\Form\ConfirmFormBase;
+use Drupal\mcapi\Storage\TransactionStorage;
 
 /**
  * Confirm form to add all signatures needed by a user.
@@ -41,7 +42,7 @@ class SignAllConfirm extends ConfirmFormBase {
     $account = \Drupal::service('current_user');
 
     foreach (Signatures::transactionsNeedingSigOfUser($account) as $serial) {
-      $unsigned[] = Transaction::loadBySerial($serial);
+      $unsigned[] = TransactionStorage::loadBySerial($serial);
     }
 
     $form['preview'][] = \Drupal::entityTypeManager()
@@ -65,7 +66,7 @@ class SignAllConfirm extends ConfirmFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     foreach (Signatures::transactionsNeedingSigOfUser($values['account']) as $serial) {
-      $transaction = current(Transaction::loadBySerial($serial));
+      $transaction = current(TransactionStorage::loadBySerial($serial));
       Self::sign($transaction, $values['account']);
     }
     $transaction->save();

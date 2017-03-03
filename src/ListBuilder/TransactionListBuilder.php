@@ -87,7 +87,7 @@ class TransactionListBuilder extends EntityListBuilder {
    * {@inheritdoc}
    */
   public function getOperations(EntityInterface $entity) {
-    return TransactionOperations::linkList($entity);
+    return TransactionOperations::get($entity);
   }
 
 

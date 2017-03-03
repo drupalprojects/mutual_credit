@@ -29,8 +29,13 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
           ->error('Should not run walletsOf on an unsaved user',  ['exception' => new \Exception()]);
       }
       elseif ($entity->getEntityTypeId() == 'user' && $entity->id() != 1) {
-        \Drupal::logger('mcapi')
-          ->debug('user '.$entity->id() .' has no wallets', ['exception' => new \Exception()]);
+        if ($entity->id()) {
+          \Drupal::logger('mcapi')
+            ->debug('user '.$entity->id() .' has no wallets', ['exception' => new \Exception()]);
+        }
+        else {
+          //mtrace();
+        }
       }
     }
     return $load ?
@@ -57,7 +62,6 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
    * @todo make this include the entity owners of the holders, but how?
    */
   public function myWallets($uid) {
-
     $wids = array_merge(
       static::walletsOf(User::load($uid)),
       $this->getQuery()->condition('bursers', $uid)->execute()

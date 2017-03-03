@@ -5,6 +5,7 @@ services:
 
   paramconverter.mcapi_transaction_serial:
     class: Drupal\mcapi\TransactionSerialConverter
+    arguments: ['@user.private_tempstore']
     tags:
       - { name: paramconverter, priority: 10 }
 

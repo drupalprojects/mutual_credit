@@ -2,11 +2,13 @@
 
 namespace Drupal\mcapi\Entity;
 
-use Drupal\user\UserInterface;
 use Drupal\mcapi\Mcapi;
+use Drupal\user\UserInterface;
+use Drupal\user\Entity\User;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Cache\Cache;
+use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 
 /**
@@ -69,19 +71,20 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    * use the name field, otherwise provide a generic default
    */
   public function label() {
-    $holder = $this->getHolder();
-    $max_wallets = Mcapi::maxWalletsOfBundle($holder->getEntityTypeId(), $holder->bundle());
-    if ($max_wallets == 1) {
-      $label = $holder->label();
+    if ($this->name->value) {
+      $label = $this->name->value;
     }
-    elseif ($label = $this->name->value){}
-    else {
-      $label = t('Wallet #@num', ['@num' => $wallet->id()]);
+    elseif ($holder = $this->getHolder()) {
+      $max_wallets = Mcapi::maxWalletsOfBundle($holder->getEntityTypeId(), $holder->bundle());
+      if ($max_wallets == 1) {
+        $label = $holder->label();
+      }
     }
-
+    if (!isset($label)) {
+      $label =  t('Wallet #@num', ['@num' => $this->id()]);
+    }
     return $label;
   }
-
 
   /**
    * {@inheritdoc}
@@ -296,19 +299,27 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   }
 
   public function getHolder() {
-    return $this->holder->entity;
+    $holder = $this->holder->entity;
+    return $holder;
   }
 
   /**
    * {@inheritdoc}
    */
   public function getOwner() {
-    $holder_entity = $this->getHolder();
-
-    return $holder_entity instanceof UserInterface ?
-      $holder_entity :
-      // All wallet holders, whatever entity type, implement OwnerInterface.
-      $holder_entity->getOwner();
+    if ($holder_entity = $this->getHolder()) {
+      if ($holder_entity instanceof UserInterface) {
+        return $holder_entity;
+      }
+      else {
+        // All wallet holders, whatever entity type, implement OwnerInterface.
+        return $holder_entity->getOwner();
+      }
+    }
+    else {
+      //User 1 is the default owner of orphaned wallets
+      return User::load(1);
+    }
   }
 
   /**

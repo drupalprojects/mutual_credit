@@ -67,7 +67,10 @@ class MyWalletWidget extends OptionsButtonsWidget {
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     // My wallets are the ones owned by me plus the ones I'm burser of.
-    $wallet_ids = \Drupal::entityTypeManager()->getStorage('mcapi_wallet')->myWallets(\Drupal::currentUser()->id());
+    $wallet_ids = \Drupal::entityTypeManager()
+      ->getStorage('mcapi_wallet')
+      ->myWallets(\Drupal::currentUser()->id()
+    );
     $count = count($wallet_ids);
     if (!$count) {
       drupal_set_message($this->t('No wallets to show for @role', ['@role' => $this->fieldDefinition->getLabel()]), 'error');

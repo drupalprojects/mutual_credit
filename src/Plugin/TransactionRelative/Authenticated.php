@@ -33,7 +33,7 @@ class Authenticated extends PluginBase implements TransactionRelativeInterface {
    */
   public function entityViewsCondition(AlterableInterface $query, Condition $or_group, $uid) {
     if (!$uid) {
-      $query->condition('xid = 0');
+      $query->condition('1', 0);
     }
   }
 

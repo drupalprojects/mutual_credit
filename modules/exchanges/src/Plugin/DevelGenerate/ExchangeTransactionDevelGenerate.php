@@ -2,7 +2,7 @@
 
 namespace Drupal\mcapi_exchanges\Plugin\DevelGenerate;
 
-use Drupal\mcapi\Entity\Transaction;
+use Drupal\mcapi\Storage\TransactionStorage;
 use Drupal\mcapi\Plugin\DevelGenerate\TransactionDevelGenerate;
 use Drupal\group\Entity\GroupContent;
 use Drupal\group\Entity\Group;
@@ -84,7 +84,7 @@ class ExchangeTransactionDevelGenerate extends TransactionDevelGenerate {
       ->sort('xid', 'DESC')
       ->execute();
     if ($serials) {
-      return Transaction::loadBySerial(reset($serials));
+      return TransactionStorage::loadBySerial(reset($serials));
     }
   }
 

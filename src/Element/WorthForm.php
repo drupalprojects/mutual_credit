@@ -56,13 +56,16 @@ class WorthForm extends FormElement {
    * ];.
    */
   public static function process($element, FormStateInterface $form_state, $form) {
+
     if (empty($element['#allowed_curr_ids'])) {
       $element['#allowed_curr_ids'] = array_keys(Currency::loadMultiple());
     }
     // We might need to filter #default_value not in config mode.
     if (count($element['#allowed_curr_ids']) == 1) {
-      // @todo remove strtolower
-      $currency = Currency::load(strtolower(reset($element['#allowed_curr_ids'])));
+      $currency = Currency::load(reset($element['#allowed_curr_ids']));
+      if (!$currency) {
+        trigger_error('Problem with allowed_currency_ids in WorthForm', E_USER_ERROR);
+      }
       Self::subfields($element, $currency);
     }
     // Multiple choice of currencies, but only showing one widget.
@@ -136,7 +139,7 @@ class WorthForm extends FormElement {
         ];
         // If a preset value isn't in the $options
         // then we ignore the options and use the numeric sub-widget.
-        if (isset($options) && array_key_exists(@$value_parts[$i], $options)) {
+        if (isset($options) && array_key_exists(intval(@$value_parts[$i]), $options)) {
           $element[$i] += [
             '#type' => 'select',
             '#options' => $options,

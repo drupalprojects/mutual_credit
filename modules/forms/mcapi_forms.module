@@ -90,7 +90,6 @@ function mcapi_forms_theme() {
 function mcapi_forms_mcapi_form_list() {
   drupal_set_message(t('Create more forms by creating more transaction form displays and customising them'));
   $forms = [];
-
   foreach (mcapi_form_displays_load() as $mode => $entity) {
     $title = $entity->getThirdpartySetting('mcapi_forms', 'settings')['title'];
     $forms[$mode] = [
