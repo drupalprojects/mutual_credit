@@ -1,0 +1,14 @@
+id: d7_mcapi_limits_wallet
+label: Per wallet currency limit
+migration_tags:
+  - Drupal 7
+source:
+  plugin: d7_user
+process:
+  limits:
+    plugin: d7_mcapi_currency_user_limit_override
+destination:
+  plugin: mcapi_currency_wallet_limits
+migration_dependencies:
+  required:
+    - d7_mcapi_currency

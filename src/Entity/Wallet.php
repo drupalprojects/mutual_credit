@@ -3,13 +3,14 @@
 namespace Drupal\mcapi\Entity;
 
 use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\user\UserInterface;
 use Drupal\user\Entity\User;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Entity\EntityStorageInterface;
 
 /**
  * Defines the wallet entity.
@@ -64,6 +65,17 @@ class Wallet extends ContentEntityBase implements WalletInterface {
 
   private $stats = [];
 
+  public function preSave(EntityStorageInterface $storage) {
+    if (empty($this->name->value) and !empty($this->holder_entity_id->value)) {
+      $holder = \Drupal::entityTypeManager()->getStorage($this->holder_entity_type->value)->load($this->holder_entity_id->value);
+      $max = Mcapi::maxWalletsOfBundle($holder->getEntityTypeId(), $holder->bundle());
+      if ($max == 1) {
+        $this->name->value = $holder->label();
+      }
+    }
+    parent::preSave($storage);
+  }
+
   /**
    * {@inheritdoc}
    *
@@ -73,12 +85,6 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   public function label() {
     if ($this->name->value) {
       $label = $this->name->value;
-    }
-    elseif ($holder = $this->getHolder()) {
-      $max_wallets = Mcapi::maxWalletsOfBundle($holder->getEntityTypeId(), $holder->bundle());
-      if ($max_wallets == 1) {
-        $label = $holder->label();
-      }
     }
     if (!isset($label)) {
       $label =  t('Wallet #@num', ['@num' => $this->id()]);
@@ -225,7 +231,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   /**
    * {@inheritdoc}
    */
-  public function balance($curr_id, $display = Currency::DISPLAY_NORMAL, $linked = TRUE) {
+  public function balance($curr_id, $display = CurrencyInterface::DISPLAY_NORMAL, $linked = TRUE) {
     $stats = $this->getStats($curr_id);
     return Currency::load($curr_id)->format($stats['balance'], $display, $linked);
   }

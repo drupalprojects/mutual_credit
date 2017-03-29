@@ -3,9 +3,9 @@
 namespace Drupal\mcapi_limits\Form;
 
 use Drupal\mcapi_limits\WalletLimiter;
+use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\mcapi\Entity\Wallet;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**

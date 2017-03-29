@@ -5,6 +5,7 @@ namespace Drupal\mcapi\Element;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\Core\Render\Element\Fieldset;
 use \Drupal\mcapi\Entity\Currency;
+use \Drupal\mcapi\Entity\CurrencyInterface;
 
 /**
  * Show all the wallets ordered somehow, + list showing the most and/or least.
@@ -40,7 +41,6 @@ class OrderedWallets extends Fieldset {
     $element['chart'] = [
       '#theme' => 'ordered_wallets',
       '#id' => 'ordered_wallets_' . $currency->id() . '_' . $i++,
-      // '#title' => $element['#title'],.
       '#values' => $element['#data'],
       '#width' => 200,
     // Any smaller and gChart axis labels don't show.
@@ -49,7 +49,7 @@ class OrderedWallets extends Fieldset {
     ];
     if ($element['#format_vals']) {
       $tick = static::getTick($element['#data']);
-      $element['chart']['#vticks'][$tick] = $currency->format($tick, Currency::DISPLAY_NORMAL, FALSE);
+      $element['chart']['#vticks'][$tick] = $currency->format($tick, CurrencyInterface::DISPLAY_NORMAL, FALSE);
     }
     if (!empty($element['#top'])) {
       $element['top'] = [
@@ -65,7 +65,7 @@ class OrderedWallets extends Fieldset {
           continue;
         }
         if ($element['#format_vals']) {
-          $val = $currency->format($val, Currency::DISPLAY_NORMAL, FALSE);
+          $val = $currency->format($val, CurrencyInterface::DISPLAY_NORMAL, FALSE);
         }
         $element['top']['#items'][] = ['#markup' => $wallet->getHolder()->toLink()->toString() . ' (' . $val . ')'];
         if (count($element['top']['#items']) >= $element['#top']) {

@@ -16,7 +16,8 @@ use \Drupal\Core\Entity\Plugin\Validation\Constraint\CompositeConstraintBase;
  */
 class DifferentWalletsConstraint extends CompositeConstraintBase {
 
-  public $message = 'The payer and payee wallets must be different';
+  public $nullMessage = 'The wallet value cannot be null';
+  public $sameMessage = 'The payer and payee wallets must be different';
 
   /**
    * {@inheritdoc}

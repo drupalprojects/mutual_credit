@@ -6,6 +6,7 @@ use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\CurrencyInterface;
 
 /**
  * When we look at transaction index table, we need to view one worth at a time.
@@ -23,7 +24,7 @@ class Worth extends FieldPluginBase {
    */
   protected function defineOptions() {
     $options = parent::defineOptions();
-    $options['format'] = ['default' => Currency::DISPLAY_NORMAL];
+    $options['format'] = ['default' => CurrencyInterface::DISPLAY_NORMAL];
     return $options;
   }
 

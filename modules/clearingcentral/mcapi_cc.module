@@ -9,6 +9,7 @@ use Drupal\mcapi\Entity\Transaction;
 
 /**
  * Implements hook_form_wallet_form_alter().
+ *
  * Add the intertrading settings to designated wallets
  */
 function mcapi_cc_form_wallet_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state) {
@@ -61,7 +62,7 @@ function mcapi_cc_form_wallet_form_alter(&$form, \Drupal\Core\Form\FormStateInte
     ]
   ];
   if (!$used) {
-    $form['actions']['submit']['#submit'][] = 'mcapi_cc_save_wallet_settings';
+    $form['actions']['submit']['#submit'][] = 'mcapi_cc_intertrading_wallet_submit';
   }
 }
 
@@ -81,13 +82,21 @@ function mcapi_cc_exchange_id_validate(&$element, $form_state) {
  *
  * Saves additional settings for intertrading wallets.
  */
-function mcapi_cc_save_wallet_settings($form, $form_state) {
+function mcapi_cc_intertrading_wallet_submit($form, $form_state) {
+  mcapi_cc_save_wallet_settings(
+    $form_state->getFormObject()->getEntity()->id(),
+    $form_state->getValue('curr_id'),
+    $form_state->getValue('ex_id'),
+    $form_state->getValue('ex_pass')
+  );
+}
+
+function mcapi_cc_save_wallet_settings($wid, $curr_id, $ex_id, $ex_pass) {
   $settings = [
-    'curr_id' => $form_state->getValue('curr_id'),
-    'login' => $form_state->getValue('ex_id'),
-    'pass' => $form_state->getValue('ex_pass')
+    'curr_id' => $curr_id,
+    'ex_id' => $ex_id,
+    'ex_pass' => $ex_pass
   ];
-  $wid = intertrading_wallet_id();
   \Drupal::keyValue('clearingcentral')
     ->set($wid, $settings);
 }
@@ -227,7 +236,14 @@ function mcapi_cc_settings($wid) {
   return \Drupal::keyValue('clearingcentral')->get($wid);
 }
 
-function mcapi_cc_wallet_name($field_items) {
+/**
+ * Get the name of a remote user.
+ *
+ * @param FieldItemList $field_items
+ * @return array[]
+ *   A renderable array
+ */
+function mcapi_cc_wallet_name(Drupal\Core\Field\FieldItemList $field_items) {
   $transaction = $field_items->getEntity();
   //the entity may not be fully loaded if we are come via views
   if (!isset($transaction->remote_user_name) && !$transaction->isNew())  {
@@ -235,7 +251,8 @@ function mcapi_cc_wallet_name($field_items) {
     mcapi_cc_mcapi_transaction_load($transactions);
     $transaction = reset($transactions);
   }
-  $exchange_name = \Drupal::keyValue('exchangeNames')->get($transaction->remote_exchange_id) ? : $transaction->remote_exchange_id;
+  $exchange_name = \Drupal::keyValue('exchangeNames')
+      ->get($transaction->remote_exchange_id) ? : $transaction->remote_exchange_id;
   return [
     '#markup' => t(
       '%name of %exchange',

@@ -4,6 +4,7 @@ namespace Drupal\mcapi\Plugin\views\field;
 
 use Drupal\mcapi\Element\WorthsView;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\Core\Form\FormStateInterface;
@@ -23,7 +24,7 @@ class ComputedWorths extends FieldPluginBase {
    */
   protected function defineOptions() {
     $options = parent::defineOptions();
-    $options['format'] = ['default' => Currency::DISPLAY_NORMAL];
+    $options['format'] = ['default' => CurrencyInterface::DISPLAY_NORMAL];
     $options['context'] = ['default' => TRUE];
     return $options;
   }

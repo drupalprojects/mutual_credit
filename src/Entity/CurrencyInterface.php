@@ -9,6 +9,17 @@ use Drupal\Core\Config\Entity\ConfigEntityInterface;
  */
 interface CurrencyInterface extends ConfigEntityInterface {
 
+  const TYPE_ACKNOWLEDGEMENT = 2;
+  const TYPE_COMMODITY = 1;
+  const TYPE_PROMISE = 0;
+
+  // The raw integer value held in the database e.g.5400.
+  const DISPLAY_NATIVE = 1;
+  // The text value for display eg 1hr 30 mins.
+  const DISPLAY_NORMAL = 2;
+  // Formatted to appear as a number but without e.g 1.30.
+  const DISPLAY_PLAIN = 3;
+
   /**
    * Return the number of transactions, in all states.
    *
@@ -41,7 +52,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    *   Markup containing the formatted value.
    */
   public function format($raw_num);
-  
+
   /**
    * Get the moment the currency was first used.
    *

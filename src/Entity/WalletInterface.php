@@ -58,7 +58,7 @@ interface WalletInterface extends ContentEntityInterface {
    * @return string
    *   The formatted balance
    */
-  public function balance($curr_id, $display = Currency::DISPLAY_NORMAL, $linked = TRUE);
+  public function balance($curr_id, $display = CurrencyInterface::DISPLAY_NORMAL, $linked = TRUE);
 
   /**
    * Get the balance(s) of the current wallet, in worth format.

@@ -14,27 +14,28 @@ use Drupal\migrate_drupal\Plugin\migrate\source\DrupalSqlBase;
 class Signatures extends DrupalSqlBase {
 
   /**
-   *
+   * {@inheritdoc}
    */
   public function query() {
     $query = $this->select('mcapi_signatures', 's')->fields('s', ['serial', 'uid', 'pending']);
-    $query->join('mcapi_transaction', 't', 't.serial = s.serial');
+    $query->join('mcapi_transactions', 't', 't.serial = s.serial');
     $query->addfield('t', 'created');
     return $query;
   }
-  
-    /**
-   * Returns available fields on the source.
-   *
-   * @return array
-   *   Available fields in the source, keys are the field machine names as used
-   *   in field mappings, values are descriptions.
+
+  /**
+   * {@inheritdoc}
    */
   public function fields() {
-  
+    return [
+      'serial' => $this->t('The serial number'),
+      'uid' => $this->t('ID of the signer'),
+      'pending' => $this->t('TRUE if the signature is still needed'),
+      'created' => $this->t('Unixtime the transaction was created')
+    ];
   }
-  
-  
+
+
   /**
    * Defines the source fields uniquely identifying a source row.
    *
@@ -47,7 +48,12 @@ class Signatures extends DrupalSqlBase {
    *   describing the field (such as ['type' => 'string]).
    */
   public function getIds() {
-  
+    return [
+      'serial' => ['type' => 'string'],
+      'uid' => ['type' => 'integer']
+    ];
   }
+
+
 
 }

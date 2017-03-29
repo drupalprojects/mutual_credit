@@ -30,8 +30,8 @@ function mcapi_forms_entity_type_build(array &$entity_types) {
  */
 function mcapi_forms_menu_links_discovered_alter(&$links) {
   foreach (mcapi_form_displays_load() as $id => $first_party_form) {
-    $settings = $first_party_form->getThirdPartySetting('mcapi_forms', 'settings');
-    if ($menu = $settings['menu_parent']) {
+    $settings = $first_party_form->getThirdPartySettings('mcapi_forms');
+    if ($menu = @$settings['menu_parent']) {
       list($menu_name, $parent_link) = explode(':', $menu);
       $route_name = 'mcapi.1stparty.'.$first_party_form->get('mode');
       $links[$route_name.'.link'] = [
@@ -91,7 +91,7 @@ function mcapi_forms_mcapi_form_list() {
   drupal_set_message(t('Create more forms by creating more transaction form displays and customising them'));
   $forms = [];
   foreach (mcapi_form_displays_load() as $mode => $entity) {
-    $title = $entity->getThirdpartySetting('mcapi_forms', 'settings')['title'];
+    $title = $entity->getThirdpartySetting('mcapi_forms', 'title');
     $forms[$mode] = [
       'link' => Link::fromTextAndUrl(
         $title,
@@ -142,7 +142,7 @@ function mcapi_form_displays_load($config = FALSE) {
       ->getStorage('entity_form_display')
       ->loadByProperties(['bundle' => 'mcapi_transaction']);
     foreach ($entities as $display) {
-      if ($display->getThirdPartySetting('mcapi_forms', 'settings')) {
+      if ($display->getThirdPartySettings('mcapi_forms')) {
         $displays[$display->get('mode')] = $display;
       }
     }
@@ -213,17 +213,17 @@ function _mcapi_forms_quick_links(WalletInterface $wallet = NULL) {
     else {
       continue;
     }
-    $settings = $display->getThirdPartySetting('mcapi_forms', 'settings');
+
     if ($wallet) {
       $options['query'] = [$key => $wallet->id()];
-      $title = str_replace('[mcapi_wallet:name]', $wallet->label(), $settings['wallet_link_title']);
+      $title = str_replace('[mcapi_wallet:name]', $wallet->label(), $display->getThirdPartySetting('mcapi_forms', 'wallet_link_title'));
     }
     else {
       $options = [];
-      $title = $settings['title'];
+      $title = $display->getThirdPartySetting('mcapi_forms', 'title');
     }
     $info[$display->id()] = [
-      'url' => Url::fromUserInput($settings['path'], $options),
+      'url' => Url::fromUserInput($display->getThirdPartySetting('mcapi_forms', 'path'), $options),
       'title' => $title
     ];
   }
@@ -240,7 +240,7 @@ function mcapi_forms_form_entity_form_display_edit_form_alter(&$form, $form_stat
       return;
     }
     $form_state->loadInclude('mcapi_forms', 'inc');
-    mcapi_forms_display_decorate($form, $form_state, $entity_form_display->getThirdpartySetting('mcapi_forms', 'settings'));
+    mcapi_forms_display_decorate($form, $form_state, $entity_form_display->getThirdpartySettings('mcapi_forms'));
   }
 }
 

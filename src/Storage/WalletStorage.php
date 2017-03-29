@@ -16,6 +16,7 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
    * {@inheritdoc}
    */
   public static function walletsOf(ContentEntityInterface $entity, $load = FALSE) {
+    if (!$entity)mtrace();
     // There's no elegant static way to get an entityType's entityQuery object
     // or storage
     $wids = \Drupal::entityQuery('mcapi_wallet')
@@ -61,12 +62,10 @@ class WalletStorage extends SqlContentEntityStorage implements WalletStorageInte
    *
    * @todo make this include the entity owners of the holders, but how?
    */
-  public function myWallets($uid) {
-    $wids = array_merge(
-      static::walletsOf(User::load($uid)),
-      $this->getQuery()->condition('bursers', $uid)->execute()
-    );
-    return $wids;
+  public static function myWallets($uid) {
+    $my_wallets = static::walletsOf(User::load($uid));
+    $burser_of = \Drupal::entityQuery('mcapi_wallet')->condition('bursers', $uid)->execute();
+    return array_merge($my_wallets, $burser_of); // Should be no duplicates
   }
 
 }

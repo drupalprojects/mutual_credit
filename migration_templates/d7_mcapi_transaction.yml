@@ -2,14 +2,18 @@ id: d7_mcapi_transaction
 label: Transaction entity
 migration_tags:
   - Drupal 7
+#this handles field API, although differently to the node module
+class: Drupal\user\Plugin\migrate\User
 source:
   plugin: d7_mcapi_transaction
 process:
   serial: serial
   payer:
     plugin: check_wallet
+    source: payer
   payee:
     plugin: check_wallet
+    source: payee
   type:
     plugin: static_map
     default_value: 'default'
@@ -24,16 +28,17 @@ process:
     default_value: 'default'
     source: state
     map:
-      -3: hanging
-      -1: pending
-      0: erased
-      1: done
-  description: description
+      hanging: -3
+      pending: -1
+      erased: 0
+      done: 1
   creator: uid
   created: created
+  worth:
+    plugin: d7_mcapi_worth_db
+    source: xid
 destination:
   plugin: entity:mcapi_transaction
 migration_dependencies:
   required:
     - d7_user
-    - d7_field_instance

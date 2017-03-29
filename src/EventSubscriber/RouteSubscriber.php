@@ -1,9 +1,8 @@
 <?php
 
-namespace Drupal\mcapi\Routing;
+namespace Drupal\mcapi\EventSubscriber;
 
 use Drupal\Core\Routing\RouteSubscriberBase;
-use Drupal\Core\Routing\RoutingEvents;
 use Symfony\Component\Routing\RouteCollection;
 
 /**

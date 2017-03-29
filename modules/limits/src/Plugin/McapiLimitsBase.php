@@ -60,7 +60,6 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
     return [
       'override' => 0,
       'skip' => ['auto', 'mass'],
-      'display_relative' => FALSE,
       'prevent' => TRUE,
       // @todo move these to rules actions
       'warning_mail' => [
@@ -124,25 +123,10 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       ],
       '#weight' => 6,
     ];
-    // We rely in the inserted fields to validate themselves individually, so
-    // there is no validation added at the form level.
-    $subform['display_relative'] = [
-      '#title' => $this->t('Display perspective'),
-      '#type' => 'radios',
-      '#options' => [
-        0 => $this->t('Show absolute balance limits'),
-        1 => $this->t('Show spend/earn limits relative to the balance'),
-      ],
-      '#default_value' => intval($this->configuration['display_relative']),
-      '#weight' => 10,
-    ];
     $subform['prevent'] = [
-      '#title' => t('Action to take'),
-      '#type' => 'radios',
-      '#options' => [
-        '1' => $this->t('Prevent'),
-        '0' => $this->t('Notify'),
-      ],
+      '#title' => t('Prevent transactions which transgress limits.'),
+      '#description' => $this->t('Note that a system event will be fired so rules will be invoked'),
+      '#type' => 'checkbox',
       '#default_value' => $this->configuration['prevent'],
       '#weight' => 12,
     ];
@@ -154,7 +138,7 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       '#weight' => 15,
       '#states' => [
         'invisible' => [
-          ':input[name="limits_settings[prevent]"]' => ['value' => '0'],
+          ':input[name="plugin_settings[prevent]"]' => ['value' => '0'],
         ],
       ],
     ];
@@ -169,7 +153,7 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       '#description' => $this->t('The following tokens are available: @tokens', ['@tokens' => $this->getMailTokens()]),
       '#field_prefix' => $this->t("Hi [user:name]"),
       '#type' => 'textarea',
-      '#default_value' => $this->configuration['warning_mail']['body'],
+      '#default_value' => @$this->configuration['warning_mail']['body'],
       '#rows' => 8,
     ];
     $subform['prevented_mail'] = [
@@ -180,7 +164,7 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       '#weight' => 15,
       '#states' => [
         'invisible' => [
-          ':input[name="limits_settings[prevent]"]' => ['value' => '1'],
+          ':input[name="plugin_settings[prevent]"]' => ['value' => '1'],
         ],
       ],
     ];
@@ -195,7 +179,7 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       '#description' => $this->t('The following tokens are available: @tokens', ['@tokens' => $this->getMailTokens()]),
       '#field_prefix' => $this->t("Hi [user:name]"),
       '#type' => 'textarea',
-      '#default_value' => $this->configuration['prevented_mail']['body'],
+      '#default_value' => @$this->configuration['prevented_mail']['body'],
       '#rows' => 8,
     ];
     return $subform;
@@ -215,7 +199,7 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
     $values = $form_state->getValues();
     $config = [];
     if ($values['plugin'] != 'none') {
-      foreach ($values['limits_settings'] as $key => $value) {
+      foreach ($values['plugin_settings'] as $key => $value) {
         if ($key == 'warning_mail_subject') {
           $config['warning_mail']['subject'] = $value;
         }

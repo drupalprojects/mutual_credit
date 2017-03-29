@@ -1,0 +1,17 @@
+id: d7_transaction_settings
+label: Accounting settings
+migration_tags:
+  - Drupal 7
+source:
+  plugin: variable
+  variables:
+    - mcapi_cc_cenip_user
+    - mcapi_cc_cenip_pass
+process:
+  mcapi_cc_user: mcapi_cc_cenip_user
+  mcapi_cc_pass: mcapi_cc_cenip_pass
+destination:
+  plugin: mcapi_wallet_intertrading
+migration_dependencies:
+  required:
+    - mcapi

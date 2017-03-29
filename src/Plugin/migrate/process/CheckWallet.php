@@ -8,6 +8,7 @@ use Drupal\migrate\Row;
 use Drupal\mcapi\Storage\WalletStorage;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\user\Entity\User;
+use Drupal\migrate\MigrateException;
 
 /**
  * Check the payer or payee user has a wallet and swop the uid for the wallet id.
@@ -29,18 +30,19 @@ class CheckWallet extends ProcessPluginBase {
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
 
     // Bit ugly but what to do if $value is not set?
-    $user_id = $row->getSourceProperty($destination_property);
+    $user_id = $value;
     if (!isset($this->map[$user_id])) {
       $user = User::load($user_id);
+      if (!$user) {
+        throw new MigrateException('Unknown user '.$value);
+      }
       $wids = WalletStorage::walletsOf($user);
       if (empty($wids)) {
         $wallet = Wallet::Create(['holder' => $user]);
         $wallet->save();
         $wids = [$wallet->id()];
         drupal_set_message('new wallet created');
-      }
-      else {
-        drupal_set_message('existing wallet found');
+        trigger_error('Had to create new wallet for user: '.$value, E_USER_ERROR);
       }
       $this->map[$user_id] = reset($wids);
     }

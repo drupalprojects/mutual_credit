@@ -6,6 +6,7 @@
  */
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Render\Element;
 
 /**
@@ -18,10 +19,10 @@ function template_preprocess_wallet_stats(&$vars) {
     if ($unused || $data['trades']) {
       $currency = Currency::load($curr_id);
       $vars['currencies'][$curr_id]['label'] = $currency->label();
-      $vars['currencies'][$curr_id]['gross_in'] = $currency->format($data['gross_in'], Currency::DISPLAY_NORMAL);
-      $vars['currencies'][$curr_id]['gross_out'] = $currency->format($data['gross_out'], Currency::DISPLAY_NORMAL);
-      $vars['currencies'][$curr_id]['volume'] = $currency->format($data['volume'], Currency::DISPLAY_NORMAL);
-      $vars['currencies'][$curr_id]['balance'] = $currency->format($data['balance'], Currency::DISPLAY_NORMAL);
+      $vars['currencies'][$curr_id]['gross_in'] = $currency->format($data['gross_in'], CurrencyInterface::DISPLAY_NORMAL);
+      $vars['currencies'][$curr_id]['gross_out'] = $currency->format($data['gross_out'], CurrencyInterface::DISPLAY_NORMAL);
+      $vars['currencies'][$curr_id]['volume'] = $currency->format($data['volume'], CurrencyInterface::DISPLAY_NORMAL);
+      $vars['currencies'][$curr_id]['balance'] = $currency->format($data['balance'], CurrencyInterface::DISPLAY_NORMAL);
       $vars['currencies'][$curr_id]['partners'] = $data['partners'];
       $vars['currencies'][$curr_id]['trades'] = $data['trades'];
     }
@@ -72,7 +73,7 @@ function template_preprocess_wallet_balances(&$vars) {
     if ($unused || $data['trades']) {
       $currency = Currency::load($curr_id);
       $vars['currencies'][$curr_id]['label'] = $currency->label();
-      $balance = $currency->format($data['balance'], Currency::DISPLAY_NORMAL);
+      $balance = $currency->format($data['balance'], CurrencyInterface::DISPLAY_NORMAL);
       // @todo even better if we can let the html through
       $vars['currencies'][$curr_id]['balance'] = strip_tags($balance);
       $vars['delimited'][] = strip_tags($balance);
@@ -110,15 +111,15 @@ function template_preprocess_wallet_balance_bars(&$vars) {
       'vaxislabels' => [
         [
           'value' => 0,
-          'label' => strip_tags($currency->format(0, Currency::DISPLAY_NORMAL)),
+          'label' => strip_tags($currency->format(0, CurrencyInterface::DISPLAY_NORMAL)),
         ],
         [
           'value' => $max / 2,
-          'label' => strip_tags($currency->format(intval($max / 2), Currency::DISPLAY_NORMAL)),
+          'label' => strip_tags($currency->format(intval($max / 2), CurrencyInterface::DISPLAY_NORMAL)),
         ],
         [
           'value' => $max,
-          'label' => strip_tags($currency->format($max, Currency::DISPLAY_NORMAL)),
+          'label' => strip_tags($currency->format($max, CurrencyInterface::DISPLAY_NORMAL)),
         ],
       ],
     ];
@@ -219,7 +220,7 @@ function mcapi_preprocess_mcapi_timeline(&$vars) {
   }
   // TEMP until gcharts works better. Force some formatted values on the axis.
   if ($currency = $vars['currency']) {
-    if ($currency->issuance == Currency::TYPE_PROMISE) {
+    if ($currency->issuance == CurrencyInterface::TYPE_PROMISE) {
       // Make symmetrical axes for mutual credit.
       // @note its pretty difficult to give the axes nice limits if the native currency
       // val bears no resemblance to the display value.
@@ -228,15 +229,15 @@ function mcapi_preprocess_mcapi_timeline(&$vars) {
       $vars['vaxislabels'] = [
         [
           'value' => -$max,
-          'label' => $currency->format(-$max, Currency::DISPLAY_NORMAL, FALSE),
+          'label' => $currency->format(-$max, CurrencyInterface::DISPLAY_NORMAL, FALSE),
         ],
         [
           'value' => 0,
-          'label' => $currency->format(0, Currency::DISPLAY_NORMAL, FALSE),
+          'label' => $currency->format(0, CurrencyInterface::DISPLAY_NORMAL, FALSE),
         ],
         [
           'value' => $max,
-          'label' => $currency->format($max, Currency::DISPLAY_NORMAL, FALSE),
+          'label' => $currency->format($max, CurrencyInterface::DISPLAY_NORMAL, FALSE),
         ],
       ];
     }
@@ -245,15 +246,15 @@ function mcapi_preprocess_mcapi_timeline(&$vars) {
       $vars['vaxislabels'] = [
         [
           'value' => $min,
-          'label' => $currency->format($min, Currency::DISPLAY_NORMAL, FALSE),
+          'label' => $currency->format($min, CurrencyInterface::DISPLAY_NORMAL, FALSE),
         ],
         [
           'value' => $middle,
-          'label' => $currency->format($middle, Currency::DISPLAY_NORMAL, FALSE),
+          'label' => $currency->format($middle, CurrencyInterface::DISPLAY_NORMAL, FALSE),
         ],
         [
           'value' => $max,
-          'label' => $currency->format($max, Currency::DISPLAY_NORMAL, FALSE),
+          'label' => $currency->format($max, CurrencyInterface::DISPLAY_NORMAL, FALSE),
         ],
       ];
     }

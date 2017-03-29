@@ -2,7 +2,6 @@
 
 namespace Drupal\mcapi\Plugin\EntityReferenceSelection;
 
-use Drupal\mcapi\Entity\Wallet;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Entity\Plugin\EntityReferenceSelection\DefaultSelection;
 
@@ -18,7 +17,6 @@ use Drupal\Core\Entity\Plugin\EntityReferenceSelection\DefaultSelection;
  *   group = "default"
  * )
  * @todo inject the database
- * @deprecated
  */
 class WalletSelection extends DefaultSelection {
 
@@ -33,7 +31,7 @@ class WalletSelection extends DefaultSelection {
   /**
    * {@inheritdoc}
    */
-  public function __getReferenceableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
+  public function getReferenceableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
     $query = $this->walletsQuery($match);
     if ($limit > 0) {
       $query->range(0, $limit);
@@ -53,14 +51,14 @@ class WalletSelection extends DefaultSelection {
   /**
    * {@inheritdoc}
    */
-  public function __countReferenceableEntities($match = NULL, $match_operator = 'CONTAINS') {
+  public function countReferenceableEntities($match = NULL, $match_operator = 'CONTAINS') {
     return $this->walletsQuery()->count()->execute();
   }
 
   /**
    * {@inheritdoc}
    */
-  public function __validateReferenceableEntities(array $ids) {
+  public function validateReferenceableEntities(array $ids) {
     $valid_ids = $this->walletsQuery()->execute();
     // User 1 skips validation. this is helpful for importing.
     if ($this->currentUser->id() != 1) {
@@ -78,7 +76,7 @@ class WalletSelection extends DefaultSelection {
    * @return Drupal\Core\Entity\Query\Sql\Query
    *   An entity query object, unexecuted
    */
-  public function __walletsQuery($match = NULL) {
+  public function walletsQuery($match = NULL) {
     $settings = &$this->configuration['handler_settings'];
     $query = $this->entityManager->getStorage('mcapi_wallet')->getQuery();
     if ($match) {

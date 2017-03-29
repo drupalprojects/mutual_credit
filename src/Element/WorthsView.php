@@ -3,6 +3,7 @@
 namespace Drupal\mcapi\Element;
 
 use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Render\Element\RenderElement;
 
 /**
@@ -34,7 +35,7 @@ class WorthsView extends RenderElement {
       '#pre_render' => [
         get_class() . '::preRender',
       ],
-      '#format' => Currency::DISPLAY_NORMAL,
+      '#format' => CurrencyInterface::DISPLAY_NORMAL,
       // Can have 3 values, transaction, balance and other.
       '#context' => SELF::MODE_TRANSACTION
     ];

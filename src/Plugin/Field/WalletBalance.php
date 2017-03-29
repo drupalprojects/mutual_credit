@@ -3,6 +3,7 @@
 namespace Drupal\mcapi\Plugin\Field;
 
 use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Field\FieldItemList;
 
 /**
@@ -22,7 +23,7 @@ class WalletBalance extends FieldItemList {
   public function __toString() {
     $worth = $this->getValue();
     $currency = Currency::load($worth[0]['curr_id']);
-    return (string)$currency->format($worth[0]['value'], Currency::DISPLAY_NORMAL, FALSE);
+    return (string)$currency->format($worth[0]['value'], CurrencyInterface::DISPLAY_NORMAL, FALSE);
   }
 
 }

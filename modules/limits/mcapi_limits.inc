@@ -5,10 +5,8 @@
  * Helper functions.
  */
 
-use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\mcapi\Entity\CurrencyInterface;
-use Drupal\mcapi\Entity\Currency;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -25,9 +23,9 @@ function template_preprocess_mcapi_limits_absolute(&$vars) {
   $vars['balanceformatted'] = ['#markup' => $currency->format($summary['balance'])];
   $vars['minformatted'] = ['#markup' => $currency->format($limits->min($curr_id))];
   $vars['maxformatted'] = ['#markup' => $currency->format($limits->max($curr_id))];
-  $vars['min'] = $currency->format($limits->min($curr_id), Currency::DISPLAY_PLAIN);
-  $vars['max'] = $currency->format($limits->max($curr_id), Currency::DISPLAY_PLAIN);
-  $vars['balance'] = $currency->format($summary['balance'], Currency::DISPLAY_PLAIN);
+  $vars['min'] = $currency->format($limits->min($curr_id), CurrencyInterface::DISPLAY_PLAIN);
+  $vars['max'] = $currency->format($limits->max($curr_id), CurrencyInterface::DISPLAY_PLAIN);
+  $vars['balance'] = $currency->format($summary['balance'], CurrencyInterface::DISPLAY_PLAIN);
 }
 
 /**
@@ -66,9 +64,9 @@ function template_preprocess_mcapi_limits_balanced(&$vars) {
   // The google gauge cannot mask the real number with a formatted value.
   $limiter = \Drupal::service('mcapi_limits.wallet_limiter')
     ->setwallet($wallet);
-  $vars['balance'] = $currency->format($stats['balance'], Currency::DISPLAY_PLAIN);
-  $vars['min'] = $currency->format($limiter->min($curr_id), Currency::DISPLAY_PLAIN);
-  $vars['max'] = $currency->format($limiter->max($curr_id), Currency::DISPLAY_PLAIN);
+  $vars['balance'] = $currency->format($stats['balance'], CurrencyInterface::DISPLAY_PLAIN);
+  $vars['min'] = $currency->format($limiter->min($curr_id), CurrencyInterface::DISPLAY_PLAIN);
+  $vars['max'] = $currency->format($limiter->max($curr_id), CurrencyInterface::DISPLAY_PLAIN);
   $vars['minformatted'] = ['#markup' => $currency->format($limiter->min($curr_id))];
   $vars['maxformatted'] = ['#markup' => $currency->format($limiter->max($curr_id))];
 }
@@ -111,7 +109,7 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, FormStateInte
       '#weight' => -1,
       '#states' => [
         'visible' => [
-          ':input[name="issuance"]' => ['value' => Currency::TYPE_ACKNOWLEDGEMENT],
+          ':input[name="issuance"]' => ['value' => CurrencyInterface::TYPE_ACKNOWLEDGEMENT],
         ],
       ],
     ],
@@ -121,7 +119,7 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, FormStateInte
       '#weight' => -1,
       '#states' => [
         'visible' => [
-          ':input[name="issuance"]' => ['value' => Currency::TYPE_PROMISE],
+          ':input[name="issuance"]' => ['value' => CurrencyInterface::TYPE_PROMISE],
         ],
       ],
     ],
@@ -131,7 +129,7 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, FormStateInte
       '#weight' => -1,
       '#states' => [
         'visible' => [
-          ':input[name="issuance"]' => ['value' => Currency::TYPE_COMMODITY],
+          ':input[name="issuance"]' => ['value' => CurrencyInterface::TYPE_COMMODITY],
         ],
       ],
     ],
@@ -144,19 +142,19 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, FormStateInte
       '#default_value' => $plugin->id,
       '#weight' => -1,
       '#ajax' => [
-        'callback' => 'limits_settings_subform',
-        'wrapper' => 'limits-settings',
+        'callback' => 'mcapi_limits_plugin_settings_subform',
+        'wrapper' => 'limits-plugin-settings',
         'effect' => 'fade',
       ],
     ],
   ];
 
   // Show the options form for the selected plugin.
-  $form['limits']['limits_settings'] = $plugin->buildConfigurationForm($form, $form_state, $currency);
+  $form['limits']['plugin_settings'] = $plugin->buildConfigurationForm($form, $form_state, $currency);
   // This is the ajax wrapper.
-  $form['limits']['limits_settings']['#prefix'] = '<div id="limits-settings">';
-  $form['limits']['limits_settings']['#suffix'] = '</div>';
-  $form['limits']['limits_settings']['#tree'] = TRUE;
+  $form['limits']['plugin_settings']['#prefix'] = '<div id="limits-plugin-settings">';
+  $form['limits']['plugin_settings']['#suffix'] = '</div>';
+  $form['limits']['plugin_settings']['#tree'] = TRUE;
   $form['actions']['submit']['#validate'][] = 'mcapi_limits_validate';
   $form['actions']['submit']['#submit'][] = 'mcapi_limits_submit';
 }
@@ -226,8 +224,8 @@ function mcapi_limits_submit(&$form, FormStateInterface $form_state) {
 /**
  * Ajax callback.
  */
-function limits_settings_subform($form, FormStateInterface $form_state) {
-  return $form['limits']['limits_settings'];
+function mcapi_limits_plugin_settings_subform($form, FormStateInterface $form_state) {
+  return $form['limits']['plugin_settings'];
 }
 
 /**
@@ -239,11 +237,15 @@ function limits_settings_subform($form, FormStateInterface $form_state) {
  *   The wallet.
  * @param array $curr_ids
  *   Limit the display to the currencies given.
+ * @param bool $relative
+ *   Show the limits relative to the user's current balance.
  *
  * @return array
  *   A renderable array.
+ *
+ * @todo add the $relative parameter to calling functions, and related config.
  */
-function mcapi_view_limits(WalletInterface $wallet, $curr_ids = []) {
+function mcapi_view_limits(WalletInterface $wallet, $curr_ids = [], $relative = FALSE) {
   $currencies = mcapi_currencies_available($wallet);
   if ($curr_ids) {
     $currencies = array_intersect_key($currencies, array_flip($curr_ids));
@@ -253,7 +255,7 @@ function mcapi_view_limits(WalletInterface $wallet, $curr_ids = []) {
     if ($currency->getThirdPartySetting('mcapi_limits', 'plugin', 'none') == 'none') {
       continue;
     }
-    if ($currency->getThirdPartySetting('mcapi_limits', 'display_relative', 'absolute') == TRUE) {
+    if ($relative) {
       $theme = 'mcapi_limits_relative';
     }
     else {

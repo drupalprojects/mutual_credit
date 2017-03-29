@@ -1,21 +1,28 @@
-id: d7_currency
+id: d7_mcapi_currency
 label: Currency configuration entity
 migration_tags:
   - Drupal 7
-#wait for views to copy it
-class: Drupal\user\Plugin\migrate\Currency
 source:
-  #wait for views to copy it
-  plugin: d7_mcapi_currency
+  plugin: d7_mcapi_ctools
+  table: mcapi_currencies
+  key: currcode
 process:
   id: currcode
   name: human_name
-  description: description
   uid: uid
-  issuance: issuance
-  zero: display/zero
-  format: 
-    plugin: currency_format
+  issuance:
+    plugin: static_map
+    source: issuance
+    map:
+      acknowledgement: 2
+      commodity: 1
+      exchange: 0
+  zero:
+    plugin: d7_mcapi_object_prop
+    source: display
+    property: zero
+  format:
+    plugin: d7_mcapi_currency_format
     source: display
 destination:
   plugin: entity:mcapi_currency

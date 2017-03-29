@@ -2,10 +2,10 @@
 
 namespace Drupal\mcapi\Form;
 
-use \Drupal\field\Entity\FieldConfig;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\CurrencyInterface;
 
 /**
  * Builder for currency entity form.
@@ -92,7 +92,7 @@ class CurrencyForm extends EntityForm {
       ]),
       '#states' => [
         'visible' => [
-          ':input[name="issuance"]' => ['value' => Currency::TYPE_ACKNOWLEDGEMENT],
+          ':input[name="issuance"]' => ['value' => CurrencyInterface::TYPE_ACKNOWLEDGEMENT],
         ],
       ],
       '#weight' => 3,
@@ -107,7 +107,7 @@ class CurrencyForm extends EntityForm {
       ]),
       '#states' => [
         'visible' => [
-          ':input[name="issuance"]' => ['value' => Currency::TYPE_PROMISE],
+          ':input[name="issuance"]' => ['value' => CurrencyInterface::TYPE_PROMISE],
         ],
       ],
       '#weight' => 3,
@@ -122,7 +122,7 @@ class CurrencyForm extends EntityForm {
       ]),
       '#states' => [
         'visible' => [
-          ':input[name="issuance"]' => ['value' => Currency::TYPE_COMMODITY],
+          ':input[name="issuance"]' => ['value' => CurrencyInterface::TYPE_COMMODITY],
         ],
       ],
       '#weight' => 3,
@@ -147,6 +147,7 @@ class CurrencyForm extends EntityForm {
 
     $form['zero'] = [
       '#title' => $this->t('Allow zero transactions'),
+      '#description' => $this->t('Enter an HMTL snippet to show when a transaction is worth zero units. Leave blank to disallow zero transactions.'),
       '#type' => 'checkbox',
       '#default_value' => $currency->zero,
       // This is required if any existing transactions have zero value.
@@ -166,7 +167,7 @@ class CurrencyForm extends EntityForm {
       '#type' => 'textfield',
       '#default_value' => implode('', $currency->format),
       '#element_validate' => [
-        [$this, 'validateFormat'],
+        [$this, 'validateFormatElement'],
       ],
       '#max_length' => 32,
       '#size' => 32,
@@ -181,8 +182,6 @@ class CurrencyForm extends EntityForm {
    */
   public function save(array $form, FormStateInterface $form_state) {
     $currency = $this->entity;
-    // Save the currency format in a that is easier to process at runtime.
-    $currency->format = $this->submitFormat($currency->format);
     $status = $currency->save();
 
     if ($status == SAVED_UPDATED) {
@@ -197,10 +196,13 @@ class CurrencyForm extends EntityForm {
   /**
    * Element validation callback.
    */
-  public function validateFormat(&$element, FormStateInterface $form_state) {
-    $nums = preg_match_all('/[0-9]+/', $element['#value'], $chars);
-    if (!is_array($this->submitFormat($element['#value'])) || $nums[0] != 0) {
-      $form_state->setErrorByName($element['#name'], t('Bad Format'));
+  public function validateFormatElement(&$element, FormStateInterface $form_state) {
+    $array = self::transformFormat($element['#value']);
+    if (is_array($array)) {
+      $form_state->setValue('format', $array);
+    }
+    else {
+      $form_state->setErrorByName('format', t('Bad Format'));
     }
   }
 
@@ -213,27 +215,36 @@ class CurrencyForm extends EntityForm {
    * @return array
    *   With values alternating string / number / string / number etc.
    */
-  public function submitFormat($string) {
+  public static function transformFormat($string) {
     // A better regular expression would make this function much shorter
     // ($not_nums) | ([nums] | [not nums])+ | (/num)? | (not nums) ?
-    preg_match_all('/[0-9]+/', $string, $matches);
-    $numbers = $matches[0];
-    preg_match_all('/[^0-9]+/', $string, $matches);
-    $chars = $matches[0];
-    // Ensure the first value of the result array corresponds to a template
-    // string, not a numeric string if the format string started with a number.
-    if (is_numeric(substr($string, 0, 1))) {
-      array_unshift($chars, '');
+    $patterns = [
+      '/([^9]*)(9+)([:,.])([^ ]*)(.*)$/',
+      '/([^9]*)(9+)(.*)$/',
+    ];
+    foreach ($patterns as $pattern) {
+      $parts = [];
+      if (\preg_match_all($pattern, $string, $parts)){
+        break;
+      }
     }
-    foreach ($chars as $snippet) {
-      $combo[] = $snippet;
-      $combo[] = array_shift($numbers);
+    if ($parts) {
+      array_shift($parts);
+      $format = [];
+      foreach($parts as $array) {
+        $format[] = $array[0];
+      }
+      // Ensure the first value of the result array corresponds to a template
+      // string, not a numeric string if the format string started with a number.
+      if (is_numeric(substr($string, 0, 1))) {
+        array_unshift($format, '');
+      }
+      // If the last value of $combo is empty remove it.
+      if (end($format) == '') {
+        array_pop($format);
+      }
+      return $format;
     }
-    // If the last value of $combo is empty remove it.
-    if (end($combo) == '') {
-      array_pop($combo);
-    }
-    return $combo;
   }
 
 }

@@ -168,6 +168,9 @@ class Signatures {
    *
    * @return int[]
    *   Serial numbers of the transactions.
+   *
+   * @todo this whole module needs to handle the database better, maybe by
+   * decorating the transactionStorage.
    */
   public static function transactionsNeedingSigOfUser($uid) {
     // Assumes all transactions referenced are in pending state.

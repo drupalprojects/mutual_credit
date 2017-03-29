@@ -2,48 +2,71 @@
 
 namespace Drupal\mcapi_signatures\Plugin\migrate\destination;
 
-use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\Row;
 use Drupal\migrate\Plugin\migrate\destination\DestinationBase;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\migrate\Plugin\MigrationInterface;
+use Drupal\Core\Database\Driver\mysql\Connection;
 
 /**
  * Destination for mcapi_signatures.
  *
  * @MigrateDestination(
- *   id = "d7_mcapi_signatures"
+ *   id = "mcapi_signatures"
  * )
+ * @note Unusually we're writing directly to the database because there is no
+ * way to add arbitrary signatures to transaction objects.
  */
-class Signatures extends DestinationBase {
+class Signatures extends DestinationBase implements ContainerFactoryPluginInterface {
+
+  protected $supportsRollback = TRUE;
+
+  private $database;
 
   /**
+   * Constructor
    *
+   * @param array $configuration
+   * @param string $plugin_id
+   * @param array $plugin_definition
+   * @param MigrationInterface $migration
+   * @param Connection $database
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration, Connection $database) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $migration);
+    $this->database = $database;
+  }
+
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL) {
+    return new static (
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $migration,
+      $container->get('database')
+    );
   }
 
   /**
    * {@inheritdoc}
    */
   public function import(Row $row, array $old_destination_id_values = array()) {
-    $this->rollbackAction = MigrateIdMapInterface::ROLLBACK_DELETE;
+    $serial = $row->getDestinationProperty('serial');
+    $uid = $row->getDestinationProperty('uid');
 
-    // Can't inject this easily, but there may be a better way than writing to the db here
-    \Drupal::database()->merge('mcapi_signatures')
-      ->key([
-        'serial' => $row->getSourceProperty('serial'),
-        'uid' => $row->getSourceProperty('uid'),
-      ])
-      ->values([
-        'created' => $row->getSourceProperty('created'),
+    $this->database->insert('mcapi_signatures')
+      ->fields([
+        'serial' => $serial,
+        'uid' => $uid,
+        'signed' => $row->getDestinationProperty('signed'),
       ])->execute();
 
-    return TRUE;
+    return [$serial, $uid];
   }
 
   /**
-   *
+   * {@inheritdoc}
    */
   public function fields(\Drupal\migrate\Plugin\MigrationInterface $migration = NULL) {
     return ['serial', 'uid', 'signed'];
@@ -53,9 +76,20 @@ class Signatures extends DestinationBase {
    * {@inheritdoc}
    */
   public function getIds() {
-    $ids['serial']['type'] = 'string';
-    $ids['uid']['type'] = 'string';
-    return $ids;
+    return [
+      'serial' => ['type' => 'string'],
+      'uid' => ['type' => 'integer']
+    ];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function rollback(array $destination_identifier) {
+    $this->database->delete('mcapi_signatures')
+      ->condition('serial', $destination_identifier['serial'])
+      ->condition('uid', $destination_identifier['uid'])
+      ->execute();
   }
 
 }

@@ -2,7 +2,7 @@
 
 namespace Drupal\mcapi\Plugin\Field\FieldType;
 
-use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Field\FieldItemBase;
 use Drupal\Core\TypedData\DataDefinition;
 use Drupal\Core\Field\FieldDefinitionInterface;
@@ -109,7 +109,7 @@ class WorthItem extends FieldItemBase {
   }
 
   public function __toString() {
-    return $this->format(Currency::DISPLAY_NORMAL);
+    return $this->format(CurrencyInterface::DISPLAY_NORMAL);
   }
 
   public function format($mode) {

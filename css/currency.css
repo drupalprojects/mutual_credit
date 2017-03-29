@@ -18,6 +18,7 @@ table.extreme-balances div.negative {
   -webkit-border-radius: 6px 0 0 6px;
   -moz-border-radius: 6px 0 0 6px;
   border-radius: 6px 0 0 6px;
+  float:right;
 }
 table.extreme-balances td div.negative:hover {
   border: 2px solid #8f8;
@@ -40,8 +41,8 @@ table.extreme-balances td div.positive:hover {
 
 fieldset.ordered-wallets {
   display: inline-block;
-  list-style-position: inside;
   width: 40%;
+  /* list-style-position: inside; */
 }
 #transaction-stats-filter div.form-type-select {
   display: inline-block;

@@ -1,0 +1,65 @@
+id: d7_mcapi_form
+label: Designed transaction form
+migration_tags:
+  - Drupal 7
+source:
+  plugin: d7_mcapi_ctools
+  table: mcapi_forms
+  key: name
+process:
+  mode:
+    plugin: d7_mcapi_object_prop
+    source: info
+    property: name
+  title:
+    plugin: d7_mcapi_object_prop
+    source: experience
+    property: title
+  wallet_link_title:
+    plugin: d7_mcapi_object_prop
+    source: experience
+    property: menu_title
+  path:
+    plugin: d7_mcapi_object_prop
+    source: architecture
+    property: path
+  permission:
+    plugin: d7_mcapi_form_perm
+    source: architecture
+  menu_title:
+    plugin: d7_mcapi_object_prop
+    source: experience
+    property: title
+  menu_parent:
+    plugin: default_value
+    default_value: 'account:'
+  transaction_type:
+    plugin: static_map
+    source: name
+    map:
+      auto: auto
+      remote: remote
+      mass: mass
+    default_value: default
+  experience_twig:
+    plugin: d7_mcapi_form_template
+    source: experience
+  experience_button:
+    plugin: d7_mcapi_object_prop
+    source: submission
+    property: button
+  experience_preview:
+    plugin: default_value
+    default_value: '0'
+  content:
+    plugin: d7_mcapi_form_content
+    show: 1
+  hidden:
+    plugin: d7_mcapi_form_content
+    show: 0
+destination:
+  plugin: mcapi_form
+migration_dependencies:
+  required:
+    - d7_field_instance
+    - d7_user_role

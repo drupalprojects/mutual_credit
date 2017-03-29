@@ -8,7 +8,7 @@ uid: 1
 issuance: 2
 format:
   - <strong>Hrs</strong>
-  - '00'
+  - '99'
   - ':'
   - 59/4
   - m

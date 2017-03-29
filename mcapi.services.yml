@@ -10,10 +10,16 @@ services:
       - { name: paramconverter, priority: 10 }
 
   mcapi.transaction.subscriber:
-    class: Drupal\mcapi\TransactionSubscriber
+    class: Drupal\mcapi\EventSubscriber\TransactionEventSubscriber
     tags:
       - { name: event_subscriber }
 
+  mcapi.route.subscriber:
+    class: Drupal\mcapi\EventSubscriber\RouteSubscriber
+    arguments: [@config.factory]
+    tags:
+     - { name: event_subscriber }
+     
   #register a new logger channel
   logger.channel.mcapi:
     parent: logger.channel_base
@@ -32,8 +38,3 @@ services:
     tags:
       - { name: backend_overridable }
 
-  mcapi.route.subscriber:
-    class: Drupal\mcapi\Routing\RouteSubscriber
-    arguments: [@config.factory]
-    tags:
-     - { name: event_subscriber }

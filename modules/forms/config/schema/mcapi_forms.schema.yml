@@ -1,5 +1,4 @@
-
-core.entity_form_display.mcapi_transaction.mcapi_transaction.*.third_party.settings:
+core.entity_form_display.mcapi_transaction.mcapi_transaction.*.third_party.mcapi_forms:
   type: mapping
   label: '3rd party transaction form display settings'
   mapping:
@@ -12,9 +11,9 @@ core.entity_form_display.mcapi_transaction.mcapi_transaction.*.third_party.setti
     path:
       type: path
       label: Path
-    access_roles:
-      type: sequence
-      label: Roles which can access this form
+    permission:
+      type: string
+      label: Permission to use this form
     menu_title:
       type: label
       label: Title of the menu link

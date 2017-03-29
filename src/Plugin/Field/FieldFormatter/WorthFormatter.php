@@ -3,6 +3,7 @@
 namespace Drupal\mcapi\Plugin\Field\FieldFormatter;
 
 use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\mcapi\Element\WorthsView;
 use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Field\FieldItemListInterface;
@@ -47,7 +48,7 @@ class WorthFormatter extends FormatterBase {
    */
   public static function defaultSettings() {
     $settings = parent::defaultSettings();
-    $settings['format'] = Currency::DISPLAY_NORMAL;
+    $settings['format'] = CurrencyInterface::DISPLAY_NORMAL;
     $settings['context'] = WorthsView::MODE_TRANSACTION;
     return $settings;
   }

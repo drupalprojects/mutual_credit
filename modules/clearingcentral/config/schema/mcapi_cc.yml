@@ -1,0 +1,6 @@
+mcapi_cc_user:
+  label: Login name on Clearing Central
+  type: string
+mcapi_cc_pass:
+  label: Password on Clearing Central
+  type: string

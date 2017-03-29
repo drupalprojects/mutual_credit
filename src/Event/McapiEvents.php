@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\mcapi;
+namespace Drupal\mcapi\Event;
 
 /**
  * Contains all events for transitioning transactions between workflow states.

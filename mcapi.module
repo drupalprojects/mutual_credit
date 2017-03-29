@@ -260,7 +260,8 @@ function mcapi_query_mcapi_transaction_access_alter($query) {
  * Determine if a worth field is zero, including non-numeric config.
  *
  * @param array $worth
- *   A worth value expressed as an array of arrays with curr_id & value.
+ *   A worth item value expressed as an array of arrays with curr_id & value.
+ *
  * @return boolean
  *   TRUE if all the items have a worth of zero.
  */
@@ -315,4 +316,27 @@ function mcapi_currencies_available(ContentEntityInterface $entity = NULL) {
    uasort($output, '\Drupal\mcapi\Mcapi::uasortWeight');
 
    return $output;
+ }
+
+ /**
+  * Implements hook_migration_plugins_alter().
+  *
+  * Add this module's permissions to the user_role migration.
+  */
+ function mcapi_migration_plugins_alter(&$definitions)  {
+   foreach ($definitions as &$definition) {
+     if ($definition['source'] == 'd7_user_role') {// I think there's only one!
+      $definition['process']['permissions'][0]['map'] += [
+        'view all wallets' => 'transact',
+        'create own wallets'  => 'transact',
+        'view all transactions' => 'transact',
+        'create remote transactions' => 'transact',
+        'create 3rdparty transaction' => 'manage all transactions',
+        'transact via sms' => 'transact via sms',
+        'configure mcapi' =>  'declare currency',
+        'manage mcapi' => 'manage all transactions'
+      ];
+      echo $definition['id'];
+     }
+   }
  }

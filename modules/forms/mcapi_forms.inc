@@ -105,9 +105,8 @@ function mcapi_strip_wrappers_recursive(&$element) {
  * Alter the form EntityFormDisplay form.
  */
 function mcapi_forms_display_decorate(&$form, FormState $form_state, $settings) {
-  $form['#tree'] = TRUE;
   $w = 0;
-  $form['form_title'] = [
+  $form['title'] = [
     '#type' => 'textfield',
     '#title' => t('Title of the form'),
     '#default_value' => $settings['title'],
@@ -127,7 +126,6 @@ function mcapi_forms_display_decorate(&$form, FormState $form_state, $settings) 
     '#title' => t('Routing'),
     '#type' => 'details',
     '#collapsible' => TRUE,
-    '#tree' => FALSE,
     '#weight' => -5
   ];
   $form['routing']['path'] = [
@@ -140,14 +138,21 @@ function mcapi_forms_display_decorate(&$form, FormState $form_state, $settings) 
     '#element_validate' => ['mcapi_forms_unique_path'],
     '#required' => TRUE,
   ];
-  $form['routing']['access_roles'] = [
-    '#title' => t('Roles'),
-    '#description' => t('Only the checked roles will be able to access this display.'),
-    '#type' => 'checkboxes',
-    '#default_value' => $settings['access_roles'],
-    '#options' => array_map('\Drupal\Component\Utility\Html::escape', user_role_names(TRUE)),
-    '#required' => TRUE
-  ];
+
+  // NB this is copied straight from Drupal\user\Plugin\views\access\Permission
+  foreach (\Drupal::service('user.permissions')->getPermissions() as $perm => $perm_item) {
+    $provider = $perm_item['provider'];
+    $display_name = \Drupal::moduleHandler()->getName($provider);
+    $perms[$display_name][$perm] = strip_tags($perm_item['title']);
+  }
+  $form['routing']['permission'] = array(
+    '#type' => 'select',
+    '#options' => $perms,
+    '#title' => t('Restricted to Permission'),
+    '#default_value' => $settings['permission'],
+    '#description' => t('Leave blank to allow all users (with a wallets) to use this form.'),
+    '#multiple' => FALSE
+  );
 
   $form['routing']['menu'] = [
     '#title' => t('Menu link'),
@@ -205,9 +210,9 @@ function mcapi_forms_display_decorate(&$form, FormState $form_state, $settings) 
 
   $form['experience'] = [
     '#title' => t('User experience'),
-    '#type' => 'details',
+    '#type' => 'fieldset',
     '#open' => TRUE,
-    'twig' => [
+    'experience_twig' => [
       '#title' => t('Main form twig'),
       '#description' => implode(' ', [
         t('Use the following twig tokens with HTML & css to design your payment form. Linebreaks will be replaced automatically.'),
@@ -224,7 +229,7 @@ function mcapi_forms_display_decorate(&$form, FormState $form_state, $settings) 
       '#weight' => 1,
       '#required' => TRUE,
     ],
-    'button' => [
+    'experience_button' => [
       '#title' => t('Button label'),
       '#description' => t("The text to appear on the 'save' button, or the absolute url of an image."),
       '#type' => 'textfield',
@@ -232,7 +237,7 @@ function mcapi_forms_display_decorate(&$form, FormState $form_state, $settings) 
       '#required' => TRUE,
       '#weight' => 2,
     ],
-    'preview' => [
+    'experience_preview' => [
       '#title' => t('Preview mode'),
       '#type' => 'radios',
       '#options' => [
@@ -256,35 +261,31 @@ function mcapi_forms_display_decorate(&$form, FormState $form_state, $settings) 
       ),
     ]
   );
-  $form_state->set('original_roles', $settings['access_roles']);
   $form['actions']['submit']['#submit'][] = 'mcapi_forms_display_submit';
 }
 
 /**
  * Form submit callback.
  */
-function mcapi_forms_display_submit($form, \Drupal\Core\Form\FormStateInterface $form_state) {
-  $vals = &$form_state->getValues();
-  $settings = [
-    'title' => $vals['form_title'],
-    'wallet_link_title' => $vals['wallet_link_title'],
-    'transaction_type' => $vals['transaction_type'],
-    'path' => $vals['path'],
-    'access_roles' => $vals['access_roles'],
-    'menu_title' => $vals['menu_title'],
-    'menu_weight' => $vals['menu_weight'],
-    'menu_parent' => $vals['menu_parent'],
-    'experience_twig' => $vals['experience']['twig'],
-    'experience_button' => $vals['experience']['button'],
-    'experience_preview' => $vals['experience']['preview'],
+function mcapi_forms_display_submit($form, $form_state) {
+  $entity = $form_state->getFormObject()->getEntity();
+  $fields = [
+    'title',
+    'wallet_link_title',
+    'transaction_type',
+    'path',
+    'permission',
+    'menu_title',
+    'menu_weight',
+    'menu_parent',
+    'experience_twig',
+    'experience_button',
+    'experience_preview'
   ];
-  $form_state->getFormObject()->getEntity()
-    ->setThirdpartySetting('mcapi_forms', 'settings', $settings)
-    ->save();
-
-  if ($form_state->get('access_roles') != $settings['access_roles']) {
-    \Drupal::service('router.builder')->setRebuildNeeded();
+  foreach ($fields as $settingname) {
+    $entity->setThirdpartySetting('mcapi_forms', $settingname, $form_state->getValue($settingname));
   }
+  $entity->save();
 }
 
 /**
@@ -314,12 +315,14 @@ function validate_twig_template(array $element, $form_state) {
 }
 
 /**
- * Is called from the form validator, so must be public.
+ * Form element validation ensuring that the given path is unique.
  */
 function mcapi_forms_unique_path(&$element, $form_state) {
-  $new = Url::fromUserInput($form_state->getValue('path'))->getRouteName();
-  if ($new && substr($new, 15) != $form_state->getFormObject()->getEntity()->get('mode')) {
-    drupal_set_message(t('N.B. This has overriden an existing path!'), 'warning');
+  $url = Url::fromUserInput($form_state->getValue('path'));
+  if ($url->isRouted()) {
+    if (substr($url->getRouteName(), 15) != $form_state->getFormObject()->getEntity()->get('mode')) {
+      drupal_set_message(t('N.B. This has overriden an existing path!'), 'warning');
+    }
   }
 }
 

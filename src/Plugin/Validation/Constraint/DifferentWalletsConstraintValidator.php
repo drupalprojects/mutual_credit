@@ -16,16 +16,21 @@ class DifferentWalletsConstraintValidator extends ConstraintValidator {
    * {@inheritdoc}
    */
   public function validate($transaction, Constraint $constraint) {
-    $payer = $transaction->payer->target_id;
-    $payee = $transaction->payee->target_id;
+    foreach (['payer', 'payee'] as $trader) {
+      $$trader = $transaction->{$trader}->target_id;
+      if (!$$trader) {
+        $this->context
+          ->buildViolation($constraint->nullMessage)
+          ->atPath($trader.'.0')
+          ->addViolation();
+      }
+    }
     // Check the payer and payee aren't the same.
     if ($payer === $payee) {
       $this->context
-        ->buildViolation($constraint->message)
+        ->buildViolation($constraint->sameMessage)
         ->atPath('payer.0')
         ->addViolation();
-      //TEMP
-      \Drupal::logger('mcapi')->debug($payer . "!=" . $payee);
     }
   }
 

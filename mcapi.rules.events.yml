@@ -1,4 +1,4 @@
-#is this synonmyous with \Drupal\mcapi\McapiEvents::ASSEMBLE?
+#is this synonmyous with \Drupal\mcapi\Event\McapiEvents::ASSEMBLE?
 mcapi_transaction.assemble:
   label: 'Assembling a new transaction'
   category: 'Transaction'

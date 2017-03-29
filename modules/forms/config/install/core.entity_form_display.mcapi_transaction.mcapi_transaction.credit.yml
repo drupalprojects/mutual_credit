@@ -57,8 +57,7 @@ third_party_settings:
       title: 'Credit another member'
       wallet_link_title: 'Credit [mcapi_wallet:name]'
       path: /transact/credit
-      access_roles:
-        authenticated: authenticated
+      permission: ''
       menu_title: 'Credit'
       menu_weight: '5'
       menu_parent: 'account:'

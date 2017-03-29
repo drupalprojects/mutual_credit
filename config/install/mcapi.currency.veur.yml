@@ -8,7 +8,7 @@ uid: 1
 issuance: 1
 format:
   - €
-  - '000'
+  - '999'
   - ':'
   - 99
 zero: 0

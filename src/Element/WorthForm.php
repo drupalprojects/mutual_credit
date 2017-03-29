@@ -151,20 +151,12 @@ class WorthForm extends FormElement {
             '#type' => 'number',
             '#min' => 0,
             '#step' => $step,
-          // No effect in opera.
+            // No effect in opera.
             '#size' => $size,
             '#maxlength' => $size,
             '#attributes' => ['style' => 'width:' . ($size + 1) . 'em;'],
+            '#max' => $component//which is already all the nines
           ];
-          if ($i == 1) {
-            // For the first part, 000 translates to a max of 999.
-            $element[$i]['#max'] = pow(10, strlen($component)) - 1;
-          }
-          else {
-            // For subsequent parts, the $component is the max
-            // first component matters only for the num of digits.
-            $element[$i]['#max'] = $component;
-          }
 
           if ($element['#config']) {
             // placeholder's only work in config fields.

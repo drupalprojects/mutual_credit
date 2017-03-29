@@ -2,22 +2,14 @@ id: d7_transaction_settings
 label: Accounting settings
 migration_tags:
   - Drupal 7
-provider: migrate_drupal
 source:
-  plugin: d7_mcapi_settings
+  plugin: variable
+  variables:
+    - mcapi_sentence
 process:
-  xid: xid
-  serial: serial
-  type: type
-  description: description
-  uid: uid
-  state: state
-  created: created
-  changed: changed
+  sentence_template:
+    plugin: mcapi_sentence
+    source: mcapi_sentence
 destination:
-  plugin: entity:mcapi_transaction
-migration_dependencies:
-  required:
-    - d7_user
-  optional:
-    - d7_field_instance
+  plugin: config
+  config_name: mcapi.settings

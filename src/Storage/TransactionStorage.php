@@ -39,7 +39,7 @@ class TransactionStorage extends TransactionIndexStorage {
    */
   public function save(EntityInterface $transaction) {
     // Determine the serial number.
-    if ($transaction->isNew()) {
+    if (empty($transaction->serial->value)) {
       $serial = $this->database->query(
         "SELECT MAX(serial) FROM {mcapi_transaction}"
       )->fetchField() + 1;

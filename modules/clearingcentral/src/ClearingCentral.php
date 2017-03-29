@@ -7,6 +7,7 @@ use Drupal\mcapi\Entity\Wallet;
 use Drupal\mcapi\Plugin\Validation\Constraint\CanPayIn;
 use Drupal\mcapi\Plugin\Validation\Constraint\CanPayOut;
 use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\user\Entity\User;
 use GuzzleHttp\Exception\RequestException;
@@ -261,7 +262,7 @@ class ClearingCentral implements IntertradingInterface {
         'seller_name' => $payee->label(),
         'buyer_nid' => $remote_exchange_id,
         'buyer_id' => $remote_user_id,
-        'amount' => $transaction->worth->format(Currency::DISPLAY_PLAIN)
+        'amount' => $transaction->worth->format(CurrencyInterface::DISPLAY_PLAIN)
       ];
     }
     return $CcTransaction;

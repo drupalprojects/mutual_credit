@@ -2,9 +2,8 @@
 
 namespace Drupal\mcapi\ViewBuilder;
 
-use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Entity\Wallet;
-use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Entity\EntityInterface;
@@ -79,7 +78,7 @@ class CurrencyViewBuilder extends EntityViewBuilder {
       $bottoms[] = [
         'raw' => abs($quant),
         'link' => $wallet->url(),
-        'worth' => $currency->format($quant, Currency::DISPLAY_NORMAL, FALSE),
+        'worth' => $currency->format($quant, CurrencyInterface::DISPLAY_NORMAL, FALSE),
         'name' => $wallet->label(),
       ];
     }
@@ -91,7 +90,7 @@ class CurrencyViewBuilder extends EntityViewBuilder {
       $tops[] = [
         'raw' => $quant,
         'link' => $wallet->url(),
-        'worth' => $currency->format($quant, Currency::DISPLAY_NORMAL, FALSE),
+        'worth' => $currency->format($quant, CurrencyInterface::DISPLAY_NORMAL, FALSE),
         'name' => $wallet->label(),
       ];
     }

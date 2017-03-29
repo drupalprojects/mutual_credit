@@ -57,8 +57,7 @@ third_party_settings:
       title: 'Bill another member'
       wallet_link_title: 'Bill [mcapi_wallet:name]'
       path: /transact/bill
-      access_roles:
-        authenticated: authenticated
+      permission: ''
       menu_title: 'Bill'
       menu_weight: '5'
       menu_parent: 'account:'

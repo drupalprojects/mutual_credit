@@ -1,7 +1,8 @@
 <?php
 
-namespace Drupal\mcapi;
+namespace Drupal\mcapi\EventSubscriber;
 
+use Drupal\mcapi\Event\McapiEvents;
 use Drupal\mcapi\Event\TransactionSaveEvents;
 use Drupal\mcapi\Event\TransactionAssembleEvent;
 use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher;
@@ -10,7 +11,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 /**
  * Hooks for saving a transaction.
  */
-class TransactionSubscriber implements EventSubscriberInterface {
+class TransactionEventSubscriber implements EventSubscriberInterface {
 
   /**
    * {@inheritdoc}

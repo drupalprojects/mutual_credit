@@ -8,6 +8,6 @@ uid: 1
 issuance: 0
 format:
   - <strong>CC</strong>
-  - '0000'
+  - '9999'
 zero: 0
 weight: '1'

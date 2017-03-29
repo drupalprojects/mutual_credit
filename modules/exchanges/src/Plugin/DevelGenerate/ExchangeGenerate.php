@@ -3,9 +3,9 @@
 namespace Drupal\mcapi_exchanges\Plugin\DevelGenerate;
 
 use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\ce_group_address\Plugin\DevelGenerate\NeighbourhoodsGenerate;
 use Drupal\group\Entity\Group;
-//use Drupal\group\Plugin\DevelGenerate\GroupDevelGenerate; // Doesn't exist yet
 use Drupal\group_exclusive\Plugin\DevelGenerate\GroupDevelGenerate;
 use Drupal\address\Repository\CountryRepository;
 use Drupal\Core\Form\FormStateInterface;
@@ -284,7 +284,7 @@ class ExchangeGenerate extends GroupDevelGenerate implements ContainerFactoryPlu
         'name' => $name,
         'zero' => rand(0, 1),
          // Same for all.
-        'issuance' => Currency::TYPE_PROMISE,
+        'issuance' => CurrencyInterface::TYPE_PROMISE,
         'format' => $this->randCurrencyFormat($id),
         'uid' => 1,
       ];

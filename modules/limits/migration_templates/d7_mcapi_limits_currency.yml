@@ -1,0 +1,17 @@
+id: d7_mcapi_limits_currency
+label: Per currency limit settings
+migration_tags:
+  - Drupal 7
+source:
+  plugin: d7_mcapi_ctools
+  table: mcapi_currencies
+  key: currcode
+process:
+  limits:
+    plugin: d7_mcapi_currency_limits
+    source: limits
+destination:
+  plugin: mcapi_currency_limits
+migration_dependencies:
+  required:
+    - d7_mcapi_currency

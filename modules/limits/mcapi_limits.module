@@ -13,6 +13,8 @@ use Drupal\user\Entity\User;
 
 /**
  * Implements hook_entity_type_alter().
+ *
+ * Append the limits constraint to the transaction constraints
  */
 function mcapi_limits_entity_type_alter(array &$entity_types) {
   $constraints = $entity_types['mcapi_transaction']->getConstraints();
@@ -121,11 +123,11 @@ function mcapi_limits_mail($key, &$message, $params) {
  * A transaction is inserted but with balance limit warnings. Print them to
  * screen and notify the holder of the 'other' wallet(s) by email.
  *
+ * @temp
  * @todo make a rules condition BalanceLimitsExceeded
  */
 function mcapi_limits_mcapi_transaction_insert($transaction) {
   if (isset($transaction->mailLimitsWarning)) {
-    // FIRE A RULES EVENT INSTEAD OF THE BELOW.
     foreach ($transaction->mailLimitsWarning as $wid => $warnings) {
       foreach ($warnings as $curr_id => $warning_message) {
         drupal_set_message(Markup::create($warning_message), 'warning');

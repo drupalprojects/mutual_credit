@@ -405,7 +405,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     $q->addExpression('SUM(volume)/2', 'volume');
     $q->addExpression('SUM(incoming)', 'income');
     $q->addExpression('SUM(outgoing)', 'expenditure');
-    $q->addExpression('COUNT(serial)', 'trades');
+    $q->addExpression('CAST(COUNT(serial)/2 AS DECIMAL)', 'trades');
     $q->addExpression('COUNT (DISTINCT partner_id)', 'partners');
     return $q;
   }

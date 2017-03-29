@@ -11,8 +11,8 @@ use Drupal\user\Entity\User;
 function mcapi_cc_install() {
   // Create an intertrading wallet on user 1.
   Wallet::create([
-    'system' => TRUE,
-    'holder' => User::load(1)
+    'holder' => User::load(1),
+    'name' => '_intertrading'
   ])->save();
 }
 

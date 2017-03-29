@@ -1,10 +1,14 @@
 #this doesn't include per-plugin settings
-#TODO this isn't used, since it is all just thirdpary settings in the currency.
-#hopefully it can be used here for translating...
-mcapi.limits.*:
+mcapi_currency.*.third_party.mcapi_limits:
   type: mapping
   label: 'Limits settings'
   mapping:
+    plugin:
+      type: string
+      label: ID of the limits plugin
+    plugin_settings:
+      type: sequence
+      label: Settings for the plugin
     personal:
       type: boolean
       label: Personal
@@ -24,12 +28,10 @@ mcapi.limits.*:
         owner:
           type: boolean
           label: User is currency owner
-    display_relative:
-      type: boolean
-      label: Display perspective
     prevent:
       type: boolean
-      label: Prevent transaction
+      label: Prevent transactions which transgress limits.
+    #these are temp until rules is implemented
     warning_mail:
       type: mail
       label: Mail notification

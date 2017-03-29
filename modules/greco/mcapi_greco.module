@@ -6,6 +6,7 @@
  */
 
 use Drupal\mcapi\Entity\Currency;
+use Drupal\mcapi\Entity\CurrencyInterface;
 
 function mcapi_greco_gchart() {
   return array(
@@ -38,7 +39,7 @@ function mcapi_index_views_cron() {
   $sample_period = 90;
   $manager = \Drupal::entityTypeManager()->getStorage('mcapi_transaction');
   foreach (Currency::loadMultiple() as $curr_id => $currency) {
-    if ($currency->issuance != Currency::TYPE_PROMISE) continue;
+    if ($currency->issuance != CurrencyInterface::TYPE_PROMISE) continue;
     $sum_of_all_debit_balances = 0;
 
     //get the sum of all debit balances (in this currency) of all wallets

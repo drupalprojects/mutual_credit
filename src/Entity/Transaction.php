@@ -2,8 +2,10 @@
 
 namespace Drupal\mcapi\Entity;
 
+use Drupal\mcapi\Entity\State;
+use Drupal\mcapi\Entity\Type;
 use Drupal\mcapi\Event\TransactionAssembleEvent;
-use Drupal\mcapi\McapiEvents;
+use Drupal\mcapi\Event\McapiEvents;
 use Drupal\mcapi\Plugin\EntityReferenceSelection\WalletSelection;
 use Drupal\user\UserInterface;
 use Drupal\Core\Cache\Cache;
@@ -154,11 +156,15 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       // Uid of 0 means drush must have created it.
       'creator' => \Drupal::currentUser()->id(),
     ];
-    $type = Type::load($values['type']);
-    if (!$type) {
-      throw new \Exception(t('Cannot create transaction of unknown type: @type', ['@type' => $values['type']]));
+    ;
+    if ($type = Type::load($values['type'])) {
+      $values['state'] = $type->start_state;
     }
-    $values['state'] = $type->start_state;
+    else {
+      trigger_error('Created transaction of unknown type: '.$values['type'], E_USER_ERROR);
+      $values['state'] = 'done';
+    }
+
   }
 
   /**
@@ -204,8 +210,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
     $fields['description'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Description'))
       ->setDescription(t('A one line description of what was exchanged.'))
-      ->setRequired(TRUE)
-      ->setDefaultValue('')
       ->setSettings(['max_length' => 255])
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayOptions('form', ['type' => 'string_textfield', 'weight' => 3])
@@ -217,7 +221,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setDescription(t('Grouping of related transactions.'))
       ->setReadOnly(TRUE);
 
-    // This is really an entity reference.
     $fields['parent'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Parent xid'))
       ->setDescription(t('Parent transaction that created this transaction.'))
@@ -255,7 +258,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setLabel(t('Payee'))
       ->setDescription(t('The receiving wallet'))
       ->setReadOnly(TRUE)
-      ->setRequired(TRUE)
       ->setCardinality(1)
       ->setSetting('handler_settings', ['restriction' => WalletSelection::RESTRICTION_PAYIN])
       ->setDisplayConfigurable('form', TRUE)
@@ -267,6 +269,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setLabel(t('Creator'))
       ->setDescription(t('The user who created the transaction'))
       ->setSetting('target_type', 'user')
+      ->setDefaultValueCallback('Drupal\node\Entity\Node::getCurrentUserId')
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE)
       ->setDisplayOptions(
@@ -274,8 +277,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
         ['type' => 'hidden', 'weight' => 10]
       )
       ->setReadOnly(TRUE)
-      ->setRevisionable(FALSE)
-      ->setRequired(TRUE);
+      ->setRevisionable(FALSE);
 
     $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Created on'))
@@ -305,6 +307,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setSetting('target_type', 'mcapi_type')
       ->setDisplayConfigurable('view', TRUE)
       ->setDisplayConfigurable('form', TRUE)
+      ->addPropertyConstraints('target_id', array(
+        'AllowedValues' => array('callback' => __CLASS__ . '::getAllowedTransactionTypes'),
+      ))
       ->setReadOnly(TRUE)
       ->setRequired(TRUE);
 
@@ -313,6 +318,9 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setDescription(t('Completed, pending, disputed, etc.'))
       ->setSetting('target_type', 'mcapi_state')
       ->setDisplayConfigurable('view', TRUE)
+      ->addPropertyConstraints('target_id', array(
+        'AllowedValues' => array('callback' => __CLASS__ . '::getAllowedTransactionStates'),
+      ))
       ->setReadOnly(FALSE)
       ->setRequired(TRUE);
     return $fields;
@@ -405,10 +413,18 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
 
   public function toArray() {
     $array = parent::toArray();
-    foreach ($array->children as &$transaction) {
-      $transaction = $transaction->toArray();
+    if (isset($array['children'])) {
+      foreach (@$array['children'] as &$transaction) {
+        $transaction = $transaction->toArray();
+      }
     }
     return $array;
   }
 
+  static function getAllowedTransactionStates() {
+    return array_keys(State::LoadMultiple());
+  }
+  static function getAllowedTransactionTypes() {
+    return array_keys(Type::LoadMultiple());
+  }
 }

@@ -3,7 +3,6 @@
 namespace Drupal\mcapi\Element;
 
 use Drupal\Core\Entity\Element\EntityAutocomplete;
-use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Provides a widget to select wallet references by name, using autocomplete.

@@ -36,7 +36,7 @@ class FirstPartyTransactionForm extends TransactionForm {
       ->getOptions();
     $id = 'mcapi_transaction.mcapi_transaction.' . $options['parameters']['mode'];
     $entityDisplay = EntityFormDisplay::load($id);
-    $this->settings = $entityDisplay->getThirdPartySetting('mcapi_forms', 'settings');
+    $this->settings = $entityDisplay->getThirdPartySettings('mcapi_forms');
     $this->mode = $entityDisplay->getMode();
   }
 
