@@ -239,6 +239,7 @@ class mcapiEntityController extends EntityAPIController {
    * caching running balances is dangerous because they would all need recalculating any time a transaction changed state
    */
   public function sums($uid, $currcode, $conditions) {
+  if (!$uid){print_r(debug_backtrace());die();}
     //this COALESCE is only tested for mysql.
     //when we join the tables like this, half of all values will be NULL, and NULL values do not add
     //so these NULL values need to be selected as 0 before adding

@@ -1,12 +1,13 @@
 <?php
-// $Id: mcapi.inc,v 1.1.2.7 2010/12/22 19:30:29 matslats Exp $
+/**
+ * @file
+ */
 
 $controller_mod = variable_get('mcapi_controller', 'mcapi');
-require_once(drupal_get_path('module', $controller_mod) .'/'. $controller_mod).'.controller';
+module_load_include('controller', 'mcapi');
 
 //since the entity module was integrated after this module was deployed
 //I can't seem to remove this if statement making upgrades extremely difficult
-if (class_exists('Entity')) {
 class transaction extends Entity {
   protected function defaultLabel() {
     return $this->title;
@@ -19,7 +20,6 @@ class transaction extends Entity {
   protected function defaultUri() {
     return array('path' => 'transaction/' . $this->serial);
   }
-}
 }
 
 
@@ -361,7 +361,7 @@ function transaction_access_callback_creator($transaction) {
 function mcapi_transaction_mail_action($transaction, $settings, $old_state) {
   //the actions settings allow to filter by transaction type and state
   if (isset($settings['state']) && ($transaction->state == $settings['state'])) {
-    if ($settings['transaction_types'][$transaction->type]) {
+    if (!empty($settings['transaction_types'][$transaction->type])) {
       $params = $settings + array('transaction' => $transaction);
       foreach (array($transaction->payer, $transaction->payee) as $uid) {
         if ($GLOBALS['user']->uid != $uid) {
@@ -458,9 +458,6 @@ function _mcapi_calc($formula, $base_value) {
   if (is_numeric($val)) return $val;
   drupal_set_message(t('Problem with calculation for dependent transaction: @val', array('@val' => $val)));
 }
-//TODO
-//Parse error: syntax error, unexpected '/' in /var/www/drupal7/sites/all/modules/matslats/mutual_credit/mcapi.inc(853) : eval()'d code on line 1
-
 
 /**
  * helper to get block settings and load whichever user we like
@@ -491,7 +488,6 @@ function _mcapiblock_settings($delta, $currency_access_mode) {
 
   return $settings;
 }
-
 
 /**
  * Calculate the balance changes that this transaction proposes
@@ -755,7 +751,12 @@ function theme_worth_item(&$variables) {
   list($integer, $cents) = currency_explode($variables['quantity']);
   switch($currency->display['divisions']) {
     case CURRENCY_DIVISION_MODE_CUSTOM :
-      $subdivision = @$currency->display['divisions_allowed'][intval($cents)];
+      if (isset($currency->display['divisions_allowed'][intval($cents)])) {
+        $subdivision = $currency->display['divisions_allowed'][intval($cents)];
+      }
+      else {
+        $subdivision = $cents;
+      }
       break;
     case CURRENCY_DIVISION_MODE_CENTS_FIELD:
     case CURRENCY_DIVISION_MODE_CENTS_INLINE:
@@ -803,7 +804,6 @@ function theme_worth_element($variables) {
   }
   return '<div ' . drupal_attributes($element['#attributes']) . '>'. $output .'</div>';
 }
-
 
 function transaction_get_links($transaction, $ajax = TRUE, $view = FALSE) {
   global $language;
@@ -878,7 +878,6 @@ function mcapi_round($quant, $currcode, $up = FALSE) {
       return $quant;
   }
 }
-
 
 function currency_picker_element(array $currcodes, $default = NULL, $multiple = 0) {
   $currencies = currencies_load();

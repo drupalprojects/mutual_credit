@@ -86,7 +86,9 @@ function transaction_op_signoff($op, $transaction) {
  * Operation access callback from mcapi_signatures_transaction_operations
  */
 function transaction_op_signoff_access($op, $transaction, $currency) {
-  if ($transaction->state != TRANSACTION_STATE_PENDING) return FALSE;
+  if ($transaction->state != TRANSACTION_STATE_PENDING) {
+    return FALSE;
+  }
   return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
 }
 
@@ -94,7 +96,9 @@ function transaction_op_signoff_access($op, $transaction, $currency) {
  * Operation access callback from mcapi_signatures_transaction_operations
  */
 function transaction_op_undo_pending_access($op, $transaction, $currency) {
-  if ($transaction->state != TRANSACTION_STATE_PENDING) return FALSE;
+  if ($transaction->state != TRANSACTION_STATE_PENDING) {
+    return FALSE;
+  }
   return _transaction_check_access_callbacks($currency->access_operations[$op], $transaction);
 }
 

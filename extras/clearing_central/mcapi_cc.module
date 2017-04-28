@@ -466,10 +466,10 @@ function cc_transaction_form_validate($form, &$form_state) {
     'state' => TRANSACTION_STATE_FINISHED,
     'description' => $values['description']
   );
-  if ($values['outgoing'] == 1) {
+  if ($values['outgoing']) {
     $props['quantity'] = $values['amount'];
   }
-  elseif($values['outgoing'] == 0)  {
+  else {
     $props['quantity'] = $values['worth']['quantity'];
   }
 
@@ -505,7 +505,7 @@ function cc_transaction_form_validate($form, &$form_state) {
       'remote_user_name' => ''
     );
   }
-
+  $extra['txid'] = mcapi_cc_make_uuid();
   field_attach_form_validate('transaction', $transaction, $form, $form_state);
   mcapi_cc_addfields($transaction, $extra);
   //we don't write this transaction yet, we only want to check the integrity and balance limits here.
@@ -865,7 +865,8 @@ function cen_lookup_response($code) {
     12 => t('No TXID provided (update/delete only)'),
     13 => t('TXID does not exist (update/delete only)'),
     14 => t('Unable to connect to remote server'),
-    15 => t('Failed to connect to host or proxy')
+    15 => t('Failed to connect to host or proxy'),
+    16 => t('Remote client requries that transaction be entered by seller.')
   );
   return $codes[$code];
 }

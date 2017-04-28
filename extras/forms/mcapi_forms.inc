@@ -1,11 +1,11 @@
 <?php
 
-/*
+/**
  * In this file we build the form, using the object cached in ctools
  */
 module_load_include('inc', 'mcapi');
 
-/*
+/**
  * main form builder, for this module, using the transaction_form as a base
  * build_info args are 0 => transaction, 1 => mcapi_form
  * $form['#settings'] is already defined
@@ -199,7 +199,7 @@ function mcapi_form_build(&$form, &$form_state, $form_id) {
 }
 
 
-/*
+/**
  * $variables consists of the usual suspects plus
  * $template
  * $mcapi_form_data
@@ -250,7 +250,7 @@ function theme_mcapi_form($variables) {
   }
 }
 
-/*
+/**
  * Form validation callback
  * set the payer and payee from the 2ndpeson and direction
  */
@@ -269,7 +269,7 @@ function mcapi_forms_validate_secondperson($form, &$form_state) {
   }
 }
 
-/*
+/**
  * form validation callback
  * handles the steps
  */
@@ -295,7 +295,7 @@ function mcapi_forms_validate($form, &$form_state) {
   }
 }
 
-/*
+/**
  * First submit callback for default transaction form
  * copies anything in $form_state[storage] back to form_state[values]
  * the $form_state['values'] is step 2 were only needed to render the tokens
@@ -305,7 +305,7 @@ function mcapi_forms_form_presubmit($form, &$form_state) {
   $form_state['values'] = $form_state['storage'];
 }
 
-/*
+/**
  * Last submit callback for default transaction form
  * this has to be after the transaction id is created and before the end of form processing
  */
@@ -336,7 +336,7 @@ function mcapi_unset_recursive(array &$array, $prop) {
   }
 }
 
-/*
+/**
  * pre php5.3
  */
 if (!function_exists('array_replace_recursive')) {

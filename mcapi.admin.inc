@@ -182,8 +182,9 @@ function _mcapi_menu() {
 }
 
 /**
- * implements hook_menu_alter
- * I guess this isn't being used since it is not in .module file
+ * Implements hook_menu_alter().
+ *
+ * somehow being picked up despite not being in the .module file.
  */
 function mcapi_menu_alter(&$items) {
   $items['admin/accounting/fields']['title'] = 'Transactions FieldAPI';
@@ -791,7 +792,6 @@ function _mcapi_action_info() {
     )
   );
 }
-
 
 function mcapi_mixed_transactions($form) {
   $form['field']['mcapi_mixed_transactions'] = array(
