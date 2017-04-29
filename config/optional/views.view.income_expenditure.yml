@@ -4,6 +4,8 @@ dependencies:
   module:
     - mcapi
     - user
+_core:
+  default_config_hash: eS8JgghaO4ElTieBhJ45jzpFxjb9D7vO7NH8GIYD0Jw
 id: income_expenditure
 label: 'Income & Expenditure'
 module: mcapi
@@ -36,8 +38,6 @@ display:
           replica: false
           query_comment: ''
           query_tags: {  }
-        provider: views
-        dependencies: {  }
       exposed_form:
         type: basic
         options:
@@ -332,14 +332,14 @@ display:
           entity_type: mcapi_transaction
           entity_field: payee
           plugin_id: field
-        worth:
-          id: worth
+        worth__curr_id:
+          id: worth__curr_id
           table: mcapi_transaction__worth
-          field: worth
+          field: worth__curr_id
           relationship: none
           group_type: group
           admin_label: ''
-          label: Value
+          label: Worth
           exclude: false
           alter:
             alter_text: false
@@ -384,6 +384,7 @@ display:
           type: worth
           settings:
             format: '2'
+            context: transaction
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -394,6 +395,8 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+          entity_type: mcapi_transaction
+          entity_field: worth
           plugin_id: field
         state:
           id: state
@@ -973,14 +976,14 @@ display:
           owner: 0
           entity_type: mcapi_wallet
           plugin_id: mcapi_wallet_holder
-        worth:
-          id: worth
+        worth__curr_id:
+          id: worth__curr_id
           table: mcapi_transaction__worth
-          field: worth
+          field: worth__curr_id
           relationship: none
           group_type: group
           admin_label: ''
-          label: Value
+          label: Worth
           exclude: false
           alter:
             alter_text: false
@@ -999,7 +1002,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: null
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1025,6 +1028,7 @@ display:
           type: worth
           settings:
             format: '2'
+            context: transaction
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -1035,11 +1039,9 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-          dependencies:
-            module:
-              - field
+          entity_type: mcapi_transaction
+          entity_field: worth
           plugin_id: field
-          provider: field
         state:
           id: state
           table: mcapi_transaction
@@ -1477,14 +1479,14 @@ display:
           entity_type: mcapi_wallet
           entity_field: name
           plugin_id: field
-        worth:
-          id: worth
+        worth__curr_id:
+          id: worth__curr_id
           table: mcapi_transaction__worth
-          field: worth
+          field: worth__curr_id
           relationship: none
           group_type: group
           admin_label: ''
-          label: Value
+          label: Worth
           exclude: false
           alter:
             alter_text: false
@@ -1503,7 +1505,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: null
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -1529,6 +1531,7 @@ display:
           type: worth
           settings:
             format: '2'
+            context: transaction
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -1539,11 +1542,9 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-          dependencies:
-            module:
-              - field
+          entity_type: mcapi_transaction
+          entity_field: worth
           plugin_id: field
-          provider: field
         state:
           id: state
           table: mcapi_transaction
@@ -1999,14 +2000,14 @@ display:
           entity_type: mcapi_wallet
           entity_field: name
           plugin_id: field
-        worth:
-          id: worth
+        worth__curr_id:
+          id: worth__curr_id
           table: mcapi_transaction__worth
-          field: worth
+          field: worth__curr_id
           relationship: none
           group_type: group
           admin_label: ''
-          label: Value
+          label: Worth
           exclude: false
           alter:
             alter_text: false
@@ -2025,7 +2026,7 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: null
+            max_length: 0
             word_boundary: true
             ellipsis: true
             more_link: false
@@ -2051,6 +2052,7 @@ display:
           type: worth
           settings:
             format: '2'
+            context: transaction
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -2061,11 +2063,9 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-          dependencies:
-            module:
-              - field
+          entity_type: mcapi_transaction
+          entity_field: worth
           plugin_id: field
-          provider: field
         state:
           id: state
           table: mcapi_transaction

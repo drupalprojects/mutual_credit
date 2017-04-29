@@ -53,15 +53,14 @@ hidden:
   type: true
 third_party_settings:
   mcapi_forms:
-    settings:
-      title: 'Bill another member'
-      wallet_link_title: 'Bill [mcapi_wallet:name]'
-      path: /transact/bill
-      permission: ''
-      menu_title: 'Bill'
-      menu_weight: '5'
-      menu_parent: 'account:'
-      transaction_type: default
-      experience_twig: 'I, {{ payer }}\r\nreceived {{ description }}\r\nfrom\r\n{{ payee }}\r\nand now bill them for\r\n{{ worth }}'
-      experience_button: Preview
-      experience_preview: 'page'
+    title: 'Bill another member'
+    wallet_link_title: 'Bill [mcapi_wallet:name]'
+    path: /transact/bill
+    permission: ''
+    menu_title: 'Bill'
+    menu_weight: '5'
+    menu_parent: 'account:'
+    transaction_type: default
+    experience_twig: 'I, {{ payer }}\r\nreceived {{ description }}\r\nfrom\r\n{{ payee }}\r\nand now bill them for\r\n{{ worth }}'
+    experience_button: Preview
+    experience_preview: 'page'

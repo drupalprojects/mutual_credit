@@ -12,7 +12,7 @@ class TransactionStorage extends TransactionIndexStorage {
   /**
    * {@inheritdoc}
    */
-  public static function loadBySerial($serial, $exception_fail = TRUE) {
+  public static function loadBySerial($serial, $exception_fail = FALSE) {
     $transactions = \Drupal::entityTypeManager()
       ->getStorage('mcapi_transaction')
       ->loadByProperties(['serial' => $serial]);

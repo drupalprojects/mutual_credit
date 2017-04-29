@@ -31,9 +31,8 @@ class WalletItem extends EntityReferenceItem {
   public static function defaultFieldSettings() {
     return [
       'handler' => 'default:mcapi_wallet',
-      'handler_settings' => [
-        'direction' => '** REPLACE THIS **',
-      ],
+      // This is set in the transaction entity
+      'handler_settings' => [],
     ] + parent::defaultFieldSettings();
   }
 

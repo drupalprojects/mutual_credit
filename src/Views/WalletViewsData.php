@@ -73,6 +73,7 @@ class WalletViewsData extends EntityViewsData {
       ]
     ];
 
+    //join the wallet table to each of the entity tables needed.
     foreach (array_keys(\Drupal\mcapi\Mcapi::walletableBundles()) as $entity_type_id) {
       $entity_type = \Drupal::entityTypeManager()->getDefinition($entity_type_id);
       $data['mcapi_wallet'][$entity_type_id] = [
@@ -82,6 +83,7 @@ class WalletViewsData extends EntityViewsData {
           'id' => 'mcapi_first_wallet',
           'base' => $entity_type->getDataTable() ?  : $entity_type->getBaseTable(),
           'base field' => $entity_type->getKey('id'),
+          'relationship field' => 'holder_entity_id',
           'holder_entity_type' => $entity_type_id,
         ]
       ];

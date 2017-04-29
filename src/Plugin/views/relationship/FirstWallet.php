@@ -34,7 +34,7 @@ class FirstWallet extends RelationshipPluginBase {
    */
   public function query() {
     parent::query();
-    $this->query->addWhereExpression(0, $this->alias.".holder_entity_type = '".$this->definition['entity_type']."'");
+    $this->query->addWhereExpression(0, "$this->tableAlias.holder_entity_type = '".$this->definition['holder_entity_type']."'");
   }
 
 }

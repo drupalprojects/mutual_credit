@@ -53,15 +53,14 @@ hidden:
   type: true
 third_party_settings:
   mcapi_forms:
-    settings:
-      title: 'Credit another member'
-      wallet_link_title: 'Credit [mcapi_wallet:name]'
-      path: /transact/credit
-      permission: ''
-      menu_title: 'Credit'
-      menu_weight: '5'
-      menu_parent: 'account:'
-      transaction_type: default
-      experience_twig: 'I, {{ payer }}\r\nreceived {{ description }}\r\nfrom\r\n{{ payee }}\r\nand now credit them for\r\n{{ worth }}'
-      experience_button: Preview
-      experience_preview: 'page'
+    title: 'Credit another member'
+    wallet_link_title: 'Credit [mcapi_wallet:name]'
+    path: /transact/credit
+    permission: ''
+    menu_title: 'Credit'
+    menu_weight: '5'
+    menu_parent: 'account:'
+    transaction_type: default
+    experience_twig: 'I, {{ payer }}\r\nreceived {{ description }}\r\nfrom\r\n{{ payee }}\r\nand now credit them for\r\n{{ worth }}'
+    experience_button: Preview
+    experience_preview: 'page'
