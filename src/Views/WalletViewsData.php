@@ -80,7 +80,7 @@ class WalletViewsData extends EntityViewsData {
         'title' => $this->t('@entitytype holder', ['@entitytype' => $entity_type->getLabel()], ['context' => 'wallet-holding entity type']),
         'help' => $this->t('The entity which holds the wallet'),
         'relationship' => [
-          'id' => 'mcapi_first_wallet',
+          'id' => 'mcapi_wallet_owner',
           'base' => $entity_type->getDataTable() ?  : $entity_type->getBaseTable(),
           'base field' => $entity_type->getKey('id'),
           'relationship field' => 'holder_entity_id',
@@ -101,16 +101,16 @@ class WalletViewsData extends EntityViewsData {
       ],
     ];
 
+    //should this be in an _alter method?
     $data['users_field_data']['first_wid'] = [
       'relationship' => [
-        'title' => $this->t("The user's first wallet"),
-        'help' => $this->t("Reference the first wallet each user. N.B. Reqires aggregate query"),
+        'label' => $this->t("The user's first wallet."),
+        'title' => $this->t("The user's first wallet."),
+        'help' => $this->t("Reference the first wallet each user."),
+        'id' => 'mcapi_user_first_wallet',
         'base' => 'mcapi_wallet',
-        'base field' => 'wid',
-        'field' => 'uid',
-        'label' => $this->t('First wallet'),
-        'id' => 'mcapi_first_wallet',
-        'click sortable'  => FALSE
+        'base field' => 'holder_entity_id',
+        'relationship field' => 'uid',
       ]
     ];
 

@@ -8,9 +8,10 @@ use Drupal\Core\Form\FormStateInterface;
 /**
  * Argument handler relating a holder entity to a wallet it holds
  *
- * @ViewsRelationship("mcapi_user_first_wallet")
+ * @ViewsRelationship("mcapi_wallet_owner")
+ *
  */
-class FirstWallet extends RelationshipPluginBase {
+class WalletOwner extends RelationshipPluginBase {
 
   /**
    * {@inheritdoc}
@@ -34,7 +35,7 @@ class FirstWallet extends RelationshipPluginBase {
    */
   public function query() {
     parent::query();
-    $this->query->addWhereExpression(0, $this->alias .".holder_entity_type = 'user'");
+    $this->query->addWhereExpression(0, "$wallet_table_alias.holder_entity_type = '".$this->definition['holder_entity_type']."'");
   }
 
 }

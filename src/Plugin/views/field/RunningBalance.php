@@ -73,9 +73,13 @@ class RunningBalance extends Worth {
    * {@inheritdoc}
    */
   public function render(ResultRow $values) {
-    $worth_field = $this->getEntity($values)->worth;
+    $transaction = $this->getEntity($values);
+    if (!$transaction) {
+      //something wrong here
+      throw new \Exception('No entity in views result');
+    }
     $vals = [];
-    foreach ($worth_field->currencies() as $curr_id) {
+    foreach ($transaction->worth->currencies() as $curr_id) {
       // @todo running balance means sorting by the same field the view is sorted by.
       $raw = $this->transactionStorage->runningBalance(
         $values->{$this->fAlias},
@@ -84,13 +88,13 @@ class RunningBalance extends Worth {
       );
       $vals[] = ['curr_id' => $curr_id, 'value' => $raw];
     }
-    $worth_field->setValue($vals);
+    $transaction->worth->setValue($vals);
     $options = [
       'label' => 'hidden',
       'context' => WorthsView::MODE_TRANSACTION,
       'settings' => [],
     ];
-    return $worth_field->view($options);
+    return $transaction->worth->view($options);
   }
 
   /**
