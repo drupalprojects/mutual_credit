@@ -224,7 +224,7 @@ class CurrencyForm extends EntityForm {
     ];
     foreach ($patterns as $pattern) {
       $parts = [];
-      if (\preg_match_all($pattern, $string, $parts)){
+      if (preg_match_all($pattern, $string, $parts)){
         break;
       }
     }

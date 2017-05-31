@@ -15,6 +15,7 @@ use Drupal\Core\Utility\Token;
 use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Component\Datetime\Time;
 
 /**
  * I don't know if it is a good idea to extend the confirm form if we want ajax.
@@ -46,7 +47,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
    * @param \Drupal\Core\Utility\Token $token
    *   The token service.
    */
-  public function __construct(EntityTypeManager $entity_type_manager, CurrentRouteMatch $route_match, RequestStack $request_stack, ContainerAwareEventDispatcher $event_dispatcher, Renderer $renderer, Token $token) {
+  public function __construct(EntityTypeManager $entity_type_manager, Time $time, CurrentRouteMatch $route_match, RequestStack $request_stack, ContainerAwareEventDispatcher $event_dispatcher, Renderer $renderer, Token $token) {
     $this->viewBuilder = $entity_type_manager->getViewBuilder('mcapi_transaction');
     $this->action = TransactionOperations::loadOperation($route_match->getparameter('operation'));
     $this->plugin = $this->action->getPlugin();
@@ -58,6 +59,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
     if ($query->has('destination')) {
       $this->destination = $query->get('destination');
     }
+    $this->time = $time;
   }
 
   /**
@@ -66,6 +68,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('entity_type.manager'),
+      $container->get('datetime.time'),
       $container->get('current_route_match'),
       $container->get('request_stack'),
       $container->get('event_dispatcher'),

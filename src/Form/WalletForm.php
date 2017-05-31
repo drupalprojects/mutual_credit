@@ -16,23 +16,16 @@ class WalletForm extends ContentEntityForm {
 
   /**
    * The wallet settings.
-   *
-   * @var /Drupal/Core/Entity/EntityTypeManager
    */
   private $walletConfig;
 
   /**
-   * The entityTypeManager service.
-   *
-   * @var /Drupal/Core/Entity/EntityTypeManager
-   */
-
-  /**
    * Constructor.
    */
-  public function __construct($config_factory, $entity_type_manager) {
+  public function __construct($config_factory, $time) {
+    //parent::__construct($entity_manager, $entity_type_bundle_info, $time); // seems not to be needed
     $this->walletConfig = $config_factory->get('mcapi.settings');
-    $this->entityTypeManager = $entity_type_manager;
+    $this->time = $time ?: \Drupal::service('datetime.time');
   }
 
   /**
@@ -41,7 +34,7 @@ class WalletForm extends ContentEntityForm {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
-      $container->get('entity_type.manager')
+      $container->get('datetime.time')
     );
   }
 

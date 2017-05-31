@@ -35,7 +35,7 @@ class TransactionStorageSchema extends SqlContentEntityStorageSchema {
         'xid' => [
           'type' => 'int',
           'unsigned' => TRUE,
-          'not null' => TRUE,
+          'not null' => FALSE,
           'default' => 0,
           'description' => 'Primary Key: The xid of the term.',
         ],

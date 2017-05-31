@@ -153,7 +153,7 @@ class Signatures {
           if ($user_id == $uid) {
             return TRUE;
           }
-          $uids[] = $uid;
+          $uids[] = $user_id;
         }
       }
     }

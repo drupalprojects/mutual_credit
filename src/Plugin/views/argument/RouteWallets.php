@@ -28,7 +28,6 @@ class RouteWallets extends ArgumentPluginBase implements ContainerFactoryPluginI
    */
   protected $routeMatch;
   protected $entityTypeManager;
-  protected $walletStorage;
 
   /**
    * Constructor.
@@ -58,17 +57,11 @@ class RouteWallets extends ArgumentPluginBase implements ContainerFactoryPluginI
     );
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function query($group_by = FALSE) {
-    $this->ensureMyTable();
-  }
 
   /**
    * {@inheritdoc}
    */
-  public function setArgument($entity_id) {
+  public function setArgument($arg) {
     // there's no validator in core either for ANY entity or for ANY
     // contentEntity or ANY Owned Entity, only for ONE given specific entityType
     // so this function needs to decide whether to return an argument.
@@ -77,12 +70,13 @@ class RouteWallets extends ArgumentPluginBase implements ContainerFactoryPluginI
         if (Mcapi::maxWalletsOfBundle($name, $def->getKey('bundle'))) {
           $entity = $this->entityTypeManager->getStorage($name)->load($val);
           $wids = WalletStorage::walletsOf($entity);
-          $arg = reset($wids);
+          $this->argument = reset($wids);
           $this->argument_validated = TRUE;
           return TRUE;
         }
       }
     }
+    return parent::setArgument($arg);
   }
 
 

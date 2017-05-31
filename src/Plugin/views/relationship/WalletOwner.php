@@ -35,7 +35,7 @@ class WalletOwner extends RelationshipPluginBase {
    */
   public function query() {
     parent::query();
-    $this->query->addWhereExpression(0, "$wallet_table_alias.holder_entity_type = '".$this->definition['holder_entity_type']."'");
+    $this->query->addWhereExpression(0, "$this->tableAlias.holder_entity_type = '".$this->definition['holder_entity_type']."'");
   }
 
 }

@@ -110,15 +110,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   public $weight;
 
   /**
-   * The value of the currency as a multiple of the ticks_name.
-   *
-   * @var integer
-   *
-   * @note this is used for all internal accounting.
-   */
-  public $ticks;
-
-  /**
    * The format of the currency display.
    *
    * Intricately formatted expression which tells the system how to transform a
@@ -217,7 +208,6 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     $minus_sign = $raw_num < 0 ? '-' : '';
 
     $parts = $this->formattedParts(abs($raw_num));
-
     // Now replace the parts back into the number format.
     $output = $this->format;
     foreach ($parts as $key => $num) {
@@ -258,9 +248,10 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
       $formatted[1] = $raw_num;
     }
     if (count($this->format) > 3) {
-      $divisor = $this->format[3] + 1;
+      list($atoms) = explode('/', $this->format[3]);
+      $divisor = $atoms + 1;
       $formatted[1] = floor($raw_num / $divisor);
-      $formatted[3] = str_pad($raw_num % $divisor, strlen($this->format[3]), '0', STR_PAD_LEFT);
+      $formatted[3] = str_pad($raw_num % $divisor, strlen($atoms), '0', STR_PAD_LEFT);
     }
     return $formatted;
   }

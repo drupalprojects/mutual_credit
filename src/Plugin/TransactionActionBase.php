@@ -80,7 +80,7 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
    *
    */
   protected function accessState(TransactionInterface $transaction, AccountInterface $account) {
-    return $account->id() == 1 or !empty($this->configuration['states'][$transaction->state->target_id]);
+    return !empty($this->configuration['states'][$transaction->state->target_id]);
   }
 
   /**
@@ -95,13 +95,13 @@ abstract class TransactionActionBase extends ConfigurableActionBase implements T
    *   TRUE if access is granted.
    */
   protected function accessOp(TransactionInterface $transaction, AccountInterface $account = NULL) {
-    if (!$transaction->parent->value) {
-      // Children can't be edited that would be too messy.
-      return $this->transactionRelativeManager
-        ->activatePlugins($this->configuration['access'])
-        ->isRelative($transaction, $account);
+    if ($account->id() == 1) {
+      return TRUE;
     }
-    return FALSE;
+    // Children can't be edited that would be too messy.
+    return !$transaction->parent->value and $this->transactionRelativeManager
+      ->activatePlugins($this->configuration['access'])
+      ->isRelative($transaction, $account);
   }
 
   /**

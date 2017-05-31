@@ -34,7 +34,7 @@ mcapi.admin_misc:
   weight: 18
 
 mcapi.admin.transaction_form.list:
-  title: Payment forms
+  title: Transaction forms
   description: Configure any of the transaction forms
   route_name: mcapi.admin.transaction_form.list
   parent: mcapi.admin_misc

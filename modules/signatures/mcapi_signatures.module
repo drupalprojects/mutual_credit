@@ -91,8 +91,8 @@ function mcapi_signatures_mcapi_transaction_insert($transaction) {
     \Drupal::service('mcapi.signatures')
       ->setTransaction($transaction)
       ->insert();
-    // Temp until rules module works
-    // this should be configurable by transaction type.
+    // Temp until rules module works - always  send the notification
+    // This should be configurable by transaction type.
     foreach (\Drupal::service('mcapi.signatures')->setTransaction($transaction)->waitingOn() as $uid) {
       $account = User::load($uid);
       $options = ['langcode' => $account->getPreferredLangcode()];

@@ -327,7 +327,7 @@ class TransactionViewsData extends EntityViewsData {
     ];
     $data['mcapi_transactions_index']['first_wallet'] = [
       'title' => $this->t('First wallet of route entity'),
-      'help' => $this->t("First wallet of the entity given in the route"),
+      'help' => $this->t("First wallet of the entity given in the route (views preview doesn't work)"),
       'argument' => [
         'id' => 'route_wallet',
         'field' => 'wallet_id'

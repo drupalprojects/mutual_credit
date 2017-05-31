@@ -165,12 +165,14 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
       ) "
     );
 
-    db_truncate('mcapi_transaction_totals')->execute();
-    $balances = $this->database->select('mcapi_transactions_index', 'i')
-      ->fields('i', ['wallet_id', 'curr_id'])->distinct();
+    $this->database->truncate('mcapi_transaction_totals')->execute();
+    $result = $this->database->select('mcapi_transactions_index', 'i')
+      ->fields('i', ['wallet_id', 'curr_id'])
+      ->distinct()
+      ->execute();
     $rows = [];
-    foreach ($balances as $bal) {
-      $rows[$bal['curr_id']] = $bal['wallet_id'];
+    foreach ($result->fetchAll() as $bal) {
+      $rows[$bal->curr_id][] = $bal->wallet_id;
     }
     foreach ($rows as $curr_id => $row) {
       $this->updateTransactionTotals($curr_id, $wids);

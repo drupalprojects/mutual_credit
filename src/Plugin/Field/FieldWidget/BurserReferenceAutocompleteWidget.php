@@ -18,7 +18,7 @@ use Drupal\Core\Field\FieldItemListInterface;
  *   }
  * )
  */
-class WalletReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidget {
+class BurserReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidget {
 
   /**
    * {@inheritdoc}
