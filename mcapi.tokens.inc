@@ -4,6 +4,7 @@
  * @file
  * Token hooks.
  */
+use \Drupal\mcapi\Entity\Currency;
 
 /**
  * Implements hook_tokens().
@@ -61,9 +62,19 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
           break;
 
         case 'worth':
-          $renderable = $transaction->worth->view(['label' => 'hidden']);
+          $worth =  $transaction->worth->getValue();
+          foreach ($worth as $value) {
+            $output[] = Currency::load($value['curr_id'])->format($value['value'])->toString();
+          }
+          $replacements[$original] = implode('|', $output);
+          break;
+
+        case 'sentence':
+          $renderable = \Drupal::entityTypeManager()->getViewBuilder('mcapi_transaction')->view($transaction, 'sentence');
           $replacements[$original] = \Drupal::service('renderer')->renderPlain($renderable);
+
       }
+      print_r($replacements);
     }
 
     // Handle any entity references - tokens within tokens.

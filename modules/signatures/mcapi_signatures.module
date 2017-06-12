@@ -264,6 +264,7 @@ function mcapi_signatures_mail($key, &$message, $params) {
     $message['subject'] = $params['subject'];
     $data = [
       'xaction' => $params['transaction'],
+      'user' => $params['recipient']
     ];
     // Now this special replacement.
     $signhere = Url::fromRoute(

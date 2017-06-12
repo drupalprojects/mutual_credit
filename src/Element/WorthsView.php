@@ -47,6 +47,7 @@ class WorthsView extends RenderElement {
   public static function preRender(array $element) {
     $delimiter = \Drupal::config('mcapi.settings')->get('worths_delimiter');
     $w = 0;
+
     foreach ($element['#worths'] as $worth) {
       // We only render zero value worths if there is only one.
       if (count($element['#worths']) > 1 and $worth['value'] == 0 and !$element['#context'] <> 'other') {

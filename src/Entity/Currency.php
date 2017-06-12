@@ -235,7 +235,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
             'title' => t("View @currency dashboard", ['@currency' => $this->name]),
           ],
         ]
-      )->toString();
+      );
     }
     return $text;
   }

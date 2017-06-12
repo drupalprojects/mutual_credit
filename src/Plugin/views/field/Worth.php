@@ -56,7 +56,7 @@ class Worth extends FieldPluginBase {
         return '';
       }
       return Currency::load($curr_id)
-        ->format($this->getValue($values), $this->options['format']);
+        ->format($this->getValue($values), $this->options['format'])->toString();
     }
     // Otherwise there was no result - nothing to format
   }

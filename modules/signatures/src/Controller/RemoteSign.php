@@ -40,7 +40,7 @@ class RemoteSign extends ControllerBase {
    *   Serial number of a transaction.
    * @param int $uid
    *   User ID.
-   * @param string $passed_hash
+   * @param string $hash
    *   Hash which hopefully corresponds to #serial and $uid.
    */
   public function sign($serial, $uid, $hash) {
@@ -64,16 +64,16 @@ class RemoteSign extends ControllerBase {
       if ($this->signatures->setTransaction($transaction)->waitingOn($uid)) {
         $this->signatures->sign($uid);
         $transaction->save();
-        $this->redirect('entity.mcapi_transaction.canonical', ['mcapi_transaction' => $serial]);
       }
       else {
         drupal_set_message(t('The signature had already been added.'));
       }
+      return $this->redirect('entity.mcapi_transaction.canonical', ['mcapi_transaction' => $serial]);
     }
     else {
       drupal_set_message('Transaction does not exist or has been deleted', 'error');
     }
-    $this->redirect('user.page');
+    return $this->redirect('user.page');
   }
 
 }

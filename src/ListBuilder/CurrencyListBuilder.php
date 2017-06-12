@@ -74,7 +74,7 @@ class CurrencyListBuilder extends DraggableListBuilder {
       ->fetch();
     // This includes deleted transactions.
     $row['volume'] = [
-      '#markup' => $entity->format($stats->volume),
+      '#markup' => $entity->format($stats->volume)->toString(),
     ];
     $row['trades'] = [
       '#markup' => $stats->trades,

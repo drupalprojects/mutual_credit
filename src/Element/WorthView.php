@@ -35,7 +35,7 @@ class WorthView extends RenderElement {
           'currency-' . $element['#currency']->id,
         ],
       ],
-      '#markup' => $element['#currency']->format($element['#value'], $element['#format']),
+      '#markup' => $element['#currency']->format($element['#value'], $element['#format'])->toString(),
     ];
   }
 
