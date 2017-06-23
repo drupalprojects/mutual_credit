@@ -75,8 +75,9 @@ function template_preprocess_wallet_balances(&$vars) {
       $vars['currencies'][$curr_id]['label'] = $currency->label();
       $balance = $currency->format($data['balance'], CurrencyInterface::DISPLAY_NORMAL);
       // @todo even better if we can let the html through
-      $vars['currencies'][$curr_id]['balance'] = strip_tags($balance);
-      $vars['delimited'][] = strip_tags($balance->toString());
+      $balance = strip_tags($balance->toString());
+      $vars['currencies'][$curr_id]['balance'] = $balance;
+      $vars['delimited'][] = $balance;
     }
   }
   $vars['delimited'] = implode(

@@ -110,6 +110,7 @@ class WalletViewsData extends EntityViewsData {
         'id' => 'mcapi_user_first_wallet',
         'base' => 'mcapi_wallet',
         'base field' => 'holder_entity_id',
+        'left_field' => 'wid',
         'relationship field' => 'uid',
       ]
     ];
