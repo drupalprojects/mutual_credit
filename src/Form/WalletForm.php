@@ -54,19 +54,19 @@ class WalletForm extends ContentEntityForm {
 
     $form = parent::form($form, $form_state);
 
-    if (!$this->entity->autoName()) {
-      $form['name'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Name or purpose of wallet'),
-        '#default_value' => $this->entity->name->value,
-        '#placeholder' => t('My excellent wallet'),
-        '#required' => FALSE,
-        '#maxlength' => 48,
-        '#size' => 48,
-        //populate the name only if there is more than one wallet
-        '#access' => Mcapi::maxWalletsOfBundle($this->getHolder()->getEntityTypeId(), $this->getHolder()->bundle()) > 1
-      ];
-    }
+    $form['name'] = [
+      '#title' => $this->t('Name or purpose of wallet'),
+      '#description' => $this->t('The wallet name is used in the transaction form.'),
+      '#type' => 'textfield',
+      '#default_value' => $this->entity->name->value,
+      '#placeholder' => $this->t("@name - personal", ['@name' => $this->currentUser()->getDisplayName()]),
+      '#required' => FALSE,
+      '#maxlength' => 48,
+      '#size' => 48,
+      //populate the name only if there is more than one wallet
+      '#access' => Mcapi::maxWalletsOfBundle($this->entity->getHolder()->getEntityTypeId(), $this->entity->getHolder()->bundle()) > 1
+    ];
+
 
     $walletableBundles = Mcapi::walletableBundles();
     foreach (array_keys($walletableBundles) as $entity_type_id) {
@@ -130,11 +130,12 @@ class WalletForm extends ContentEntityForm {
         t('Wallet has been transferred to %name', ['%name' => $wallet->getOwner()->label()])
       );
     }
-    $wallet->save();
     $form_state->setRedirect(
       'entity.mcapi_wallet.canonical',
       ['mcapi_wallet' => $wallet->id()]
     );
+    debug($wallet->bursers->getValue());
+    parent::save($form, $form_state);
   }
 
   /**

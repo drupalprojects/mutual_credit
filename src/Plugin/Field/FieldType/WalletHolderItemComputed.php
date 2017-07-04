@@ -3,8 +3,6 @@
 namespace Drupal\mcapi\Plugin\Field\FieldType;
 
 use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
-use Drupal\Core\TypedData\DataDefinitionInterface;
-use Drupal\Core\TypedData\TypedDataInterface;
 
 /**
  * Defines the 'wallet_holder' computed entity field type.
@@ -66,25 +64,13 @@ class WalletHolderItemComputed extends EntityReferenceItem {
 
   /**
    * {@inheritdoc}
+   *
+   * @note $value is an array as given above.
    */
   public function setValue($value, $notify = TRUE) {
     $wallet = $this->getEntity();
-    $wallet->holder_entity_type->value = $value->getEntitytypeId();
-    $wallet->holder_entity_id->value = $value->id();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function ___getTarget() {
-    if (!isset($this->target) && isset($this->id)) {
-      // If we have a valid reference, return the entity's TypedData adapter.
-      $entity = \Drupal::entityTypeManager()
-        ->getStorage($this->getTargetDefinition()->getEntityTypeId())
-        ->load($this->id);
-      $this->target = isset($entity) ? $entity->getTypedData() : NULL;
-    }
-    return $this->target;
+    $wallet->holder_entity_type->value = $value['entity_type_id'];
+    $wallet->holder_entity_id->value = $value['target_id'];
   }
 
 }

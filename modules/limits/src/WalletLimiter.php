@@ -2,7 +2,7 @@
 
 namespace Drupal\mcapi_limits;
 
-use Drupal\mcapi\Exchange;
+use Drupal\mcapi\Entity\CurrencyInterface;
 use Drupal\mcapi\Entity\WalletInterface;
 use Drupal\mcapi\Currency;
 

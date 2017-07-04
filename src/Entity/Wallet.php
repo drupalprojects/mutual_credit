@@ -145,7 +145,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
 
     $fields['bursers'] = BaseFieldDefinition::create('burser_reference')
       ->setLabel(t('Bursers'))
-      ->setDescription(t('Nominated users, including the owner, who can use this wallet'))
+      ->setDescription(t('Other users nominated to control this wallet'))
       ->setSetting('target_type', 'user')
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE)

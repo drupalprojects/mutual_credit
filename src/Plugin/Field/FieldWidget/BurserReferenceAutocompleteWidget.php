@@ -24,8 +24,9 @@ class BurserReferenceAutocompleteWidget extends EntityReferenceAutocompleteWidge
    * {@inheritdoc}
    */
   protected function formMultipleElements(FieldItemListInterface $items, array &$form, FormStateInterface $form_state) {
-    $element = parent::formMultipleElements($items, $form, $form_state);
-    unset($elements[0]);
-    return $elements;
+    $elements['#attached']['library'][] = 'mcapi/mcapi.wallets';
+    return parent::formMultipleElements($items, $form, $form_state);
   }
+
 }
+

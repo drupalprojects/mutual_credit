@@ -27,3 +27,8 @@ table.display-wallet td,
 table.display-wallet th {
   font-size: 70%;
 }
+
+/* for use on wallet/x/edit */
+#bursers-add-more-wrapper div.tabledrag-toggle-weight-wrapper{display:none;}
+#edit-bursers-wrapper td.field-multiple-drag{display:none;}
+#bursers-values tbody tr:first-child{display:none;}

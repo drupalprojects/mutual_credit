@@ -298,7 +298,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setLabel(t('Changed'))
       ->setDescription(t('The time that the transaction was last saved.'))
       ->setDisplayConfigurable('view', TRUE)
-      ->setInitialValue('created')
+      //->setInitialValue('created')//wait till 8.4
       ->setRevisionable(FALSE)
       ->setTranslatable(FALSE);
 

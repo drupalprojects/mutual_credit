@@ -125,7 +125,7 @@ class WalletLimitOverride extends FormBase {
       ];
     }
     else {
-      $form['empty']['#markup'] = t('This wallet cannot use any currencies which can be overridden.');
+      $form['empty']['#markup'] = t('This wallet has no currencies with overrideable balance limits');
     }
     return $form;
   }

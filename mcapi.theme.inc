@@ -112,18 +112,21 @@ function template_preprocess_wallet_balance_bars(&$vars) {
       'vaxislabels' => [
         [
           'value' => 0,
-          'label' => strip_tags($currency->format(0, CurrencyInterface::DISPLAY_NORMAL)),
+          'label' => $currency->format(0, CurrencyInterface::DISPLAY_NORMAL),
         ],
         [
           'value' => $max / 2,
-          'label' => strip_tags($currency->format(intval($max / 2), CurrencyInterface::DISPLAY_NORMAL)),
+          'label' => $currency->format(intval($max / 2), CurrencyInterface::DISPLAY_NORMAL),
         ],
         [
           'value' => $max,
-          'label' => strip_tags($currency->format($max, CurrencyInterface::DISPLAY_NORMAL)),
+          'label' => $currency->format($max, CurrencyInterface::DISPLAY_NORMAL),
         ],
       ],
     ];
+    foreach ($vars['currencies'][$curr_id]['vaxislabels'] as &$label) {
+      $label['label'] = strip_tags($label['label']->toString());
+    }
   }
 }
 
