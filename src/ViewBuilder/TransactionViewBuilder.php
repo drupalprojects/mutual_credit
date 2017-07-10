@@ -63,7 +63,6 @@ class TransactionViewBuilder extends EntityViewBuilder {
         $view_mode = 'certificate_ops';
       case 'certificate_ops':
       case 'certificate':
-        echo 1;
         $build['#theme'] = 'mcapi_transaction_twig';
         $build['#mcapi_transaction']->twig = Action::load('transaction_view')
           ->getPlugin()

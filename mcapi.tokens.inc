@@ -62,11 +62,8 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
           break;
 
         case 'worth':
-          $worth =  $transaction->worth->getValue();
-          foreach ($worth as $value) {
-            $output[] = Currency::load($value['curr_id'])->format($value['value'])->toString();
-          }
-          $replacements[$original] = implode('|', $output);
+          $renderable = $transaction->worth->view(['label' => 'hidden']);
+          $replacements[$original] = \Drupal::service('renderer')->renderRoot($renderable);
           break;
 
         case 'sentence':
@@ -74,7 +71,7 @@ function mcapi_tokens($type, $tokens, array $data = [], array $options = []) {
           $replacements[$original] = \Drupal::service('renderer')->renderPlain($renderable);
 
       }
-      print_r($replacements);
+
     }
 
     // Handle any entity references - tokens within tokens.

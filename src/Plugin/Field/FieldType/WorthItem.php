@@ -109,42 +109,17 @@ class WorthItem extends FieldItemBase {
   }
 
   public function __toString() {
-    return $this->format(CurrencyInterface::DISPLAY_NORMAL);
-  }
-
-  public function format($mode) {
-    return (string)$this->currency->format($this->value, $mode, FALSE);
+    return (string)$this->format(CurrencyInterface::DISPLAY_NORMAL);
   }
 
   /**
-   * Set the value of the field from the formatted value coming, say from a
-   * widget.
    *
-   * @param mixed $formatted_value
-   *   Value or array from currency widget
-   * @param string $curr_id
-   *
-   * @deprecated not used.
+   * @param int $mode
+   *   One of the DISPLAY constants on \Drupal\mcapi\Entity\CurrencyInterface
+   * @return RenderableInterface
    */
-//  public function setValueFormatted($formatted_value, $curr_id = NULL) {
-//    if (empty($curr_id)) {
-//      $currency = reset(Currency::loadMultiple());
-//    }
-//    foreach ($this->values as $key => $value) {
-//      if ($value['curr_id'] == $curr_id) {
-//        $reuse = 1;
-//        continue;
-//      }
-//    }
-//    $value = [
-//      'curr_id' => $this->currency->id(),
-//      'value' => $this->currency->unformat((array)$formatted_value)
-//    ];
-//    if (!$reuse) {
-//      $key++;
-//    }
-//    $this->values[$key] = $value;
-//  }
-
+  public function format($mode) {
+    return $this->currency->format($this->value, $mode, FALSE);
+  }
 
 }

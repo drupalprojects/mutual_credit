@@ -48,7 +48,7 @@ interface CurrencyInterface extends ConfigEntityInterface {
    * @param int $raw_num
    *   The value stored in the worth field 'value' column.
    *
-   * @return string
+   * @return MarkupInterface
    *   Markup containing the formatted value.
    */
   public function format($raw_num);
