@@ -3,5 +3,5 @@ core = 8.x
 api = 2
 
 ;temp
-projects[rules][version] = "8.x-3.x-dev"
-projects[flag][version] = "8.x-4.x-dev"
+projects[rules][version] = "3.x-dev"
+projects[flag][version] = "4.x-dev"
