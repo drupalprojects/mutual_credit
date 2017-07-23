@@ -105,6 +105,7 @@ class WalletForm extends ContentEntityForm {
         ],
       ];
     }
+    $form['#attached']['library'][] = 'mcapi/mcapi.wallets';
     return $form;
   }
 
@@ -134,7 +135,6 @@ class WalletForm extends ContentEntityForm {
       'entity.mcapi_wallet.canonical',
       ['mcapi_wallet' => $wallet->id()]
     );
-    debug($wallet->bursers->getValue());
     parent::save($form, $form_state);
   }
 

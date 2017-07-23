@@ -69,8 +69,13 @@ class WalletHolderItemComputed extends EntityReferenceItem {
    */
   public function setValue($value, $notify = TRUE) {
     $wallet = $this->getEntity();
-    $wallet->holder_entity_type->value = $value['entity_type_id'];
-    $wallet->holder_entity_id->value = $value['target_id'];
+    if (is_array($value)) {
+      $wallet->holder_entity_type->value = $value['entity_type_id'];
+      $wallet->holder_entity_id->value = $value['target_id'];
+    }
+    else {
+      $wallet->holder_entity_type->value = $value->getEntityTypeId();
+      $wallet->holder_entity_id->value = $value->id();
+    }
   }
-
 }
