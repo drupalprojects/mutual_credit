@@ -80,6 +80,9 @@ function mcapi_cc_mcapi_info_types() {
  */
 function mcapi_cc_settings_form() {
   $form = array();
+  if (!variable_get('mcapi_cc_cenip_user')) {
+    drupal_set_message(t('To join the clearing central system, contact info@clearingcentral.net'), 'warning');
+  }
   module_load_include('inc', 'mcapi');
   $form['mcapi_cc_intertrading_currcode'] = array(
     '#title' => t('Currency used for intertrading'),
@@ -116,7 +119,7 @@ function mcapi_cc_settings_form() {
 
   $form['mcapi_cc_intertrading_account'] = array(
     '#title' => t('Intertrading account'),
-    '#description' => t('An account nobody will ever log in to'),
+    '#description' => t('A user account on this site used by nobody.'),
     '#type' => 'user_chooser_few',
     '#callback' => 'user_chooser_segment_perms',
     '#args' => array('transact'),

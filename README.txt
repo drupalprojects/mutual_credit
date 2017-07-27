@@ -84,6 +84,11 @@ The first level of architecture is in menus, blocks, views, mcapi_forms
 For more ideas visit demo.communityforge.net
 The cforge_custom installation profile which makes the demo module, is available her http://code.google.com/p/cforge-custom/
 
+***********************
+** INTEROPERABILITY  **
+***********************
+
+If and when your exchange is up and running, you are invited to join the CES network and trade with other exchanges. For more information contact info@clearingcentral.net
 
 ***********************
 **   ARCHITECTURE    **
