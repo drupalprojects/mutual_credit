@@ -232,6 +232,8 @@ function mcapi_cc_accounting_validate($cluster){
 /**
  * menu form callback
  * build a transaction form from scratch
+ *
+ * @deprecated because clearing central doesn't support 'credit' transactions
  */
 function mcapi_cc_remote_credit_form($form, &$form_state) {
   $values = isset($form_state['values']) ? $form_state['values'] : array();
@@ -405,6 +407,10 @@ function mcapi_cc_remote_bill_form($form, &$form_state) {
         '#weight' => 4,
       );
     }
+    $form['worth_label'] = array(
+      '#markup' => '<strong>'.t('I request the amount:').'</strong>',
+      '#weight' => 5
+    );
     $form['worth'] = array(
       '#title' => t('Quantity'),
       '#type' => 'worth',
@@ -414,7 +420,7 @@ function mcapi_cc_remote_bill_form($form, &$form_state) {
         'quantity' => 0
       ),
       '#currcodes' => (array)variable_get('mcapi_cc_intertrading_currcode'),
-      '#weight' => 5
+      '#weight' => 6
     );
     $form['#validate'] = array('cc_transaction_form_validate');
     $form['submit'] = array(

@@ -1,10 +1,6 @@
 name = Clearing Central
-description = Creates transactions with other communities via CES Clearing Central
+description = Join the global trading network 'CES' and exchange with other groups via their Clearing Central service.
 core = 7.x
 package = Community Accounting
 configure = admin/accounting/cc
-
 dependencies[] = number
-;dependencies[] = oauth2_server
-;dependencies[] = services
-;dependencies[] = rest_server
