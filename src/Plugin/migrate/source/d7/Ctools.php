@@ -18,11 +18,9 @@ class Ctools extends DrupalSqlBase {
    * {@inheritdoc}
    */
   public function query() {
-    $table = $this->configuration['table'];
-    $key = $this->configuration['key'];
     // NB Only overriden ctools objects are even stored in the database.
-    return $this->select($table, 't')
-      ->fields('t', [$key]);
+    return $this->select($this->configuration['table'], 't')
+      ->fields('t', [$this->configuration['column']]);
   }
 
   protected function values() {
@@ -42,16 +40,11 @@ class Ctools extends DrupalSqlBase {
    */
   public function prepareRow(Row $row) {
     static $i = 0;
-
-    $table = $this->configuration['table'];
-    $key = $this->configuration['key'];
-
-    $id = $row->getSourceProperty($key);
-    $row->setSourceProperty('tempid', $i++);
-
-    $result = $this->select($table, 'c')
+    $column = $this->configuration['column'];
+    $id = $row->getSourceProperty($column);
+    $result = $this->select($this->configuration['table'], 'c')
       ->fields('c', ['data'])
-      ->condition($key, $id)
+      ->condition($this->configuration['column'], $id)
       ->execute()
       ->fetchField();
 
@@ -69,7 +62,7 @@ class Ctools extends DrupalSqlBase {
    */
   public function fields() {
     $fields = [
-      $this->configuration['key'] => $this->t('Ctools key'),
+      $this->configuration['column'] => $this->t('Ctools key'),
       'data' => $this->t('Serialized data'),
     ];
     return $fields;
@@ -80,8 +73,8 @@ class Ctools extends DrupalSqlBase {
    */
   public function getIds() {
     return [
-      'tempid' => [
-        'type' => 'integer',
+      $this->configuration['column'] => [
+        'type' => 'string',
       ]
     ];
   }

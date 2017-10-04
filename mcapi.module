@@ -81,15 +81,14 @@ function mcapi_entity_view(array &$build, $entity, $display) {
       if ($wallet->access('view')) {
         $wallets[] = $wallet;
       }
+      $wallets = array_slice($wallets, 0, 50);// This isn't a proper way to handle this rare situation
     }
     if ($wallets) {
-      $build += [
-        'wallets_summaries' => \Drupal::entityTypeManager()
-          ->getViewBuilder('mcapi_wallet')
-          // The wallet 'summary' view mode is provided in this module's default
-          // config.
-          ->viewMultiple($wallets, 'summary'),
-      ];
+      $build['wallets_summaries'] = \Drupal::entityTypeManager()
+        ->getViewBuilder('mcapi_wallet')
+        // The wallet 'summary' view mode is provided in this module's default
+        // config.
+        ->viewMultiple($wallets, 'summary');
     }
   }
 }
@@ -111,13 +110,15 @@ function mcapi_element_info_alter(&$items) {
 function mcapi_entity_insert($entity) {
   $config = \Drupal::config('mcapi.settings');
   if ($config->get('autoadd')) {
-    $type = $entity->getEntityTypeId();
     // NB autoadd applies to ALL entity types or to none.
-    if (Mcapi::maxWalletsOfBundle($type, $entity->bundle())) {
+    if ($max = Mcapi::maxWalletsOfBundle($entity->getEntityTypeId(), $entity->bundle())) {
       $props['holder'] = $entity;
       //this first wallet of the entity shares the entity's creation time
       if (method_exists($entity, 'getCreatedTime')) {
         $props['created'] = $entity->getCreatedTime();
+      }
+      if ($max == 1) {
+        $props['name'] = $entity->label();
       }
       Wallet::create($props)->save();
     }
@@ -310,6 +311,7 @@ function mcapi_currencies_available(ContentEntityInterface $entity = NULL) {
    if (!isset($currencies)) {
      $currencies = Currency::loadMultiple();
    }
+   $output = [];
    foreach ($currencies as $currency) {
      $output[$currency->id()] = $currency;
    }
@@ -321,22 +323,36 @@ function mcapi_currencies_available(ContentEntityInterface $entity = NULL) {
  /**
   * Implements hook_migration_plugins_alter().
   *
-  * Add this module's permissions to the user_role migration.
+  * Map all the permissions
   */
- function mcapi_migration_plugins_alter(&$definitions)  {
-   foreach ($definitions as &$definition) {
-     if ($definition['source'] == 'd7_user_role') {// I think there's only one!
+function mcapi_migration_plugins_alter(array &$definitions)  {
+  foreach ($definitions as &$definition) {
+    if ($definition['id'] == 'd7_user_role') {// I think there's only one!
       $definition['process']['permissions'][0]['map'] += [
-        'view all wallets' => 'transact',
-        'create own wallets'  => 'transact',
-        'view all transactions' => 'transact',
-        'create remote transactions' => 'transact',
-        'create 3rdparty transaction' => 'manage all transactions',
+        'transact' => 'view all wallets',
+        'transact' => 'create own wallets',
+        'transact' => 'view all transactions',
+        'transact' => 'create remote transactions',
+        'manage all transactions' => 'create 3rdparty transaction',
         'transact via sms' => 'transact via sms',
-        'configure mcapi' =>  'declare currency',
-        'manage mcapi' => 'manage all transactions'
+        'declare currency' => 'configure mcapi',
+        'manage all transactions' => 'manage mcapi'
       ];
-      echo $definition['id'];
-     }
-   }
- }
+    }
+  }
+}
+
+/**
+ * Implements hook_migrate_prepare_row().
+ */
+function mcapi_migrate_prepare_row($row, $source, $migration) {
+  if (in_array($migration->id(), ['d7_field', 'd7_field_instance'])) {
+    if ($row->getSourceProperty('entity_type') == 'transaction') {
+      // Don't migrate field API fields which this module created.
+      $existing_fields = ['worth', Mcapi::d7_description_fieldname($migration)];
+      if (in_array($row->getSourceProperty('field_name'), $existing_fields)) {
+        return FALSE;
+      }
+    }
+  }
+}

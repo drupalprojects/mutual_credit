@@ -3,7 +3,6 @@
 namespace Drupal\mcapi\Plugin\migrate\destination;
 
 use Drupal\migrate\Plugin\migrate\destination\EntityContentBase;
-use Drupal\migrate\Row;
 
 /**
  * @MigrateDestination(
@@ -14,17 +13,13 @@ class EntityTransaction extends EntityContentBase {
 
   /**
    * {@inheritdoc}
+   *
+   * Rollback the signatures as well as the entity
    */
-  public function ___import(Row $row, array $old_destination_id_values = array()) {
-
+  public function rollback(array $destination_identifier) {
+    $xid = reset($destination_identifier);
+    $transaction = $this->storage->load($xid);
+    mcapi_signatures_mcapi_transaction_delete($transaction);
+    parent::rollback($destination_identifier);
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function processStubRow(Row $row) {
-    parent::processStubRow($row);
-
-  }
-
 }

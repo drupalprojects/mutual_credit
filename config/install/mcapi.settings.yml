@@ -1,8 +1,5 @@
 sentence_template: '[xaction:payer] paid [xaction:payee] [xaction:worth] for [xaction:description].'
 editable: false
-fields:
-  description: true
-  participants: true
 worths_delimiter: ' | '
 zero_snippet: '<span class="worth-zero" />'
 counted:

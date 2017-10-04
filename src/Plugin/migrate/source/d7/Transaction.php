@@ -3,8 +3,8 @@
 namespace Drupal\mcapi\Plugin\migrate\source\d7;
 
 use Drupal\migrate\Row;
-use Drupal\migrate_drupal\Plugin\migrate\source\d7\FieldableEntity;
 use Drupal\migrate\Plugin\MigrationInterface;
+use Drupal\migrate_drupal\Plugin\migrate\source\d7\FieldableEntity;
 
 
 /**
@@ -15,41 +15,51 @@ use Drupal\migrate\Plugin\MigrationInterface;
  *   source_provider = "mcapi"
  * )
  */
-class Transaction extends FieldableEntity {//implements MigrationInterface {
-
-  private $description_field_name;
-
-  /**
-   * {@inheritdoc}
-   */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration, StateInterface $state, EntityManagerInterface $entity_manager) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $migration, $state, $entity_manager);
-    $this->description_field_name = $this->variableGet('transaction_description_field', 'transaction_description');
-
-  }
+class Transaction extends FieldableEntity {
 
   /**
    * {@inheritdoc}
    */
   public function query() {
-    //db_query("update hamlets.migrate_map_d7_mcapi_transaction set source_row_status = 1");
+    $description_field_name = $this->variableGet('transaction_description_field', 'transaction_description');
     $query = $this->select('mcapi_transactions', 't')
       ->fields('t', ['xid', 'serial', 'payer', 'payee', 'type', 'state', 'creator', 'created']);
-    $query->join('field_data_' . $this->description_field_name, 'd', "t.xid = d.entity_id");
-    $query->addField('d', $this->description_field_name . '_value', 'description');
+    $table_name = 'field_data_' . $description_field_name;
+    $field_name = $description_field_name . '_value';
+    $query->join($table_name, 'd', "t.xid = d.entity_id");
+    $query->addField('d', $field_name, 'description');
     return $query;
   }
 
   /**
    * {@inheritdoc}
+   *
+   * @todo I expect much of this will be handled eventually in parent function
    */
   public function prepareRow(Row $row) {
+    // Change the entity type and bundle names from d7
+    $row->setSourceProperty('entity_type', 'mcapi_transaction');
+    $row->setSourceProperty('bundle', 'mcapi_transaction');
+
+    // Get Field API field values (using the d7 entity and bundle names)
+    $fields = $this->getFields('transaction', 'transaction');
+    foreach (array_keys($fields) as $field) {
+      $row->setSourceProperty(
+        $field,
+        $this->getFieldValues(
+          'transaction',
+          $field,
+          $row->getSourceProperty('xid'),
+          $row->getSourceProperty('vid')
+        )
+      );
+    }
+
     // Get Field API field values.
-//    foreach (array_keys($this->getFields('mcapi_transaction', 'mcapi_transaction')) as $field) {
-//      $xid = $row->getSourceProperty('xid');
-//      $row->setSourceProperty($field, $this->getFieldValues('mcapi_transaction', $field, $xid));
-//    }
-    return parent::prepareRow($row);
+    foreach (array_keys($this->getFields('transaction')) as $field) {
+      $row->setSourceProperty($field, $this->getFieldValues('transaction', $field, $row->getSourceProperty('xid')));
+    }
+    return parent::prepareRow($row); // This runs hook_migrate_prepare_row
   }
 
   /**
@@ -63,11 +73,10 @@ class Transaction extends FieldableEntity {//implements MigrationInterface {
       'payee' => $this->t('Payee user'),
       'type' => $this->t('Type'),
       'state' => $this->t('State'),
-      'description' => $this->t('Description'),
-      'uid' => $this->t('Created by user id'),
+//      'description' => $this->t('Description'),
+      'creator' => $this->t('Created by user id'),
       'created' => $this->t('Created timestamp'),
     ];
-    return $fields;
   }
 
   /**

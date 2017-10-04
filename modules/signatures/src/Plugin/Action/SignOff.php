@@ -33,14 +33,9 @@ class Signoff extends TransactionActionBase {
    * {@inheritdoc}
    */
   public function execute($transaction = NULL) {
-    foreach ($transaction->signatures as $uid => $signed) {
-      if ($signed) {
-        continue;
-      }
-      \Drupal::service('mcapi.signatures')
-        ->setTransaction($transaction)
-        ->sign($uid);
-    }
+    \Drupal::service('mcapi.signatures')
+      ->setTransaction($transaction)
+      ->signOff();
     parent::execute($transaction);
   }
 

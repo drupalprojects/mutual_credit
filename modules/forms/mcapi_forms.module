@@ -132,12 +132,13 @@ function mcapi_form_displays_load($config = FALSE) {
       ->listAll('core.entity_form_display.mcapi_transaction.mcapi_transaction');
     foreach ($transaction_form_display_ids as $id) {
       $display = \Drupal::config($id);
-      if ($display->get('third_party_settings.mcapi_forms')) {
+      if ($display->get('third_party_settings.mcapi_forms')['title']) {
         $displays[$display->get('mode')] = $display;
       }
     }
   }
   else {
+    drupal_set_message('check imported transaction forms');
     $entities = \Drupal::entityTypeManager()
       ->getStorage('entity_form_display')
       ->loadByProperties(['bundle' => 'mcapi_transaction']);
@@ -254,4 +255,13 @@ function mcapi_forms_form_entity_form_display_edit_form_alter(&$form, $form_stat
  */
 function wallet_link_title(WalletInterface $wallet, $template) {
   return str_replace('[mcapi_wallet:name]', $wallet->label(), $template);
+}
+
+/**
+ * Implements hook_migrate_prepare_row().
+ */
+function mcapi_forms_migrate_prepare_row($row, $source, $migration) {
+  if ($migration->id() == 'd7_filter_format' and $row->getSourceProperty('format') == 'mcapiform_string_format') {
+    return FALSE;
+  }
 }

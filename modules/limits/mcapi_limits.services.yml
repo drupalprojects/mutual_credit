@@ -2,13 +2,13 @@ services:
   plugin.manager.mcapi_limits:
     class: Drupal\mcapi_limits\Plugin\LimitsPluginManager
     arguments: ['@container.namespaces', '@module_handler', '@cache.default']
-    
+
   mcapi_limits.wallet_limiter:
     class: Drupal\mcapi_limits\WalletLimiter
     arguments: ['@database']
 
-  mcapi.transaction.subscriber:
+  mcapi.limits.subscriber:
     class: Drupal\mcapi_limits\TransactionSubscriber
     tags:
       - { name: event_subscriber }
-  
+

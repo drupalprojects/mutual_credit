@@ -49,8 +49,7 @@ class CurrencyLimits extends ProcessPluginBase {
    * //We ned to pass the plugin settings over as well though.
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
-
-     if($value->limits_callback == limits_none) {
+     if($value->limits_callback == 'limits_none') {
        throw new MigrateSkipRowException('No balance limits on currency '.$row->info['name']);
      }
      $limits['personal']= $value->personal;

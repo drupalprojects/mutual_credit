@@ -167,4 +167,14 @@ class Mcapi {
     return implode(', ', $tokens) . '. ' . $link->toString();
   }
 
+  public static function d7_description_fieldname($migration) {
+    $result =  $migration->getSourcePlugin()
+     ->getDatabase()
+     ->select('variable', 'v')
+     ->fields('v', ['value'])
+     ->condition('name', 'transaction_description_field')
+     ->execute()
+     ->fetchField();
+   return unserialize($result);
+  }
 }

@@ -11,7 +11,7 @@ use Drupal\mcapi\Entity\CurrencyInterface;
 function mcapi_greco_gchart() {
   return array(
     '#theme' => 'greco_gchart',
-    '#attached' =>array('library' => array('http://www.google.com/jsapi')),//how to put this in the theme layer
+    '#attached' =>array('library' => array('https://www.google.com/jsapi')),//how to put this in the theme layer
   );
 }
 

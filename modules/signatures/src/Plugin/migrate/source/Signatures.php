@@ -20,6 +20,7 @@ class Signatures extends DrupalSqlBase {
     $query = $this->select('mcapi_signatures', 's')->fields('s', ['serial', 'uid', 'pending']);
     $query->join('mcapi_transactions', 't', 't.serial = s.serial');
     $query->addfield('t', 'created');
+    $query->addfield('t', 'creator');
     return $query;
   }
 
@@ -49,8 +50,14 @@ class Signatures extends DrupalSqlBase {
    */
   public function getIds() {
     return [
-      'serial' => ['type' => 'string'],
-      'uid' => ['type' => 'integer']
+      'serial' => [
+        'type' => 'string',
+        'alias' => 's'
+      ],
+      'uid' => [
+        'type' => 'integer',
+        'alias' => 's'
+      ]
     ];
   }
 

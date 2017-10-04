@@ -17,35 +17,37 @@ use Drupal\migrate\Row;
  *   id = "d7_mcapi_worth_var"
  * )
  */
-class Worth extends ProcessPluginBase {
+class WorthVar extends ProcessPluginBase {
 
   /**
    * {@inheritdoc}
    * Transform something of the format
    * [
-   *   0 => [
-   *     [currcode] => credunit
-   *     [main_quant] => 4
-   *     [div_quant] => 0
-   *   ]
+   *   [currcode] => credunit
+   *   [main_quant] => 4
+   *   [div_quant] => 0
    * ]
    * to
    * [
-   *   0 => [
-   *     [curr_id] => credunit
-   *     [value] ==> 400
-   *   ]
+   *   [curr_id] => credunit
+   *   [value] ==> 400
    * ]
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
-    foreach ($value as $delta => $item) {
-      $newValue[$delta]['curr_id'] = $item['currcode'];
-      $parts = [1 => $item['main_quant']];
-      $currency = Currency::load($item['currcode']);
-      if (isset($currency->format[3])) {
-        $parts[3] = $item['div_quant'];
+    if (is_array($value) and !empty($value['currcode'])) {//Might be null
+      $currency = Currency::load($value['currcode']);
+      $newValue['curr_id'] = $value['currcode'];
+      // There were some awkward stored values on d7
+      if (isset($value['quantity'])) {
+        list($parts[1], $parts[3]) = explode('.', $value['quantity']);
       }
-      $newValue[$delta]['value'] = $currency->unformat([0 => $item['main_quant'], 3 => $item['div_quant']]);
+      else {
+        $parts = [
+          1 => isset($value['main_quant']) ? $value['main_quant'] : 0,
+          3 => isset($value['div_quant']) ? $value['div_quant'] : 0
+        ];
+      }
+      $newValue['value'] = $currency->unformat($parts);
     }
     return $newValue;
   }

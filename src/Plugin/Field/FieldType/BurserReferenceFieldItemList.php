@@ -36,20 +36,17 @@ class BurserReferenceFieldItemList extends EntityReferenceFieldItemList {
    * is still being created.
    */
   public function applyDefaultValue($notify = TRUE) {
-    if ($this->parent) {
-      drupal_set_message("applying default value to wallet", 'warning');
+//    if ($this->parent) {
       $wallet = $this->getEntity();
       if ($entity_type = $wallet->holder_entity_type->value) {
         $target_entity_id = \Drupal::entityTypeManager()
           ->getStorage($entity_type)
-          ->load($wallet->holder_entity_id->value)->getOwnerId();
-        $value = ['target_id' => $target_entity_id];
-        $this->setValue($value, $notify);
+          ->load($wallet->holder_entity_id->value)
+          ->getOwnerId();
+        $this->setValue(['target_id' => $target_entity_id], $notify);
+        drupal_set_message("Applying default burser value ($target_entity_id) to wallet ".$wallet->label(), 'warning');
       }
-    }
-    else {
-      drupal_set_message("unable to apply default value to wallet burser", 'warning');
-    }
+//    }
     return $this;
   }
 

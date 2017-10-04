@@ -27,7 +27,6 @@ mcapi.worth.element:
     component:
       css/worth-element.css: {}
 mcapi.gcharts:
-  header: true
   js:
     https://www.gstatic.com/charts/loader.js: { type: external }
     #this load core chart and gauge, which is used in mcapi_limits

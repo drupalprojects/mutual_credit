@@ -5,7 +5,8 @@ migration_tags:
 source:
   plugin: d7_mcapi_ctools
   table: mcapi_forms
-  key: name
+  column: name
+  source_module: mcapi_forms
 process:
   mode:
     plugin: d7_mcapi_object_prop
@@ -18,7 +19,7 @@ process:
   wallet_link_title:
     plugin: d7_mcapi_object_prop
     source: experience
-    property: menu_title
+    property: title
   path:
     plugin: d7_mcapi_object_prop
     source: architecture

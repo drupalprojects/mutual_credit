@@ -61,7 +61,7 @@ class RemoteSign extends ControllerBase {
     }
     $transaction = TransactionStorage::loadBySerial($serial);
     if ($transaction instanceof Transaction) {
-      if ($this->signatures->setTransaction($transaction)->waitingOn($uid)) {
+      if ($this->signatures->setTransaction($transaction)->isWaitingOn($uid)) {
         $this->signatures->sign($uid);
         $transaction->save();
       }

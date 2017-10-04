@@ -52,23 +52,16 @@ class Signatures extends DestinationBase implements ContainerFactoryPluginInterf
    * {@inheritdoc}
    */
   public function import(Row $row, array $old_destination_id_values = array()) {
-    $serial = $row->getDestinationProperty('serial');
-    $uid = $row->getDestinationProperty('uid');
-
     $this->database->insert('mcapi_signatures')
-      ->fields([
-        'serial' => $serial,
-        'uid' => $uid,
-        'signed' => $row->getDestinationProperty('signed'),
-      ])->execute();
-
-    return [$serial, $uid];
+      ->fields($row->getDestination())
+      ->execute();
+    return [$row->getDestinationProperty('serial'), $row->getDestinationProperty('uid')];
   }
 
   /**
    * {@inheritdoc}
    */
-  public function fields(\Drupal\migrate\Plugin\MigrationInterface $migration = NULL) {
+  public function fields(MigrationInterface $migration = NULL) {
     return ['serial', 'uid', 'signed'];
   }
 

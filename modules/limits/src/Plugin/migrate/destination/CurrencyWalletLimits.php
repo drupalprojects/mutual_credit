@@ -61,14 +61,15 @@ class CurrencyWalletLimits extends DestinationBase implements ContainerFactoryPl
       ];
    */
   public function import(Row $row, array $old_destination_id_values = array()) {
-    $limits = $row->getDestinationProperty('limits');
-    $query = $this->database->insert('mcapi_wallets_limits')
-      ->fields(['wid', 'curr_id', 'max', 'value', 'editor', 'date']);
-    foreach ($limits as $limit) {
-      $query->values($limit);
+    if ($limits = $row->getDestinationProperty('limits')) {
+      $query = $this->database->insert('mcapi_wallets_limits')
+        ->fields(['wid', 'curr_id', 'max', 'value', 'editor', 'date']);
+      foreach ($limits as $limit) {
+        $query->values($limit);
+      }
+      $query->execute();
+      return [reset($limits)['wid']];
     }
-    $query->execute();
-    return [reset($limits)['wid']];
   }
 
   /**

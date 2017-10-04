@@ -6,6 +6,7 @@ source:
   plugin: variable
   variables:
     - mcapi_sentence
+  source_module: mcapi
 process:
   sentence_template:
     plugin: mcapi_sentence
@@ -13,3 +14,6 @@ process:
 destination:
   plugin: config
   config_name: mcapi.settings
+migration_dependencies:
+  required:
+    - d7_mcapi_currency

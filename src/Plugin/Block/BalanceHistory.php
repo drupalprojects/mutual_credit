@@ -75,7 +75,7 @@ class BalanceHistory extends McapiBlockBase {
       '#theme' => 'balance_histories_gchart',
       // This isn't working
     // how to put this in the theme layer.
-      '#attached' => array('library' => array('http://www.google.com/jsapi')),
+      '#attached' => array('library' => array('https://www.google.com/jsapi')),
       '#account' => $this->account,
       '#curr_ids' => $this->configuration['curr_ids'],
       '#width' => $this->configuration['width'],

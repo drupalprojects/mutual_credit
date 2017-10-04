@@ -8,25 +8,6 @@ mcapi.settings:
     editable:
       type: boolean
       label: Allow transaction records to be edited
-    fields:
-      type: mapping
-      label: Fields
-      mapping:
-        participants:
-          type: boolean
-          label: Participants
-        description:
-          type: boolean
-          label: Description
-        worth:
-          type: boolean
-          label: Worth
-        type:
-          type: boolean
-          label: Type
-        fieldapi:
-          type: boolean
-          label: Field API
     worths_delimiter:
       type: string
       label: Delimiter
@@ -68,7 +49,6 @@ mcapi.settings:
     masspay_mail:
       type: mail
       label: Last used mass payment notification template.
-
 mcapi.currency.*:
   type: config_entity
   label: 'Currency'

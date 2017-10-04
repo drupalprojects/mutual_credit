@@ -5,7 +5,8 @@ migration_tags:
 source:
   plugin: d7_mcapi_ctools
   table: mcapi_currencies
-  key: currcode
+  column: currcode
+  source_module: mcapi
 process:
   id: currcode
   name: human_name

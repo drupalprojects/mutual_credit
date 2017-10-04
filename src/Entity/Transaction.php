@@ -151,20 +151,21 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageInterface $storage, array &$values) {
+    $type_name = $values['type'];
+    if ($type = Type::load($type_name)) {
+      if (empty($values['serial'])) {// doesn't apply to imported transactions
+        $values['state'] = $type->start_state;
+      }
+    }
+    else {
+      trigger_error("Replaced bad transaction type '$type_name' with 'default'", E_USER_ERROR);
+    }
     $values += [
       'type' => 'default',
       // Uid of 0 means drush must have created it.
       'creator' => \Drupal::currentUser()->id(),
+      'state' => 'done'
     ];
-    ;
-    if ($type = Type::load($values['type'])) {
-      $values['state'] = $type->start_state;
-    }
-    else {
-      trigger_error('Created transaction of unknown type: '.$values['type'], E_USER_ERROR);
-      $values['state'] = 'done';
-    }
-
   }
 
   /**
@@ -228,10 +229,6 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setSetting('target_type', 'mcapi_transaction')
       ->setReadOnly(TRUE);
 
-
-    $required = !\Drupal::entityQuery('mcapi_currency')
-      ->condition('zero', '', '<>')
-      ->count()->execute();
     $fields['worth'] = BaseFieldDefinition::create('worth')
       ->setLabel(t('Worth'))
       ->setDescription(t('Value of the transaction (one or more currencies)'))
@@ -298,7 +295,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
       ->setLabel(t('Changed'))
       ->setDescription(t('The time that the transaction was last saved.'))
       ->setDisplayConfigurable('view', TRUE)
-      //->setInitialValue('created')//wait till 8.4
+      ->setInitialValue('created')
       ->setRevisionable(FALSE)
       ->setTranslatable(FALSE);
 

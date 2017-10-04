@@ -2,13 +2,14 @@
 
 namespace Drupal\mcapi\Plugin\migrate\process;
 
-use Drupal\migrate\MigrateExecutableInterface;
-use Drupal\migrate\ProcessPluginBase;
-use Drupal\migrate\Row;
+
 use Drupal\mcapi\Storage\WalletStorage;
 use Drupal\mcapi\Entity\Wallet;
 use Drupal\user\Entity\User;
-use Drupal\migrate\MigrateException;
+use Drupal\migrate\MigrateSkipRowException;
+use Drupal\migrate\MigrateExecutableInterface;
+use Drupal\migrate\ProcessPluginBase;
+use Drupal\migrate\Row;
 
 /**
  * Check the payer or payee user has a wallet and swop the uid for the wallet id.
@@ -28,23 +29,33 @@ class CheckWallet extends ProcessPluginBase {
    * @todo inject
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
-
-    // Bit ugly but what to do if $value is not set?
     $user_id = $value;
     if (!isset($this->map[$user_id])) {
       $user = User::load($user_id);
       if (!$user) {
-        throw new MigrateException('Unknown user '.$value);
+        // Have to use the default wallet...so get user 1
+        // NB this would be some other user in group situation!
+        $user = User::load(1);
       }
       $wids = WalletStorage::walletsOf($user);
+
+      // Create a wallet for this user (should never be necessary)
       if (empty($wids)) {
         $wallet = Wallet::Create(['holder' => $user]);
         $wallet->save();
         $wids = [$wallet->id()];
-        drupal_set_message('new wallet created');
         trigger_error('Had to create new wallet for user: '.$value, E_USER_ERROR);
       }
       $this->map[$user_id] = reset($wids);
+    }
+
+    // Because missing wallets have been replaced by user 1's and because imports
+    // aren't validated, just check here that both wallets are different
+    if ($destination_property == 'payee') {
+      if ($row->getDestinationProperty('payer') == $this->map[$user_id]) {
+        $xid = $row->getDestinationProperty('xid');
+        throw new MigrateSkipRowException("Both wallets ". $this->map[$user_id] ." the same in transaction $xid");
+      }
     }
     return $this->map[$user_id];
   }

@@ -87,10 +87,11 @@ function mcapi_signatures_mcapi_transaction_delete($transaction) {
  * @todo delete the mail sending when rules becomes available
  */
 function mcapi_signatures_mcapi_transaction_insert($transaction) {
-  if ($transaction->state->target_id == 'pending' && !$transaction->parent->value) {
+  if ($transaction->state->target_id == 'pending' && !$transaction->parent->value && $transaction->isNew()) {
     \Drupal::service('mcapi.signatures')
       ->setTransaction($transaction)
       ->insert();
+
     // Temp until rules module works - always  send the notification
     // This should be configurable by transaction type.
     foreach (\Drupal::service('mcapi.signatures')->setTransaction($transaction)->waitingOn() as $uid) {

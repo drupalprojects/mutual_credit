@@ -114,18 +114,18 @@ class Signatures {
   }
 
   /**
-   * Sign a transaction.
+   * Sign a transaction if the users signature is required
    *
    * Change the state if no more signatures are left.
    *
    * @param int $uid
-   *   ID of the user who is signing.
+   *   ID of the user who is signing - defaults to the current user
    */
   public function sign($uid = NULL) {
     if (!$uid) {
       $uid = $this->currentUser->id();
     }
-    if (array_key_exists($uid, $this->transaction->signatures)) {
+    if (isset($this->transaction->signatures[$uid]) and empty($this->transaction->signatures[$uid])) {
       $this->transaction->signatures[$uid] = REQUEST_TIME;
       // Set the state to finished if there are no outstanding signatures.
       if (array_search(0, $this->transaction->signatures) === FALSE) {
@@ -135,29 +135,55 @@ class Signatures {
   }
 
   /**
-   * Which users are due to sign? or whether the passed user is due to sign.
+   * Fulfil all remaining signatures on the transaction (admin only).
+   */
+  public function signOff() {
+    foreach ($this->transaction->signatures as $uid => $signed) {
+      if (!$signed) {
+        $this->sign($uid);
+      }
+    }
+  }
+
+  /**
+   * Determine which users are due to sign.
    *
    * @param int $uid
    *   The user ID.
    *
-   * @return boolean | integer[]
+   * @return integer[]
    *   IDs of users.
-   *
-   * @todo rewrite this as two functions
    */
   public function waitingOn($uid = 0) {
     $uids = [];
     if ($this->transaction->state->target_id == 'pending') {
       foreach ($this->transaction->signatures as $user_id => $signed) {
         if (!$signed) {
-          if ($user_id == $uid) {
-            return TRUE;
-          }
           $uids[] = $user_id;
         }
       }
     }
     return $uids;
+  }
+
+  /**
+   * Determine whether the given user's signature is needed.
+   *
+   * @param int $uid
+   *   The user ID.
+   *
+   * @return bool
+   *   TRUE if the transaction needs the user's signature
+   */
+  public function isWaitingOn($uid) {
+    $uids = [];
+    if ($this->transaction->state->target_id == 'pending') {
+      foreach ($this->transaction->signatures as $user_id => $signed) {
+        if ($user_id == $uid and !$signed) {
+          return TRUE;
+        }
+      }
+    }
   }
 
   /**

@@ -1,7 +1,7 @@
 services:
   mcapi.transaction_relative_manager:
     class: Drupal\mcapi\Plugin\TransactionRelativeManager
-    arguments: [@container.namespaces, @cache.entity, @module_handler, @config.factory]
+    arguments: ['@container.namespaces', '@cache.entity', '@module_handler', '@config.factory']
 
   paramconverter.mcapi_transaction_serial:
     class: Drupal\mcapi\TransactionSerialConverter
@@ -11,15 +11,15 @@ services:
 
   mcapi.transaction.subscriber:
     class: Drupal\mcapi\EventSubscriber\TransactionEventSubscriber
+    arguments: []
     tags:
       - { name: event_subscriber }
 
   mcapi.route.subscriber:
     class: Drupal\mcapi\EventSubscriber\RouteSubscriber
-    arguments: [@config.factory]
     tags:
      - { name: event_subscriber }
-     
+
   #register a new logger channel
   logger.channel.mcapi:
     parent: logger.channel_base
