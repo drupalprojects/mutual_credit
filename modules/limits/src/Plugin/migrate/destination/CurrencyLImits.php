@@ -23,6 +23,7 @@ class CurrencyLimits extends DestinationBase {
    */
   public function import(Row $row, array $old_destination_id_values = array()) {
     $curr_id = $row->getSourceProperty('info')->currcode;
+    if (!$curr_id)\Drupal::logger('migration')->debug(print_r($row->getSource(), 1));
     $limits = $row->getDestinationProperty('limits');
     Currency::load($curr_id)
       ->setThirdPartySetting('mcapi_limits', 'personal', $limits['personal'])

@@ -203,7 +203,7 @@ function mcapi_command_twitter_status_save($status) {
   catch (Exception $e) {
     if ($e->getMessage() != \Drupal::config('mcapi.command')->get('syntax_error')) {
       //we don't publish syntax error messages, but we do log non-syntax error message
-      \Drupal::logger('mcapi')->error(
+      \Drupal::service('logger.channel.mcapi')->error(
         'Failed to execute twitter command: @message',
         ['@message' => "$status->text :". $e->getMessage()]
       );

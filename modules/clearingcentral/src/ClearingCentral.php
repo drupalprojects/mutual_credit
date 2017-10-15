@@ -50,7 +50,7 @@ class ClearingCentral implements IntertradingInterface {
     $this->allSettings = $key_value->get('clearingcentral');
     $this->nameLookup  = $key_value->get('exchangeNames');
     $this->walletEntityQuery = $entity_query;
-    $this->logger = $logger_factory->get('Clearing Central');
+    $this->logger = $logger_factory;
     $this->country = $config_factory->get('system.date')->get('country.default');
     $this->accountSwitcher = $account_switcher;
   }
@@ -70,10 +70,10 @@ class ClearingCentral implements IntertradingInterface {
    */
   public function send(TransactionInterface $transaction, $remote_exchange_id, $remote_user_id) {
     $remote_transaction = $this->prepareSend($transaction, $remote_exchange_id, $remote_user_id);
-    $this->logger('Clearing Central')->debug('<pre>'. print_r($remote_transaction, 1) .'</pre>');
+    $this->logger->debug('<pre>'. print_r($remote_transaction, 1) .'</pre>');
     try {
       $url = self::CLEARING_CENTRAL_URL.'/txinput.php?'.http_build_query($remote_transaction);
-      $this->logger('Clearing Central')->debug($url);
+      $this->logger->debug($url);
       $result = $this->httpClient->post($url);
     }
     catch (RequestException $e) {
@@ -91,7 +91,7 @@ class ClearingCentral implements IntertradingInterface {
     }
     else {
       $message = t('Clearing central failed to respond.');
-      $this->logger('clearingcentral')->error($message);
+      $this->logger->error($message);
       drupal_set_message($message, 'error');
       $form_state->setRebuild(TRUE);
     }

@@ -1,6 +1,6 @@
 services:
-  mcapi_forms.route.subscriber:
-    class: Drupal\mcapi_forms\Routing\RouteSubscriber
+  mcapi_forms.subscriber:
+    class: Drupal\mcapi_forms\EventSubscriber\Subscriber
     arguments: ['@entity_type.manager', '@config.factory']
     tags:
      - { name: event_subscriber }

@@ -56,12 +56,10 @@ class CurrencyAccessControlHandler extends EntityAccessControlHandler implements
             $result = AccessResult::allowed()->cachePerUser();
           }
           else {
-            $result = AccessResult::forbidden()->cachePerUser();
+            $result = AccessResult::forbidden("Cannot update somebody else's wallet")->cachePerUser();
           }
         }
         else {
-          // Who can create new currencies?
-          debug('Need to sort out Currency create access script');
           $result = AccessResult::forbidden()->cachePerUser();
         }
         break;

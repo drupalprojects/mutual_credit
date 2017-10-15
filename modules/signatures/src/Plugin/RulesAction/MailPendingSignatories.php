@@ -66,7 +66,7 @@ class MailPendingSignatories extends RulesActionBase implements ContainerFactory
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('logger.factory')->get('mcapi'),
+      $container->get('logger.channel.mcapi'),
       $container->get('plugin.manager.mail')
     );
   }

@@ -52,9 +52,16 @@ class Signatures extends DestinationBase implements ContainerFactoryPluginInterf
    * {@inheritdoc}
    */
   public function import(Row $row, array $old_destination_id_values = array()) {
-    $this->database->insert('mcapi_signatures')
-      ->fields($row->getDestination())
-      ->execute();
+    try {
+      // For some reason the upgrade routing is running everything twice, so
+      // this insert is causing errors
+      $this->database->insert('mcapi_signatures')
+        ->fields($row->getDestination())
+        ->execute();
+    }
+    catch (\Exception $e) {
+      // Do nothing
+    }
     return [$row->getDestinationProperty('serial'), $row->getDestinationProperty('uid')];
   }
 

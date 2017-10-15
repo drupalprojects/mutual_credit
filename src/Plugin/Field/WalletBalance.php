@@ -11,8 +11,6 @@ use Drupal\Core\Field\FieldItemList;
  */
 class WalletBalance extends FieldItemList {
 
-
-
   /**
    * {@inheritdoc}
    */

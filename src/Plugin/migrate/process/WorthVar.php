@@ -36,6 +36,9 @@ class WorthVar extends ProcessPluginBase {
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
     if (is_array($value) and !empty($value['currcode'])) {//Might be null
       $currency = Currency::load($value['currcode']);
+      if (!$currency) {
+        throw new \Drupal\migrate\MigrateSkipRowException('Unknown currency '.$value['currcode']);
+      }
       $newValue['curr_id'] = $value['currcode'];
       // There were some awkward stored values on d7
       if (isset($value['quantity'])) {

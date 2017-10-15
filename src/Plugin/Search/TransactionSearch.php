@@ -115,7 +115,7 @@ class TransactionSearch extends ConfigurableSearchPluginBase implements Accessib
   public function access($operation, AccountInterface $account = NULL, $return_as_object = FALSE) {
     $result = $account->isAuthenticated() ?
       AccessResult::allowed() :
-      AccessResult::forbidden();
+      AccessResult::forbidden('Only authenticated users can view transactions.');
     return $return_as_object ? $result : $result->isAllowed();
 
   }

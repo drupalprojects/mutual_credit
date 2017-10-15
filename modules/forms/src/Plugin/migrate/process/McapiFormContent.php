@@ -31,20 +31,18 @@ class McapiFormContent extends ProcessPluginBase {
 
     // Alter the fields according to context
     if ($show) {
-      if ($source['perspective'] == 1) {
-        // The wallets give were set up for incoming
-        if ($source['direction']->preset == 'outgoing') {
-          $fields['payer'] = [
-            'type' => 'my_wallet',
-            'settings' => ['hide_one_wallet' => 0]
-          ];
-        }
-        else {
-          $fields['payee'] = [
-            'type' => 'my_wallet',
-            'settings' => ['hide_one_wallet' => 0]
-          ];
-        }
+      // The wallets were set up for incoming
+      if ($source['direction']->preset == 'outgoing') {
+        $fields['payer'] = [
+          'type' => 'my_wallet',
+          'settings' => ['hide_one_wallet' => 0]
+        ];
+      }
+      else {
+        $fields['payee'] = [
+          'type' => 'my_wallet',
+          'settings' => ['hide_one_wallet' => 0]
+        ];
       }
     }
     return $fields;

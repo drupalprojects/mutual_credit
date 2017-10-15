@@ -215,7 +215,7 @@ function mcapi_limits_submit(&$form, FormStateInterface $form_state) {
   $currency->save();
 
   // @todo would be nice to compare the old balance limits with the new and log only if there are changes
-  \Drupal::logger('mcapi')->notice(
+  \Drupal::service('logger.channel.mcapi')->notice(
     'User @uid saved currency @name',
     ['@uid' => \Drupal::currentUser()->id(), '@name' => $currency->label()]
   );

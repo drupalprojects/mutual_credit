@@ -11,7 +11,6 @@ services:
 
   mcapi.transaction.subscriber:
     class: Drupal\mcapi\EventSubscriber\TransactionEventSubscriber
-    arguments: []
     tags:
       - { name: event_subscriber }
 
@@ -20,10 +19,14 @@ services:
     tags:
      - { name: event_subscriber }
 
-  #register a new logger channel
+  mcapi.migration.subscriber:
+    class: Drupal\mcapi\EventSubscriber\MigrationSubscriber
+    tags:
+     - { name: event_subscriber }
+
   logger.channel.mcapi:
     parent: logger.channel_base
-    arguments: ['mcapi']
+    arguments: ['Community Accounting']
 
   #replaces Drupal\Core\Entity\Query\Sql\QueryFactory for transactions.
   mcapi_transaction.query.sql:

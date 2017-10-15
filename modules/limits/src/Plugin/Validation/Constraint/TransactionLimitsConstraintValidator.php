@@ -50,7 +50,7 @@ class TransactionLimitsConstraintValidator extends ConstraintValidator implement
       $container->get('current_user'),
       $container->get('plugin.manager.mcapi_limits'),
       $container->get('mcapi_limits.wallet_limiter'),
-      $container->get('logger.factory')->get('mcapi'),
+      $container->get('logger.channel.mcapi'),
       $container->get('plugin.manager.mail'),
       $container->get('event_dispatcher')
     );

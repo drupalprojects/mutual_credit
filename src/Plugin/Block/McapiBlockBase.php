@@ -2,7 +2,6 @@
 
 namespace Drupal\mcapi\Plugin\Block;
 
-use Drupal\mcapi\Exchange;
 use Drupal\mcapi\Mcapi;
 use Drupal\mcapi\Currency;
 use Drupal\Core\Access\AccessResult;
@@ -25,8 +24,8 @@ class McapiBlockBase extends BlockBase implements ContainerFactoryPluginInterfac
   protected $entityTypeManager;
   protected $currentUser;
   protected $routeMatch;
+  protected $holderEntity;
 
-  protected $account;
   protected $currencies;
 
   /**
@@ -39,11 +38,20 @@ class McapiBlockBase extends BlockBase implements ContainerFactoryPluginInterfac
    * @param AccountInterface $currentUser
    * @param CurrentRouteMatch $current_route_match
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entityTypeManager, AccountInterface $currentUser, CurrentRouteMatch $current_route_match) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entityTypeManager, AccountInterface $currentUser, CurrentRouteMatch $current_route_match, $request) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->entityTypeManager = $entityTypeManager;
     $this->currentUser = $currentUser;
     $this->routeMatch = $current_route_match;
+
+    if ($this->configuration['user_source'] == SELF::USER_MODE_PROFILE) {
+      if ($request->attributes->has('_entity')) {
+        $this->holderEntity = $request->attributes->get('_entity');
+      }
+    }
+    else {
+      $this->holderEntity = \Drupal::currentUser();
+    }
   }
 
   /**
@@ -56,7 +64,8 @@ class McapiBlockBase extends BlockBase implements ContainerFactoryPluginInterfac
       $plugin_definition,
       $container->get('entity_type.manager'),
       $container->get('current_user'),
-      $container->get('current_route_match')
+      $container->get('current_route_match'),
+      $container->get('request_stack')->getCurrentRequest()
     );
   }
 
@@ -76,14 +85,9 @@ class McapiBlockBase extends BlockBase implements ContainerFactoryPluginInterfac
    * In profile mode, hide the block if we are not on a profile page.
    */
   public function blockAccess(AccountInterface $account) {
-    // don't we need to call the parent?  See blockbase::access after alpha14.
-    debug($this->getPluginDefinition(), 'check that block access is working');
-    if ($this->configuration['user_source'] == static::USER_MODE_PROFILE) {
-      if (!$this->routeMatch->getParameters()->has('user')) {
-        return AccessResult::forbidden();
-      }
-    }
-    return AccessResult::allowed();
+    return $this->holderEntity instanceof \Drupal\Core\Session\AccountProxyInterface ?
+      AccessResult::forbidden('Settings for this block require a user context.') :
+      AccessResult::allowed();
   }
 
   /**
@@ -129,18 +133,9 @@ class McapiBlockBase extends BlockBase implements ContainerFactoryPluginInterfac
    * {@inheritdoc}
    */
   public function build() {
-
-    if ($this->configuration['user_source'] == static::USER_MODE_PROFILE) {
-      // We already know the parameter bag has 'user' from blockAccess
-      $this->account = $this->routeMatch->getParameter('user');
-    }
-    else {// Current user
-      $this->account = $this->currentUser;
-    }
-
     // Might want to move this to mcapi_exchanges.
     if (empty($this->configuration['curr_ids'])) {
-      $user = User::load($this->account->id());
+      $user = User::load($this->holderEntity->id());
       $this->currencies = mcapi_currencies_available($user);
     }
     else {

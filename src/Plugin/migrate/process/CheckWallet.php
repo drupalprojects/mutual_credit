@@ -44,8 +44,13 @@ class CheckWallet extends ProcessPluginBase {
         $wallet = Wallet::Create(['holder' => $user]);
         $wallet->save();
         $wids = [$wallet->id()];
-        trigger_error('Had to create new wallet for user: '.$value, E_USER_ERROR);
       }
+      //Temp...
+      if (!$this->map[$user_id]) {
+        // This should never happen
+        throw new MigrateSkipRowException("Unable to find wallet for user ".$user->id());
+      }
+
       $this->map[$user_id] = reset($wids);
     }
 

@@ -38,7 +38,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
         return AccessResult::allowed()->addCacheableDependency($account);
       }
     }
-    return AccessResult::forbidden()->addCacheableDependency($account);
+    return AccessResult::forbidden("This user cannot create a $holder_type wallet")->addCacheableDependency($account);
   }
 
   /**
@@ -65,8 +65,7 @@ class WalletAccessControlHandler extends EntityAccessControlHandler {
       }
       return AccessResult::allowed()->cachePerUser();
     }
-    elseif ($op == 'transactions') {
-drupal_set_message('just checking wallet.transactions access op is being used');
+    elseif ($op == 'transactions') {// This isn't used
       if ($account->hasPermission('view all transactions')) {
         return AccessResult::allowed()->cachePerPermissions();
       }

@@ -21,7 +21,7 @@ class Endpoint extends SystemController {
   private $logger;
 
   public function __construct($logger) {
-    $this->logger = $logger->get('Clearing Central');
+    $this->logger = $logger;
   }
 
   /**
@@ -29,7 +29,7 @@ class Endpoint extends SystemController {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('logger.factory')
+      $container->get('logger.channel.clearing_central')
     );
   }
 

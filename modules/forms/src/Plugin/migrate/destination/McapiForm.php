@@ -42,10 +42,8 @@ class McapiForm extends DestinationBase {
       );
       $form_mode->save();
     }
-    if ($display = EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.'.$mode)) {
-
-    }
-    else {
+    $display = EntityFormDisplay::load('mcapi_transaction.mcapi_transaction.'.$mode);
+    if (!$display) {
       $display = EntityFormDisplay::create(
         [
           'mode' => $mode,

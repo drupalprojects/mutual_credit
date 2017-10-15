@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\mcapi_forms\Routing;
+namespace Drupal\mcapi_forms\EventSubscriber;
 
 use Drupal\Core\Routing\RouteSubscriberBase;
 use Drupal\Core\Routing\RoutingEvents;
@@ -10,7 +10,16 @@ use Symfony\Component\Routing\Route;
 /**
  * Subscriber to create a router item for each transaction form display.
  */
-class RouteSubscriber extends RouteSubscriberBase {
+class Subscriber extends RouteSubscriberBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getSubscribedEvents() {
+    return [
+      RoutingEvents::ALTER => [['onAlterRoutes', 0]]
+    ];
+  }
 
   /**
    * {@inheritdoc}
@@ -38,15 +47,5 @@ class RouteSubscriber extends RouteSubscriberBase {
     }
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public static function getSubscribedEvents() {
-    return [
-      RoutingEvents::ALTER => [
-        ['onAlterRoutes', 0],
-      ],
-    ];
-  }
 
 }

@@ -39,6 +39,7 @@ class Ctools extends DrupalSqlBase {
    * {@inheritdoc}
    */
   public function prepareRow(Row $row) {
+    parent::prepareRow($row);
     static $i = 0;
     $column = $this->configuration['column'];
     $id = $row->getSourceProperty($column);

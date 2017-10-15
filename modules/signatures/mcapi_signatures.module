@@ -116,7 +116,7 @@ function mcapi_signatures_mcapi_transaction_insert($transaction) {
         ]
       );
       if ($message['result']) {
-        \Drupal::logger('Community accounting')->notice(
+        \Drupal::service('logger.channel.mcapi')->notice(
           'Mailed %name to sign transaction @num',
           ['%name' => $account->getUsername(), '@num' => $transaction->serial->value]
         );

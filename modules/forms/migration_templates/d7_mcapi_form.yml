@@ -21,9 +21,15 @@ process:
     source: experience
     property: title
   path:
-    plugin: d7_mcapi_object_prop
-    source: architecture
-    property: path
+      -
+        plugin: d7_mcapi_object_prop
+        source: architecture
+        property: path
+      -
+        plugin: concat
+        source:
+          - '/'
+          - path
   permission:
     plugin: d7_mcapi_form_perm
     source: architecture
@@ -63,4 +69,5 @@ destination:
 migration_dependencies:
   required:
     - d7_field_instance
+    - d7_mcapi_currency
     - d7_user_role

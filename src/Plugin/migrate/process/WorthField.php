@@ -2,7 +2,6 @@
 
 namespace Drupal\mcapi\Plugin\migrate\process;
 
-use Drupal\mcapi\Entity\Currency;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\ProcessPluginBase;
 use Drupal\migrate\Row;

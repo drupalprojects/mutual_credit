@@ -22,9 +22,9 @@ class EntityWalletsAccess extends EntityAccessCheck {
     if ($account->hasPermission('manage mcapi') || $account->hasPermission('view all wallets')) {
       return $result;
     }
-    list($entity_type_id, $entity_id) = each($route_match->getParameters()->all());
-
+    
     // Can view the wallets if the currency user is the holder.
+    list($entity_type_id, $entity_id) = each($route_match->getParameters()->all());
     if ($entity_type_id == 'user' && $entity_id == $account->id()) {
       return $result;
     }

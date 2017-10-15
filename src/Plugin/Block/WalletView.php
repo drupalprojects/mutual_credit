@@ -66,16 +66,7 @@ class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
    * @todo check this isn't causing a problem with caching between different pages and users
    */
   public function blockAccess(AccountInterface $account) {
-    return isset($this->holderEntity) ? AccessResult::allowed() : AccessResult::forbidden();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function defaultConfiguration() {
-    return [
-      'user_source' => 0,
-    ];
+    return $this->holderEntity ? AccessResult::allowed() : AccessResult::forbidden('No wallet holder in page context');
   }
 
   /**
@@ -83,15 +74,7 @@ class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
    */
   public function blockForm($form, FormStateInterface $form_state) {
     $form = parent::blockForm($form, $form_state);
-    $form['user_source'] = [
-      '#title' => $this->t('User'),
-      '#type' => 'radios',
-      '#options' => [
-        SELF::MCAPIBLOCK_MODE_CONTEXT => $this->t('Show as part of profile being viewed'),
-        SELF::MCAPIBLOCK_MODE_CURRENTUSER => $this->t('Show for logged in user'),
-      ],
-      '#default_value' => $this->configuration['user_source'],
-    ];
+    unset($form['currencies']);
     return $form;
   }
 
@@ -101,6 +84,7 @@ class WalletView extends BlockBase implements ContainerFactoryPluginInterface {
   public function blockSubmit($form, FormStateInterface $form_state) {
     parent::blockSubmit($form, $form_state);
     $values = $form_state->getValues();
+    unset($values['curr_ids']);
     foreach ($values as $key => $val) {
       $this->configuration[$key] = $val;
     }

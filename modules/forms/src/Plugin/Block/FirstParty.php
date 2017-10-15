@@ -39,11 +39,11 @@ class FirstParty extends BlockBase {
       $route_name = \Drupal::service('current_route_match')->getRouteName();
       // Block is available if the main page is not already a transaction form.
       if (substr($route_name, 0, 14) == 'mcapi.1stparty') {
-        $access = AccessResult::forbidden();
+        $access = AccessResult::forbidden('Transaction form block does not show on the form page');
       }
       // Or an operation form)
       elseif ($route_name == 'mcapi.transaction.operation') {
-        $access = AccessResult::forbidden();
+        $access = AccessResult::forbidden('Transaction forms do not show on transaction operation pages.');
       }
     }
     return $return_as_object ? $access : $access->isAllowed();
