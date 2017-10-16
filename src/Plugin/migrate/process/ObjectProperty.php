@@ -23,7 +23,12 @@ class ObjectProperty extends ProcessPluginBase {
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
     $prop_name = $this->configuration['property'];
-    return $value->{$prop_name};
+    $result = $value->{$prop_name};
+    if ($prop_name == 'path') {
+      // I couldn't get concat to work
+      $result = '/'.$result;
+    }
+    return $result;
   }
 
 }

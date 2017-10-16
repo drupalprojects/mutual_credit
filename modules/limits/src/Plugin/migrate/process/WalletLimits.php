@@ -32,7 +32,7 @@ class WalletLimits extends ProcessPluginBase {
     $value = $row->getSourceProperty('data');
     $uid = $row->getSourceProperty('uid');
     if (empty($value['limits_personal'])) {
-      throw new MigrateSkipRowException("Wallet belonging to user $uid had no personal limits.");
+      throw new MigrateSkipRowException();
     }
     foreach (WalletStorage::myWallets($uid) as $wid) {
       // Apply the same limits to every wallet held by the user

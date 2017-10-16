@@ -10,7 +10,7 @@ use Symfony\Component\Routing\Route;
 /**
  * Subscriber to create a router item for each transaction form display.
  */
-class Subscriber extends RouteSubscriberBase {
+class RouteSubscriber extends RouteSubscriberBase {
 
   /**
    * {@inheritdoc}

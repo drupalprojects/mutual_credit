@@ -21,15 +21,9 @@ process:
     source: experience
     property: title
   path:
-      -
-        plugin: d7_mcapi_object_prop
-        source: architecture
-        property: path
-      -
-        plugin: concat
-        source:
-          - '/'
-          - path
+    plugin: d7_mcapi_object_prop
+    source: architecture
+    property: path
   permission:
     plugin: d7_mcapi_form_perm
     source: architecture

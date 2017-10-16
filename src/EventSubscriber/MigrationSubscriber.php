@@ -2,7 +2,7 @@
 
 namespace Drupal\mcapi\EventSubscriber;
 
-use Drupal\Core\Routing\RouteSubscriberBase;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Drupal\mcapi\Mcapi;
 
 /**
@@ -10,9 +10,7 @@ use Drupal\mcapi\Mcapi;
  * because views provides a superior listing to the entity's official
  * list_builder, this alters that view's route to comply with the entity.
  */
-class MigrationSubscriber extends RouteSubscriberBase {
-
-
+class MigrationSubscriber implements EventSubscriberInterface {
 
   /**
    * {@inheritdoc}
