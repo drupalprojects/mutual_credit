@@ -39,13 +39,10 @@ class Ctools extends DrupalSqlBase {
    * {@inheritdoc}
    */
   public function prepareRow(Row $row) {
-    parent::prepareRow($row);
     static $i = 0;
-    $column = $this->configuration['column'];
-    $id = $row->getSourceProperty($column);
     $result = $this->select($this->configuration['table'], 'c')
       ->fields('c', ['data'])
-      ->condition($this->configuration['column'], $id)
+      ->condition($this->configuration['column'], $row->getSourceProperty($this->configuration['column']))
       ->execute()
       ->fetchField();
 
@@ -56,6 +53,7 @@ class Ctools extends DrupalSqlBase {
       }
       $row->setSourceProperty($key, $val);
     }
+    return parent::prepareRow($row);
   }
 
   /**

@@ -48,7 +48,6 @@ class MigrationSubscriber implements EventSubscriberInterface {
         if ($row->getSourceProperty('plugin') == 'd7_field_instance') {
           $row->setDestinationProperty('bundle', 'mcapi_transaction');
         }
-        echo "\nchanging transaction entitytype for field : ".$row->getSourceProperty('field_name');
       }
     }
 

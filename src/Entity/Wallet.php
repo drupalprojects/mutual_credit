@@ -268,7 +268,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   public function history($from = 0, $to = 0) {
     $query = $this->entityTypeManager()
       ->getStorage('mcapi_transaction')->getQuery()
-      ->condition('involving', $this->id());
+      ->involving($this);
     if ($from) {
       $query->condition('created', $from, '>');
     }
@@ -334,7 +334,7 @@ class Wallet extends ContentEntityBase implements WalletInterface {
   public function isVirgin() {
     $transactions = $this->entityTypeManager()
       ->getStorage('mcapi_transaction')->getQuery()
-      ->condition('involving', $this->id())
+      ->involving($this)
       ->count()
       ->execute();
     return empty($transactions);

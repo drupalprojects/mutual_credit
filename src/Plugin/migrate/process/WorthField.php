@@ -2,6 +2,7 @@
 
 namespace Drupal\mcapi\Plugin\migrate\process;
 
+use Drupal\mcapi\Entity\Currency;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\ProcessPluginBase;
 use Drupal\migrate\Row;
@@ -21,7 +22,8 @@ class WorthField extends ProcessPluginBase {
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
     // At this point value is a decimal
     $decimal = $value['quantity'];
-    if ($format[3] = '59/4') {
+    $format = Currency::load($value['currcode'])->format;
+    if ($format[3] == '59/4') {
       $quantity = 60*$decimal;
     }
     elseif($format[3] == 99) {

@@ -142,10 +142,11 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
         ],
       ],
     ];
+    $mail = $this->configuration['warning_mail'];
     $subform['warning_mail']['subject'] = [
       '#title' => t('Subject'),
       '#type' => 'textfield',
-      '#default_value' => $this->configuration['warning_mail']['subject'],
+      '#default_value' => $mail ? $mail['subject'] : '',
       '#maxlength' => 180,
     ];
     $subform['warning_mail']['body'] = [
@@ -153,7 +154,7 @@ abstract class McapiLimitsBase implements McapiLimitsInterface {
       '#description' => $this->t('The following tokens are available: @tokens', ['@tokens' => $this->getMailTokens()]),
       '#field_prefix' => $this->t("Hi [user:name]"),
       '#type' => 'textarea',
-      '#default_value' => @$this->configuration['warning_mail']['body'],
+      '#default_value' => $mail ? $mail['body'] : '',
       '#rows' => 8,
     ];
     $subform['prevented_mail'] = [

@@ -37,21 +37,16 @@ class CheckWallet extends ProcessPluginBase {
         // NB this would be some other user in group situation!
         $user = User::load(1);
       }
-      $wids = WalletStorage::walletsOf($user);
-
-      // Create a wallet for this user (should never be necessary)
-      if (empty($wids)) {
+      if ($wids = WalletStorage::walletsOf($user)) {
+        $wid = reset($wids);
+      }
+      else {
+        // Create a wallet for this user (should never be necessary)
         $wallet = Wallet::Create(['holder' => $user]);
         $wallet->save();
-        $wids = [$wallet->id()];
+        $wid = $wallet->id();
       }
-      //Temp...
-      if (!$this->map[$user_id]) {
-        // This should never happen
-        throw new MigrateSkipRowException("Unable to find wallet for user ".$user->id());
-      }
-
-      $this->map[$user_id] = reset($wids);
+      $this->map[$user_id] = $wid;
     }
 
     // Because missing wallets have been replaced by user 1's and because imports

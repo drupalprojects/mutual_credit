@@ -3,7 +3,6 @@
 namespace Drupal\mcapi\Plugin\migrate\source\d7;
 
 use Drupal\migrate\Row;
-use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate_drupal\Plugin\migrate\source\d7\FieldableEntity;
 
 
@@ -73,7 +72,6 @@ class Transaction extends FieldableEntity {
       'payee' => $this->t('Payee user'),
       'type' => $this->t('Type'),
       'state' => $this->t('State'),
-//      'description' => $this->t('Description'),
       'creator' => $this->t('Created by user id'),
       'created' => $this->t('Created timestamp'),
     ];

@@ -12,7 +12,7 @@ use Drupal\Core\Entity\ContentEntityInterface;
  */
 class TransactionQuery extends BaseQuery {
 
-  private $involving;
+  private $participant;
   private $payer;
   private $payee;
 
@@ -32,7 +32,7 @@ class TransactionQuery extends BaseQuery {
     }
     else {
       // deal with this during the compile phase when we can add joins
-      $this->involving = $entity;
+      $this->participant = $entity;
     }
     return $this;
   }
@@ -73,12 +73,12 @@ class TransactionQuery extends BaseQuery {
 
   protected function compile() {
     parent::compile();
-    if ($this->involving) {// This is the wallet holder.
+    if ($this->participant) {// This is the wallet holder.
       $this->sqlQuery->join('mcapi_wallet', 'payerw', 'base_table.payer = payerw.wid');
       $this->sqlQuery->join('mcapi_wallet', 'payeew', 'base_table.payee = payeew.wid');
-      $entity_id = $this->involving->id();
+      $entity_id = $this->participant->id();
       $this->sqlQuery->condition('payerw.holder_entity_type', 'user');
-      $this->sqlQuery->condition('payeew.holder_entity_type', $this->involving->getEntityTypeId());
+      $this->sqlQuery->condition('payeew.holder_entity_type', $this->participant->getEntityTypeId());
       $this->sqlQuery->condition(
         $this->sqlQuery->orConditionGroup()
           ->condition('payeew.holder_entity_id', $entity_id)

@@ -151,7 +151,7 @@ function mcapi_entity_update($entity) {
 function mcapi_entity_predelete($entity) {
   if ($entity instanceof ContentEntityInterface and !($entity instanceOf WalletInterface)) {
     foreach ($wallets = Drupal\mcapi\Storage\WalletStorage::walletsOf($entity, TRUE) as $wallet) {
-      $transactions = \Drupal::entityQuery('mcapi_transaction')->condition('involving', $wallet->id())->execute();
+      $transactions = \Drupal::entityQuery('mcapi_transaction')->involving($wallet)->execute();
       if ($transactions)  {
         drupal_set_message('orphaning wallets of '.$wallet->holder_entity_type->value.' '.$wallet->holder_entity_id->value);
         $wallet->holder_entity_id->value = 0;
