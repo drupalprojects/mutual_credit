@@ -1,10 +1,10 @@
 <?php
 
 use Drupal\mcapi\Entity\WalletInterface;
+use Drupal\migrate\MigrateSkipRowException;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
-
 
 /**
  * Implements hook_entity_type_build().
@@ -267,5 +267,11 @@ function mcapi_forms_migrate_d7_filter_format_prepare_row($row, $source, $migrat
  * Implements hook_migrate_MIGRATE_ID_prepare_row().
  */
 function mcapi_forms_migrate_d7_mcapi_form_prepare_row($row, $source, $migration) {
-  return $row->getSourceProperty('perspective') != 3;
+  $template = $row->getSourceProperty('experience')->template;
+  if ($row->getSourceProperty('perspective') == 3) {
+    throw new MigrateSkipRowException('Not migrating 3rdparty transaction forms.');
+  }
+  elseif (strpos($template, '[mcapiform:direction]')) {
+    throw new MigrateSkipRowException('Not migrating 1stparty transaction forms showing the direction widget');
+  }
 }

@@ -10,6 +10,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Url;
 use Drupal\Component\Serialization\Json;
+use Drupal\Core\Routing\RouteMatchInterface;
 
 /**
  * Form builder for transaction formed designed via the UI.
@@ -48,7 +49,7 @@ class FirstPartyTransactionForm extends TransactionForm {
     $props = [
       'type' => $this->settings['transaction_type'],
     ];
-    $this->entity = Transaction::create($props + $this->request->query->all());
+    $this->entity = Transaction::create($props);
   }
 
   /**
@@ -112,6 +113,19 @@ class FirstPartyTransactionForm extends TransactionForm {
    */
   public function title() {
     return $this->settings['title'];
+  }
+
+  /**
+   * {@inheritdoc}
+   *
+   * @todo test this
+   */
+  public function getEntityFromRouteMatch(RouteMatchInterface $route_match, $entity_type_id) {
+    $props = [
+      'type' => $this->settings['transaction_type'],
+    ]+ $this->request->query->all();
+    return Transaction::create($props);
+
   }
 
 }

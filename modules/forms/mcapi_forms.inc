@@ -344,3 +344,42 @@ function mcapi_forms_required_fields() {
   }
   return [$required, $optional];
 }
+
+/**
+ * Get only the translated field names used in the template.
+ *
+ * @param string $template
+ * @param string $direction
+ *
+ * @return array
+ *   The field names used in the templated, mapped to the modern names.
+ */
+function mcapi_forms_migrate_template_field_map($template, $direction) {
+  //Get the tokens used in the old template
+  preg_match_all('/\[mcapiform:([a-z_]+)\]/', $template, $matches);
+  $old_tokens = $matches[1];
+  unset($old_tokens[array_search('direction', $old_tokens)]);
+  return mcapi_forms_migrate_field_map($old_tokens, $direction);
+}
+
+/**
+ * Get the map of all old field names to new
+ * @param array $defaults
+ * @param string $direction
+ *
+ * @return array
+ *   The old and new fieldnames
+ */
+function mcapi_forms_migrate_field_map($defaults, $direction) {
+  $mapping = [
+   "offers_wants_categories" => "category",
+   "transaction_description" => "description"
+  ] + array_combine($defaults, $defaults);
+  if ($direction == 'outgoing') {
+    $mapping['secondperson'] = 'payee';
+  }
+  else {
+    $mapping['secondperson'] = 'payer';
+  }
+  return $mapping;
+}

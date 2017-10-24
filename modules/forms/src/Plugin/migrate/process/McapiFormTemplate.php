@@ -28,7 +28,17 @@ class McapiFormTemplate extends ProcessPluginBase {
    * @todo remove the submit button?
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
-    return str_replace(['[mcapiform:', ']'], ['{{ ', ' }}'], $value->template);
+    $template = str_replace('[mcapiform:direction]', '', $value->template);
+    module_load_include('inc', 'mcapi_forms');
+    // Replace the tokens
+    $map = mcapi_forms_migrate_template_field_map($template, $row->getSourceProperty('direction')->preset);
+    $form = $to = [];
+    foreach ($map as $old => $new) {
+      $from[] = '[mcapiform:'.$old.']';
+      $to[] = "{{ $new }}";
+    }
+    $template = str_replace($from, $to, $template);
+    return $template;
   }
 
 }
