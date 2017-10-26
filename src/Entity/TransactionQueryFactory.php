@@ -10,7 +10,11 @@ use Drupal\Core\Entity\Query\Sql\QueryFactory as QueryFactoryBase;
  */
 class TransactionQueryFactory extends QueryFactoryBase {
 
+  /**
+   * {@inheritdoc}
+   */
   public function get(EntityTypeInterface $entity_type, $conjunction) {
     return new TransactionQuery($entity_type, $conjunction, $this->connection, $this->namespaces);
   }
+
 }

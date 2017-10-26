@@ -219,8 +219,8 @@ class CurrencyForm extends EntityForm {
     // A better regular expression would make this function much shorter
     // ($not_nums) | ([nums] | [not nums])+ | (/num)? | (not nums) ?
     $patterns = [
-      '/([^9]*)(9+)([:,.])([^ ]*)(.*)$/',
       '/([^9]*)(9+)(.*)$/',
+      '/([^9]*)(9+)([:,.])([^ ]*)(.*)$/',
     ];
     foreach ($patterns as $pattern) {
       $parts = [];
@@ -228,11 +228,12 @@ class CurrencyForm extends EntityForm {
         break;
       }
     }
+
     if ($parts) {
       array_shift($parts);
       $format = [];
       foreach($parts as $array) {
-        $format[] = $array[0];
+        $format[] = $array[0] ? : 9;
       }
       // Ensure the first value of the result array corresponds to a template
       // string, not a numeric string if the format string started with a number.

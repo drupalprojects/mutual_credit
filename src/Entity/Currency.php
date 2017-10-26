@@ -244,6 +244,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
    * {@inheritdoc}
    */
   public function formattedParts($raw_num) {
+    $formatted = [];
     if (count($this->format) < 4 ) {
       $formatted[1] = $raw_num;
     }
