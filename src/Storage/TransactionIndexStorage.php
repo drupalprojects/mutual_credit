@@ -174,7 +174,7 @@ abstract class TransactionIndexStorage extends SqlContentEntityStorage implement
     foreach ($result->fetchAll() as $bal) {
       $rows[$bal->curr_id][] = $bal->wallet_id;
     }
-    foreach ($rows as $curr_id => $row) {
+    foreach ($rows as $curr_id => $wids) {
       $this->updateTransactionTotals($curr_id, $wids);
     }
   }

@@ -174,4 +174,3 @@ action.configuration.mcapi_transaction.*:
       'label': Weight
     #this is transaction_relatives by default
     access: { }
-

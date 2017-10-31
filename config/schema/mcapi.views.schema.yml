@@ -1,0 +1,9 @@
+# Schema for the views plugins of the Community Accounting module.
+
+views.filter.mcapi_state:
+  type: views.filter.many_to_one
+  label: 'Transaction states'
+
+views.filter.mcapi_type:
+  type: views.filter.many_to_one
+  label: 'Transaction types'

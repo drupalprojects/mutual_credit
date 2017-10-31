@@ -23,13 +23,13 @@ class TransactionViewsData extends EntityViewsData {
     // Any problems with transactions see https://www.drupal.org/node/2477847
     $data['mcapi_transaction']['state']['field']['id'] = 'mcapi_state';
     $data['mcapi_transaction']['state']['filter'] = [
-      'id' => 'in_operator',
+      'id' => 'mcapi_state',
       'options callback' => '\Drupal\mcapi\Mcapi::entityLabelList',
       'options arguments' => ['mcapi_state'],
     ];
     $data['mcapi_transaction']['type']['field']['id'] = 'mcapi_type';
     $data['mcapi_transaction']['type']['filter'] = [
-      'id' => 'in_operator',
+      'id' => 'mcapi_type',
       'options callback' => '\Drupal\mcapi\Mcapi::entityLabelList',
       'options arguments' => ['mcapi_type'],
     ];
