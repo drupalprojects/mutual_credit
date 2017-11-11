@@ -267,13 +267,14 @@ class Wallet extends ContentEntityBase implements WalletInterface {
    */
   public function history($from = 0, $to = 0) {
     $query = $this->entityTypeManager()
-      ->getStorage('mcapi_transaction')->getQuery()
+      ->getStorage('mcapi_transaction')
+      ->getQuery()
       ->involving($this);
     if ($from) {
       $query->condition('created', $from, '>');
     }
     if ($to) {
-      $query->condition('created', $from, '>');
+      $query->condition('created', $to, '<');
     }
     return $query->execute();
   }

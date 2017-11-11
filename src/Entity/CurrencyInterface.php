@@ -10,7 +10,7 @@ use Drupal\Core\Config\Entity\ConfigEntityInterface;
 interface CurrencyInterface extends ConfigEntityInterface {
 
   const TYPE_ACKNOWLEDGEMENT = 2;
-  const TYPE_COMMODITY = 1;
+  const TYPE_ASSET = 1;
   const TYPE_PROMISE = 0;
 
   // The raw integer value held in the database e.g.5400.

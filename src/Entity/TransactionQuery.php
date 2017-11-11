@@ -4,6 +4,7 @@ namespace Drupal\mcapi\Entity;
 
 use Drupal\Core\Entity\Query\Sql\Query as BaseQuery;
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\mcapi\Entity\WalletInterface;
 
 /**
  * The SQL storage entity query class.
@@ -12,8 +13,19 @@ use Drupal\Core\Entity\ContentEntityInterface;
  */
 class TransactionQuery extends BaseQuery {
 
+  /**
+   * @var ContentEntityInterface A wallet holder
+   */
   private $participant;
+
+  /**
+   * @var ContentEntityInterface A wallet holder
+   */
   private $payer;
+
+  /**
+   * @var ContentEntityInterface A wallet holder
+   */
   private $payee;
 
   /**
@@ -24,11 +36,11 @@ class TransactionQuery extends BaseQuery {
    * @return \Drupal\mcapi\Entity\TransactionQuery
    */
   public function involving(ContentEntityInterface $entity) {
-    if ($entity->getEntityTypeId() == 'mcapi_wallet') {
+    if ($entity instanceOf WalletInterface) {
       // Work directly on the transaction table and wallet ids
       $group = $this->orConditionGroup()
-        ->condition('payer', (array) $value, 'IN')
-        ->condition('payee', (array) $value, 'IN');
+        ->condition('payer', (array) $entity->id(), 'IN')
+        ->condition('payee', (array) $entity->id(), 'IN');
       $this->condition($group);
     }
     else {
@@ -46,7 +58,7 @@ class TransactionQuery extends BaseQuery {
    * @return \Drupal\mcapi\Entity\TransactionQuery
    */
   protected function payer(ContentEntityInterface $entity) {
-    if ($entity->getEntityTypeId() == 'mcapi_wallet') {
+    if ($entity instanceOf WalletInterface) {
       $this->condition('payer', $entity->id());
     }
     else {
@@ -63,7 +75,7 @@ class TransactionQuery extends BaseQuery {
    * @return \Drupal\mcapi\Entity\TransactionQuery
    */
   protected function payee(ContentEntityInterface $entity) {
-    if ($entity->getEntityTypeId() == 'mcapi_wallet') {
+    if ($entity instanceOf WalletInterface) {
       $this->condition('payee', $entity->id());
     }
     else {
@@ -115,7 +127,7 @@ class TransactionQuery extends BaseQuery {
     $this->sqlQuery->addMetaData('entity_type', 'mcapi_transaction');
     // Add the key field for fetchAllKeyed().
     $this->sqlFields["base_table.xid"] = ['base_table', 'xid'];
-    
+
     // Now add the value column for fetchAllKeyed(), the serial number
     $this->sqlFields["base_table.serial"] = ['base_table', 'serial'];
 
@@ -126,7 +138,5 @@ class TransactionQuery extends BaseQuery {
     return $this;
   }
 
-
 }
-
 

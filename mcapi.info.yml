@@ -4,13 +4,10 @@ package: Community Accounting
 configure: mcapi.admin
 core: 8.x
 type: module
-#server_pattern: http://translations.communityforge.net/%core/%project/%version.%language.po
 dependencies:
-  - action
-
-#dependency on rules is temporary
-#  - rules
+  - drupal:action
+  - drupal:system (>=8.4.0)
 
 #this is needed to retrieve translation
-version: 4.0-beta9
+version: 4.0-beta16
 project: mutual_credit

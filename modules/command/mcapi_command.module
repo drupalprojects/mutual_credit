@@ -4,17 +4,20 @@ use Drupal\user\Entity\User;
 use Drupal\mcapi\Entity\Transaction;
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Mcapi;
+use Drupal\mcapi\Storage\WalletStorage;
 
 /*
  * returns a message
  */
 function process_mcapi_command($message, $sender_account = NULL, $really = FALSE) {
-  if (!$sender_account) $sender_account = User::load(\Drupal::currentUser()->id());
+  if (!$sender_account) {
+    $sender_account = User::load(\Drupal::currentUser()->id());
+  }
   $transaction = mcapi_command_execute($message, $sender_account);
-  //this has no idea whether the transaction is pending.
+  //this has no idea whether the transaction is pending or whether it failed
   if ($really) {
-    $storage = \Drupal::entityTypeManager()->getStorage('mcapi_transaction');
-    $stats = $wallet->getStats(\Drupal::config('mcapi.command')->get('curr_id'));
+    $wallets = WalletStorage::walletsOf($sender_account, TRUE);
+    $stats = reset($wallets)->getStats(\Drupal::config('mcapi_command.settings')->get('curr_id'));
 
     return t('Transaction created.').' '.
       t('Your current balance is @num', array('@num' => $stats['balance']));//no need the format this
@@ -31,7 +34,7 @@ function mcapi_command_execute($message, $sender_account, $really = FALSE) {
   $props = mcapi_parse_command($message);//would throw an error
   if (!$props) return;
 
-  $props['curr_id'] = \Drupal::config('mcapi.command')->get('curr_id');
+  $props['curr_id'] = \Drupal::config('mcapi_command.settings')->get('curr_id');
   $props['creator'] = $sender_account->uid;
   //need to parse the user IDs, and substitute the payer or payee
   //assume that either payer or payee is in the string
@@ -59,7 +62,7 @@ function mcapi_parse_command($message) {
     '[transaction:description]' => '(.*)',
   );
   $most_matches = [];
-  $strings = explode("\n", \Drupal::config('mcapi.command')->get('command_strings'));
+  $strings = explode("\n", \Drupal::config('mcapi_command.settings')->get('command_strings'));
   foreach ($strings as $expression) {
     $expression = trim($expression); //get the linebreak off it yuk
     $pattern = '/'.strtr($expression, $translations) .'/i';
@@ -72,7 +75,7 @@ function mcapi_parse_command($message) {
     }
   }
   if (!isset($longest_matching_expression)) {
-    throw new Exception(\Drupal::config('mcapi.command')->get('syntax_error'));
+    throw new Exception(\Drupal::config('mcapi_command.settings')->get('syntax_error'));
   }
 
   array_shift($most_matches);//remove the first which was the matched expression
@@ -99,7 +102,7 @@ function mcapi_parse_command($message) {
  * $string should be a uid, username or email
  */
 function mcapi_command_get_uid($string) {
-  $config = \Drupal::config('mcapi.command');
+  $config = \Drupal::config('mcapi_command.settings');
   $query = db_select('wallets', 'w')->fields('w', array('wid'));
   $or = db_or();
 
@@ -134,7 +137,10 @@ function mcapi_command_get_uid($string) {
  * sms_incoming($number, $message, $options = []);
  */
 function mcapi_command_sms_incoming($op, $number, $message) {
-  if ($op != 'process') return;
+  if ($op != 'process') {
+    return;
+  }
+  $config = \Drupal::config('mcapi_command.settings');
   try {
     $sender_uid = sms_user_get_uid($number);
     if (!$sender_uid) {
@@ -143,7 +149,7 @@ function mcapi_command_sms_incoming($op, $number, $message) {
     $sender = User::load($sender_uid);
     $transaction = mcapi_command_execute($message, $sender, TRUE);
     if (!$transaction) {
-      $message = \Drupal::config('mcapi.command')->get('syntax_error');
+      $message = $config->get('syntax_error');
       throw new Exception($message);
     }
   }
@@ -153,8 +159,8 @@ function mcapi_command_sms_incoming($op, $number, $message) {
 
   $langcode = user_preferred_language($sender)->language;
   if ($transaction->state == TRANSACTION_STATE_COMPLETED) {
-    $message = \Drupal::config('mcapi.command')->get('syntax_error');
-    $curr_id = \Drupal::config('mcapi.command')->get('commands_currcode ');
+    $message = $config->get('syntax_error');
+    $curr_id = $config->get('commands_currcode ');
 
     $stats = $wallet->getStats($curr_id);
     $currency = Currency::load($curr_id);
@@ -192,16 +198,15 @@ function mcapi_command_twitter_status_save($status) {
     //so the tweet mentions another user known to this
     $message = str_replace($otherusername, $matches[1], $message);
   }
-
+  $config = \Drupal::config('mcapi_command.settings');
   try {
     $uid = db_query("SELECT uid FROM twitter_account WHERE twitter_uid = ".$status->user->id)->fetchfield();
     $transaction = mcapi_command_execute($message, User::load($uid), TRUE);
     //could use a variable instead of transaction completed.
     $response = t('Transaction completed');
-    if (!$transaction) return;//that means there was a syntax error.
   }
   catch (Exception $e) {
-    if ($e->getMessage() != \Drupal::config('mcapi.command')->get('syntax_error')) {
+    if ($e->getMessage() != $config->get('syntax_error')) {
       //we don't publish syntax error messages, but we do log non-syntax error message
       \Drupal::service('logger.channel.mcapi')->error(
         'Failed to execute twitter command: @message',
@@ -211,7 +216,7 @@ function mcapi_command_twitter_status_save($status) {
     }
   }
 
-  if (Drupal::config('mcapi.command')->get('twitter_response')) {
+  if ($transaction and $config->get('twitter_response')) {
     mcapi_twitter_respond($twitter_uid, $response, $status->id);
   }
 }

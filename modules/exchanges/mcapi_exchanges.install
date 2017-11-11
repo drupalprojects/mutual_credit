@@ -18,7 +18,7 @@ use Drupal\user\Entity\User;
 function mcapi_exchanges_requirements($phase) {
   $requirements = [];
   if ($phase == 'install' && class_exists('\Drupal\mcapi\Mcapi')) {
-    foreach (WalletStorage::walletsOf(User::load(1)) as $wallet) {
+    foreach (WalletStorage::walletsOf(User::load(1), TRUE) as $wallet) {
       if (!$wallet->isVirgin()) {
         $requirements['mcapi_exchanges'] = [
           'title' => t('User 1 has never traded'),

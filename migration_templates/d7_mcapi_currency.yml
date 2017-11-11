@@ -16,7 +16,7 @@ process:
     source: issuance
     map:
       acknowledgement: 2
-      commodity: 1
+      asset: 1
       exchange: 0
   zero:
     plugin: d7_mcapi_object_prop

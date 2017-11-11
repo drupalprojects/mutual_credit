@@ -123,13 +123,13 @@ function _mcapi_limits_form_mcapi_currency_edit_form_alter(&$form, FormStateInte
         ],
       ],
     ],
-    'warning_commodity' => [
+    'warning_asset' => [
       '#type' => 'item',
-      '#markup' => t('All accounts should be positive, except one (issuing) account which is negative according to the value of the commodity stored'),
+      '#markup' => t('All accounts should be positive, except one (issuing) account which is negative according to the value of the asset stored'),
       '#weight' => -1,
       '#states' => [
         'visible' => [
-          ':input[name="issuance"]' => ['value' => CurrencyInterface::TYPE_COMMODITY],
+          ':input[name="issuance"]' => ['value' => CurrencyInterface::TYPE_ASSET],
         ],
       ],
     ],

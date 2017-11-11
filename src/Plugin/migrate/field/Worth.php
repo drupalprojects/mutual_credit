@@ -9,6 +9,8 @@ use Drupal\migrate\Plugin\MigrationInterface;
  * @MigrateField(
  *   id = "worth",
  *   core = {7},
+ *   source_module = "mcapi",
+ *   destination_module = "mcapi",
  *   type_map = {
  *    "worth_field" = "worth"
  *   }

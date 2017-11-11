@@ -10,7 +10,7 @@ This document is a work in progress and may not be entirely up-to-date!
 
 WARNING!
 The intention behind this module is to foster a culter of experimentation, not to impose ideological constraints about how a money system should work.
-Consequently it can be used as straight mutual credit, as the name implies, or for fiat or commodity currencies in which units are 'issued' into circulation from an account allocated for that purpose.
+Consequently it can be used as straight mutual credit, as the name implies, or for fiat or asset currencies in which units are 'issued' into circulation from an account allocated for that purpose.
 Nonetheless, fools rush in where angels fear to tread! Many lessons have already been learned about currency design and the process of encouraging communities to adopt them.
 A badly managed money system can cause people to lose out and create bad feeling and resistance to future innovation, especially because few people understand how money actually works.
 

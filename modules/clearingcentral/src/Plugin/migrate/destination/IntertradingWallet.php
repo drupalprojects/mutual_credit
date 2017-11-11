@@ -23,16 +23,13 @@ class IntertradingWallet extends DestinationBase {
    * {@inheritdoc}
    */
   public function import(Row $row, array $old_destination_id_values = array()) {
-
-    echo 'Destination: IntertradingWallet: '; print_R($row->getDestination());
-
     //Get the first and probably only intertrading wallet
     $wid = intertrading_wallet_id();
     mcapi_cc_save_wallet_settings(
       $wid,
       $curr_id,
-      $ex_id,
-      $ex_pass
+      $row->getDestinationProperty('mcapi_cc_user'),
+      $row->getDestinationProperty('mcapi_cc_pass')
     );
     return [$wid];
   }

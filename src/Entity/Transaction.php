@@ -151,7 +151,7 @@ class Transaction extends ContentEntityBase implements TransactionInterface {
    * {@inheritdoc}
    */
   public static function preCreate(EntityStorageInterface $storage, array &$values) {
-    $type_name = $values['type'];
+    $type_name = isset($values['type']) ? $values['type'] : 'default';
     if ($type = Type::load($type_name)) {
       if (empty($values['serial'])) {// doesn't apply to imported transactions
         $values['state'] = $type->start_state;

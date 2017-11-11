@@ -2,8 +2,10 @@
 
 namespace Drupal\mcapi\EventSubscriber;
 
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Mcapi;
+use Drupal\migrate\Event\MigrateImportEvent;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
  * Because the transaction collection is also the field ui base route, and
@@ -17,7 +19,8 @@ class MigrationSubscriber implements EventSubscriberInterface {
    */
   public static function getSubscribedEvents() {
     return [
-      'migrate.pre_row_save' => [['migratePreRowSave']]
+      'migrate.pre_import' => [['migratePreImport']],
+      'migrate.pre_row_save' => [['migratePreRowSave']],
     ];
   }
 
@@ -78,6 +81,15 @@ class MigrationSubscriber implements EventSubscriberInterface {
         elseif ($direction->preset == 'incoming') {
           $row->setDestinationProperty('mode',  'bill');
         }
+      }
+    }
+  }
+
+  function migratePreImport(MigrateImportEvent $event) {
+    // Delete all the existing currencies.
+    if ($event->getMigration()->id() == 'd7_macpi_currency') {
+      foreach (Currency::loadMultiple() as $currency) {
+        $currency->delete();
       }
     }
   }

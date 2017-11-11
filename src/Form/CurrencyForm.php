@@ -112,17 +112,17 @@ class CurrencyForm extends EntityForm {
       ],
       '#weight' => 3,
     ];
-    $form['commodity'] = [
+    $form['asset'] = [
       '#type' => 'container',
       '#children' => implode(" ", [
-        $this->t('Commodity currencies are limited to the quantity of a valuable commodity in storage.'),
-        $this->t('They are valued according to that commodity, and redeemed for that commodity, although fractional reserve rules may apply.'),
-        $this->t('Effectively the commodity is monetised, for the cost of the stuff in storage.'),
+        $this->t('Asset currencies are limited to the quantity of an asset in storage.'),
+        $this->t('They are valued according to that asset, and redeemed for that asset, although fractional reserve rules may apply.'),
+        $this->t('Effectively the asset is monetised, for the cost of the stuff in storage.'),
         $this->t("This would be the choice for all 'backed' complementary currencies."),
       ]),
       '#states' => [
         'visible' => [
-          ':input[name="issuance"]' => ['value' => CurrencyInterface::TYPE_COMMODITY],
+          ':input[name="issuance"]' => ['value' => CurrencyInterface::TYPE_ASSET],
         ],
       ],
       '#weight' => 3,

@@ -87,7 +87,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
   public $uid;
 
   /**
-   * One of the constants, TYPE_ACKNOWLEDGEMENT, TYPE_COMMODITY, TYPE_PROMISE.
+   * One of the constants, TYPE_ACKNOWLEDGEMENT, TYPE_ASSET, TYPE_PROMISE.
    *
    * @var string
    */
@@ -305,7 +305,7 @@ class Currency extends ConfigEntityBase implements CurrencyInterface, EntityOwne
     return [
       CurrencyInterface::TYPE_ACKNOWLEDGEMENT => t('Acknowledgement', [], ['context' => 'currency-type']),
       CurrencyInterface::TYPE_PROMISE => t('Promise of value', [], ['context' => 'currency-type']),
-      CurrencyInterface::TYPE_COMMODITY => t('Backed by a commodity', [], ['context' => 'currency-type']),
+      CurrencyInterface::TYPE_ASSET => t('Backed by an asset', [], ['context' => 'currency-type']),
     ];
   }
 

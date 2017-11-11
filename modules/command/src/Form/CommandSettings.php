@@ -2,20 +2,13 @@
 
 namespace Drupal\mcapi_command\Form;
 
-use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  *
  */
 class CommandSettings extends ConfigFormBase {
-
-  /**
-   *
-   */
-  public function title() {
-    print_r(func_get_args());
-  }
 
   /**
    * {@inheritdoc}
@@ -27,9 +20,9 @@ class CommandSettings extends ConfigFormBase {
   /**
    *
    */
-  public function buildform(array $form, $form_state) {
+  public function buildform(array $form, FormStateInterface $form_state) {
     $tokens = array('[transaction:payer] OR [transaction:payee]', '[transaction:quantity]', '[transaction:description]');
-    $config = $this->configFactory->get('mcapi.command');
+    $config = $this->configFactory->get('mcapi_command.settings');
     $form['requests'] = array(
       '#title' => t('Incoming messages from phones'),
       '#description' => t('Define the form of the text messages.') . ' ' .
@@ -115,9 +108,9 @@ class CommandSettings extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, $form_state, $op = NULL) {
+  public function submitForm(array &$form, FormStateInterface $form_state, $op = NULL) {
     // Do we need to clean form_state['values']?
-    $config = $this->configFactory->get('mcapi.command');
+    $config = $this->configFactory->getEditable('mcapi_command.settings');
     foreach ($form_state->getValues() as $key => $val) {
       $config->set($key, $val);
     }
@@ -130,7 +123,7 @@ class CommandSettings extends ConfigFormBase {
    * Element validate callback
    * ensures that command syntax contains the critical tokens.
    */
-  function validate_commands_syntax(&$element, $form_state) {
+  function validate_commands_syntax(&$element, FormStateInterface $form_state) {
     $templates = explode("\n", $element['#value']);
     foreach ($templates as $template) {
       // Check it has quantity in it.
@@ -145,6 +138,10 @@ class CommandSettings extends ConfigFormBase {
         form_error($element, t("'@template' should include EITHER [transaction:payee] OR [transaction:payer]", array('@template' => $template)));
       }
     }
+  }
+
+  function getEditableConfigNames() {
+    return ['mcapi_command.settings'];
   }
 
 }

@@ -19,27 +19,27 @@
 #}
 <table border = "1" class = "wallet-stats">
 <tr>
-  <th style="font-size: 150%">Balance</th>
+  <th style="font-size: 150%">{{ 'Balance'|trans }}</th>
   {% for curr in currencies %}
   <td style="font-size: 150%">{{ curr.balance }}</td>
   {% endfor %}
-</tr><tr><th>Gross income</th>
+</tr><tr><th>{{ 'Gross income'|trans }}</th>
   {% for curr in currencies %}
   <td>{{ curr.gross_in }}</td>
   {% endfor %}
-</tr><tr><th>Gross expenditure</th>
+</tr><tr><th>{{ 'Gross expenditure'|trans }}</th>
   {% for curr in currencies %}
   <td>{{ curr.gross_out }}</td>
   {% endfor %}
-</tr><tr><th>Volume</th>
+</tr><tr><th>{{ 'Volume'|trans }}</th>
   {% for curr in currencies %}
   <td>{{ curr.volume }}</td>
   {% endfor %}
-</tr><tr><th>partners</th>
+</tr><tr><th>{{ 'partners'|trans }}</th>
   {% for curr in currencies %}
   <td>{{ curr.partners }}</td>
   {% endfor %}
-</tr><tr><th>Trades</th>
+</tr><tr><th>{{ 'Trades'|trans }}</th>
   {% for curr in currencies %}
   <td>{{ curr.trades }}</td>
   {% endfor %}

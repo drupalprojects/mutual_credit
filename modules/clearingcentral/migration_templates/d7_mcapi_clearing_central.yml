@@ -7,6 +7,7 @@ source:
   variables:
     - mcapi_cc_cenip_user
     - mcapi_cc_cenip_pass
+  source_module: mcapi_cc
 process:
   mcapi_cc_user: mcapi_cc_cenip_user
   mcapi_cc_pass: mcapi_cc_cenip_pass

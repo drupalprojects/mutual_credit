@@ -1,0 +1,20 @@
+command_strings:
+  label: Tokenised string
+  type: sequence
+  sequence:
+    type: text
+match_fields:
+  label: How wallets will be identified in the command strings.
+  type: integer
+curr_id:
+  label: Currency assumed for commands
+  type: string
+response_success:
+  label: Response on success
+  type: text
+syntax_error:
+  label: Response on failure
+  type: text
+twitter_response:
+  label: Twitter success response
+  type: text

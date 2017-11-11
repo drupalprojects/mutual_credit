@@ -42,7 +42,6 @@ mcapi.settings:
     render_unused:
       type: boolean
       label: 'Show unused currency stats in wallet view.'
-      sequence: { }
     ticks_name:
       type: String
       label: Base accounting unit
