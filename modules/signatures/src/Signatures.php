@@ -38,6 +38,8 @@ class Signatures {
    * Respond to the transaction being loaded.
    *
    * Read from the signatory table and add them to transaction entities.
+   *
+   * @see mcapi_signatures_mcapi_transaction_load().
    */
   public static function load($entities) {
     $xids = [];
@@ -122,7 +124,7 @@ class Signatures {
    *   ID of the user who is signing - defaults to the current user
    */
   public function sign($uid = NULL) {
-    if (!$uid) {
+    if (is_null($uid)) {
       $uid = $this->currentUser->id();
     }
     if (isset($this->transaction->signatures[$uid]) and empty($this->transaction->signatures[$uid])) {
@@ -154,7 +156,10 @@ class Signatures {
    * @return integer[]
    *   IDs of users.
    */
-  public function waitingOn($uid = 0) {
+  public function waitingOn($uid = NULL) {
+    if (is_null($uid)) {
+      $uid = $this->currentUser->id();
+    }
     $uids = [];
     if ($this->transaction->state->target_id == 'pending') {
       foreach ($this->transaction->signatures as $user_id => $signed) {
@@ -175,7 +180,10 @@ class Signatures {
    * @return bool
    *   TRUE if the transaction needs the user's signature
    */
-  public function isWaitingOn($uid) {
+  public function isWaitingOn($uid = NULL) {
+    if (is_null($uid)) {
+      $uid = $this->currentUser->id();
+    }
     $uids = [];
     if ($this->transaction->state->target_id == 'pending') {
       foreach ($this->transaction->signatures as $user_id => $signed) {

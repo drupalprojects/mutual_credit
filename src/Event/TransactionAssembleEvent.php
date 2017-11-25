@@ -25,4 +25,14 @@ class TransactionAssembleEvent extends GenericEvent {
     $this->getSubject()->children[] = $transaction;
   }
 
+  /**
+   * Get the parent transaction.
+   * 
+   * @return Transaction
+   */
+  public function getTransaction() {
+    return $this->getSubject();
+  }
+
+
 }

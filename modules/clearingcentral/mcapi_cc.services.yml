@@ -6,3 +6,9 @@ services:
   logger.channel.clearing_central:
     parent: logger.channel_base
     arguments: ['Clearing Central']
+    
+  mcapi_cc.migration.subscriber:
+    class: Drupal\mcapi_cc\MigrationSubscriber
+    tags:
+      - { name: event_subscriber }
+

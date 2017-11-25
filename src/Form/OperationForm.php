@@ -118,6 +118,7 @@ class OperationForm extends ContentEntityConfirmFormBase {
   public function getDescription() {
     // Provides the transaction_view part of the form from the action's config.
     $format = $this->config['format'];
+//echo $format;die();
     if ($format == 'twig') {
       // module_load_include('inc', 'mcapi', 'src/ViewBuilder/theme');.
       $renderable = [

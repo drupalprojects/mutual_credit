@@ -24,9 +24,10 @@ class TransactionEventSubscriber implements EventSubscriberInterface {
   }
 
   /**
-   * This is an example for now, but it mightMcapi work with rules later on.
+   * This is an example for now, but it might work with rules later on.
    *
-   * Use $events->addChild($transaction).
+   * Use $event->getTransaction() to get the parent transaction.
+   * Then use $event->addChild($childTransaction)
    *
    * @param TransactionAssembleEvent $event
    *   No ->arguments() are passed. getSubject() gives the transaction.

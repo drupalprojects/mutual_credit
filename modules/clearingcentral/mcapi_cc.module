@@ -146,7 +146,7 @@ function mcapi_cc_mcapi_transaction_insert($transaction)  {
       ])->execute();
     }
     else {
-      throw new \Exception('Missing remote transaction properties');
+      throw new \Exception('Cannot insert remote transaction without remote properties: '.print_r($transaction->toArray(), 1));
     }
   }
 }
@@ -222,6 +222,7 @@ function mcapi_cc_entity_display_build_alter(&$build, $context) {
   if ($context['entity']->getEntityTypeId() == 'mcapi_transaction') {
     $transaction = $context['entity'];
     if ($transaction->type->target_id == 'remote') {
+      $store = \Drupal::keyValue('clearingcentral');
       if (mcapi_cc_settings($transaction->payer->target_id)) {
         $build['payer'] = mcapi_cc_wallet_name($transaction->payer);
       }

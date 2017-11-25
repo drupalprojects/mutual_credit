@@ -1,15 +1,9 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\mcapi_cc\SettingsForm.
- *
- */
-namespace Drupal\mcapi_cc;
+namespace Drupal\mcapi_cc\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\mcapi\Exchange;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 

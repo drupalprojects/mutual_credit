@@ -17,7 +17,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   type = "mcapi_transaction"
  * )
  *
- * @todo inject currentuser & routeMatch
  */
 class View extends TransactionActionBase {
 

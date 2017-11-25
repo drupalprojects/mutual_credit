@@ -1,11 +1,6 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi_cc\RemoteTransactionForm.
- */
-
-namespace Drupal\mcapi_cc;
+namespace Drupal\mcapi_cc\Form;
 
 use Drupal\mcapi\Entity\Currency;
 use Drupal\mcapi\Form\TransactionForm;

@@ -175,6 +175,7 @@ function template_preprocess_mcapi_transaction(&$vars, $hook, $info) {
  */
 function template_preprocess_mcapi_transaction_twig(&$vars) {
   $elements = $vars['transaction'];
+  $renderer = \Drupal::service('renderer');
   foreach (Element::children($elements) as $key) {
     $vars[$key] = $elements[$key];
   }
@@ -182,6 +183,8 @@ function template_preprocess_mcapi_transaction_twig(&$vars) {
   $vars['state'] = $transaction->state->entity->label();
   $vars['type'] = $transaction->type->entity->label();
   $vars['creator'] = $transaction->creator->entity->toLink();
+  $vars['created'] = $renderer->render($elements['created']);
+  $vars['changed'] = $renderer->render($elements['changed']);
   if (!$transaction->isNew()) {
     $vars['url'] = $transaction->toLink();
   }
@@ -189,7 +192,7 @@ function template_preprocess_mcapi_transaction_twig(&$vars) {
     $children = \Drupal::entityTypeManager()
       ->getViewBuilder('mcapi_transaction')
       ->viewMultiple($transaction->children, 'sentence');
-    $vars['children'] = render($children);
+    $vars['children'] = $renderer->render($children);
   }
   else {
     $vars['children']  = '';

@@ -23,14 +23,14 @@ class WorthField extends ProcessPluginBase {
     // At this point value is a decimal
     $decimal = $value['quantity'];
     $format = Currency::load($value['currcode'])->format;
-    if ($format[3] == '59/4') {
-      $quantity = 60*$decimal;
-    }
-    elseif($format[3] == 99) {
-      $quantity = 100*$decimal;
-    }
-    else {
-      $quantity = intval($decimal);
+    $quantity = intval($decimal);
+    if (isset($format[3])) {
+      if ($format[3] == '59/4') {
+        $quantity = 60*$decimal;
+      }
+      elseif($format[3] == 99) {
+        $quantity = 100*$decimal;
+      }
     }
     return [
       'curr_id' => $value['currcode'],

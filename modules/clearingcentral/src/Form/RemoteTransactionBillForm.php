@@ -1,11 +1,6 @@
 <?php
 
-/**
- * @file
- * Definition of Drupal\mcapi_cc\RemoteTransactionBillForm.
- */
-
-namespace Drupal\mcapi_cc;
+namespace Drupal\mcapi_cc\Form;
 
 use Drupal\Core\Form\FormStateInterface;
 

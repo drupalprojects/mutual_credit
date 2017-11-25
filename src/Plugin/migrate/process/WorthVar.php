@@ -42,8 +42,8 @@ class WorthVar extends ProcessPluginBase {
       $newValue['curr_id'] = $value['currcode'];
       // There were some awkward stored values on d7
       if (isset($value['quantity'])) {
+        $three = 0;
         if (strpos($value['quantity'], '.')) {
-          $three = 0;
           list($one, $three) = explode('.', $value['quantity']);
         }
         else {
