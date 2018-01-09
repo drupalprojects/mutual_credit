@@ -112,6 +112,7 @@ function mcapi_limits_accounting_validate(array $cluster) {
       elseif ($skips['reservoir'] && $uid == $currency->reservoir )  {
         $messages[$currcode] = t("Skipped balance limit checks for @currency transactions involving the reservoir account.", array('@currency' => $currency->human_name));
       }
+
       $balance = transaction_totals($uid, $currcode)->balance;
       $projected = $balance + array_sum($diffs);
       $limits = limits_get($currcode, $uid);

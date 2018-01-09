@@ -14,7 +14,7 @@ $currency = currency_load($currcode);
 if ($totals->gross_in == 0 && $totals->gross_out== 0) return;
 $id = "given-gotten-".$currcode;
 ?>
-<script type="text/javascript" src="http://www.google.com/jsapi"></script>
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
 <script type="text/javascript">
 function drawGivenGotten() {
   var data = google.visualization.arrayToDataTable([

@@ -392,7 +392,9 @@ function _mcapi_validate_mail_element($element, &$form_state) {
  * Alters the original transaction and/or returns a dependent.
  */
 function mcapi_dependent_transaction_action($transaction, $settings) {
-  if (!in_array($transaction->type, $settings['conditions']['transaction_types'])) return;
+  if (!in_array($transaction->type, array_filter($settings['conditions']['transaction_types']))) {
+    return;
+  }
   $child = array(
     'type' => 'dependent',
     'state' => $transaction->state
@@ -411,7 +413,9 @@ function mcapi_dependent_transaction_action($transaction, $settings) {
       'currcode' => $worth_formula['currcode']
     );
   }
-  if (!isset($child['worth'])) return;
+  if (!isset($child['worth'])) {
+    return;
+  }
 
   $otheruser = &$settings['presets']['participants']['otheruser'];
   switch ($settings['presets']['participants']['mapping']) {

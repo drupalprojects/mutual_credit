@@ -1166,3 +1166,23 @@ function mcapi_update_7027() {
       ->execute();
   }
 }
+
+/**
+ * Correct possible poor formatting of currency divisions
+ */
+function mcapi_update_7028() {
+  $datas = db_select('mcapi_currencies', 'c')->fields('c', array('currcode', 'data'))->execute()->fetchAllKeyed(0);
+  foreach ($datas as $currcode => $data) {
+    $currency = unserialize($data);
+    if ($chunk = $currency->display['divisions_setting']) {
+      $lines = explode(PHP_EOL, $chunk);
+      $last = end($lines);
+      if (substr($last, 0, 3) == '100') {
+        array_pop($lines);
+        $currency->display['divisions_setting'] = implode(PHP_EOL, $lines);
+        db_update('mcapi_currencies')->fields(array('data' => serialize($currency)))->condition('currcode', $currcode)->execute();
+      }
+    }
+  }
+  cache_clear_all('currencies', 'cache');
+}

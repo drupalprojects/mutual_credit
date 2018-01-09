@@ -971,9 +971,11 @@ function currency_load($currcode = NULL) {
   if ($currcode && isset($currencies[$currcode])) {
     return $currencies[$currcode];
   }
-  watchdog('mcapi', "Nonexistent currency '@currcode' requested from: @list",
-    array('@currcode' => $currcode, '@list' => print_r(array_keys($currencies), 1))
-  );
+  if ($currcode) {
+    watchdog('mcapi', "Nonexistent currency '@currcode' requested from: @list",
+      array('@currcode' => $currcode, '@list' => print_r(array_keys($currencies), 1))
+    );
+  }
   return current($currencies);
 }
 

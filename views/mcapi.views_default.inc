@@ -2,7 +2,7 @@
 //Id;
 
 function mcapi_views_default_views() {
-  $view = new view;
+  $view = new view();
   $view->name = 'transactions';
   $view->description = '';
   $view->tag = 'mcapi';

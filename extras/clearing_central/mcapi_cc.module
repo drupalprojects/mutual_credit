@@ -4,10 +4,8 @@
  * @todo support testing with cxn and the switchover to live, deleting all test transactions
  */
 
-//define('CLEARING_CENTRAL_URL', 'http://cxn.org.za');
-//define('CLEARING_CENTRAL_IP', '69.61.35.151');
 define('CLEARING_CENTRAL_URL', 'http://clearingcentral.net');
-define('CLEARING_CENTRAL_IP', '75.98.165.130');
+define('CLEARING_CENTRAL_IP', '69.61.35.151');
 
 define('MCAPI_CC_CEN_ERR_INVALID_USER', 2);
 define('MCAPI_CC_CEN_ERR_TRANSACTION_DENIED', 4);
