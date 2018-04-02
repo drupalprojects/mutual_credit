@@ -1,19 +1,5 @@
 <?php
 
-
-/*
- * implements hook_requirements
- * tests that the transaction controller is default. i.e. using drupal
- */
-function mcapi_index_views_requirements() {
-  $controller = variable_get('mcapi_controller', 'mcapi');
-  $requirements['transaction_controller'] = array(
-    'title' => 'Transaction controller',
-    'value' => 'mcapi_index_views module only works with controller: '.$controller,
-    'severity' => $controller == 'mcapi' ? REQUIREMENT_INFO : REQUIREMENT_ERROR,
-  );
-  return $requirements;
-}
 /*
  * implements hook_enable
  */

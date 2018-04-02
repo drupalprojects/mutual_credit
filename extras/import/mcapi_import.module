@@ -498,8 +498,10 @@ function mcapi_import_get_account($string, $currcode = 'credunit') {
   }
   else return FALSE;
 
-  if (is_object($account) && $account->uid) return $account;
-  else return user_load(currency_load($currcode)->reservoir);
+  if (is_object($account) && $account->uid) {
+    return $account;
+  }
+  return user_load(currency_load($currcode)->reservoir);
 }
 
 

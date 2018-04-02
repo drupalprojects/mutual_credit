@@ -17,32 +17,34 @@ function mcapi_forms_menu() {
   $mcapi_forms = mcapi_forms_load();
   //one menu callback for each form.
   foreach($mcapi_forms as $ctools_id => $form) {
-    if (!empty($form->disabled)) continue;
-    $settings = &$form->data;
-    $path = $settings['architecture']['path'];
-    $menu_link = &$settings['architecture']['menu_link'];
-    $uchoo_callback = strtok($settings['architecture']['access'], ':');
-    $uchoo_arg = strtok(':');
-    $items[$path] = array(
-      'title' => 'Designed form',
-      'title callback' => 'mcapi_form_title',
-      'title arguments' => array($ctools_id),
-      'page callback' => 'mcapi_get_form',
-      'page arguments' => array($ctools_id),
-      'access callback' => 'in_user_chooser_segment',
-      'access arguments' => array($uchoo_callback, array($uchoo_arg)),
-      'type' => is_numeric($menu_link) ? $menu_link : MENU_NORMAL_ITEM,
-    );
-    if (!is_numeric($menu_link) && $menu_link != 'navigation') {
-      $items[$path]['menu_name'] = $menu_link;
+    if (!$form->disabled) {
+      $settings = &$form->data;
+      $path = $settings['architecture']['path'];
+      $menu_link = &$settings['architecture']['menu_link'];
+      $uchoo_callback = strtok($settings['architecture']['access'], ':');
+      $uchoo_arg = strtok(':');
+      $items[$path] = array(
+        'title' => $settings['experience']['title'],//language the form was configured in.
+        'title callback' => 'mcapi_form_title',
+        'title arguments' => array($ctools_id),
+        'page callback' => 'mcapi_get_form',
+        'page arguments' => array($ctools_id),
+        'access callback' => 'in_user_chooser_segment',
+        'access arguments' => array($uchoo_callback, array($uchoo_arg)),
+        'type' => is_numeric($menu_link) ? $menu_link : MENU_NORMAL_ITEM,
+      );
+      if (!is_numeric($menu_link) && $menu_link != 'navigation') {
+        $items[$path]['menu_name'] = $menu_link;
+      }
     }
   }
   return $items;
 }
 
 /*
- * implements hook_menu_alter
- * alters the menu item provided by ctools so it can be used for context
+ * Implements hook_menu_alter().
+ *
+ * Alters the menu item provided by ctools so it can be used for context
  */
 function mcapi_forms_menu_alter(&$items) {
   foreach (mcapi_forms_load(NULL, TRUE) as $form) {
@@ -369,7 +371,7 @@ function mcapi_forms_form_system_theme_settings_alter(&$form, &$form_state) {
   );
 }
 
-/*
+/**
  * The second stage of the transaction should NOT show the tabs such as view, edit etc
  */
 function mcapi_hide_tabs() {
@@ -379,8 +381,10 @@ function mcapi_hide_tabs() {
   );
   drupal_add_html_head($data, 'hide_tabs');
 }
-/*
+
+/**
  * menu title callback
+ *
  * the menu system can't cope with an empty title
  */
 function mcapi_form_title($form_name) {
@@ -389,17 +393,23 @@ function mcapi_form_title($form_name) {
   if (function_exists('i18n_string_object_translate')) {
     $translations = i18n_string_object_translate('payform_experience', $object);
     if (is_array($translations)) {
-      if (strlen($translations['title'])) return $translations['title'];
-      else return $translations['sure_title'];
+      if (strlen($translations['title'])) {
+        return $translations['title'];
+      }
+      return $translations['sure_title'];
     }
     else  {
-      if (strlen($translations->data['experience']['title'])) return $translations->data['experience']['title'];
-      else return $translations->data['experience']['sure_title'];
+      if (strlen($translations->data['experience']['title'])) {
+        return $translations->data['experience']['title'];
+      }
+      return $translations->data['experience']['sure_title'];
     }
   }
   else {
-    if (strlen($object['title'])) return $object['title'];
-    else return $object['sure_title'];
+    if (strlen($object['title'])) {
+      return $object['title'];
+    }
+    return $object['sure_title'];
   }
 }
 

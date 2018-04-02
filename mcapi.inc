@@ -595,6 +595,8 @@ function worth_element_validate(&$element, &$form_state, $form) {
   }
 
   if ($division = $quant - intval($quant)) {
+    // there was a prob that $division wasn't an integer
+    $hundredths = str_pad(substr($quant, strpos($quant, '.')+1), 2, '0');
     //check that divisions match allowed values for the currency
     if (count($currency->display['divisions_allowed']) && !isset($currency->display['divisions_allowed'][$division*100])) {
       form_error($element, t('@division is not a permitted division of currency @name', array('@division' => $division, '@name' => $currency->human_name)));

@@ -1645,6 +1645,7 @@ function form_type_worth_value(&$element, $edit = FALSE, &$form_state, $delta = 
     $item['quantity'] = floatval($edit['main_quant']);
     if (!empty($edit['div_quant'])) {
       $item['quantity'] += ($edit['div_quant'] + 0) / 100;
+      $item['quantity'] = (string)$item['quantity'];
     }
   }
   //set the value to zero if the field is empty and the currency allows it
